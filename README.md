@@ -3,4 +3,5 @@
 ### sudo apt install php-pgsql(linux) - para instalar as extensão o mesmo no windows-mac
 
 - composer require nwidart/laravel-modules - pacote para instalar módulos automaticamente
+- publicar as configuções: php artisan vendor:publish --provider="Nwidart\Modules\LaravelModulesServiceProvider"
 -- Comando para criar um novo módulo: php artisan module:make nome-novo-módulo
