@@ -33,10 +33,16 @@ class AutenticacaoServiceProvider extends ModuleServiceProvider
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
+    public function boot(): void
+    {
+        parent::boot();
+        // Carrega as migrations do módulo
+        $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
+    }
 
     /**
      * Define module schedules.
-     * 
+     *
      * @param $schedule
      */
     // protected function configureSchedules(Schedule $schedule): void

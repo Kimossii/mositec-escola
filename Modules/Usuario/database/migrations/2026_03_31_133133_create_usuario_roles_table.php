@@ -12,10 +12,10 @@ return new class extends Migration {
     {
         Schema::create('usuario_roles', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade');
+            $table->foreignId('users_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('role_id')->constrained('roles')->onDelete('cascade');
-            $table->foreignId('criado_por')->nullable()->constrained('usuarios')->onDelete('set null');
-            $table->foreignId('editado_por')->nullable()->constrained('usuarios')->onDelete('set null');
+            $table->foreignId('criado_por')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('editado_por')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
         });
     }

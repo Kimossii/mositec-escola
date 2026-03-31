@@ -15,8 +15,8 @@ return new class extends Migration {
             $table->integer('nome')->default(0); // 0: aluno, 1: admin, 2: professor, 3: secretario
             $table->string('descricao')->nullable();
             $table->integer('estado')->default(1); // 0: inativo, 1: ativo
-            $table->foreignId('criado_por')->nullable()->constrained('usuarios')->onDelete('set null');
-            $table->foreignId('editado_por')->nullable()->constrained('usuarios')->onDelete('set null');
+            $table->foreignId('criado_por')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('editado_por')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
         });
     }
