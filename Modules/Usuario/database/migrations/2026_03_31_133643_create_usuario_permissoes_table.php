@@ -10,7 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('usuario_permissoes', function (Blueprint $table) {
+        Schema::create('user_permissoes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('users_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('modulo_id')->constrained('modulos')->onDelete('cascade');
@@ -24,6 +24,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('usuario_permissoes');
+        Schema::dropIfExists('user_permissoes');
     }
 };
