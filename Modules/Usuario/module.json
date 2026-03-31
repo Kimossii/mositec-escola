@@ -1,0 +1,11 @@
+{
+    "name": "Usuario",
+    "alias": "usuario",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Usuario\\Providers\\UsuarioServiceProvider"
+    ],
+    "files": []
+}
