@@ -1,20 +1,21 @@
 <?php
 
-namespace Modules\Usuario\App\Actions;
+namespace Modules\Usuario\Actions;
 
-use Modules\Usuario\App\DTO\UsuarioDTO;
 use Illuminate\Support\Facades\Hash;
+use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Models\User;
 
-class CriarUsuarioAction
+class UsuarioAction
 {
-    public function execute(UsuarioDTO $dto): User
+    public function criar(UsuarioDTO $dto): User
     {
         return User::create([
-            'nome' => $dto->nome,
+            'name' => $dto->name,
             'email' => $dto->email,
             'password' => Hash::make($dto->password),
             'dados_pessoa_id' => $dto->dados_pessoa_id,
+            'estado' => $dto->estado ?? 1,
         ]);
     }
 }

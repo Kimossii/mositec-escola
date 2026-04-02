@@ -5,6 +5,10 @@ namespace Modules\Usuario\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
+use Log;
+use Modules\Usuario\Actions\UsuarioAction;
+use Modules\Usuario\DTO\UsuarioDTO;
+use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
 class UsuarioController extends Controller
 {
     /**
@@ -26,7 +30,16 @@ class UsuarioController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request) {}
+    public function store(CriarUsuarioRequest $request, UsuarioAction $action)
+    {
+        $dto = UsuarioDTO::fromArray($request->validated());
+        $usuario = $action->criar($dto);
+        Log::info('Usuário criado: ' . $usuario->email, ['usuario' => $dto]);
+        return response()->json([
+            'message' => 'Usuário criado com sucesso',
+            'data' => $usuario
+        ], 201);
+    }
 
     /**
      * Show the specified resource.
@@ -47,10 +60,14 @@ class UsuarioController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id) {}
+    public function update(Request $request, $id)
+    {
+    }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id) {}
+    public function destroy($id)
+    {
+    }
 }
