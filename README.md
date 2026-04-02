@@ -15,8 +15,8 @@
 
 | Módulo       | Função                                           | Depende de               | Observações                                              | Prioridade | Estado   |
 | ------------ | ------------------------------------------------ | ------------------------ | -------------------------------------------------------- | ---------- | -------- |
-| Usuário      | Cadastro e gerenciamento de usuários             | --------                 | Base para autenticação e permissões                      | 1          | Pendente |
-| Autenticação | Login, logout, reset de senha, segurança         | Usuário                  | Núcleo do sistema                                        | 1          | Pendente |
+| Usuário      | Cadastro e gerenciamento de usuários             | --------                 | Base para autenticação e permissões                      | 1          | Em Execução |
+| Autenticação | Login, logout, reset de senha, segurança         | Usuário                  | Núcleo do sistema                                        | 1          | Em Execução |
 | Permissões   | Controle de papéis e acessos                     | Usuário                  | Usado por todos os módulos                               | 1          | Pendente |
 | AnoLectivo   | Define períodos escolares                        | --------                 | Necessário para Matrícula, Notas, Frequência e Turmas    | 1          | Pendente |
 | Licença      | Validação do uso do sistema e limite de usuários | Usuário                  | Discreto, backend-only                                   | 1          | Pendente |
