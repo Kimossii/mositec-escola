@@ -2,19 +2,20 @@
 
 namespace Modules\Usuario\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 // use Modules\Usuario\Database\Factories\UserFactory;
 
-class User extends Model
+class User extends Authenticatable
 {
     use HasFactory;
 
     /**
      * The attributes that are mass assignable.
      */
-    use Notifiable;
+     use HasApiTokens,  Notifiable;
 
     protected $table = 'users';
 

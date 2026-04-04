@@ -6,8 +6,11 @@
 - composer require nwidart/laravel-modules - pacote para orquestrar os módulos.
 - publicar as configuções: php artisan vendor:publish --provider="Nwidart\Modules\LaravelModulesServiceProvider"
 -- Comando para criar um novo módulo: php artisan module:make nome-novo-módulo
-- Autenticação: composer require laravel/fortify
+- Autenticação: composer require laravel/fortify e composer require laravel/sanctum 
 -- php artisan vendor:publish --provider="Laravel\Fortify\FortifyServiceProvider"
+-- php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+--- php artisan migrate
+---
 
 # Módulos do projeto MosiTec Acadêmico
 

@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Usuario\Http\Controllers\UsuarioController;
 
-Route::group(['prefix' => 'v1'], function () {
+Route::group(['prefix' => 'v1', 'middleware' => 'auth:sanctum'], function () {
 
     Route::group(['prefix' => 'usuarios'], function () {
         Route::post('/store', [UsuarioController::class, 'store']);
