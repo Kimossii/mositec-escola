@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Autenticacao\Service\GestaoAutenticacao;
 
 class AutenticacaoController extends Controller
 {
@@ -14,31 +15,13 @@ class AutenticacaoController extends Controller
      */
     public function login(Request $request)
     {
-        $key = 'login-attempts:' . $request->ip();
-
-        if (RateLimiter::tooManyAttempts($key, 5)) {
-            $seconds = RateLimiter::availableIn($key);
-            return response()->json([
-                'message' => 'Muitas tentativas de login. Tente novamente em ' . $seconds . ' segundos.'
-            ], 429);
-        }
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
         ]);
-
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json(['message' => 'Credenciais inválidas'], 401);
-        }
-
-        $user = Auth::user();
-        // $token = $user->createToken('api-token')->plainTextToken;
-        $token = $user->createToken('api-token', ['*'], now()->addHours(2))->plainTextToken;
-
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ]);
+        $key = 'login-attempts:' . $request->ip();
+        $resposta = app(GestaoAutenticacao::class)->login($request->email, $request->password, $key);
+        return response()->json($resposta, $resposta['code'] ?? 200);
     }
 
     public function logout(Request $request)
