@@ -15,7 +15,7 @@ class UsuarioAction
             'email' => $dto->email,
             'password' => Hash::make($dto->password),
             'dados_pessoa_id' => $dto->dados_pessoa_id,
-            'estado' => $dto->estado ?? 1,
+            'estado' => $dto->estado->value,
         ]);
     }
 }
