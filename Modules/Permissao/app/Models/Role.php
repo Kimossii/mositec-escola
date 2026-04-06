@@ -38,6 +38,10 @@ class Role extends Model
     {
         return $this->belongsToMany(User::class, 'user_roles', 'role_id', 'users_id');
     }
+    public function permissoes()
+    {
+        return $this->hasMany(RolePermissao::class);
+    }
     // protected static function newFactory(): RoleFactory
     // {
     //     // return RoleFactory::new();
