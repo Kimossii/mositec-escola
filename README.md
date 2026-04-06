@@ -20,7 +20,7 @@
 | ------------ | ------------------------------------------------ | ------------------------ | -------------------------------------------------------- | ---------- | -------- |
 | Usuário      | Cadastro e gerenciamento de usuários             | --------                 | Base para autenticação e permissões                      | 1          | Em Execução |
 | Autenticação | Login, logout, reset de senha, segurança         | Usuário                  | Núcleo do sistema                                        | 1          | Em Execução |
-| Permissões   | Controle de papéis e acessos                     | Usuário                  | Usado por todos os módulos                               | 1          | Pendente |
+| Permissões   | Controle de papéis e acessos                     | Usuário                  | Usado por todos os módulos                               | 1          | Em Execução |
 | AnoLectivo   | Define períodos escolares                        | --------                 | Necessário para Matrícula, Notas, Frequência e Turmas    | 1          | Pendente |
 | Licença      | Validação do uso do sistema e limite de usuários | Usuário                  | Discreto, backend-only                                   | 1          | Pendente |
 | Aluno        | Cadastro de estudantes                           | AnoLectivo               | Necessário para Matrícula, Notas, Frequência, Financeiro | 1          | Pendente |
