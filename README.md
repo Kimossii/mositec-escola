@@ -2,9 +2,15 @@
 ## - Instalar basa de dados PSQL(PostgreSQL)
 ### sudo apt install php-pgsql(linux) - para instalar as extensão o mesmo no windows-mac
 
+#### Pacotes a serem instalados
 - composer require nwidart/laravel-modules - pacote para orquestrar os módulos.
 - publicar as configuções: php artisan vendor:publish --provider="Nwidart\Modules\LaravelModulesServiceProvider"
 -- Comando para criar um novo módulo: php artisan module:make nome-novo-módulo
+- Autenticação: composer require laravel/fortify e composer require laravel/sanctum 
+-- php artisan vendor:publish --provider="Laravel\Fortify\FortifyServiceProvider"
+-- php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+--- php artisan migrate
+---
 
 # Módulos do projeto MosiTec Acadêmico
 
@@ -12,8 +18,8 @@
 
 | Módulo       | Função                                           | Depende de               | Observações                                              | Prioridade | Estado   |
 | ------------ | ------------------------------------------------ | ------------------------ | -------------------------------------------------------- | ---------- | -------- |
-| Usuário      | Cadastro e gerenciamento de usuários             | --------                 | Base para autenticação e permissões                      | 1          | Pendente |
-| Autenticação | Login, logout, reset de senha, segurança         | Usuário                  | Núcleo do sistema                                        | 1          | Pendente |
+| Usuário      | Cadastro e gerenciamento de usuários             | --------                 | Base para autenticação e permissões                      | 1          | Em Execução |
+| Autenticação | Login, logout, reset de senha, segurança         | Usuário                  | Núcleo do sistema                                        | 1          | Em Execução |
 | Permissões   | Controle de papéis e acessos                     | Usuário                  | Usado por todos os módulos                               | 1          | Pendente |
 | AnoLectivo   | Define períodos escolares                        | --------                 | Necessário para Matrícula, Notas, Frequência e Turmas    | 1          | Pendente |
 | Licença      | Validação do uso do sistema e limite de usuários | Usuário                  | Discreto, backend-only                                   | 1          | Pendente |
