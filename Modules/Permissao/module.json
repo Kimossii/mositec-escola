@@ -1,0 +1,11 @@
+{
+    "name": "Permissao",
+    "alias": "permissao",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Permissao\\Providers\\PermissaoServiceProvider"
+    ],
+    "files": []
+}
