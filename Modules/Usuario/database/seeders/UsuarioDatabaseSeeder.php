@@ -2,7 +2,10 @@
 
 namespace Modules\Usuario\Database\Seeders;
 
+
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Modules\Usuario\Models\User;
 
 class UsuarioDatabaseSeeder extends Seeder
 {
@@ -12,5 +15,14 @@ class UsuarioDatabaseSeeder extends Seeder
     public function run(): void
     {
         // $this->call([]);
+        User::updateOrCreate(
+            ['email' => 'superadmin@example.com'],
+            [
+                'name' => 'SuperAdmin',
+                'password' => Hash::make('Mositec123!'),
+                'dados_pessoa_id' => null,
+                'estado' => 1,
+            ]
+        );
     }
 }

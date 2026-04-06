@@ -10,6 +10,7 @@
 -- php artisan vendor:publish --provider="Laravel\Fortify\FortifyServiceProvider"
 -- php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
 --- php artisan migrate
+-- php artisan db:seed
 ---
 
 # Módulos do projeto MosiTec Acadêmico

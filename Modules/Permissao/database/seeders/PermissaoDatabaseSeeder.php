@@ -11,6 +11,10 @@ class PermissaoDatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // $this->call([]);
+        $this->call([
+            AcaoSeeder::class,
+            RoleSeeder::class,
+            ModuloSeeder::class,
+        ]);
     }
 }
