@@ -49,19 +49,16 @@ class User extends Authenticatable
         return $this->belongsTo(DadosPessoal::class, 'dados_pessoa_id');
     }
 
-    // Quem criou este usuário
     public function criadoPor()
     {
         return $this->belongsTo(User::class, 'criado_por');
     }
 
-    // Quem editou este usuário
     public function editadoPor()
     {
         return $this->belongsTo(User::class, 'editado_por');
     }
 
-    // Usuários criados por este usuário
     public function usuariosCriados()
     {
         return $this->hasMany(User::class, 'criado_por');
