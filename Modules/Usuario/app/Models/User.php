@@ -15,7 +15,7 @@ class User extends Authenticatable
     /**
      * The attributes that are mass assignable.
      */
-     use HasApiTokens,  Notifiable;
+    use HasApiTokens, Notifiable;
 
     protected $table = 'users';
 
@@ -72,4 +72,12 @@ class User extends Authenticatable
     const ESTADO_INATIVO = 0;
     const ESTADO_ATIVO = 1;
 
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'user_roles', 'users_id', 'role_id');
+    }
+    public function permissoes()
+    {
+        return $this->hasMany(UserPermissao::class, 'users_id');
+    }
 }
