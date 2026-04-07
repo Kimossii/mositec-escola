@@ -1,4 +1,5 @@
 {
     "Usuario": true,
-    "Autenticacao": true
+    "Autenticacao": true,
+    "Permissao": true
 }

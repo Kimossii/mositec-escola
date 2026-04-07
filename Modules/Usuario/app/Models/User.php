@@ -6,6 +6,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Modules\Permissao\Models\Role;
+use Modules\Permissao\Models\UserPermissao;
 // use Modules\Usuario\Database\Factories\UserFactory;
 
 class User extends Authenticatable
@@ -15,7 +17,7 @@ class User extends Authenticatable
     /**
      * The attributes that are mass assignable.
      */
-     use HasApiTokens,  Notifiable;
+    use HasApiTokens, Notifiable;
 
     protected $table = 'users';
 
@@ -47,19 +49,16 @@ class User extends Authenticatable
         return $this->belongsTo(DadosPessoal::class, 'dados_pessoa_id');
     }
 
-    // Quem criou este usuário
     public function criadoPor()
     {
         return $this->belongsTo(User::class, 'criado_por');
     }
 
-    // Quem editou este usuário
     public function editadoPor()
     {
         return $this->belongsTo(User::class, 'editado_por');
     }
 
-    // Usuários criados por este usuário
     public function usuariosCriados()
     {
         return $this->hasMany(User::class, 'criado_por');
@@ -72,4 +71,12 @@ class User extends Authenticatable
     const ESTADO_INATIVO = 0;
     const ESTADO_ATIVO = 1;
 
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'user_roles', 'users_id', 'role_id');
+    }
+    public function permissoes()
+    {
+        return $this->hasMany(UserPermissao::class, 'users_id');
+    }
 }
