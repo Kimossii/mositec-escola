@@ -15,6 +15,7 @@ class UsuarioDatabaseSeeder extends Seeder
     public function run(): void
     {
         // $this->call([]);
+        $now = now();
         User::updateOrCreate(
             ['email' => 'superadmin@example.com'],
             [
@@ -22,6 +23,8 @@ class UsuarioDatabaseSeeder extends Seeder
                 'password' => Hash::make('Mositec123!'),
                 'dados_pessoa_id' => null,
                 'estado' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]
         );
     }

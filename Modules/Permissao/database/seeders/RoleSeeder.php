@@ -14,11 +14,12 @@ class RoleSeeder extends Seeder
     {
         // $this->call([]);
         Role::truncate();
+        $now = now();
         Role::insert([
-            ['nome' => 0, 'descricao' => 'Aluno'],
-            ['nome' => 1, 'descricao' => 'Administrador'],
-            ['nome' => 2, 'descricao' => 'Professor'],
-            ['nome' => 3, 'descricao' => 'Secretario'],
+            ['nome' => 0, 'descricao' => 'Aluno', 'created_at' => $now, 'updated_at' => $now],
+            ['nome' => 1, 'descricao' => 'Administrador', 'created_at' => $now, 'updated_at' => $now],
+            ['nome' => 2, 'descricao' => 'Professor', 'created_at' => $now, 'updated_at' => $now],
+            ['nome' => 3, 'descricao' => 'Secretario', 'created_at' => $now, 'updated_at' => $now],
         ]);
     }
 }

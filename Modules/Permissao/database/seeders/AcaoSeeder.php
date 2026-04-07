@@ -14,13 +14,14 @@ class AcaoSeeder extends Seeder
     {
         // $this->call([]);
         Acao::truncate();
+        $now = now();
         Acao::insert([
-            ['nome' => 'ver', 'numero' => 0],
-            ['nome' => 'criar', 'numero' => 1],
-            ['nome' => 'editar', 'numero' => 2],
-            ['nome' => 'eliminar', 'numero' => 3],
-            ['nome' => 'listar', 'numero' => 4],
-            ['nome' => 'exportar', 'numero' => 5],
+            ['nome' => 'ver', 'numero' => 0, 'created_at' => $now, 'updated_at' => $now],
+            ['nome' => 'criar', 'numero' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['nome' => 'editar', 'numero' => 2, 'created_at' => $now, 'updated_at' => $now],
+            ['nome' => 'eliminar', 'numero' => 3, 'created_at' => $now, 'updated_at' => $now],
+            ['nome' => 'listar', 'numero' => 4, 'created_at' => $now, 'updated_at' => $now],
+            ['nome' => 'exportar', 'numero' => 5, 'created_at' => $now, 'updated_at' => $now],
         ]);
     }
 }
