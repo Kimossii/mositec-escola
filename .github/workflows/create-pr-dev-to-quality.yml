@@ -25,5 +25,5 @@ jobs:
           body: |
             PR automático criado a partir de mudanças na development.
 
-            ✔ Revisar antes de fazer merge
+            ✔ Revisar antes de fazer merges
           update-existing: true
