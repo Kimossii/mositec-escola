@@ -1,4 +1,4 @@
-name: Create PR from development to quality
+name: Criar PR da development para quality
 
 on:
   push:
@@ -12,18 +12,25 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
-      - name: Checkout code
+      - name: Fazer checkout do código
         uses: actions/checkout@v3
 
-      - name: Create Pull Request
+      - name: Checar diferenças entre development e quality
+        run: |
+          git fetch origin quality
+          if git diff --quiet origin/quality..HEAD; then
+            echo "Nenhuma mudança para PR. Saindo..."
+            exit 0
+          fi
+
+      - name: Criar Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: quality
           branch: development
-          title: "Sync: development → quality"
+          title: "Sincronizar: development → quality"
           body: |
             PR automático criado a partir de mudanças na development.
 
-            ✔ Revisar antes de fazer merges
-          update-existing: true
+            ✔ Revisar antes de fazer merge
