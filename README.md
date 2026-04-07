@@ -12,7 +12,17 @@
 --- php artisan migrate
 -- php artisan db:seed
 ---
+---
+### Fluxo das pipelines das branchs: development → quality
 
+```mermaid
+flowchart TD
+    DEV[development] -->|Push| CHECK[Verificar diferenças]
+    CHECK -->|Sem mudanças| STOP[Sem ação]
+    CHECK -->|Com mudanças| PR[Criar PR para branch de qualidade]
+    PR --> QA[quality]
+
+```
 # Módulos do projeto MosiTec Acadêmico
 
 ## Primordiais
