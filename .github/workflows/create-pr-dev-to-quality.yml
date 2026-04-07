@@ -6,7 +6,7 @@ on:
       - development
 
 jobs:
-  create-pr:
+  criar-a-pr-development-para-quality:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
