@@ -1,0 +1,26 @@
+name: Create PR from development to quality
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: quality
+          branch: development
+          title: "Sync: development → quality"
+          body: |
+            PR automático criado a partir de mudanças na development.
+
+            ✔ Revisar antes de fazer merge
