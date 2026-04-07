@@ -8,6 +8,8 @@ on:
 jobs:
   create-pr:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout code
@@ -24,3 +26,4 @@ jobs:
             PR automático criado a partir de mudanças na development.
 
             ✔ Revisar antes de fazer merge
+          update-existing: true
