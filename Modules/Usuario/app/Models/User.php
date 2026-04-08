@@ -15,7 +15,7 @@ class User extends Authenticatable
     use HasFactory;
 
     /**
-     * The attributes that are mass assignable.teste de workflow
+     * The attributes that are mass assignable.2º teste de workflow
      */
     use HasApiTokens, Notifiable;
 
