@@ -1,4 +1,10 @@
 # Sistema de Gestão Acadêmica - MosiTec 
+
+## Licença
+
+Este projeto é **apenas para estudo e aprendizado**.  
+É proibido usar ou distribuir o código para fins comerciais sem minha autorização.
+
 ## - Instalar basa de dados PSQL(PostgreSQL)
 ### sudo apt install php-pgsql(linux) - para instalar as extensão o mesmo no windows-mac
 
