@@ -1,4 +1,4 @@
-name: Criar PR da development para quality automaticamente
+name: sincronização development → quality automaticamente
 
 on:
   push:
@@ -6,32 +6,50 @@ on:
       - development
 
 jobs:
-  criar-a-pr-development-para-quality:
+  sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Fazer checkout do código
+      - name: Checkout do código
         uses: actions/checkout@v4
-
-      - name: Checar diferenças entre development e quality
-        id: diff
-        run: |
-          git fetch origin quality
-          if git diff --quiet origin/quality..HEAD; then
-            echo "SEM_ALTERACOES=true" >> $GITHUB_ENV
-          else
-            echo "SEM_ALTERACOES=false" >> $GITHUB_ENV
-          fi
-
-      - name: Criar Pull Request
-        if: env.SEM_ALTERACOES == 'false'
-        uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: quality
-          branch: auto-pr-development-to-quality
-          title: "Sincronizar: development → quality"
-          body: |
-            PR automático criado a partir de mudanças na development.
+          fetch-depth: 0
 
-            ✔ Revisar antes de fazer merge
+      - name: Verificar se já existe PR aberto
+        id: check_pr
+        run: |
+          PR=$(gh pr list --base quality --head development --state open --json number -q '.[0].number')
+
+          if [ -z "$PR" ]; then
+            echo "EXISTE_PR=false" >> $GITHUB_ENV
+          else
+            echo "EXISTE_PR=true" >> $GITHUB_ENV
+            echo "PR_NUMBER=$PR" >> $GITHUB_ENV
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Criar PR se não existir
+        if: env.EXISTE_PR == 'false'
+        run: |
+          gh pr create \
+            --base quality \
+            --head development \
+            --title "Sync: development → quality" \
+            --body "PR automático criado a partir da branch development"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Obter número do PR
+        if: env.EXISTE_PR == 'false'
+        run: |
+          PR=$(gh pr list --base quality --head development --state open --json number -q '.[0].number')
+          echo "PR_NUMBER=$PR" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-merge PR
+        run: |
+          gh pr merge $PR_NUMBER --merge --delete-branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
