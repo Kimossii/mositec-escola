@@ -1,4 +1,4 @@
-name: Criar PR da development para quality atomaticamente
+name: Criar PR da development para quality automaticamente
 
 on:
   push:
@@ -8,27 +8,28 @@ on:
 jobs:
   criar-a-pr-development-para-quality:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Fazer checkout do código
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Checar diferenças entre development e quality
+        id: diff
         run: |
           git fetch origin quality
           if git diff --quiet origin/quality..HEAD; then
-            echo "Nenhuma mudança para PR. Saindo..."
-            exit 0
+            echo "SEM_ALTERACOES=true" >> $GITHUB_ENV
+          else
+            echo "SEM_ALTERACOES=false" >> $GITHUB_ENV
           fi
 
       - name: Criar Pull Request
+        if: env.SEM_ALTERACOES == 'false'
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: quality
-          branch: development
+          branch: auto-pr-development-to-quality
           title: "Sincronizar: development → quality"
           body: |
             PR automático criado a partir de mudanças na development.
