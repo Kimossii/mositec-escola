@@ -4,26 +4,33 @@ namespace Modules\Autenticacao\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\RateLimiter;
-use Modules\Autenticacao\Service\GestaoAutenticacao;
+use Modules\Autenticacao\Http\Requests\ValidarUsuarioApiRequest;
+use Modules\Autenticacao\Service\GestaoAutenticacaoAPI;
 
-class AutenticacaoController extends Controller
+class AutenticacaoAPIController extends Controller
 {
     /**
      * Display a Login.
      */
-    public function login()
+    public function login(ValidarUsuarioApiRequest $request)
     {
-        return view('autenticacao::lixoParaApagar.login');
+        $key = 'login-attempts:' . $request->ip();
+        $resposta = app(GestaoAutenticacaoAPI::class)->login($request->email, $request->password, $key);
+        return response()->json($resposta, $resposta['code'] ?? 200);
     }
 
     public function logout(Request $request)
     {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'Logout realizado com sucesso']);
     }
     public function logoutAllDevices(Request $request)
     {
+        // Revoga todos os tokens do usuário
+        $request->user()->tokens()->delete();
 
+        return response()->json(['message' => 'Logout de todos os dispositivos realizado com sucesso.']);
     }
     /**
      * Display a listing of the resource.

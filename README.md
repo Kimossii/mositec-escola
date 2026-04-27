@@ -17,6 +17,7 @@ Este projeto é **apenas para estudo e aprendizado**.
 -- php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
 --- php artisan migrate
 -- php artisan db:seed
+-- composer dump-autoload
 ---
 
 # Módulos do projeto MosiTec Acadêmico
