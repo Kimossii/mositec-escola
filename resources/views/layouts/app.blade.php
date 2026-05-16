@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt">
+
 <head>
     @include('layouts.partials.head')
 </head>
 
-<body id="kt_app_body">
+@include('layouts.partials.body-open')
 
 @include('layouts.partials.header')
 
@@ -14,18 +15,15 @@
 
         @include('layouts.partials.sidebar')
 
-        <div class="app-wrapper flex-column flex-row-fluid">
+        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
 
-            <div class="app-main flex-column flex-row-fluid">
-
-                @yield('content')
-
-            </div>
-
-            @include('layouts.partials.footer')
+            @include('layouts.partials.main')
 
         </div>
+
+
     </div>
+
 </div>
 
 @include('layouts.partials.scripts')
