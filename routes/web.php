@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Route;
 //         'status' => 401
 //     ], 401);
 // })->name('login');
+// Route::get('/', function () {
+//     return view('welcome');
+// });
 Route::get('/', function () {
-    return view('welcome');
+    return view('dashboard.index');
 });
