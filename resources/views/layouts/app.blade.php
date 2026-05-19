@@ -9,18 +9,20 @@
 
 @include('layouts.partials.body-open')
 
-@include('layouts.partials.header')
+{{-- Barra de navegação horizontal, barra de navegação superior, conteúdo principal. --}}
+{{-- Header Vue monta aqui, no mesmo lugar do blade anterior --}}
+<div id="app-header"></div>
 
 
 <div class="d-flex flex-column flex-root app-root">
 
     <div class="app-page flex-column flex-column-fluid">
 
+        {{-- Barra de navegação vertical a esquerda, barra de navegação superior, conteúdo principal. --}}
         @include('layouts.partials.sidebar')
 
         <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
 
-            {{-- @include('layouts.partials.main') --}}
              @inertia  {{-- aqui, no lugar do main --}}
 
         </div>

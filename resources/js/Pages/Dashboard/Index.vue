@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted } from 'vue';
+import AppLayout from '@/Layouts/AppLayout.vue'
 import { usePageScripts } from '@/composables/usePageScripts';
 
 const { loadAll } = usePageScripts([
@@ -29,6 +30,7 @@ const { loadAll } = usePageScripts([
 onMounted(() => {
     loadAll();
 });
+defineOptions({ layout: AppLayout })
 </script>
 
 <template>
