@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Route;
 // Route::get('/', function () {
 //     return view('welcome');
 // });
+// Route::get('/', function () {
+//     return view('dashboard.index');
+// });
 Route::get('/', function () {
-    return view('dashboard.index');
+    return \Inertia\Inertia::render('Dashboard/Index');
 });
