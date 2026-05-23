@@ -47,14 +47,14 @@ import { onMounted } from 'vue'
 const menuTrigger = "{default:'click', lg: 'hover'}"
 
 const modes = [
-    { value: 'light',  label: 'Light',  icon: 'ki-night-day', paths: 10 },
-    { value: 'dark',   label: 'Dark',   icon: 'ki-moon',      paths: 2  },
-    { value: 'system', label: 'System', icon: 'ki-screen',    paths: 4  },
+    { value: 'light', label: 'Light', icon: 'ki-night-day', paths: 10 },
+    { value: 'dark',  label: 'Dark',  icon: 'ki-moon',      paths: 2  },
 ]
 
 const setMode = (mode) => {
     localStorage.setItem('kt_theme_mode_value', mode)
     localStorage.setItem('kt_theme_mode_switch', mode)
+    localStorage.setItem('data-bs-theme', mode)
 
     const resolved = mode === 'system'
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
@@ -73,7 +73,7 @@ onMounted(() => {
         window.KTThemeMode.init()
     }
 
-    const saved = localStorage.getItem('kt_theme_mode_value') || 'system'
+    const saved = localStorage.getItem('kt_theme_mode_value') || 'light'
     setMode(saved)
 })
 </script>
