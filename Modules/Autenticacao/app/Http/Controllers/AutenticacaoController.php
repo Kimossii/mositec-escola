@@ -13,29 +13,17 @@ class AutenticacaoController extends Controller
     /**
      * Display a Login.
      */
-    public function login(Request $request)
+    public function login()
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
-        $key = 'login-attempts:' . $request->ip();
-        $resposta = app(GestaoAutenticacao::class)->login($request->email, $request->password, $key);
-        return response()->json($resposta, $resposta['code'] ?? 200);
+        return view('autenticacao::lixoParaApagar.login');
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-
-        return response()->json(['message' => 'Logout realizado com sucesso']);
     }
     public function logoutAllDevices(Request $request)
     {
-        // Revoga todos os tokens do usuário
-        $request->user()->tokens()->delete();
 
-        return response()->json(['message' => 'Logout de todos os dispositivos realizado com sucesso.']);
     }
     /**
      * Display a listing of the resource.
