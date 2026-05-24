@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->foreignId('role_id')->constrained('roles')->onDelete('cascade');
             $table->foreignId('criado_por')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('editado_por')->nullable()->constrained('users')->onDelete('set null');
+            $table->unique(['users_id', 'role_id']);
             $table->timestamps();
         });
     }
