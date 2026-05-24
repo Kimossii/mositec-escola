@@ -15,6 +15,8 @@ return new class extends Migration {
             $table->foreignId('users_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('modulo_id')->constrained('modulos')->onDelete('cascade');
             $table->foreignId('acao_id')->constrained('acoes')->onDelete('cascade');
+            $table->boolean('permitido')->default(true);
+            $table->unique(['users_id', 'modulo_id', 'acao_id']);
             $table->timestamps();
         });
     }
