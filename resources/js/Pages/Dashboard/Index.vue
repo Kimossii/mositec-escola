@@ -18,12 +18,12 @@ const { loadAll } = usePageScripts([
     'https://cdn.amcharts.com/lib/5/geodata/worldTimeZoneAreasLow.js',
     '/themes/metronic/assets/plugins/custom/datatables/datatables.bundle.js',
     '/themes/metronic/assets/js/widgets.bundle.js',
-    '/themes/metronic/assets/js/components/widgets.js',
-    '/themes/metronic/assets/js/components/apps/chat/chat.js',
-    '/themes/metronic/assets/js/components/utilities/modals/upgrade-plan.js',
-    '/themes/metronic/assets/js/components/utilities/modals/create-app.js',
-    '/themes/metronic/assets/js/components/utilities/modals/new-target.js',
-    '/themes/metronic/assets/js/components/utilities/modals/users-search.js',
+    '/themes/metronic/assets/js/components/custom/widgets.js',
+    '/themes/metronic/assets/js/components/custom/apps/chat/chat.js',
+    '/themes/metronic/assets/js/components/custom/utilities/modals/upgrade-plan.js',
+    '/themes/metronic/assets/js/components/custom/utilities/modals/create-app.js',
+    '/themes/metronic/assets/js/components/custom/utilities/modals/new-target.js',
+    '/themes/metronic/assets/js/components/custom/utilities/modals/users-search.js',
     '/themes/metronic/assets/js/pages/dashboard.js',
 ]);
 
