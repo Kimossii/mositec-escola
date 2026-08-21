@@ -249,7 +249,7 @@ const supportLinks = [
 ]
 
 const userMgmtLinks = [
-    { href: 'apps/user-management/users/list.html', label: 'Users List' },
+    { href: '/usuarios', label: 'Users List' },
     { href: 'apps/user-management/users/view.html', label: 'View User' },
     { href: 'apps/user-management/roles/list.html', label: 'Roles List' },
     { href: 'apps/user-management/roles/view.html', label: 'View Roles' },
