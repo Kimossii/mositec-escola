@@ -59,3 +59,70 @@ Este projeto é **apenas para estudo e aprendizado**.
 | Configurações | Parâmetros do sistema           | --------                  | Usado por todos os módulos            | 3          | Pendente |
 | Comunicação   | Chat, SMS, emails, notificações | Aluno, Professor, Usuário | Integrável com módulos acadêmicos     | 3          | Pendente |
 | Auditoria     | Logs e monitoramento            | Todos os módulos          | Backend-only; segurança               | 3          | Pendente |
+
+
+
+## 📂 SIDEBAR
+```text
+├── 🏠  Início
+│    └── Dashboard Principal
+│
+├── 👥  Académico
+│    ├── Alunos
+│    ├── Matrículas
+│    ├── Turmas
+│    └── Transferências
+│
+├── 📚  Pedagógico
+│    ├── Disciplinas
+│    ├── Horários
+│    ├── Planos de Aula
+│    └── Avaliações / Notas
+│
+├── 👨‍🏫  Pessoal
+│    ├── Docentes
+│    ├── Funcionários
+│    └── Presenças do Pessoal
+│
+├── 💰  Financeiro
+│    ├── Propinas
+│    ├── Pagamentos
+│    └── Relatórios Financeiros
+│
+├── 📣  Comunicação
+│    ├── Avisos / Circulares
+│    ├── Mensagens Internas
+│    └── Notificações
+│
+├── 📊  Relatórios
+│    ├── Mapa de Notas
+│    ├── Frequência / Faltas
+│    └── Boletins
+│
+└── ⚙️  Configurações
+     ├── 👥  Gestão de Utilizadores    ← colapsável
+     │    ├── Todos os Utilizadores
+     │    ├── Alunos
+     │    ├── Professores
+     │    ├── Funcionários
+     │    └── Administradores
+     │
+     ├── 🔐  Perfis & Permissões       ← colapsável
+     │    ├── Perfis de Acesso
+     │    └── Regras & Restrições
+     │
+     ├── 🏫  Estabelecimento           ← colapsável
+     │    ├── Dados da Escola
+     │    └── Logótipo & Aparência
+     │
+     ├── 📅  Ano Lectivo               ← colapsável
+     │    ├── Períodos / Trimestres
+     │    └── Calendário Escolar
+     │
+     └── 🔧  Sistema                   ← colapsável
+          ├── Parâmetros Gerais
+          └── Registos de Actividade
+    ```
+
+> 🔐 **Acesso:** A área de **Configurações** está disponível apenas para utilizadores com permissões administrativas.
+

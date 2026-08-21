@@ -3,9 +3,17 @@ import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 
+const pages = {
+    ...import.meta.glob('./Pages/**/*.vue'),
+    ...import.meta.glob('/Modules/*/resources/js/Pages/**/*.vue'),
+};
+
 createInertiaApp({
-    resolve: (name) =>
-        resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
+    resolve: (name) => {
+        const [module, ...rest] = name.split('/');
+        const modulePath = `/Modules/${module}/resources/js/Pages/${rest.join('/')}.vue`;
+        return resolvePageComponent([`./Pages/${name}.vue`, modulePath], pages);
+    },
     setup({ el, App, props, plugin }) {
         createApp({ render: () => h(App, props) })
             .use(plugin)
