@@ -1,7 +1,7 @@
 <template>
     <div>
         <!-- Projects -->
-        <div
+        <!-- <div
             data-kt-menu-trigger="{default:'click', lg: 'hover'}"
             data-kt-menu-placement="right-start"
             class="menu-item menu-lg-down-accordion"
@@ -21,10 +21,10 @@
                     </a>
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <!-- eCommerce -->
-        <div
+        <!-- <div
             data-kt-menu-trigger="{default:'click', lg: 'hover'}"
             data-kt-menu-placement="right-start"
             class="menu-item menu-lg-down-accordion"
@@ -35,7 +35,6 @@
                 <span class="menu-arrow"></span>
             </span>
             <div class="menu-sub menu-sub-lg-down-accordion menu-sub-lg-dropdown menu-active-bg px-lg-2 py-lg-4 w-lg-225px">
-                <!-- Catalog -->
                 <div data-kt-menu-trigger="{default:'click', lg: 'hover'}" data-kt-menu-placement="right-start" class="menu-item menu-lg-down-accordion">
                     <span class="menu-link">
                         <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
@@ -51,7 +50,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Sales -->
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion menu-sub-indention">
                     <span class="menu-link">
                         <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
@@ -67,7 +65,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Customers -->
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion menu-sub-indention">
                     <span class="menu-link">
                         <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
@@ -83,7 +80,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Reports -->
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion menu-sub-indention">
                     <span class="menu-link">
                         <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
@@ -106,82 +102,113 @@
                     </a>
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <!-- Support Center -->
-        <AppSubMenu
+        <!-- <AppSubMenu
             icon="ki-chart"
             :paths="2"
             title="Support Center"
             :links="supportLinks"
-        />
+        /> -->
 
-        <!-- User Management -->
-        <AppSubMenu
-            icon="ki-shield-tick"
-            :paths="2"
-            title="User Management"
-            :links="userMgmtLinks"
-        />
+        <!-- Configurações -->
+        <div
+            data-kt-menu-trigger="{default:'click', lg: 'hover'}"
+            data-kt-menu-placement="right-start"
+            class="menu-item menu-lg-down-accordion"
+        >
+            <span class="menu-link">
+                <span class="menu-icon">
+                    <i class="ki-duotone ki-shield-tick fs-2">
+                        <span class="path1"></span><span class="path2"></span>
+                    </i>
+                </span>
+                <span class="menu-title">Configurações</span>
+                <span class="menu-arrow"></span>
+            </span>
+            <div class="menu-sub menu-sub-lg-down-accordion menu-sub-lg-dropdown menu-active-bg px-lg-2 py-lg-4 w-lg-225px">
+                <div
+                    v-for="group in userManagementGroups"
+                    :key="group.title"
+                    data-kt-menu-trigger="click"
+                    class="menu-item menu-accordion menu-sub-indention"
+                >
+                    <span class="menu-link">
+                        <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                        <span class="menu-title">{{ group.title }}</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion">
+                        <div v-for="link in group.links" :key="link.href" class="menu-item">
+                            <a class="menu-link" :href="link.href">
+                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                <span class="menu-title">{{ link.label }}</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Contacts -->
-        <AppSubMenu
+        <!-- <AppSubMenu
             icon="ki-phone"
             :paths="2"
             title="Contacts"
             :links="contactLinks"
-        />
+        /> -->
 
         <!-- Subscriptions -->
-        <AppSubMenu
+        <!-- <AppSubMenu
             icon="ki-basket"
             :paths="4"
             title="Subscriptions"
             :links="subscriptionLinks"
-        />
+        /> -->
 
         <!-- Customers -->
-        <AppSubMenu
+        <!-- <AppSubMenu
             icon="ki-briefcase"
             :paths="2"
             title="Customers"
             :links="customerLinks"
-        />
+        /> -->
 
         <!-- Invoice Management -->
-        <AppSubMenu
+        <!-- <AppSubMenu
             icon="ki-credit-cart"
             :paths="2"
             title="Invoice Management"
             :links="invoiceLinks"
-        />
+        /> -->
 
         <!-- File Manager -->
-        <AppSubMenu
+        <!-- <AppSubMenu
             icon="ki-file-added"
             :paths="2"
             title="File Manager"
             :links="fileManagerLinks"
-        />
+        /> -->
 
         <!-- Inbox -->
-        <AppSubMenu
+        <!-- <AppSubMenu
             icon="ki-sms"
             :paths="2"
             title="Inbox"
             :links="inboxLinks"
-        />
+        /> -->
 
         <!-- Chat -->
-        <AppSubMenu
+        <!-- <AppSubMenu
             icon="ki-message-text-2"
             :paths="3"
             title="Chat"
             :links="chatLinks"
-        />
+        /> -->
 
         <!-- Calendar -->
-        <div class="menu-item">
+        <!-- <div class="menu-item">
             <a class="menu-link" href="apps/calendar.html">
                 <span class="menu-icon">
                     <i class="ki-duotone ki-calendar-8 fs-2">
@@ -190,115 +217,128 @@
                 </span>
                 <span class="menu-title">Calendar</span>
             </a>
-        </div>
+        </div> -->
     </div>
 </template>
 
 <script setup>
-import AppSubMenu from './AppSubMenu.vue'
+// import AppSubMenu from './AppSubMenu.vue'
 
-const projectLinks = [
-    { href: 'apps/projects/list.html', label: 'My Projects' },
-    { href: 'apps/projects/project.html', label: 'View Project' },
-    { href: 'apps/projects/targets.html', label: 'Targets' },
-    { href: 'apps/projects/budget.html', label: 'Budget' },
-    { href: 'apps/projects/users.html', label: 'Users' },
-    { href: 'apps/projects/files.html', label: 'Files' },
-    { href: 'apps/projects/activity.html', label: 'Activity' },
-    { href: 'apps/projects/settings.html', label: 'Settings' },
+// const projectLinks = [
+//     { href: 'apps/projects/list.html', label: 'My Projects' },
+//     { href: 'apps/projects/project.html', label: 'View Project' },
+//     { href: 'apps/projects/targets.html', label: 'Targets' },
+//     { href: 'apps/projects/budget.html', label: 'Budget' },
+//     { href: 'apps/projects/users.html', label: 'Users' },
+//     { href: 'apps/projects/files.html', label: 'Files' },
+//     { href: 'apps/projects/activity.html', label: 'Activity' },
+//     { href: 'apps/projects/settings.html', label: 'Settings' },
+// ]
+
+// const catalogLinks = [
+//     { href: 'apps/ecommerce/catalog/products.html', label: 'Products' },
+//     { href: 'apps/ecommerce/catalog/categories.html', label: 'Categories' },
+//     { href: 'apps/ecommerce/catalog/add-product.html', label: 'Add Product' },
+//     { href: 'apps/ecommerce/catalog/edit-product.html', label: 'Edit Product' },
+//     { href: 'apps/ecommerce/catalog/add-category.html', label: 'Add Category' },
+//     { href: 'apps/ecommerce/catalog/edit-category.html', label: 'Edit Category' },
+// ]
+
+// const salesLinks = [
+//     { href: 'apps/ecommerce/sales/listing.html', label: 'Orders Listing' },
+//     { href: 'apps/ecommerce/sales/details.html', label: 'Order Details' },
+//     { href: 'apps/ecommerce/sales/add-order.html', label: 'Add Order' },
+//     { href: 'apps/ecommerce/sales/edit-order.html', label: 'Edit Order' },
+// ]
+
+// const ecomCustomerLinks = [
+//     { href: 'apps/ecommerce/customers/listing.html', label: 'Customers Listing' },
+//     { href: 'apps/ecommerce/customers/details.html', label: 'Customers Details' },
+// ]
+
+// const ecomReportLinks = [
+//     { href: 'apps/ecommerce/reports/view.html', label: 'Products Viewed' },
+//     { href: 'apps/ecommerce/reports/sales.html', label: 'Sales' },
+//     { href: 'apps/ecommerce/reports/returns.html', label: 'Returns' },
+//     { href: 'apps/ecommerce/reports/customer-orders.html', label: 'Customer Orders' },
+//     { href: 'apps/ecommerce/reports/shipping.html', label: 'Shipping' },
+// ]
+
+// const supportLinks = [
+//     { href: 'apps/support-center/overview.html', label: 'Overview' },
+//     { href: 'apps/support-center/tickets/list.html', label: 'Ticket List' },
+//     { href: 'apps/support-center/tickets/view.html', label: 'Ticket View' },
+//     { href: 'apps/support-center/tutorials/list.html', label: 'Tutorials List' },
+//     { href: 'apps/support-center/tutorials/post.html', label: 'Tutorials Post' },
+//     { href: 'apps/support-center/faq.html', label: 'FAQ' },
+//     { href: 'apps/support-center/licenses.html', label: 'Licenses' },
+//     { href: 'apps/support-center/contact.html', label: 'Contact Us' },
+// ]
+
+const userManagementGroups = [
+    {
+        title: 'Gestão de utilizadores',
+        links: [
+            { href: '/usuarios', label: 'Todos os Utilizadores' },
+            { href: 'apps/user-management/users/view.html', label: 'Alunos' },
+            { href: 'apps/user-management/users/view.html', label: 'Professores' },
+            { href: 'apps/user-management/users/view.html', label: 'Funcionários' },
+            { href: 'apps/user-management/users/view.html', label: 'Administradores' },
+        ],
+    },
+    {
+        title: 'Perfis',
+        links: [
+            { href: 'apps/user-management/roles/list.html', label: 'Roles List' },
+            { href: 'apps/user-management/roles/view.html', label: 'View Role' },
+            { href: 'apps/user-management/roles/permissions.html', label: 'Permissions' },
+        ],
+    },
 ]
 
-const catalogLinks = [
-    { href: 'apps/ecommerce/catalog/products.html', label: 'Products' },
-    { href: 'apps/ecommerce/catalog/categories.html', label: 'Categories' },
-    { href: 'apps/ecommerce/catalog/add-product.html', label: 'Add Product' },
-    { href: 'apps/ecommerce/catalog/edit-product.html', label: 'Edit Product' },
-    { href: 'apps/ecommerce/catalog/add-category.html', label: 'Add Category' },
-    { href: 'apps/ecommerce/catalog/edit-category.html', label: 'Edit Category' },
-]
+// const contactLinks = [
+//     { href: 'apps/contacts/getting-started.html', label: 'Getting Started' },
+//     { href: 'apps/contacts/add-contact.html', label: 'Add Contact' },
+//     { href: 'apps/contacts/edit-contact.html', label: 'Edit Contact' },
+//     { href: 'apps/contacts/view-contact.html', label: 'View Contact' },
+// ]
 
-const salesLinks = [
-    { href: 'apps/ecommerce/sales/listing.html', label: 'Orders Listing' },
-    { href: 'apps/ecommerce/sales/details.html', label: 'Order Details' },
-    { href: 'apps/ecommerce/sales/add-order.html', label: 'Add Order' },
-    { href: 'apps/ecommerce/sales/edit-order.html', label: 'Edit Order' },
-]
+// const subscriptionLinks = [
+//     { href: 'apps/subscriptions/getting-started.html', label: 'Getting Started' },
+//     { href: 'apps/subscriptions/list.html', label: 'Subscription List' },
+//     { href: 'apps/subscriptions/add.html', label: 'Add Subscription' },
+//     { href: 'apps/subscriptions/view.html', label: 'View Subscription' },
+// ]
 
-const ecomCustomerLinks = [
-    { href: 'apps/ecommerce/customers/listing.html', label: 'Customers Listing' },
-    { href: 'apps/ecommerce/customers/details.html', label: 'Customers Details' },
-]
+// const customerLinks = [
+//     { href: 'apps/customers/getting-started.html', label: 'Getting Started' },
+//     { href: 'apps/customers/list.html', label: 'Customer Listing' },
+//     { href: 'apps/customers/view.html', label: 'Customer Details' },
+// ]
 
-const ecomReportLinks = [
-    { href: 'apps/ecommerce/reports/view.html', label: 'Products Viewed' },
-    { href: 'apps/ecommerce/reports/sales.html', label: 'Sales' },
-    { href: 'apps/ecommerce/reports/returns.html', label: 'Returns' },
-    { href: 'apps/ecommerce/reports/customer-orders.html', label: 'Customer Orders' },
-    { href: 'apps/ecommerce/reports/shipping.html', label: 'Shipping' },
-]
+// const invoiceLinks = [
+//     { href: 'apps/invoices/view/invoice-1.html', label: 'Invoice 1' },
+//     { href: 'apps/invoices/view/invoice-2.html', label: 'Invoice 2' },
+//     { href: 'apps/invoices/view/invoice-3.html', label: 'Invoice 3' },
+//     { href: 'apps/invoices/create.html', label: 'Create Invoice' },
+// ]
 
-const supportLinks = [
-    { href: 'apps/support-center/overview.html', label: 'Overview' },
-    { href: 'apps/support-center/tickets/list.html', label: 'Ticket List' },
-    { href: 'apps/support-center/tickets/view.html', label: 'Ticket View' },
-    { href: 'apps/support-center/tutorials/list.html', label: 'Tutorials List' },
-    { href: 'apps/support-center/tutorials/post.html', label: 'Tutorials Post' },
-    { href: 'apps/support-center/faq.html', label: 'FAQ' },
-    { href: 'apps/support-center/licenses.html', label: 'Licenses' },
-    { href: 'apps/support-center/contact.html', label: 'Contact Us' },
-]
+// const fileManagerLinks = [
+//     { href: 'apps/file-manager/folders.html', label: 'Folders' },
+//     { href: 'apps/file-manager/files.html', label: 'Files' },
+//     { href: 'apps/file-manager/blank.html', label: 'Blank Directory' },
+//     { href: 'apps/file-manager/settings.html', label: 'Settings' },
+// ]
 
-const userMgmtLinks = [
-    { href: '/usuarios', label: 'Users List' },
-    { href: 'apps/user-management/users/view.html', label: 'View User' },
-    { href: 'apps/user-management/roles/list.html', label: 'Roles List' },
-    { href: 'apps/user-management/roles/view.html', label: 'View Roles' },
-    { href: 'apps/user-management/permissions.html', label: 'Permissions' },
-]
+// const inboxLinks = [
+//     { href: 'apps/inbox/listing.html', label: 'Messages' },
+//     { href: 'apps/inbox/compose.html', label: 'Compose' },
+//     { href: 'apps/inbox/reply.html', label: 'View & Reply' },
+// ]
 
-const contactLinks = [
-    { href: 'apps/contacts/getting-started.html', label: 'Getting Started' },
-    { href: 'apps/contacts/add-contact.html', label: 'Add Contact' },
-    { href: 'apps/contacts/edit-contact.html', label: 'Edit Contact' },
-    { href: 'apps/contacts/view-contact.html', label: 'View Contact' },
-]
-
-const subscriptionLinks = [
-    { href: 'apps/subscriptions/getting-started.html', label: 'Getting Started' },
-    { href: 'apps/subscriptions/list.html', label: 'Subscription List' },
-    { href: 'apps/subscriptions/add.html', label: 'Add Subscription' },
-    { href: 'apps/subscriptions/view.html', label: 'View Subscription' },
-]
-
-const customerLinks = [
-    { href: 'apps/customers/getting-started.html', label: 'Getting Started' },
-    { href: 'apps/customers/list.html', label: 'Customer Listing' },
-    { href: 'apps/customers/view.html', label: 'Customer Details' },
-]
-
-const invoiceLinks = [
-    { href: 'apps/invoices/view/invoice-1.html', label: 'Invoice 1' },
-    { href: 'apps/invoices/view/invoice-2.html', label: 'Invoice 2' },
-    { href: 'apps/invoices/view/invoice-3.html', label: 'Invoice 3' },
-    { href: 'apps/invoices/create.html', label: 'Create Invoice' },
-]
-
-const fileManagerLinks = [
-    { href: 'apps/file-manager/folders.html', label: 'Folders' },
-    { href: 'apps/file-manager/files.html', label: 'Files' },
-    { href: 'apps/file-manager/blank.html', label: 'Blank Directory' },
-    { href: 'apps/file-manager/settings.html', label: 'Settings' },
-]
-
-const inboxLinks = [
-    { href: 'apps/inbox/listing.html', label: 'Messages' },
-    { href: 'apps/inbox/compose.html', label: 'Compose' },
-    { href: 'apps/inbox/reply.html', label: 'View & Reply' },
-]
-
-const chatLinks = [
-    { href: 'apps/chat/private.html', label: 'Private Chat' },
-    { href: 'apps/chat/group.html', label: 'Group Chat' },
-    { href: 'apps/chat/drawer.html', label: 'Drawer Chat' },
-]
+// const chatLinks = [
+//     { href: 'apps/chat/private.html', label: 'Private Chat' },
+//     { href: 'apps/chat/group.html', label: 'Group Chat' },
+//     { href: 'apps/chat/drawer.html', label: 'Drawer Chat' },
+// ]
 </script>
