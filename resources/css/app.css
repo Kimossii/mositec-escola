@@ -9,3 +9,90 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Paleta própria da sidebar e da área de conteúdo apenas no modo claro; modo escuro mantém o padrão do Metronic. */
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] {
+    --bs-app-bg-color: #FFFFFF;
+}
+
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar {
+    background-color: #0F172A;
+}
+
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu .menu-item .menu-heading {
+    color: #94A3B8 !important;
+}
+
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu .menu-item .menu-link,
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu .menu-item .menu-link .menu-title {
+    color: #CBD5E1;
+}
+
+/* Nível 2 e 3 (dentro de qualquer submenu) — estado normal. */
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub .menu-link,
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub .menu-link .menu-title {
+    color: #64748B;
+}
+
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub .menu-bullet .bullet {
+    background-color: #334155;
+}
+
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .badge {
+    background-color: #F97316;
+    color: #FFFFFF;
+}
+
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu .menu-item.hover:not(.here) > .menu-link:not(.disabled):not(.active):not(.here),
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu .menu-item:not(.here) .menu-link:hover:not(.disabled):not(.active):not(.here) {
+    background-color: #1E293B;
+}
+
+/* Nível 1 (módulo principal) — activo: fundo verde musgo + texto verde claro. */
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.here > .menu-link,
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.show > .menu-link {
+    background-color: #166534;
+}
+
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.here > .menu-link,
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.here > .menu-link .menu-title,
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.show > .menu-link,
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.show > .menu-link .menu-title {
+    color: #BBF7D0;
+}
+
+/* Nível 2 (submenu) — activo: sem fundo, texto branco suave, barra lateral verde. */
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-link.active,
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item.here > .menu-link,
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item.show > .menu-link {
+    background-color: transparent;
+    color: #E2E8F0;
+    border-left: 2px solid #86EFAC;
+}
+
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-link.active .menu-title,
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item.here > .menu-link .menu-title,
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item.show > .menu-link .menu-title {
+    color: #E2E8F0;
+}
+
+/* Nível 2 (submenu) — activo, modo escuro: só a barra lateral verde, resto igual ao padrão do Metronic. */
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-link.active,
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item.here > .menu-link,
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item.show > .menu-link {
+    border-left: 2px solid #86EFAC;
+}
+
+/* Nível 3 (subsubmenu) — activo: sem fundo, texto e bullet em verde suave. */
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-sub > .menu-item > .menu-link.active {
+    background-color: transparent;
+    color: #86EFAC;
+}
+
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-sub > .menu-item > .menu-link.active .menu-title {
+    color: #86EFAC;
+}
+
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-sub > .menu-item > .menu-link.active .menu-bullet .bullet {
+    background-color: #86EFAC;
+}
