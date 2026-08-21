@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('email')->unique();
+            $table->string('email')->nullable()->unique();
+            $table->string('numero_matricula')->nullable()->unique();
+            $table->integer('tipo_login')->default(1); // 0: email | 1: matricula
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->foreignId('dados_pessoa_id')->nullable()->constrained('dados_pessoas')->onDelete('set null');
