@@ -7,7 +7,7 @@
         <div class="menu menu-column menu-rounded menu-sub-indention px-3" id="kt_app_sidebar_menu" data-kt-menu="true"
             data-kt-menu-expand="false">
             <!-- ── Dashboards ──────────────────────────────────────── -->
-            <div data-kt-menu-trigger="click" class="menu-item here show menu-accordion">
+            <div data-kt-menu-trigger="click" :class="['menu-item', 'menu-accordion', { here: dashboardsActive, show: dashboardsActive }]">
                 <span class="menu-link">
                     <span class="menu-icon">
                         <i class="ki-duotone ki-element-11 fs-2">
@@ -19,7 +19,7 @@
                 </span>
                 <div class="menu-sub menu-sub-accordion">
                     <div v-for="item in dashboards.items" :key="item.href" class="menu-item">
-                        <a :class="['menu-link', { active: item.active }]" :href="item.href">
+                        <a :class="['menu-link', { active: isActive(item.href) }]" :href="item.href">
                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                             <span class="menu-title">{{ item.title }}</span>
                         </a>
@@ -296,7 +296,7 @@
             </div> -->
 
             <!-- User Management (com sub-grupos) -->
-            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+            <div data-kt-menu-trigger="click" :class="['menu-item', 'menu-accordion', { here: userManagementActive, show: userManagementActive }]">
                 <span class="menu-link">
                     <span class="menu-icon">
                         <i class="ki-duotone ki-abstract-28 fs-2">
@@ -308,7 +308,7 @@
                 </span>
                 <div class="menu-sub menu-sub-accordion">
                     <div v-for="group in userManagementGroups" :key="group.title" data-kt-menu-trigger="click"
-                        class="menu-item menu-accordion">
+                        :class="['menu-item', 'menu-accordion', { here: isGroupActive(group.items), show: isGroupActive(group.items) }]">
                         <span class="menu-link">
                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                             <span class="menu-title">{{ group.title }}</span>
@@ -316,7 +316,7 @@
                         </span>
                         <div class="menu-sub menu-sub-accordion">
                             <div v-for="item in group.items" :key="item.href" class="menu-item">
-                                <a class="menu-link" :href="item.href">
+                                <a :class="['menu-link', { active: isActive(item.href) }]" :href="item.href">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">{{ item.title }}</span>
                                 </a>
@@ -408,12 +408,16 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import SidebarAccordion from './sidebar/SidebarAccordion.vue'
+import { useActiveMenu } from '@/composables/useActiveMenu'
+
+const { isActive, isGroupActive } = useActiveMenu()
 
 // ── Dashboards ───────────────────────────────────────────────────────────────
 const dashboards = {
     items: [
-        { href: '/', title: 'Página inicial', active: true },
+        { href: '/', title: 'Página inicial' },
         // { href: 'dashboards/ecommerce.html', title: 'eCommerce' },
         // { href: 'dashboards/projects.html', title: 'Projects' },
         // { href: 'dashboards/online-courses.html', title: 'Online Courses' },
@@ -435,6 +439,7 @@ const dashboards = {
     //     { href: 'landing.html', title: 'Landing' },
     // ],
 }
+const dashboardsActive = computed(() => isGroupActive(dashboards.items))
 
 // ── Pages ────────────────────────────────────────────────────────────────────
 const userProfile = {
@@ -744,6 +749,9 @@ const userManagementGroups = [
         ],
     },
 ]
+const userManagementActive = computed(() =>
+    userManagementGroups.some((group) => isGroupActive(group.items))
+)
 
 // const customers = {
 //     title: 'Customers', icon: 'ki-abstract-38', paths: 2,
