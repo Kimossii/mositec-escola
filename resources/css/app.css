@@ -76,6 +76,13 @@ html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar
     color: #E2E8F0;
 }
 
+/* Nível 2 (submenu) — activo, modo escuro: só a barra lateral verde, resto igual ao padrão do Metronic. */
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-link.active,
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item.here > .menu-link,
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item.show > .menu-link {
+    border-left: 2px solid #86EFAC;
+}
+
 /* Nível 3 (subsubmenu) — activo: sem fundo, texto e bullet em verde suave. */
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-sub > .menu-item > .menu-link.active {
     background-color: transparent;
