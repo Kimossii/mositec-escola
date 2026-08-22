@@ -60,33 +60,54 @@ Este projeto é **apenas para estudo e aprendizado**.
 | Comunicação   | Chat, SMS, emails, notificações | Aluno, Professor, Usuário | Integrável com módulos acadêmicos     | 3          | Pendente |
 | Auditoria     | Logs e monitoramento            | Todos os módulos          | Backend-only; segurança               | 3          | Pendente |
 
+## Infraestrutura de Arranque
 
+| Módulo       | Função                                               | Depende de               | Observações                                                                                   | Prioridade | Estado   |
+| ------------ | ---------------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------- | ---------- | -------- |
+| AppMode      | Lê APP_MODE no boot e configura BD, sincronização e funcionalidades disponíveis | Configurações | local → DB_LOCAL, sync off; hibrido → DB_LOCAL + DB_CENTRAL se há internet; online → DB_CENTRAL via stancl/tenancy | 0 | Pendente |
+| Sincronização | Sincronização local/cloud                           | AppMode                  | Só activa nos modos híbrido e online. No modo local fica completamente inactiva               | 3          | Pendente |
 
 ## 📂 SIDEBAR
 ```text
-├── 🏠  Início
+🏠  Início
 │    └── Dashboard Principal
 │
 ├── 👥  Académico
 │    ├── Alunos
-│    ├── Matrículas
+│    ├── Encarregados de Educação
 │    ├── Turmas
-│    └── Transferências
+│    ├── Matrículas
+│    ├── Transferências
+│    ├── Histórico Escolar
+│    └── Ficha do Aluno
 │
 ├── 📚  Pedagógico
 │    ├── Disciplinas
 │    ├── Horários
 │    ├── Planos de Aula
-│    └── Avaliações / Notas
+│    ├── Avaliações / Notas
+│    ├── Pautas
+│    ├── Conselho de Turma
+│    └── Exames / Recuperações
+│
+├── 🕐  Frequência
+│    ├── Presenças dos Alunos
+│    ├── Faltas
+│    ├── Justificação de Faltas
+│    └── Mapa de Frequência
 │
 ├── 👨‍🏫  Pessoal
 │    ├── Docentes
 │    ├── Funcionários
-│    └── Presenças do Pessoal
+│    ├── Assiduidade do Pessoal
+│    └── Horários do Pessoal
 │
 ├── 💰  Financeiro
 │    ├── Propinas
 │    ├── Pagamentos
+│    ├── Dívidas
+│    ├── Descontos / Bolsas
+│    ├── Recibos
 │    └── Relatórios Financeiros
 │
 ├── 📣  Comunicação
@@ -94,33 +115,57 @@ Este projeto é **apenas para estudo e aprendizado**.
 │    ├── Mensagens Internas
 │    └── Notificações
 │
+├── 📄  Documentos
+│    ├── Declarações
+│    ├── Certificados
+│    ├── Modelos de Documentos
+│    └── Arquivo
+│
+├── 📖  Biblioteca
+│    ├── Livros
+│    ├── Categorias
+│    ├── Empréstimos
+│    └── Devoluções
+│
+├── 🏢  Infraestrutura
+│    ├── Salas
+│    ├── Equipamentos
+│    ├── Inventário
+│    └── Manutenção
+│
 ├── 📊  Relatórios
-│    ├── Mapa de Notas
-│    ├── Frequência / Faltas
-│    └── Boletins
+│    ├── Desempenho Escolar
+│    ├── Assiduidade
+│    ├── Boletins
+│    ├── Matrículas
+│    └── Turmas
 │
 └── ⚙️  Configurações
-     ├── 👥  Gestão de Utilizadores    ← colapsável
+     │
+     ├── 👥  Utilizadores
      │    ├── Todos os Utilizadores
      │    ├── Alunos
      │    ├── Professores
      │    ├── Funcionários
      │    └── Administradores
      │
-     ├── 🔐  Perfis & Permissões       ← colapsável
+     ├── 🔐  Perfis & Permissões
      │    ├── Perfis de Acesso
      │    └── Regras & Restrições
      │
-     ├── 🏫  Estabelecimento           ← colapsável
+     ├── 🏫  Estabelecimento
      │    ├── Dados da Escola
      │    └── Logótipo & Aparência
      │
-     ├── 📅  Ano Lectivo               ← colapsável
+     ├── 📅  Ano Lectivo
      │    ├── Períodos / Trimestres
      │    └── Calendário Escolar
      │
-     └── 🔧  Sistema                   ← colapsável
+     └── 🔧  Sistema
           ├── Parâmetros Gerais
+          ├── Sessões Activas
+          ├── Histórico de Logins
+          ├── Backups
           └── Registos de Actividade
     ```
 
