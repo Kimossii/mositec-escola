@@ -2,7 +2,7 @@
 import { onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { usePageScripts } from '@/composables/usePageScripts';
-: a
+
 // TODO: substituir por `defineProps({ usuarios: Array })` quando o controller
 // (Modules/Usuario/app/Http/Controllers/UsuarioController.php) passar a enviar
 // os usuários reais via Inertia::render('Usuario/Index', ['usuarios' => ...]).
