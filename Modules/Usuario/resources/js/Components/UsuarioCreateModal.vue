@@ -1,5 +1,14 @@
 <script setup>
 import UsuarioForm from '../Forms/UsuarioForm.vue';
+
+defineProps({
+    /** componente de form a usar no lugar do UsuarioForm genérico — cada
+     * lista (Alunos, Professores, Funcionarios, Administradores) passa o seu */
+    formComponent: {
+        type: [Object, Function],
+        default: () => UsuarioForm,
+    },
+});
 </script>
 
 <template>
@@ -25,7 +34,7 @@ import UsuarioForm from '../Forms/UsuarioForm.vue';
 
                 <!--begin::Modal body-->
                 <div class="modal-body scroll-y mx-5 mx-xl-15 my-7">
-                    <UsuarioForm />
+                    <component :is="formComponent" />
                 </div>
                 <!--end::Modal body-->
             </div>

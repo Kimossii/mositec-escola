@@ -3,12 +3,11 @@ import { onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { usePageScripts } from '@/composables/usePageScripts';
 import { useUsuarios } from '../Composables/useUsuarios';
+import { TIPO_PESSOA } from '../Models/Usuario';
 import UsuarioListLayout from '../Components/UsuarioListLayout.vue';
+import FuncionarioForm from '../Funcionarios/Forms/FuncionarioForm.vue';
 
-// TODO: trocar por `defineProps({ usuarios: Array })` quando
-// UsuarioController@index passar a enviar os usuários reais via Inertia
-// (ver Composables/useUsuarios.js e Models/Usuario.js).
-const { usuarios } = useUsuarios();
+const { usuarios } = useUsuarios({ tipoPessoa: TIPO_PESSOA.FUNCIONARIO });
 
 const { loadAll } = usePageScripts([
     '/themes/metronic/assets/plugins/custom/datatables/datatables.bundle.js',
@@ -31,9 +30,10 @@ defineOptions({ layout: AppLayout })
 
 <template>
     <UsuarioListLayout
-        title="Todos os Utilizadores"
-        icon="ki-people"
-        accent="dark"
+        title="Funcionários"
+        icon="ki-briefcase"
+        accent="warning"
         :usuarios="usuarios"
+        :form-component="FuncionarioForm"
     />
 </template>

@@ -8,13 +8,19 @@ import { usuariosMock } from '../Models/Usuario';
  * enviar os usuários via Inertia props, só este arquivo precisa mudar
  * (as páginas e componentes continuam consumindo `usuarios` normalmente).
  *
- * @param {{ tipoPessoa?: number }} [options] - filtra por Models/Usuario.js#TIPO_PESSOA,
- *   usado pelas futuras páginas Alunos/Professores/Funcionários/Administradores.
+ * @param {{ tipoPessoa?: number, apenasAdministradores?: boolean }} [options]
+ *   - `tipoPessoa`: filtra por Models/Usuario.js#TIPO_PESSOA (Alunos/Professores/Funcionários).
+ *   - `apenasAdministradores`: filtra por `isAdministrador` — placeholder até existir
+ *     integração real com roles/permissoes (ver nota em Models/Usuario.js).
  */
 export function useUsuarios(options = {}) {
-    const { tipoPessoa } = options;
+    const { tipoPessoa, apenasAdministradores } = options;
 
     const usuarios = computed(() => {
+        if (apenasAdministradores) {
+            return usuariosMock.filter((usuario) => usuario.isAdministrador === true);
+        }
+
         if (tipoPessoa === undefined) {
             return usuariosMock;
         }

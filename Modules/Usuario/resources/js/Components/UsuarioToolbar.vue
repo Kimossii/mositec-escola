@@ -1,6 +1,14 @@
 <script setup>
 import UsuarioExportModal from './UsuarioExportModal.vue';
 import UsuarioCreateModal from './UsuarioCreateModal.vue';
+
+defineProps({
+    /** componente de form a usar no modal "Add User" — repassado até UsuarioCreateModal */
+    formComponent: {
+        type: [Object, Function],
+        default: undefined,
+    },
+});
 </script>
 
 <template>
@@ -97,7 +105,7 @@ import UsuarioCreateModal from './UsuarioCreateModal.vue';
         <!--end::Group actions-->
 
         <UsuarioExportModal />
-        <UsuarioCreateModal />
+        <UsuarioCreateModal :form-component="formComponent" />
     </div>
     <!--end::Card toolbar-->
 </template>

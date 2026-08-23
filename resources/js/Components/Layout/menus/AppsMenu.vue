@@ -280,10 +280,10 @@ const userManagementGroups = [
         title: 'Gestão de utilizadores',
         links: [
             { href: '/usuarios', label: 'Todos os Utilizadores' },
-            { href: 'apps/user-management/users/view.html', label: 'Alunos' },
-            { href: 'apps/user-management/users/view.html', label: 'Professores' },
-            { href: 'apps/user-management/users/view.html', label: 'Funcionários' },
-            { href: 'apps/user-management/users/view.html', label: 'Administradores' },
+            { href: '/usuarios/alunos', label: 'Alunos' },
+            { href: '/usuarios/professores', label: 'Professores' },
+            { href: '/usuarios/funcionarios', label: 'Funcionários' },
+            { href: '/usuarios/administradores', label: 'Administradores' },
         ],
     },
     {
