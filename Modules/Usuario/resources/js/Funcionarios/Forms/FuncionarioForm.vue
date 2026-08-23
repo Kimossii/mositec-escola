@@ -1,4 +1,5 @@
 <script setup>
+import Loader from '@/Components/Shared/Loader.vue';
 import UsuarioFormFields from '../../Components/UsuarioFormFields.vue';
 import { TIPO_PESSOA } from '../../Models/Usuario';
 
@@ -35,7 +36,7 @@ import { TIPO_PESSOA } from '../../Models/Usuario';
                     Submit
                 </span>
                 <span class="indicator-progress">
-                    Please wait... <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                    Please wait... <Loader size="0.3px" class="align-middle ms-2" />
                 </span>
             </button>
         </div>

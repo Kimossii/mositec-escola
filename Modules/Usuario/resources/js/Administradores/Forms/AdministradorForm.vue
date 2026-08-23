@@ -1,4 +1,5 @@
 <script setup>
+import Loader from '@/Components/Shared/Loader.vue';
 import UsuarioFormFields from '../../Components/UsuarioFormFields.vue';
 
 // Form de criação/edição específico da lista Administradores. Diferente dos
@@ -38,7 +39,7 @@ import UsuarioFormFields from '../../Components/UsuarioFormFields.vue';
                     Submit
                 </span>
                 <span class="indicator-progress">
-                    Please wait... <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                    Please wait... <Loader size="0.3px" class="align-middle ms-2" />
                 </span>
             </button>
         </div>
