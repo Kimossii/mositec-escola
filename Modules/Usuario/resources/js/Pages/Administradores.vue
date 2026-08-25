@@ -4,11 +4,14 @@ import AppLayout from '@/Layouts/AppLayout.vue'
 import { usePageScripts } from '@/composables/usePageScripts';
 import { useUsuarios } from '../Composables/useUsuarios';
 import UsuarioListLayout from '../Components/UsuarioListLayout.vue';
+import AdministradorForm from '../Forms/Administradores/AdministradorForm.vue';
 
-// TODO: trocar por `defineProps({ usuarios: Array })` quando
-// UsuarioController@index passar a enviar os usuários reais via Inertia
-// (ver Composables/useUsuarios.js e Models/Usuario.js).
-const { usuarios } = useUsuarios();
+// "Administrador" não é um tipo_pessoa no banco (só existe Aluno/Professor/
+// Funcionário/Outro, ver Models/Usuario.js). Até existir integração real com
+// roles/permissoes (módulo Permissao), a lista usa o placeholder
+// `isAdministrador` do mock — não plugar em tipo_pessoa quando o backend
+// chegar, e sim em alguma relação de papel/role.
+const { usuarios } = useUsuarios({ apenasAdministradores: true });
 
 const { loadAll } = usePageScripts([
     '/themes/metronic/assets/plugins/custom/datatables/datatables.bundle.js',
@@ -30,9 +33,10 @@ defineOptions({ layout: AppLayout })
 
 <template>
     <UsuarioListLayout
-        title="Todos os Utilizadores"
-        icon="ki-people"
-        accent="dark"
+        title="Administradores"
+        icon="ki-shield-tick"
+        accent="danger"
         :usuarios="usuarios"
+        :form-component="AdministradorForm"
     />
 </template>

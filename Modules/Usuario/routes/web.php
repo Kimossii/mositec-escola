@@ -3,11 +3,27 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Usuario\Http\Controllers\UsuarioController;
 
-// TODO: mover 'index' de volta para o grupo com middleware ['auth', 'verified']
-// assim que o login (Modules/Autenticacao) estiver implementado. Está solto aqui
-// só para permitir visualizar a página no browser durante o desenvolvimento.
-Route::get('usuarios', [UsuarioController::class, 'index'])->name('usuario.index');
+//Usuarios
+Route::group(['prefix' => 'usuarios'], function () {
+    Route::get('/', [UsuarioController::class, 'index'])->name('usuario.index');
+    Route::post('/cadastrarUsuario', [UsuarioController::class, 'store'])->name('usuario.store');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::resource('usuarios', UsuarioController::class)->names('usuario')->except('index');
+    Route::group(['prefix' => 'alunos'], function () {
+        Route::get('/', [UsuarioController::class, 'alunos'])->name('usuario.alunos');
+        Route::post('/cadastrar', [UsuarioController::class, 'store'])->name('usuario.alunos.store');
+    });
+
+    Route::group(['prefix' => 'professores'], function () {
+        Route::get('/', [UsuarioController::class, 'professores'])->name('usuario.professores');
+        Route::post('/cadastrar', [UsuarioController::class, 'store'])->name('usuario.professores.store');
+    });
+    Route::group(['prefix' => 'funcionarios'], function () {
+        Route::get('/', [UsuarioController::class, 'funcionarios'])->name('usuario.funcionarios');
+        Route::post('/cadastrar', [UsuarioController::class, 'store'])->name('usuario.funcionarios.store');
+    });
+    Route::group(['prefix' => 'administradores'], function () {
+        Route::get('/', [UsuarioController::class, 'administradores'])->name('usuario.administradores');
+        Route::post('/cadastrar', [UsuarioController::class, 'store'])->name('usuario.administradores.store');
+    });
+
 });

@@ -3,71 +3,65 @@
 namespace Modules\Usuario\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 
-use Log;
+use Inertia\Inertia;
 use Modules\Usuario\Actions\UsuarioAction;
-use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
+use Modules\Usuario\Services\GestaoUsuarioService;
+
 class UsuarioController extends Controller
 {
+      public function __construct(
+        private GestaoUsuarioService $service,
+    ) {}
+
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return \Inertia\Inertia::render('Usuario/Index');
+        return Inertia::render('Usuario/Index');
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Lista apenas usuários com dados_pessoas.tipo_pessoa = Aluno.
+     * TODO: como index(), ainda não recebe props reais — ver TIPO_PESSOA em
+     * Modules/Usuario/resources/js/Models/Usuario.js.
      */
-    public function create()
+    public function alunos()
     {
-        return view('usuario::create');
+        return Inertia::render('Usuario/Alunos');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Lista apenas usuários com dados_pessoas.tipo_pessoa = Professor.
      */
+    public function professores()
+    {
+        return Inertia::render('Usuario/Professores');
+    }
+
+    /**
+     * Lista apenas usuários com dados_pessoas.tipo_pessoa = Funcionário.
+     */
+    public function funcionarios()
+    {
+        return Inertia::render('Usuario/Funcionarios');
+    }
+
+    public function administradores()
+    {
+        return Inertia::render('Usuario/Administradores');
+    }
+
+
     public function store(CriarUsuarioRequest $request, UsuarioAction $action)
     {
-        $dto = UsuarioDTO::fromArray($request->validated());
-        $usuario = $action->criar($dto);
-        Log::info('Usuário criado: ' . $usuario->email, ['usuario' => $dto]);
-        return response()->json([
-            'message' => 'Usuário criado com sucesso',
-            'data' => $usuario
-        ], 201);
+        $teste = $this->service->criar($request);
+
+
     }
 
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
-    {
-        return view('usuario::show');
-    }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        return view('usuario::edit');
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id)
-    {
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id)
-    {
-    }
 }
