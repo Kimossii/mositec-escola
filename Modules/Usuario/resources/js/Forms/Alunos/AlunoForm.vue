@@ -1,18 +1,60 @@
 <script setup>
+import { reactive, ref } from 'vue';
+import { router } from '@inertiajs/vue3';
 import Loader from '@/Components/Shared/Loader.vue';
 import UsuarioFormFields from '../../Components/UsuarioFormFields.vue';
 import { TIPO_PESSOA } from '../../Models/Usuario';
-import { useUsuarioCriar } from '../../Composables/useUsuarioCriar';
 
-// Form de criação/edição específico da lista Alunos. O tipo de pessoa já é
-// implícito por estar nesta lista (por isso não tem o rádio "Tipo de pessoa"
-// do Forms/UsuarioForm.vue genérico) — só um input hidden pra manter o valor
-// no submit. Espaço aqui pra campos futuros só de aluno (turma, responsável...)
-// quando o backend tiver esses dados.
+// Form de criação/edição específico da lista Alunos — submete direto pra
+// POST /usuarios/alunos/cadastrar via router do Inertia (não axios), então
+// um dd()/erro no backend aparece automaticamente no modal do Inertia.
+// O tipo de pessoa já é implícito por estar nesta lista (por isso não tem o
+// rádio "Tipo de pessoa" do Forms/UsuarioForm.vue genérico) — só um input
+// hidden pra manter o valor no submit. Espaço aqui pra campos futuros só de
+// aluno (turma, responsável...) quando o backend tiver esses dados.
 //
 // TIPO_PESSOA.ALUNO só é exibido no badge — não é enviado no submit, pois a
-// rota /usuarios/store ainda só grava em `users` (ver Composables/useUsuarioCriar.js).
-const { form, processing, errors, errorMessage, criar } = useUsuarioCriar();
+// rota ainda só grava em `users`.
+const form = reactive({
+    name: '',
+    email: '',
+    password: '',
+});
+const processing = ref(false);
+const errors = ref({});
+const errorMessage = ref('');
+
+function criar(estado) {
+    processing.value = true;
+    errors.value = {};
+    errorMessage.value = '';
+
+    return new Promise((resolve, reject) => {
+        router.post(
+            '/usuarios/alunos/cadastrar',
+            { name: form.name, email: form.email, password: form.password, estado },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    form.name = '';
+                    form.email = '';
+                    form.password = '';
+                    resolve();
+                },
+                onError: (erros) => {
+                    errors.value = erros;
+                    if (Object.keys(erros).length === 0) {
+                        errorMessage.value = 'Não foi possível guardar o utilizador. Tenta novamente.';
+                    }
+                    reject(erros);
+                },
+                onFinish: () => {
+                    processing.value = false;
+                },
+            },
+        );
+    });
+}
 
 function fecharModal() {
     window.bootstrap?.Modal.getInstance(document.getElementById('kt_modal_add_user'))?.hide();

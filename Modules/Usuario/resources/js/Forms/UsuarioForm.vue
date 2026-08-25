@@ -1,17 +1,57 @@
 <script setup>
+import { reactive, ref } from 'vue';
+import { router } from '@inertiajs/vue3';
 import Loader from '@/Components/Shared/Loader.vue';
 import UsuarioFormFields from '../Components/UsuarioFormFields.vue';
-import { useUsuarioCriar } from '../Composables/useUsuarioCriar';
 
 // Form genérico usado só pela lista "Todos os Utilizadores" (Pages/Index.vue),
 // onde o tipo de pessoa não é implícito e precisa ser escolhido manualmente.
 // As listas filtradas (Alunos, Professores, Funcionarios, Administradores)
-// têm cada uma o seu próprio Form na sua subpasta dentro de Forms/, que já
-// sabe o tipo e não precisa desse rádio — só reaproveitam Components/UsuarioFormFields.
+// têm cada uma o seu próprio Form na sua subpasta dentro de Forms/, com a sua
+// própria rota — este submete pra POST /usuarios/cadastrarUsuario via router
+// do Inertia (não axios).
 //
-// tipo_pessoa não é enviado no submit — a rota /usuarios/store ainda só
-// grava em `users` (ver Composables/useUsuarioCriar.js).
-const { form, processing, errors, errorMessage, criar } = useUsuarioCriar();
+// tipo_pessoa não é enviado no submit — a rota ainda só grava em `users`.
+const form = reactive({
+    name: '',
+    email: '',
+    password: '',
+});
+const processing = ref(false);
+const errors = ref({});
+const errorMessage = ref('');
+
+function criar(estado) {
+    processing.value = true;
+    errors.value = {};
+    errorMessage.value = '';
+
+    return new Promise((resolve, reject) => {
+        router.post(
+            '/usuarios/cadastrarUsuario',
+            { name: form.name, email: form.email, password: form.password, estado },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    form.name = '';
+                    form.email = '';
+                    form.password = '';
+                    resolve();
+                },
+                onError: (erros) => {
+                    errors.value = erros;
+                    if (Object.keys(erros).length === 0) {
+                        errorMessage.value = 'Não foi possível guardar o utilizador. Tenta novamente.';
+                    }
+                    reject(erros);
+                },
+                onFinish: () => {
+                    processing.value = false;
+                },
+            },
+        );
+    });
+}
 
 function fecharModal() {
     window.bootstrap?.Modal.getInstance(document.getElementById('kt_modal_add_user'))?.hide();

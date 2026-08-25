@@ -4,10 +4,10 @@
 // não repetir esse bloco 5x — o que muda entre eles é só a seção de tipo/papel,
 // que fica no próprio Form de cada lista.
 //
-// name/email/password têm v-model porque são os únicos campos que a rota
-// POST /api/v1/usuarios/store aceita hoje (ver Composables/useUsuarioCriar.js).
-// Avatar e matrícula continuam sem binding — pertencem a dados_pessoas, que
-// ainda não tem endpoint próprio.
+// name/email/password têm v-model porque são os únicos campos que as rotas
+// de cadastro (uma por Form, ver Forms/**/*Form.vue) aceitam hoje. Avatar e
+// matrícula continuam sem binding — pertencem a dados_pessoas, que ainda não
+// tem endpoint próprio.
 const name = defineModel('name', { default: '' });
 const email = defineModel('email', { default: '' });
 const password = defineModel('password', { default: '' });
