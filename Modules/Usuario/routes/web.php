@@ -3,6 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Usuario\Http\Controllers\UsuarioController;
 
+
+Route::middleware('auth')->group(function () {
+    
 //Usuarios
 Route::group(['prefix' => 'usuarios'], function () {
     Route::get('/', [UsuarioController::class, 'index'])->name('usuario.index');
@@ -25,5 +28,7 @@ Route::group(['prefix' => 'usuarios'], function () {
         Route::get('/', [UsuarioController::class, 'administradores'])->name('usuario.administradores');
         Route::post('/cadastrar', [UsuarioController::class, 'store'])->name('usuario.administradores.store');
     });
+
+});
 
 });
