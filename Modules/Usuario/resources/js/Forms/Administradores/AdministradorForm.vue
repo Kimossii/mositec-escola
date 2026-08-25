@@ -30,16 +30,20 @@ import UsuarioFormFields from '../../Components/UsuarioFormFields.vue';
 
         <!--begin::Actions-->
         <div class="text-center pt-15">
-            <button type="reset" class="btn btn-light me-3" data-kt-users-modal-action="cancel">
-                Discard
+            <button type="reset" class="btn btn-danger me-3" data-kt-users-modal-action="cancel">
+                Cancelar
+            </button>
+
+            <button type="button" class="btn btn-castanho me-3" data-kt-users-modal-action="draft">
+                Guardar rascunho
             </button>
 
             <button type="submit" class="btn btn-primary" data-kt-users-modal-action="submit">
                 <span class="indicator-label">
-                    Submit
+                    Guardar
                 </span>
                 <span class="indicator-progress">
-                    Please wait... <Loader size="0.3px" class="align-middle ms-2" />
+                    Aguarde... <Loader size="0.3px" class="align-middle ms-2" />
                 </span>
             </button>
         </div>

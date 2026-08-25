@@ -19,43 +19,21 @@ import UsuarioFormFields from '../Components/UsuarioFormFields.vue';
             <UsuarioFormFields />
 
             <!--begin::Input group-->
-            <div class="mb-7">
+            <div class="fv-row mb-7">
                 <!--begin::Label-->
-                <label class="required fw-semibold fs-6 mb-5">Tipo de pessoa</label>
+                <label class="required fw-semibold fs-6 mb-2" for="kt_modal_add_user_tipo_pessoa">Tipo de pessoa</label>
                 <!--end::Label-->
 
-                <!--begin::Options-->
-                <div class="d-flex fv-row">
-                    <div class="form-check form-check-custom form-check-solid">
-                        <input class="form-check-input me-3" name="user_tipo_pessoa" type="radio" value="0"
-                            id="kt_modal_add_user_tipo_pessoa_0" checked="checked" />
-                        <label class="form-check-label" for="kt_modal_add_user_tipo_pessoa_0">Aluno</label>
-                    </div>
-                </div>
-                <div class="separator separator-dashed my-5"></div>
-                <div class="d-flex fv-row">
-                    <div class="form-check form-check-custom form-check-solid">
-                        <input class="form-check-input me-3" name="user_tipo_pessoa" type="radio" value="1"
-                            id="kt_modal_add_user_tipo_pessoa_1" />
-                        <label class="form-check-label" for="kt_modal_add_user_tipo_pessoa_1">Professor</label>
-                    </div>
-                </div>
-                <div class="separator separator-dashed my-5"></div>
-                <div class="d-flex fv-row">
-                    <div class="form-check form-check-custom form-check-solid">
-                        <input class="form-check-input me-3" name="user_tipo_pessoa" type="radio" value="2"
-                            id="kt_modal_add_user_tipo_pessoa_2" />
-                        <label class="form-check-label" for="kt_modal_add_user_tipo_pessoa_2">Funcionário</label>
-                    </div>
-                </div>
-                <div class="separator separator-dashed my-5"></div>
-                <div class="d-flex fv-row">
-                    <div class="form-check form-check-custom form-check-solid">
-                        <input class="form-check-input me-3" name="user_tipo_pessoa" type="radio" value="3"
-                            id="kt_modal_add_user_tipo_pessoa_3" />
-                        <label class="form-check-label" for="kt_modal_add_user_tipo_pessoa_3">Outro</label>
-                    </div>
-                </div>
+                <!--begin::Select-->
+                <select name="user_tipo_pessoa" id="kt_modal_add_user_tipo_pessoa" data-control="select2"
+                    data-placeholder="Selecione o tipo" data-hide-search="true"
+                    class="form-select form-select-solid">
+                    <option value="0" selected>Aluno</option>
+                    <option value="1">Professor</option>
+                    <option value="2">Funcionário</option>
+                    <option value="3">Outro</option>
+                </select>
+                <!--end::Select-->
             </div>
             <!--end::Input group-->
         </div>
@@ -63,16 +41,20 @@ import UsuarioFormFields from '../Components/UsuarioFormFields.vue';
 
         <!--begin::Actions-->
         <div class="text-center pt-15">
-            <button type="reset" class="btn btn-light me-3" data-kt-users-modal-action="cancel">
-                Discard
+            <button type="reset" class="btn btn-danger me-3" data-kt-users-modal-action="cancel">
+                Cancelar
+            </button>
+
+            <button type="button" class="btn btn-castanho me-3" data-kt-users-modal-action="draft">
+                Guardar rascunho
             </button>
 
             <button type="submit" class="btn btn-primary" data-kt-users-modal-action="submit">
                 <span class="indicator-label">
-                    Submit
+                    Guardar
                 </span>
                 <span class="indicator-progress">
-                    Please wait...
+                    Aguarde...
                     <Loader size="0.3px" class="align-middle ms-2" />
                 </span>
             </button>

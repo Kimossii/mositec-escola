@@ -96,3 +96,39 @@ html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-sub > .menu-item > .menu-link.active .menu-bullet .bullet {
     background-color: #86EFAC;
 }
+
+/* Botão "Guardar rascunho" dos forms de utilizador — cor castanho, sem equivalente nativo no Bootstrap/Metronic. */
+.btn.btn-castanho {
+    color: #FFFFFF;
+    border-color: #8B5E34;
+    background-color: #8B5E34;
+}
+
+.btn.btn-castanho:hover:not(.btn-active),
+.btn.btn-castanho:focus:not(.btn-active),
+.btn.btn-castanho:active:not(.btn-active),
+.btn.btn-castanho.active,
+.btn.btn-castanho.show {
+    color: #FFFFFF;
+    border-color: #6F4A29;
+    background-color: #6F4A29;
+}
+
+/* Texto preto nos campos preenchíveis (inputs e selects "solid") no modo claro — o cinza padrão do Metronic ficava pouco visível. */
+html[data-bs-theme='light'] .form-control.form-control-solid,
+html[data-bs-theme='light'] .form-select.form-select-solid {
+    color: #000000;
+}
+
+html[data-bs-theme='light'] .dropdown.show > .form-control.form-control-solid,
+html[data-bs-theme='light'] .form-control.form-control-solid:active,
+html[data-bs-theme='light'] .form-control.form-control-solid.active,
+html[data-bs-theme='light'] .form-control.form-control-solid:focus,
+html[data-bs-theme='light'] .form-control.form-control-solid.focus,
+html[data-bs-theme='light'] .dropdown.show > .form-select.form-select-solid,
+html[data-bs-theme='light'] .form-select.form-select-solid:active,
+html[data-bs-theme='light'] .form-select.form-select-solid.active,
+html[data-bs-theme='light'] .form-select.form-select-solid:focus,
+html[data-bs-theme='light'] .form-select.form-select-solid.focus {
+    color: #000000;
+}
