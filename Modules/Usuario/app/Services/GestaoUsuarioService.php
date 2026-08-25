@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Services\GestaoUsuarioService;
+namespace Modules\Usuario\Services;
 
-
-class SharedService
+class GestaoUsuarioService
 {
-    public function criar()
+    public function criar($dados)
     {
+        dd($dados);
     }
 }

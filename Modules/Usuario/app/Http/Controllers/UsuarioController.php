@@ -3,20 +3,25 @@
 namespace Modules\Usuario\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 
-use Log;
+use Inertia\Inertia;
 use Modules\Usuario\Actions\UsuarioAction;
-use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
+use Modules\Usuario\Services\GestaoUsuarioService;
+
 class UsuarioController extends Controller
 {
+      public function __construct(
+        private GestaoUsuarioService $service,
+    ) {}
+
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return \Inertia\Inertia::render('Usuario/Index');
+        return Inertia::render('Usuario/Index');
     }
 
     /**
@@ -26,7 +31,7 @@ class UsuarioController extends Controller
      */
     public function alunos()
     {
-        return \Inertia\Inertia::render('Usuario/Alunos');
+        return Inertia::render('Usuario/Alunos');
     }
 
     /**
@@ -34,7 +39,7 @@ class UsuarioController extends Controller
      */
     public function professores()
     {
-        return \Inertia\Inertia::render('Usuario/Professores');
+        return Inertia::render('Usuario/Professores');
     }
 
     /**
@@ -42,63 +47,21 @@ class UsuarioController extends Controller
      */
     public function funcionarios()
     {
-        return \Inertia\Inertia::render('Usuario/Funcionarios');
+        return Inertia::render('Usuario/Funcionarios');
     }
 
-    /**
-     * Lista usuários com papel de administrador. "Administrador" não é um
-     * tipo_pessoa — quando existir integração com o módulo Permissao, este
-     * método deve filtrar por role/permissão, não pela tabela dados_pessoas.
-     */
     public function administradores()
     {
-        return \Inertia\Inertia::render('Usuario/Administradores');
+        return Inertia::render('Usuario/Administradores');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        return view('usuario::create');
-    }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(CriarUsuarioRequest $request, UsuarioAction $action)
     {
-        dd($request);
-        
+        $teste = $this->service->criar($request);
+
+
     }
 
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
-    {
-        return view('usuario::show');
-    }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        return view('usuario::edit');
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id)
-    {
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id)
-    {
-    }
 }
