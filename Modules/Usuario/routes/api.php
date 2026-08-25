@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Usuario\Http\Controllers\UsuarioController;
+use Modules\Usuario\Http\Controllers\Api\UsuarioController;
 
 Route::group(['prefix' => 'v1'], function () {
 
