@@ -84,6 +84,7 @@ function onCancelar() {
     form.password = '';
     errors.value = {};
     errorMessage.value = '';
+    fecharModal();
 }
 </script>
 

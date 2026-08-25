@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
+import Loader from '@/Components/Shared/Loader.vue';
 
 const form = reactive({
     email: '',
@@ -98,7 +99,7 @@ function submit() {
                                 <span v-if="!processing">Entrar</span>
                                 <span v-else>
                                     A entrar...
-                                    <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                                    <Loader size="0.3px" class="align-middle ms-2" />
                                 </span>
                             </button>
                         </div>
