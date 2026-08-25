@@ -6,7 +6,7 @@ use Modules\Usuario\Http\Controllers\UsuarioController;
 //Usuarios
 Route::group(['prefix' => 'usuarios'], function () {
     Route::get('/', [UsuarioController::class, 'index'])->name('usuario.index');
-    Route::get('/cadastrarUsuario', [UsuarioController::class, 'store'])->name('usuario.index');
+    Route::post('/cadastrarUsuario', [UsuarioController::class, 'store'])->name('usuario.store');
 
     Route::group(['prefix' => 'alunos'], function () {
         Route::get('/', [UsuarioController::class, 'alunos'])->name('usuario.alunos');

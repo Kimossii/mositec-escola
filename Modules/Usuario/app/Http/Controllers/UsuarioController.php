@@ -66,9 +66,14 @@ class UsuarioController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(CriarUsuarioRequest $request)
+    public function store(CriarUsuarioRequest $request, UsuarioAction $action)
     {
+        dd($request);
+        $dto = UsuarioDTO::fromArray($request->validated());
+        $usuario = $action->criar($dto);
+        Log::info('Usuáriol criado: ' . $usuario->email, ['usuario' => $dto]);
 
+        return redirect()->back()->with('success', 'Usuário criado com sucesso');
     }
 
     /**
