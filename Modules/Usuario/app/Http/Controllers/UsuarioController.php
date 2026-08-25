@@ -5,7 +5,6 @@ namespace Modules\Usuario\Http\Controllers;
 use App\Http\Controllers\Controller;
 
 use Inertia\Inertia;
-use Modules\Usuario\Actions\UsuarioAction;
 use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
 use Modules\Usuario\Services\GestaoUsuarioService;
 
@@ -56,11 +55,11 @@ class UsuarioController extends Controller
     }
 
 
-    public function store(CriarUsuarioRequest $request, UsuarioAction $action)
+    public function store(CriarUsuarioRequest $request)
     {
-        $teste = $this->service->criar($request);
+        $this->service->criar($request);
 
-
+        return redirect()->back()->with('success', 'Utilizador criado com sucesso.');
     }
 
 
