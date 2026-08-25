@@ -54,6 +54,11 @@ class UsuarioController extends Controller
         return Inertia::render('Usuario/Administradores');
     }
 
+    public function encarregados()
+    {
+        return Inertia::render('Usuario/Encarregados');
+    }
+
 
     public function store(CriarUsuarioRequest $request)
     {

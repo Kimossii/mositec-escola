@@ -14,7 +14,7 @@ class LoginRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email',
+            'login' => 'required|string',
             'password' => 'required',
             'remember' => 'sometimes|boolean',
         ];
@@ -23,8 +23,7 @@ class LoginRequest extends BaseRequest
     public function messages(): array
     {
         return [
-            'email.required' => 'O email é obrigatório.',
-            'email.email' => 'Informe um email válido.',
+            'login.required' => 'O email ou matrícula é obrigatório.',
             'password.required' => 'A senha é obrigatória.',
         ];
     }

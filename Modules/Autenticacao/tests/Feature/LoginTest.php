@@ -36,7 +36,7 @@ class LoginTest extends TestCase
         ]);
 
         $response = $this->post('/login', [
-            'email' => 'ana@example.com',
+            'login' => 'ana@example.com',
             'password' => 'password123',
         ]);
 
@@ -53,11 +53,11 @@ class LoginTest extends TestCase
         ]);
 
         $response = $this->post('/login', [
-            'email' => 'ana@example.com',
+            'login' => 'ana@example.com',
             'password' => 'senha-errada',
         ]);
 
-        $response->assertSessionHasErrors('email');
+        $response->assertSessionHasErrors('login');
         $this->assertFalse(Auth::check());
     }
 
@@ -104,7 +104,7 @@ class LoginTest extends TestCase
         ]);
 
         $response = $this->withHeaders(['X-Inertia' => 'true'])->post('/login', [
-            'email' => 'ana@example.com',
+            'login' => 'ana@example.com',
             'password' => 'password123',
         ]);
 
@@ -141,5 +141,47 @@ class LoginTest extends TestCase
         $response->assertInertia(
             fn (Assert $page) => $page->where('auth.user.email', 'ana@example.com')
         );
+    }
+
+    public function test_aluno_can_login_with_matricula(): void
+    {
+        User::create([
+            'name' => 'Aluno Teste',
+            'numero_matricula' => '2026-0001',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $response = $this->post('/login', [
+            'login' => '2026-0001',
+            'password' => 'password123',
+        ]);
+
+        $response->assertRedirect('/');
+        $this->assertTrue(Auth::check());
+    }
+
+    public function test_encarregado_logs_in_by_email_like_any_staff_account(): void
+    {
+        $filho = User::create([
+            'name' => 'Filho',
+            'numero_matricula' => '2026-0002',
+            'password' => Hash::make('x'),
+        ]);
+
+        $encarregado = User::create([
+            'name' => 'Encarregado Teste',
+            'email' => 'encarregado@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $encarregado->educandos()->attach($filho->id);
+
+        $response = $this->post('/login', [
+            'login' => 'encarregado@example.com',
+            'password' => 'password123',
+        ]);
+
+        $response->assertRedirect('/');
+        $this->assertTrue(Auth::check());
+        $this->assertTrue(Auth::user()->educandos->contains($filho));
     }
 }

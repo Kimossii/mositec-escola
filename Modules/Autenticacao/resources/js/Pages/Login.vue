@@ -5,7 +5,7 @@ import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
 
 const form = reactive({
-    email: '',
+    login: '',
     password: '',
     remember: false,
 });
@@ -44,16 +44,16 @@ function submit() {
                         </div>
 
                         <div class="fv-row mb-8">
-                            <label class="required fw-semibold fs-6 mb-2">Email</label>
+                            <label class="required fw-semibold fs-6 mb-2">Email ou Matrícula</label>
                             <input
-                                v-model="form.email"
-                                type="email"
-                                name="email"
+                                v-model="form.login"
+                                type="text"
+                                name="login"
                                 autocomplete="username"
                                 class="form-control form-control-solid"
-                                placeholder="exemplo@dominio.com"
+                                placeholder="exemplo@dominio.com ou 2026-0001"
                             />
-                            <div class="text-danger fs-7 mt-1" v-if="errors.email">{{ errors.email }}</div>
+                            <div class="text-danger fs-7 mt-1" v-if="errors.login">{{ errors.login }}</div>
                         </div>
 
                         <div class="fv-row mb-3">

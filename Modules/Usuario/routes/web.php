@@ -28,6 +28,10 @@ Route::group(['prefix' => 'usuarios'], function () {
         Route::get('/', [UsuarioController::class, 'administradores'])->name('usuario.administradores');
         Route::post('/cadastrar', [UsuarioController::class, 'store'])->name('usuario.administradores.store');
     });
+    Route::group(['prefix' => 'encarregados'], function () {
+        Route::get('/', [UsuarioController::class, 'encarregados'])->name('usuario.encarregados');
+        Route::post('/cadastrar', [UsuarioController::class, 'store'])->name('usuario.encarregados.store');
+    });
 
 });
 

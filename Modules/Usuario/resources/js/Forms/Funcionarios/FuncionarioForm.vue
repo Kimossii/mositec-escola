@@ -29,7 +29,7 @@ function criar(estado) {
     return new Promise((resolve, reject) => {
         router.post(
             '/usuarios/funcionarios/cadastrar',
-            { name: form.name, email: form.email, password: form.password, estado },
+            { name: form.name, email: form.email, password: form.password, tipo_login: 'email', estado },
             {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -92,7 +92,7 @@ function onCancelar() {
             <div class="alert alert-danger" v-if="errorMessage">{{ errorMessage }}</div>
 
             <UsuarioFormFields v-model:name="form.name" v-model:email="form.email" v-model:password="form.password"
-                :errors="errors" />
+                tipo-login="email" :errors="errors" />
 
             <input type="hidden" name="user_tipo_pessoa" :value="TIPO_PESSOA.FUNCIONARIO" />
 

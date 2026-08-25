@@ -1,8 +1,9 @@
 <script setup>
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import Loader from '@/Components/Shared/Loader.vue';
 import UsuarioFormFields from '../Components/UsuarioFormFields.vue';
+import { TIPO_PESSOA } from '../Models/Usuario';
 
 // Form genérico usado só pela lista "Todos os Utilizadores" (Pages/Index.vue),
 // onde o tipo de pessoa não é implícito e precisa ser escolhido manualmente.
@@ -17,6 +18,8 @@ const form = reactive({
     email: '',
     password: '',
 });
+const tipoPessoa = ref(TIPO_PESSOA.ALUNO);
+const tipoLogin = computed(() => (tipoPessoa.value === TIPO_PESSOA.ALUNO ? 'matricula' : 'email'));
 const processing = ref(false);
 const errors = ref({});
 const errorMessage = ref('');
@@ -29,7 +32,13 @@ function criar(estado) {
     return new Promise((resolve, reject) => {
         router.post(
             '/usuarios/cadastrarUsuario',
-            { name: form.name, email: form.email, password: form.password, estado },
+            {
+                name: form.name,
+                email: tipoLogin.value === 'email' ? form.email : undefined,
+                password: form.password,
+                tipo_login: tipoLogin.value,
+                estado,
+            },
             {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -95,24 +104,20 @@ function onCancelar() {
             <div class="alert alert-danger" v-if="errorMessage">{{ errorMessage }}</div>
 
             <UsuarioFormFields v-model:name="form.name" v-model:email="form.email" v-model:password="form.password"
-                :errors="errors" />
+                :tipo-login="tipoLogin" :errors="errors" />
 
             <!--begin::Input group-->
             <div class="fv-row mb-7">
-                <!--begin::Label-->
                 <label class="required fw-semibold fs-6 mb-2" for="kt_modal_add_user_tipo_pessoa">Tipo de pessoa</label>
-                <!--end::Label-->
 
-                <!--begin::Select-->
-                <select name="user_tipo_pessoa" id="kt_modal_add_user_tipo_pessoa" data-control="select2"
+                <select v-model="tipoPessoa" name="user_tipo_pessoa" id="kt_modal_add_user_tipo_pessoa" data-control="select2"
                     data-placeholder="Selecione o tipo" data-hide-search="true"
                     class="form-select form-select-solid">
-                    <option value="0" selected>Aluno</option>
-                    <option value="1">Professor</option>
-                    <option value="2">Funcionário</option>
-                    <option value="3">Outro</option>
+                    <option :value="TIPO_PESSOA.ALUNO">Aluno</option>
+                    <option :value="TIPO_PESSOA.PROFESSOR">Professor</option>
+                    <option :value="TIPO_PESSOA.FUNCIONARIO">Funcionário</option>
+                    <option :value="TIPO_PESSOA.OUTRO">Outro</option>
                 </select>
-                <!--end::Select-->
             </div>
             <!--end::Input group-->
         </div>

@@ -8,15 +8,11 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\UserPermissao;
-// use Modules\Usuario\Database\Factories\UserFactory;
+use Modules\Usuario\Enums\TipoLogin;
 
 class User extends Authenticatable
 {
     use HasFactory;
-
-    /**
-     * The attributes that are mass assignable.3º teste de workflow
-     */
     use HasApiTokens, Notifiable;
 
     protected $table = 'users';
@@ -25,6 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'numero_matricula',
+        'tipo_login',
         'dados_pessoa_id',
         'estado',
         'criado_por',
@@ -38,6 +36,7 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'tipo_login' => TipoLogin::class,
     ];
 
     // =========================
@@ -68,6 +67,21 @@ class User extends Authenticatable
     {
         return $this->hasMany(User::class, 'editado_por');
     }
+
+    public function educandos()
+    {
+        return $this->belongsToMany(User::class, 'encarregados_alunos', 'encarregado_id', 'aluno_id')
+            ->withPivot('parentesco')
+            ->withTimestamps();
+    }
+
+    public function encarregados()
+    {
+        return $this->belongsToMany(User::class, 'encarregados_alunos', 'aluno_id', 'encarregado_id')
+            ->withPivot('parentesco')
+            ->withTimestamps();
+    }
+
     const ESTADO_INATIVO = 0;
     const ESTADO_ATIVO = 1;
 

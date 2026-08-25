@@ -284,6 +284,7 @@ const userManagementGroups = [
             { href: '/usuarios/professores', label: 'Professores' },
             { href: '/usuarios/funcionarios', label: 'Funcionários' },
             { href: '/usuarios/administradores', label: 'Administradores' },
+            { href: '/usuarios/encarregados', label: 'Encarregados' },
         ],
     },
     {
