@@ -8,10 +8,10 @@ use Illuminate\Support\Facades\Auth;
 
 class GestaoAutenticacao
 {
-    public function login($email, $password, $key = null)
+    public function login($email, $password, $remember = false, $key = null)
     {
         // Primeiro checa rate limiter e tentativa de login
-        $limiterResponse = $this->checkLoginAttempts($email, $password, $key);
+        $limiterResponse = $this->checkLoginAttempts($email, $password, $remember, $key);
         if ($limiterResponse !== true) {
              Log::warning('Falha no login', ['email' => $email,'ip' => request()->ip(),'motivo' => $limiterResponse['message'] ]);
             return $limiterResponse;
@@ -19,7 +19,6 @@ class GestaoAutenticacao
 
         $user = Auth::user();
         Log::info('Login realizado com sucesso', ['user_id' => $user->id,'email' => $user->email,'ip' => request()->ip()]);
-        $token = $user->createToken('api-token', ['*'], now()->addHours(2))->plainTextToken;
 
         // Reseta contagem de tentativas em caso de sucesso
         if ($key)
@@ -27,13 +26,12 @@ class GestaoAutenticacao
 
         return [
             'success' => true,
-            'user' => FormatarRespostaUsuario::formatado($user),
-            'token' => $token,
+            'user' => $user,
             'code' => 200
         ];
     }
 
-    private function checkLoginAttempts($email, $password, $key = null)
+    private function checkLoginAttempts($email, $password, $remember = false, $key = null)
     {
         if ($key && RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
@@ -49,7 +47,7 @@ class GestaoAutenticacao
             ];
         }
 
-        if (!Auth::attempt(['email' => $email, 'password' => $password])) {
+        if (!Auth::attempt(['email' => $email, 'password' => $password], $remember)) {
             if ($key)
                 RateLimiter::hit($key, 60);
             Log::warning('Credenciais inválidas', [

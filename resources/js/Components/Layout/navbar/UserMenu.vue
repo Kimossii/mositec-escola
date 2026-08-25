@@ -108,12 +108,9 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
 
-const user = {
-    name: 'Max Smith',
-    email: 'max@kt.com',
-}
+const user = usePage().props.auth.user
 
 const subscriptionLinks = [
     { href: 'account/referrals.html', label: 'Referrals' },
