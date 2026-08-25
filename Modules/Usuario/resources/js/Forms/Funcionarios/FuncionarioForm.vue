@@ -4,7 +4,7 @@ import UsuarioFormFields from '../../Components/UsuarioFormFields.vue';
 import { TIPO_PESSOA } from '../../Models/Usuario';
 
 // Form de criação/edição específico da lista Funcionários. Ver o mesmo
-// comentário em Alunos/Forms/AlunoForm.vue — espaço aqui pra campos futuros
+// comentário em AlunoForm.vue — espaço aqui pra campos futuros
 // só de funcionário (cargo, setor...).
 </script>
 

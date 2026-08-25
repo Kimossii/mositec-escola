@@ -79,14 +79,14 @@ defineProps({
             <!--begin::Export-->
             <button type="button" class="btn btn-light-primary me-3" data-bs-toggle="modal" data-bs-target="#kt_modal_export_users">
                 <i class="ki-duotone ki-exit-up fs-2"><span class="path1"></span><span class="path2"></span></i>
-                Export
+                Exportar
             </button>
             <!--end::Export-->
 
             <!--begin::Add user-->
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_user">
                 <i class="ki-duotone ki-plus fs-2"></i>
-                Add User
+                Registar utilizador
             </button>
             <!--end::Add user-->
         </div>
@@ -99,7 +99,7 @@ defineProps({
             </div>
 
             <button type="button" class="btn btn-danger" data-kt-user-table-select="delete_selected">
-                Delete Selected
+                Excluir selecionados
             </button>
         </div>
         <!--end::Group actions-->

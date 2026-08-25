@@ -5,7 +5,7 @@ import { usePageScripts } from '@/composables/usePageScripts';
 import { useUsuarios } from '../Composables/useUsuarios';
 import { TIPO_PESSOA } from '../Models/Usuario';
 import UsuarioListLayout from '../Components/UsuarioListLayout.vue';
-import ProfessorForm from '../Professores/Forms/ProfessorForm.vue';
+import ProfessorForm from '../Forms/Professores/ProfessorForm.vue';
 
 const { usuarios } = useUsuarios({ tipoPessoa: TIPO_PESSOA.PROFESSOR });
 

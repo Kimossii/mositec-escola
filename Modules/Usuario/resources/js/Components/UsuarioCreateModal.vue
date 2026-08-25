@@ -21,7 +21,7 @@ defineProps({
                 <!--begin::Modal header-->
                 <div class="modal-header" id="kt_modal_add_user_header">
                     <!--begin::Modal title-->
-                    <h2 class="fw-bold">Add User</h2>
+                    <h2 class="fw-bold">Registar Novo Utilizador</h2>
                     <!--end::Modal title-->
 
                     <!--begin::Close-->

@@ -4,7 +4,7 @@ import AppLayout from '@/Layouts/AppLayout.vue'
 import { usePageScripts } from '@/composables/usePageScripts';
 import { useUsuarios } from '../Composables/useUsuarios';
 import UsuarioListLayout from '../Components/UsuarioListLayout.vue';
-import AdministradorForm from '../Administradores/Forms/AdministradorForm.vue';
+import AdministradorForm from '../Forms/Administradores/AdministradorForm.vue';
 
 // "Administrador" não é um tipo_pessoa no banco (só existe Aluno/Professor/
 // Funcionário/Outro, ver Models/Usuario.js). Até existir integração real com

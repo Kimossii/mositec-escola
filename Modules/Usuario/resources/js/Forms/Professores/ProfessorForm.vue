@@ -4,7 +4,7 @@ import UsuarioFormFields from '../../Components/UsuarioFormFields.vue';
 import { TIPO_PESSOA } from '../../Models/Usuario';
 
 // Form de criação/edição específico da lista Professores. Ver o mesmo
-// comentário em Alunos/Forms/AlunoForm.vue — espaço aqui pra campos futuros
+// comentário em AlunoForm.vue — espaço aqui pra campos futuros
 // só de professor (disciplinas, turmas que leciona...).
 </script>
 
