@@ -1,22 +1,60 @@
 <script setup>
 import Loader from '@/Components/Shared/Loader.vue';
 import UsuarioFormFields from '../Components/UsuarioFormFields.vue';
+import { useUsuarioCriar } from '../Composables/useUsuarioCriar';
 
 // Form genérico usado só pela lista "Todos os Utilizadores" (Pages/Index.vue),
 // onde o tipo de pessoa não é implícito e precisa ser escolhido manualmente.
 // As listas filtradas (Alunos, Professores, Funcionarios, Administradores)
 // têm cada uma o seu próprio Form na sua subpasta dentro de Forms/, que já
 // sabe o tipo e não precisa desse rádio — só reaproveitam Components/UsuarioFormFields.
+//
+// tipo_pessoa não é enviado no submit — a rota /usuarios/store ainda só
+// grava em `users` (ver Composables/useUsuarioCriar.js).
+const { form, processing, errors, errorMessage, criar } = useUsuarioCriar();
+
+function fecharModal() {
+    window.bootstrap?.Modal.getInstance(document.getElementById('kt_modal_add_user'))?.hide();
+}
+
+async function onGuardar() {
+    try {
+        await criar(1); // 1 = ativo
+        fecharModal();
+    } catch {
+        // erros de validação já ficam em `errors`/`errorMessage`, mostrados no template
+    }
+}
+
+async function onGuardarRascunho() {
+    try {
+        await criar(0); // 0 = inativo/rascunho
+        fecharModal();
+    } catch {
+        // erros de validação já ficam em `errors`/`errorMessage`, mostrados no template
+    }
+}
+
+function onCancelar() {
+    form.name = '';
+    form.email = '';
+    form.password = '';
+    errors.value = {};
+    errorMessage.value = '';
+}
 </script>
 
 <template>
-    <form id="kt_modal_add_user_form" class="form" action="#">
+    <form id="kt_modal_add_user_form" class="form" action="#" @submit.prevent="onGuardar">
         <!--begin::Scroll-->
         <div class="d-flex flex-column scroll-y me-n7 pe-7" id="kt_modal_add_user_scroll" data-kt-scroll="true"
             data-kt-scroll-activate="{default: false, lg: true}" data-kt-scroll-max-height="auto"
             data-kt-scroll-dependencies="#kt_modal_add_user_header" data-kt-scroll-wrappers="#kt_modal_add_user_scroll"
             data-kt-scroll-offset="300px">
-            <UsuarioFormFields />
+            <div class="alert alert-danger" v-if="errorMessage">{{ errorMessage }}</div>
+
+            <UsuarioFormFields v-model:name="form.name" v-model:email="form.email" v-model:password="form.password"
+                :errors="errors" />
 
             <!--begin::Input group-->
             <div class="fv-row mb-7">
@@ -41,15 +79,18 @@ import UsuarioFormFields from '../Components/UsuarioFormFields.vue';
 
         <!--begin::Actions-->
         <div class="text-center pt-15">
-            <button type="reset" class="btn btn-danger me-3" data-kt-users-modal-action="cancel">
+            <button type="button" class="btn btn-danger me-3" data-kt-users-modal-action="cancel"
+                :disabled="processing" @click="onCancelar">
                 Cancelar
             </button>
 
-            <button type="button" class="btn btn-castanho me-3" data-kt-users-modal-action="draft">
+            <button type="button" class="btn btn-castanho me-3" data-kt-users-modal-action="draft"
+                :disabled="processing" @click="onGuardarRascunho">
                 Guardar rascunho
             </button>
 
-            <button type="submit" class="btn btn-primary" data-kt-users-modal-action="submit">
+            <button type="submit" class="btn btn-primary" data-kt-users-modal-action="submit"
+                :data-kt-indicator="processing ? 'on' : 'off'" :disabled="processing">
                 <span class="indicator-label">
                     Guardar
                 </span>

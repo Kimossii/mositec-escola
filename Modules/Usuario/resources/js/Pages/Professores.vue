@@ -13,7 +13,6 @@ const { loadAll } = usePageScripts([
     '/themes/metronic/assets/plugins/custom/datatables/datatables.bundle.js',
     '/themes/metronic/assets/js/components/custom/apps/user-management/users/list/table.js',
     '/themes/metronic/assets/js/components/custom/apps/user-management/users/list/export-users.js',
-    '/themes/metronic/assets/js/components/custom/apps/user-management/users/list/add.js',
     '/themes/metronic/assets/js/widgets.bundle.js',
     '/themes/metronic/assets/js/components/custom/widgets.js',
     '/themes/metronic/assets/js/components/custom/apps/chat/chat.js',
