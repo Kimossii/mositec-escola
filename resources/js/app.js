@@ -2,6 +2,8 @@ import './bootstrap';
 import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { Toaster } from 'vue-sonner';
+import 'vue-sonner/style.css';
 
 const pages = {
     ...import.meta.glob('./Pages/**/*.vue'),
@@ -15,7 +17,12 @@ createInertiaApp({
         return resolvePageComponent([`./Pages/${name}.vue`, modulePath], pages);
     },
     setup({ el, App, props, plugin }) {
-        createApp({ render: () => h(App, props) })
+        createApp({
+            render: () => [
+                h(App, props),
+                h(Toaster, { position: 'top-right', richColors: true, closeButton: true }),
+            ],
+        })
             .use(plugin)
             .mount(el);
     },
