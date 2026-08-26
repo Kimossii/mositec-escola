@@ -53,7 +53,13 @@ function submeter() {
         </div>
 
         <div class="text-end">
-            <button type="button" class="btn btn-light me-2" @click="emit('fechar')">Cancelar</button>
+            <button type="button" class="btn btn-light-danger me-2" @click="emit('fechar')">
+                <i class="ki-duotone ki-cross fs-4 me-1">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                </i>
+                Cancelar
+            </button>
             <button type="submit" class="btn btn-primary" :disabled="processing">Guardar</button>
         </div>
     </form>

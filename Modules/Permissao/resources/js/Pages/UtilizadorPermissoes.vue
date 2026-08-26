@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 
 const props = defineProps({
     utilizador: { type: Object, required: true },
@@ -76,6 +77,7 @@ function guardarOverrides() {
 
 <template>
     <div class="app-container container-xxl py-6">
+        <BotaoVoltar />
         <h1 class="fs-2 fw-bold mb-6">Permissões — {{ utilizador.name }}</h1>
 
         <div class="card mb-6">

@@ -252,7 +252,13 @@ function guardar() {
             </table>
 
             <div class="d-flex justify-content-between pt-5">
-                <button type="button" class="btn btn-light" :disabled="processing" @click="voltar">Voltar</button>
+                <button type="button" class="btn btn-light-primary" :disabled="processing" @click="voltar">
+                    <i class="ki-duotone ki-arrow-left fs-4 me-1">
+                        <span class="path1"></span>
+                        <span class="path2"></span>
+                    </i>
+                    Voltar
+                </button>
                 <button type="button" class="btn btn-primary" :disabled="processing" @click="guardar">
                     <span v-if="!processing">Guardar</span>
                     <span v-else>Aguarde... <Loader size="0.3px" class="align-middle ms-2" /></span>
