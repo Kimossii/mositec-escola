@@ -2,12 +2,15 @@
 import { onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { usePageScripts } from '@/composables/usePageScripts';
-import { useUsuarios } from '../Composables/useUsuarios';
-import { TIPO_PESSOA } from '../Models/Usuario';
 import UsuarioListLayout from '../Components/UsuarioListLayout.vue';
 import ProfessorForm from '../Forms/Professores/ProfessorForm.vue';
 
-const { usuarios } = useUsuarios({ tipoPessoa: TIPO_PESSOA.PROFESSOR });
+defineProps({
+    usuarios: {
+        type: Array,
+        required: true,
+    },
+});
 
 const { loadAll } = usePageScripts([
     '/themes/metronic/assets/plugins/custom/datatables/datatables.bundle.js',

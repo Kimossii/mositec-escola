@@ -1,25 +1,23 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
 import UsuarioFormFields from '../Components/UsuarioFormFields.vue';
-import { TIPO_PESSOA } from '../Models/Usuario';
 
 // Form genérico usado só pela lista "Todos os Utilizadores" (Pages/Index.vue),
-// onde o tipo de pessoa não é implícito e precisa ser escolhido manualmente.
-// As listas filtradas (Alunos, Professores, Funcionarios, Administradores)
-// têm cada uma o seu próprio Form na sua subpasta dentro de Forms/, com a sua
-// própria rota — este submete pra POST /usuarios/cadastrarUsuario via router
-// do Inertia (não axios).
-//
-// tipo_pessoa não é enviado no submit — a rota ainda só grava em `users`.
+// onde o perfil não é implícito e precisa ser escolhido manualmente. As
+// listas filtradas (Alunos, Professores, Funcionarios, Administradores) têm
+// cada uma o seu próprio Form na sua subpasta dentro de Forms/, com a sua
+// própria rota. Encarregado fica fora daqui porque precisa do campo extra
+// de ligação a educandos — usa sempre o EncarregadoForm dedicado.
 const form = reactive({
     name: '',
     email: '',
     password: '',
 });
-const tipoPessoa = ref(TIPO_PESSOA.ALUNO);
-const tipoLogin = computed(() => (tipoPessoa.value === TIPO_PESSOA.ALUNO ? 'matricula' : 'email'));
+const perfil = ref('aluno');
+const tipoLogin = computed(() => (perfil.value === 'aluno' ? 'matricula' : 'email'));
 const processing = ref(false);
 const errors = ref({});
 const errorMessage = ref('');
@@ -36,6 +34,7 @@ function criar(estado) {
                 name: form.name,
                 email: tipoLogin.value === 'email' ? form.email : undefined,
                 password: form.password,
+                perfil: perfil.value,
                 tipo_login: tipoLogin.value,
                 estado,
             },
@@ -45,6 +44,7 @@ function criar(estado) {
                     form.name = '';
                     form.email = '';
                     form.password = '';
+                    toast.success('Utilizador criado com sucesso.');
                     resolve();
                 },
                 onError: (erros) => {
@@ -52,6 +52,7 @@ function criar(estado) {
                     if (Object.keys(erros).length === 0) {
                         errorMessage.value = 'Não foi possível guardar o utilizador. Tenta novamente.';
                     }
+                    toast.error(Object.values(erros)[0] ?? 'Não foi possível guardar o utilizador.');
                     reject(erros);
                 },
                 onFinish: () => {
@@ -108,15 +109,15 @@ function onCancelar() {
 
             <!--begin::Input group-->
             <div class="fv-row mb-7">
-                <label class="required fw-semibold fs-6 mb-2" for="kt_modal_add_user_tipo_pessoa">Tipo de pessoa</label>
+                <label class="required fw-semibold fs-6 mb-2" for="kt_modal_add_user_perfil">Perfil</label>
 
-                <select v-model="tipoPessoa" name="user_tipo_pessoa" id="kt_modal_add_user_tipo_pessoa" data-control="select2"
-                    data-placeholder="Selecione o tipo" data-hide-search="true"
+                <select v-model="perfil" name="user_perfil" id="kt_modal_add_user_perfil" data-control="select2"
+                    data-placeholder="Selecione o perfil" data-hide-search="true"
                     class="form-select form-select-solid">
-                    <option :value="TIPO_PESSOA.ALUNO">Aluno</option>
-                    <option :value="TIPO_PESSOA.PROFESSOR">Professor</option>
-                    <option :value="TIPO_PESSOA.FUNCIONARIO">Funcionário</option>
-                    <option :value="TIPO_PESSOA.OUTRO">Outro</option>
+                    <option value="aluno">Aluno</option>
+                    <option value="professor">Professor</option>
+                    <option value="secretario">Funcionário</option>
+                    <option value="admin_escola">Administrador</option>
                 </select>
             </div>
             <!--end::Input group-->

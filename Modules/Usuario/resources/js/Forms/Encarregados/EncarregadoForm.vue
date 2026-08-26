@@ -1,6 +1,7 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
 import UsuarioFormFields from '../../Components/UsuarioFormFields.vue';
 
@@ -43,6 +44,7 @@ function criar(estado) {
                 name: form.name,
                 email: form.email,
                 password: form.password,
+                perfil: 'encarregado',
                 tipo_login: 'email',
                 matriculas_educandos: matriculasEducandos.value,
                 estado,
@@ -54,6 +56,7 @@ function criar(estado) {
                     form.email = '';
                     form.password = '';
                     matriculasEducandos.value = [];
+                    toast.success('Encarregado criado com sucesso.');
                     resolve();
                 },
                 onError: (erros) => {
@@ -61,6 +64,7 @@ function criar(estado) {
                     if (Object.keys(erros).length === 0) {
                         errorMessage.value = 'Não foi possível guardar o utilizador. Tenta novamente.';
                     }
+                    toast.error(Object.values(erros)[0] ?? 'Não foi possível guardar o utilizador.');
                     reject(erros);
                 },
                 onFinish: () => {

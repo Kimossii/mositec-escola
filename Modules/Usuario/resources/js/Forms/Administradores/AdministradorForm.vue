@@ -1,20 +1,14 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
 import UsuarioFormFields from '../../Components/UsuarioFormFields.vue';
 
 // Form de criação/edição específico da lista Administradores — submete
 // direto pra POST /usuarios/administradores/cadastrar via router do Inertia
-// (não axios). Diferente dos outros 3 (Aluno/Professor/Funcionário),
-// "Administrador" não é um tipo_pessoa no banco — é um papel que ainda vai
-// depender da integração com roles/permissoes do módulo Permissao (ver
-// Models/Usuario.js#isAdministrador). Por isso não tem input hidden de
-// tipo_pessoa aqui: falta decidir com o backend como esse papel será
-// atribuído no submit.
-//
-// O submit ainda só cria o User (name/email/password/estado) — o papel de
-// administrador não é atribuído aqui.
+// (não axios). "Administrador" não é um tipo_pessoa no banco — é o perfil
+// "admin_escola" (módulo Permissao), atribuído no backend via UsuarioAction.
 const form = reactive({
     name: '',
     email: '',
@@ -32,13 +26,14 @@ function criar(estado) {
     return new Promise((resolve, reject) => {
         router.post(
             '/usuarios/administradores/cadastrar',
-            { name: form.name, email: form.email, password: form.password, tipo_login: 'email', estado },
+            { name: form.name, email: form.email, password: form.password, perfil: 'admin_escola', tipo_login: 'email', estado },
             {
                 preserveScroll: true,
                 onSuccess: () => {
                     form.name = '';
                     form.email = '';
                     form.password = '';
+                    toast.success('Administrador criado com sucesso.');
                     resolve();
                 },
                 onError: (erros) => {
@@ -46,6 +41,7 @@ function criar(estado) {
                     if (Object.keys(erros).length === 0) {
                         errorMessage.value = 'Não foi possível guardar o utilizador. Tenta novamente.';
                     }
+                    toast.error(Object.values(erros)[0] ?? 'Não foi possível guardar o utilizador.');
                     reject(erros);
                 },
                 onFinish: () => {
@@ -101,9 +97,6 @@ function onCancelar() {
             <div class="mb-7">
                 <label class="fw-semibold fs-6 mb-2 d-block">Papel</label>
                 <span class="badge badge-light-danger fs-6">Administrador</span>
-                <div class="form-text mt-2">
-                    A atribuição de administrador ainda depende da integração com Permissões (roles).
-                </div>
             </div>
             <!--end::Input group-->
         </div>

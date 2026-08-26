@@ -4,6 +4,7 @@ namespace Modules\Usuario\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Modules\Permissao\Models\Role;
 use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Enums\TipoLogin;
 use Modules\Usuario\Models\User;
@@ -29,6 +30,9 @@ class UsuarioAction
                 'dados_pessoa_id' => $dto->dados_pessoa_id,
                 'estado' => $dto->estado->value,
             ]);
+
+            $role = Role::where('nome', $dto->perfil->value)->firstOrFail();
+            $user->roles()->attach($role->id);
 
             if (! empty($dto->matriculasEducandos)) {
                 $alunosIds = User::whereIn('numero_matricula', $dto->matriculasEducandos)->pluck('id');

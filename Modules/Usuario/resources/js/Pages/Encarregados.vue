@@ -2,17 +2,15 @@
 import { onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { usePageScripts } from '@/composables/usePageScripts';
-import { useUsuarios } from '../Composables/useUsuarios';
 import UsuarioListLayout from '../Components/UsuarioListLayout.vue';
 import EncarregadoForm from '../Forms/Encarregados/EncarregadoForm.vue';
 
-// "Encarregado" não é um tipo_pessoa no banco (só existe Aluno/Professor/
-// Funcionário/Outro, ver Models/Usuario.js). Até existir integração real com
-// roles/permissoes (módulo Permissao), a lista usa o placeholder
-// `isEncarregado` do mock — não plugar em tipo_pessoa quando o backend
-// chegar, e sim em alguma relação de papel/role. Ver o mesmo padrão em
-// Pages/Administradores.vue.
-const { usuarios } = useUsuarios({ apenasEncarregados: true });
+defineProps({
+    usuarios: {
+        type: Array,
+        required: true,
+    },
+});
 
 const { loadAll } = usePageScripts([
     '/themes/metronic/assets/plugins/custom/datatables/datatables.bundle.js',

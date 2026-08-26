@@ -1,6 +1,7 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
 import UsuarioFormFields from '../../Components/UsuarioFormFields.vue';
 import { TIPO_PESSOA } from '../../Models/Usuario';
@@ -29,13 +30,14 @@ function criar(estado) {
     return new Promise((resolve, reject) => {
         router.post(
             '/usuarios/funcionarios/cadastrar',
-            { name: form.name, email: form.email, password: form.password, tipo_login: 'email', estado },
+            { name: form.name, email: form.email, password: form.password, perfil: 'secretario', tipo_login: 'email', estado },
             {
                 preserveScroll: true,
                 onSuccess: () => {
                     form.name = '';
                     form.email = '';
                     form.password = '';
+                    toast.success('Funcionário criado com sucesso.');
                     resolve();
                 },
                 onError: (erros) => {
@@ -43,6 +45,7 @@ function criar(estado) {
                     if (Object.keys(erros).length === 0) {
                         errorMessage.value = 'Não foi possível guardar o utilizador. Tenta novamente.';
                     }
+                    toast.error(Object.values(erros)[0] ?? 'Não foi possível guardar o utilizador.');
                     reject(erros);
                 },
                 onFinish: () => {

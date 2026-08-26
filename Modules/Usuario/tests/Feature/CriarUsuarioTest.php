@@ -5,6 +5,8 @@ namespace Modules\Usuario\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Modules\Permissao\Database\Seeders\RoleSeeder;
+use Modules\Permissao\Enums\Perfil;
 use Modules\Usuario\Enums\TipoLogin;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
@@ -12,6 +14,13 @@ use Tests\TestCase;
 class CriarUsuarioTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RoleSeeder::class);
+    }
 
     private function actingAsStaff(): User
     {
@@ -31,6 +40,7 @@ class CriarUsuarioTest extends TestCase
 
         $response = $this->post('/usuarios/cadastrarUsuario', [
             'name' => 'Professor Novo',
+            'perfil' => 'professor',
             'tipo_login' => 'email',
             'email' => 'professor@example.com',
             'password' => 'segredo123',
@@ -50,6 +60,7 @@ class CriarUsuarioTest extends TestCase
 
         $response = $this->post('/usuarios/alunos/cadastrar', [
             'name' => 'Aluno Novo',
+            'perfil' => 'aluno',
             'tipo_login' => 'matricula',
             'password' => 'segredo123',
             'estado' => 1,
@@ -61,6 +72,7 @@ class CriarUsuarioTest extends TestCase
         $this->assertNotNull($aluno);
         $this->assertNull($aluno->email);
         $this->assertMatchesRegularExpression('/^\d{4}-\d{4}$/', $aluno->numero_matricula);
+        $this->assertTrue($aluno->roles->contains('nome', Perfil::ALUNO->value));
     }
 
     public function test_email_e_obrigatorio_quando_tipo_login_e_email(): void
@@ -69,12 +81,12 @@ class CriarUsuarioTest extends TestCase
 
         $response = $this->post('/usuarios/cadastrarUsuario', [
             'name' => 'Sem Email',
+            'perfil' => 'professor',
             'tipo_login' => 'email',
             'password' => 'segredo123',
         ]);
 
-        $response->assertStatus(422);
-        $response->assertJsonValidationErrors('email');
+        $response->assertSessionHasErrors('email');
     }
 
     public function test_cria_encarregado_e_liga_aos_educandos_por_matricula(): void
@@ -90,6 +102,7 @@ class CriarUsuarioTest extends TestCase
 
         $response = $this->post('/usuarios/cadastrarUsuario', [
             'name' => 'Encarregado',
+            'perfil' => 'encarregado',
             'tipo_login' => 'email',
             'email' => 'encarregado@example.com',
             'password' => 'segredo123',
@@ -100,6 +113,7 @@ class CriarUsuarioTest extends TestCase
 
         $encarregado = User::where('email', 'encarregado@example.com')->first();
         $this->assertTrue($encarregado->educandos->contains($aluno));
+        $this->assertTrue($encarregado->roles->contains('nome', Perfil::ENCARREGADO->value));
     }
 
     public function test_aluno_criado_pelo_endpoint_consegue_entrar_com_a_matricula_gerada(): void
@@ -108,6 +122,7 @@ class CriarUsuarioTest extends TestCase
 
         $this->post('/usuarios/alunos/cadastrar', [
             'name' => 'Aluno Fluxo Completo',
+            'perfil' => 'aluno',
             'tipo_login' => 'matricula',
             'password' => 'segredo123',
             'estado' => 1,
@@ -131,6 +146,7 @@ class CriarUsuarioTest extends TestCase
 
         $this->post('/usuarios/encarregados/cadastrar', [
             'name' => 'Encarregado Fluxo Completo',
+            'perfil' => 'encarregado',
             'tipo_login' => 'email',
             'email' => 'encarregado.fluxo@example.com',
             'password' => 'segredo123',

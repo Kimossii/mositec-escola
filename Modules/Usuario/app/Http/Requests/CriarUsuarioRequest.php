@@ -15,6 +15,7 @@ class CriarUsuarioRequest extends BaseRequest
     {
         return [
             'name' => 'required|string|max:255',
+            'perfil' => 'required|in:admin_escola,secretario,professor,aluno,encarregado',
             'tipo_login' => 'required|in:email,matricula',
             'email' => 'required_if:tipo_login,email|nullable|email|unique:users,email',
             'password' => 'required|min:6',
@@ -31,6 +32,9 @@ class CriarUsuarioRequest extends BaseRequest
             'name.required' => 'O nome é obrigatório.',
             'name.string' => 'O nome deve ser um texto válido.',
             'name.max' => 'O nome não pode ter mais de 255 caracteres.',
+
+            'perfil.required' => 'O perfil é obrigatório.',
+            'perfil.in' => 'O perfil indicado é inválido.',
 
             'tipo_login.required' => 'O tipo de login é obrigatório.',
             'tipo_login.in' => 'O tipo de login deve ser email ou matrícula.',

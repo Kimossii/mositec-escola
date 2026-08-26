@@ -2,13 +2,14 @@
 import { onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { usePageScripts } from '@/composables/usePageScripts';
-import { useUsuarios } from '../Composables/useUsuarios';
 import UsuarioListLayout from '../Components/UsuarioListLayout.vue';
 
-// TODO: trocar por `defineProps({ usuarios: Array })` quando
-// UsuarioController@index passar a enviar os usuários reais via Inertia
-// (ver Composables/useUsuarios.js e Models/Usuario.js).
-const { usuarios } = useUsuarios();
+defineProps({
+    usuarios: {
+        type: Array,
+        required: true,
+    },
+});
 
 const { loadAll } = usePageScripts([
     '/themes/metronic/assets/plugins/custom/datatables/datatables.bundle.js',

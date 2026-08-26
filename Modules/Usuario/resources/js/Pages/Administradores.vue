@@ -2,16 +2,15 @@
 import { onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { usePageScripts } from '@/composables/usePageScripts';
-import { useUsuarios } from '../Composables/useUsuarios';
 import UsuarioListLayout from '../Components/UsuarioListLayout.vue';
 import AdministradorForm from '../Forms/Administradores/AdministradorForm.vue';
 
-// "Administrador" não é um tipo_pessoa no banco (só existe Aluno/Professor/
-// Funcionário/Outro, ver Models/Usuario.js). Até existir integração real com
-// roles/permissoes (módulo Permissao), a lista usa o placeholder
-// `isAdministrador` do mock — não plugar em tipo_pessoa quando o backend
-// chegar, e sim em alguma relação de papel/role.
-const { usuarios } = useUsuarios({ apenasAdministradores: true });
+defineProps({
+    usuarios: {
+        type: Array,
+        required: true,
+    },
+});
 
 const { loadAll } = usePageScripts([
     '/themes/metronic/assets/plugins/custom/datatables/datatables.bundle.js',

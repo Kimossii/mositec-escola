@@ -20,4 +20,15 @@ enum Perfil: int
             self::ENCARREGADO => 'Encarregado',
         };
     }
+
+    public static function fromSlug(string $slug): self
+    {
+        return match ($slug) {
+            'admin_escola' => self::ADMIN_ESCOLA,
+            'secretario' => self::SECRETARIO,
+            'professor' => self::PROFESSOR,
+            'aluno' => self::ALUNO,
+            'encarregado' => self::ENCARREGADO,
+        };
+    }
 }
