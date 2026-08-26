@@ -4,12 +4,14 @@ use Illuminate\Support\Facades\Route;
 use Modules\Usuario\Http\Controllers\UsuarioController;
 
 
-Route::middleware('auth')->group(function () {
-    
+Route::middleware(['auth', 'can:gerir-usuarios'])->group(function () {
+
 //Usuarios
 Route::group(['prefix' => 'usuarios'], function () {
     Route::get('/', [UsuarioController::class, 'index'])->name('usuario.index');
     Route::post('/cadastrarUsuario', [UsuarioController::class, 'store'])->name('usuario.store');
+    Route::get('/{user}/editar', [UsuarioController::class, 'edit'])->name('usuario.edit');
+    Route::put('/{user}', [UsuarioController::class, 'update'])->name('usuario.update');
 
     Route::group(['prefix' => 'alunos'], function () {
         Route::get('/', [UsuarioController::class, 'alunos'])->name('usuario.alunos');

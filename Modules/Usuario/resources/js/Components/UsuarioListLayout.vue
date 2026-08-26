@@ -1,13 +1,14 @@
 <script setup>
+import { onMounted, ref } from 'vue';
 import UsuarioTable from './UsuarioTable.vue';
 import UsuarioToolbar from './UsuarioToolbar.vue';
 
 /**
- * Casca de página compartilhada pelas 5 listagens de usuários (Todos os
- * Utilizadores, Alunos, Professores, Funcionários, Administradores). Cada
- * `Pages/*.vue` só define título, ícone, cor e o filtro de tipo_pessoa —
- * a estrutura (breadcrumb, card, toolbar, tabela, footer) fica só aqui,
- * pra evitar 5 cópias do mesmo HTML do Metronic.
+ * Casca de página compartilhada pelas 6 listagens de usuários (Todos os
+ * Utilizadores, Alunos, Professores, Funcionários, Administradores,
+ * Encarregados). Cada `Pages/*.vue` só define título, ícone, cor e o
+ * perfil filtrado — a estrutura (breadcrumb, card, toolbar, tabela,
+ * footer) fica só aqui, pra evitar 6 cópias do mesmo HTML do Metronic.
  */
 defineProps({
     title: {
@@ -33,6 +34,23 @@ defineProps({
         type: [Object, Function],
         default: undefined,
     },
+    perfis: { type: Array, default: () => [] },
+    modulos: { type: Array, default: () => [] },
+    acoes: { type: Array, default: () => [] },
+    permissoesPorPerfil: { type: Object, default: () => ({}) },
+});
+
+const utilizadorEmEdicao = ref(null);
+
+function abrirEdicao(utilizador) {
+    utilizadorEmEdicao.value = utilizador;
+    window.bootstrap?.Modal.getOrCreateInstance(document.getElementById('kt_modal_add_user')).show();
+}
+
+onMounted(() => {
+    document.getElementById('kt_modal_add_user')?.addEventListener('hidden.bs.modal', () => {
+        utilizadorEmEdicao.value = null;
+    });
 });
 </script>
 
@@ -91,13 +109,20 @@ defineProps({
                     <div class="card">
                         <!--begin::Card header-->
                         <div class="card-header border-0 pt-6">
-                            <UsuarioToolbar :form-component="formComponent" />
+                            <UsuarioToolbar
+                                :form-component="formComponent"
+                                :utilizador-em-edicao="utilizadorEmEdicao"
+                                :perfis="perfis"
+                                :modulos="modulos"
+                                :acoes="acoes"
+                                :permissoes-por-perfil="permissoesPorPerfil"
+                            />
                         </div>
                         <!--end::Card header-->
 
                         <!--begin::Card body-->
                         <div class="card-body py-4">
-                            <UsuarioTable :usuarios="usuarios" />
+                            <UsuarioTable :usuarios="usuarios" @editar="abrirEdicao" />
                         </div>
                         <!--end::Card body-->
                     </div>

@@ -2,12 +2,15 @@
 import UsuarioForm from '../Forms/UsuarioForm.vue';
 
 defineProps({
-    /** componente de form a usar no lugar do UsuarioForm genérico — cada
-     * lista (Alunos, Professores, Funcionarios, Administradores) passa o seu */
     formComponent: {
         type: [Object, Function],
         default: () => UsuarioForm,
     },
+    utilizador: { type: Object, default: null },
+    perfis: { type: Array, default: () => [] },
+    modulos: { type: Array, default: () => [] },
+    acoes: { type: Array, default: () => [] },
+    permissoesPorPerfil: { type: Object, default: () => ({}) },
 });
 </script>
 
@@ -21,7 +24,7 @@ defineProps({
                 <!--begin::Modal header-->
                 <div class="modal-header" id="kt_modal_add_user_header">
                     <!--begin::Modal title-->
-                    <h2 class="fw-bold">Registar Novo Utilizador</h2>
+                    <h2 class="fw-bold">{{ utilizador ? 'Editar Utilizador' : 'Registar Novo Utilizador' }}</h2>
                     <!--end::Modal title-->
 
                     <!--begin::Close-->
@@ -34,7 +37,15 @@ defineProps({
 
                 <!--begin::Modal body-->
                 <div class="modal-body scroll-y mx-5 mx-xl-15 my-7">
-                    <component :is="formComponent" />
+                    <component
+                        :is="formComponent"
+                        :key="utilizador?.id ?? 'novo'"
+                        :utilizador="utilizador"
+                        :perfis="perfis"
+                        :modulos="modulos"
+                        :acoes="acoes"
+                        :permissoes-por-perfil="permissoesPorPerfil"
+                    />
                 </div>
                 <!--end::Modal body-->
             </div>

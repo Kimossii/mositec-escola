@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Modules\Permissao\Database\Seeders\RoleSeeder;
 use Modules\Permissao\Enums\Perfil;
+use Modules\Permissao\Models\Role;
 use Modules\Usuario\Enums\TipoLogin;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
@@ -28,10 +29,20 @@ class CriarUsuarioTest extends TestCase
             ['email' => 'staff@example.com'],
             ['name' => 'Staff', 'password' => Hash::make('segredo123')],
         );
+        $staff->roles()->syncWithoutDetaching([Role::where('nome', Perfil::ADMIN_ESCOLA->value)->first()->id]);
 
         $this->actingAs($staff);
 
         return $staff;
+    }
+
+    public function test_utilizador_sem_perfil_admin_escola_nao_acede_a_gestao_de_utilizadores(): void
+    {
+        $semPermissao = User::create(['name' => 'Professor', 'email' => 'professor.sem.perm@example.com', 'password' => Hash::make('x')]);
+        $this->actingAs($semPermissao);
+
+        $this->get('/usuarios')->assertForbidden();
+        $this->post('/usuarios/cadastrarUsuario', ['name' => 'X'])->assertForbidden();
     }
 
     public function test_cria_utilizador_com_email(): void
@@ -156,5 +167,33 @@ class CriarUsuarioTest extends TestCase
         $encarregado = User::where('email', 'encarregado.fluxo@example.com')->first();
         $this->assertNotNull($encarregado);
         $this->assertTrue($encarregado->educandos->contains($aluno));
+    }
+
+    public function test_cria_utilizador_com_permissao_extra_alem_do_perfil(): void
+    {
+        $this->actingAsStaff();
+
+        $modulo = \Modules\Permissao\Models\Modulo::create(['nome' => 0, 'descricao' => 'Usuario', 'estado' => 1]);
+        $acao = \Modules\Permissao\Models\Acao::create(['nome' => 'exportar', 'numero' => 5, 'estado' => 1]);
+
+        $response = $this->post('/usuarios/cadastrarUsuario', [
+            'name' => 'Professor Com Extra',
+            'perfil' => 'professor',
+            'tipo_login' => 'email',
+            'email' => 'professor.extra@example.com',
+            'password' => 'segredo123',
+            'celulas' => [
+                ['modulo_id' => $modulo->id, 'acao_id' => $acao->id, 'permitido' => true],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $user = User::where('email', 'professor.extra@example.com')->first();
+        $this->assertDatabaseHas('user_permissoes', [
+            'users_id' => $user->id,
+            'modulo_id' => $modulo->id,
+            'acao_id' => $acao->id,
+            'permitido' => true,
+        ]);
     }
 }

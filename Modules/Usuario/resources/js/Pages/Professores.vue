@@ -6,10 +6,11 @@ import UsuarioListLayout from '../Components/UsuarioListLayout.vue';
 import ProfessorForm from '../Forms/Professores/ProfessorForm.vue';
 
 defineProps({
-    usuarios: {
-        type: Array,
-        required: true,
-    },
+    usuarios: { type: Array, required: true },
+    perfis: { type: Array, required: true },
+    modulos: { type: Array, required: true },
+    acoes: { type: Array, required: true },
+    permissoesPorPerfil: { type: Object, required: true },
 });
 
 const { loadAll } = usePageScripts([
@@ -37,5 +38,9 @@ defineOptions({ layout: AppLayout })
         accent="success"
         :usuarios="usuarios"
         :form-component="ProfessorForm"
+        :perfis="perfis"
+        :modulos="modulos"
+        :acoes="acoes"
+        :permissoes-por-perfil="permissoesPorPerfil"
     />
 </template>

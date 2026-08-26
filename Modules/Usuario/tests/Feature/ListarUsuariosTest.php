@@ -29,6 +29,7 @@ class ListarUsuariosTest extends TestCase
             'email' => 'staff@example.com',
             'password' => Hash::make('segredo123'),
         ]);
+        $staff->roles()->attach(Role::where('nome', Perfil::ADMIN_ESCOLA->value)->first()->id);
 
         $this->actingAs($staff);
 

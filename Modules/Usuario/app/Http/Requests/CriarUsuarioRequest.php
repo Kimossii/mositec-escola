@@ -8,7 +8,7 @@ class CriarUsuarioRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('gerir-usuarios') ?? false;
     }
 
     public function rules(): array
@@ -23,6 +23,10 @@ class CriarUsuarioRequest extends BaseRequest
             'estado' => 'nullable|in:1,0',
             'matriculas_educandos' => 'nullable|array',
             'matriculas_educandos.*' => 'string|exists:users,numero_matricula',
+            'celulas' => 'nullable|array',
+            'celulas.*.modulo_id' => 'required_with:celulas|integer|exists:modulos,id',
+            'celulas.*.acao_id' => 'required_with:celulas|integer|exists:acoes,id',
+            'celulas.*.permitido' => 'required_with:celulas|boolean',
         ];
     }
 
