@@ -123,6 +123,17 @@ html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar
     background-color: #6F4A29;
 }
 
+/* Hover das tabelas de lista — o cinza padrão do Bootstrap fica sem
+   personalidade; usamos um verde muito suave ligado à paleta da app, com
+   transição em vez do salto abrupto do :hover puro. */
+html[data-bs-theme='light'] .table.table-hover {
+    --bs-table-hover-bg: #F0FDF4;
+}
+
+.table.table-hover > tbody > tr {
+    transition: background-color 0.15s ease-in-out;
+}
+
 /* Texto preto nos campos preenchíveis (inputs e selects "solid") no modo claro — o cinza padrão do Metronic ficava pouco visível. */
 html[data-bs-theme='light'] .form-control.form-control-solid,
 html[data-bs-theme='light'] .form-select.form-select-solid {

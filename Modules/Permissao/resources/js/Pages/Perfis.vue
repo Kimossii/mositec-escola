@@ -49,7 +49,7 @@ function eliminar(perfil) {
 
         <div class="card">
             <div class="card-body p-0">
-                <table class="table align-middle table-row-dashed fs-6 gy-5 mb-0">
+                <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th class="min-w-200px">Nome</th>

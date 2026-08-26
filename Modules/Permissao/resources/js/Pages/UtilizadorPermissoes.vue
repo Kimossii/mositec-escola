@@ -106,9 +106,9 @@ function guardarOverrides() {
                     Clique numa célula para alternar entre Herda (cinza), Concede (verde) e Nega (vermelho).
                     "Herda" usa o que os perfis atribuídos já dão por padrão.
                 </p>
-                <table class="table align-middle">
+                <table class="table align-middle table-row-dashed table-hover fs-6 gy-5">
                     <thead>
-                        <tr>
+                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>Módulo</th>
                             <th v-for="acao in acoes" :key="acao.id" class="text-center text-capitalize">
                                 {{ acao.nome }}

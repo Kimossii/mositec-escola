@@ -22,7 +22,7 @@ async function editar(usuario) {
 
 <template>
     <!--begin::Table-->
-    <table class="table align-middle table-row-dashed fs-6 gy-5" id="kt_table_users">
+    <table class="table align-middle table-row-dashed table-hover fs-6 gy-5" id="kt_table_users">
         <thead>
             <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                 <th class="w-10px pe-2">
