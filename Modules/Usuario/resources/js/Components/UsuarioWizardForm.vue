@@ -16,6 +16,13 @@ const props = defineProps({
 });
 const emit = defineEmits(['fechado']);
 
+// Lista de passos do wizard — acrescentar aqui é o único sítio a mudar
+// quando surgir um novo passo (o resto da navegação já é genérico).
+const passos = [
+    { numero: 1, titulo: 'Dados' },
+    { numero: 2, titulo: 'Permissões' },
+];
+
 const passo = ref(1);
 const processing = ref(false);
 const errors = ref({});
@@ -81,17 +88,31 @@ function proximoEstado(moduloId, acaoId) {
     }
 }
 
-function avancar() {
+function validarAntesDeAvancar() {
     if (perfilSelecionado.value === 'encarregado' && matriculasEducandos.value.length === 0) {
         errorMessage.value = 'É preciso ligar pelo menos um educando.';
-        return;
+        return false;
     }
     errorMessage.value = '';
-    passo.value = 2;
+    return true;
+}
+
+function irParaPasso(destino) {
+    if (destino <= passo.value) {
+        passo.value = destino;
+        return;
+    }
+    if (validarAntesDeAvancar()) {
+        passo.value = destino;
+    }
+}
+
+function avancar() {
+    irParaPasso(passo.value + 1);
 }
 
 function voltar() {
-    passo.value = 1;
+    irParaPasso(passo.value - 1);
 }
 
 function fecharModal() {
@@ -148,9 +169,16 @@ function guardar() {
     <div>
         <div class="alert alert-danger" v-if="errorMessage">{{ errorMessage }}</div>
 
-        <div class="mb-5 d-flex align-items-center gap-2">
-            <span class="badge" :class="passo === 1 ? 'badge-primary' : 'badge-light-primary'">1. Dados</span>
-            <span class="badge" :class="passo === 2 ? 'badge-primary' : 'badge-light-primary'">2. Permissões</span>
+        <div class="mb-7 d-flex align-items-center gap-3">
+            <span
+                v-for="item in passos"
+                :key="item.numero"
+                class="badge rounded-pill fs-6 fw-semibold px-4 py-3 cursor-pointer"
+                :class="passo === item.numero ? 'badge-primary' : 'badge-light-primary'"
+                @click="irParaPasso(item.numero)"
+            >
+                {{ item.numero }}. {{ item.titulo }}
+            </span>
         </div>
 
         <div v-if="passo === 1">

@@ -1,4 +1,6 @@
 <script setup>
+import { ref } from 'vue';
+
 // Campos comuns a qualquer pessoa (Aluno/Professor/Funcionário/Administrador/
 // Encarregado): avatar, nome, email OU matrícula (conforme tipoLogin), senha.
 // Usado pelos Forms de cada lista pra não repetir esse bloco — o que muda
@@ -18,6 +20,23 @@ defineProps({
         default: () => ({}),
     },
 });
+
+// Pré-visualização local do avatar escolhido — ainda não há endpoint no
+// backend a guardar isto (depende de dados_pessoas, que ainda não existe).
+const avatarPreview = ref(null);
+
+function onAvatarChange(event) {
+    const file = event.target.files?.[0];
+    if (file) {
+        avatarPreview.value = URL.createObjectURL(file);
+    }
+}
+
+function removerAvatar(event) {
+    avatarPreview.value = null;
+    const input = event.target.closest('.image-input')?.querySelector('input[type="file"]');
+    if (input) input.value = '';
+}
 </script>
 
 <template>
@@ -29,28 +48,19 @@ defineProps({
 
         <!--begin::Image input-->
         <div class="image-input image-input-outline image-input-placeholder" data-kt-image-input="true">
-            <!--begin::Preview existing avatar-->
-            <div class="image-input-wrapper w-125px h-125px" style="background-image: url(/themes/metronic/assets/media/avatars/300-6.jpg);"></div>
-            <!--end::Preview existing avatar-->
+            <!--begin::Preview-->
+            <div class="image-input-wrapper w-125px h-125px" :style="avatarPreview ? `background-image: url(${avatarPreview})` : ''"></div>
+            <!--end::Preview-->
 
             <!--begin::Label-->
-            <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="change" data-bs-toggle="tooltip" title="Change avatar">
+            <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-bs-toggle="tooltip" title="Escolher avatar">
                 <i class="ki-duotone ki-pencil fs-7"><span class="path1"></span><span class="path2"></span></i>
-                <!--begin::Inputs-->
-                <input type="file" name="avatar" accept=".png, .jpg, .jpeg" />
-                <input type="hidden" name="avatar_remove" />
-                <!--end::Inputs-->
+                <input type="file" name="avatar" accept=".png, .jpg, .jpeg" class="d-none" @change="onAvatarChange" />
             </label>
             <!--end::Label-->
 
-            <!--begin::Cancel-->
-            <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="cancel" data-bs-toggle="tooltip" title="Cancel avatar">
-                <i class="ki-duotone ki-cross fs-2"><span class="path1"></span><span class="path2"></span></i>
-            </span>
-            <!--end::Cancel-->
-
             <!--begin::Remove-->
-            <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="remove" data-bs-toggle="tooltip" title="Remove avatar">
+            <span v-if="avatarPreview" class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-bs-toggle="tooltip" title="Remover avatar" @click="removerAvatar">
                 <i class="ki-duotone ki-cross fs-2"><span class="path1"></span><span class="path2"></span></i>
             </span>
             <!--end::Remove-->
@@ -58,7 +68,7 @@ defineProps({
         <!--end::Image input-->
 
         <!--begin::Hint-->
-        <div class="form-text">Allowed file types: png, jpg, jpeg.</div>
+        <div class="form-text">Tipos de ficheiro permitidos: png, jpg, jpeg.</div>
         <!--end::Hint-->
     </div>
     <!--end::Input group-->
