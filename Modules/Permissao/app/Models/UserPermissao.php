@@ -19,6 +19,7 @@ class UserPermissao extends Model
         'users_id',
         'modulo_id',
         'acao_id',
+        'permitido',
     ];
 
     public function user()

@@ -744,9 +744,7 @@ const userManagementGroups = [
     {
         title: 'Perfis',
         items: [
-            { href: 'apps/user-management/roles/list.html', title: 'Roles List' },
-            { href: 'apps/user-management/roles/view.html', title: 'View Role' },
-            { href: 'apps/user-management/roles/permissions.html', title: 'Permissions' },
+            { href: '/permissoes/perfis', title: 'Perfis e Permissões' },
         ],
     },
 ]
