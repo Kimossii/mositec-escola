@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import UsuarioAvatar from './UsuarioAvatar.vue';
 import UsuarioStatusBadge from './UsuarioStatusBadge.vue';
 
@@ -29,12 +30,12 @@ async function editar(usuario) {
                         <input class="form-check-input" type="checkbox" data-kt-check="true" data-kt-check-target="#kt_table_users .form-check-input" value="1" />
                     </div>
                 </th>
-                <th class="min-w-125px">User</th>
-                <th class="min-w-125px">Matrícula</th>
-                <th class="min-w-125px">Last login</th>
+                <th class="min-w-125px">Utilizador</th>
+                <th class="min-w-125px">Perfil</th>
+                <th class="min-w-125px">Último acesso</th>
                 <th class="min-w-125px">Estado</th>
-                <th class="min-w-125px">Joined Date</th>
-                <th class="text-end min-w-100px">Actions</th>
+                <th class="min-w-125px">Data de Criação</th>
+                <th class="text-end min-w-100px">Ações</th>
             </tr>
         </thead>
         <tbody class="text-gray-600 fw-semibold">
@@ -54,7 +55,14 @@ async function editar(usuario) {
                     <!--begin::User details-->
                 </td>
                 <td>
-                    {{ usuario.matricula }}
+                    <span v-if="usuario.perfis.length === 0" class="text-muted">—</span>
+                    <span
+                        v-for="perfilNome in usuario.perfis"
+                        :key="perfilNome"
+                        class="badge badge-light-primary me-1"
+                    >
+                        {{ perfilNome }}
+                    </span>
                 </td>
                 <td>
                     <div class="badge badge-light fw-bold">{{ usuario.ultimo_acesso }}</div>
@@ -67,15 +75,16 @@ async function editar(usuario) {
                 </td>
                 <td class="text-end">
                     <a href="#" class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
-                        Actions
+                        Ações
                         <i class="ki-duotone ki-down fs-5 ms-1"></i>
                     </a>
                     <!--begin::Menu-->
-                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-150px py-4" data-kt-menu="true">
+                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-175px py-4" data-kt-menu="true">
                         <!--begin::Menu item-->
                         <div class="menu-item px-3">
                             <a href="#" class="menu-link px-3" @click.prevent="editar(usuario)">
-                                Edit
+                                <AcaoIcone acao="editar" class="me-2" />
+                                Editar
                             </a>
                         </div>
                         <!--end::Menu item-->
@@ -83,6 +92,7 @@ async function editar(usuario) {
                         <!--begin::Menu item-->
                         <div class="menu-item px-3">
                             <a :href="`/permissoes/utilizadores/${usuario.id}/permissoes`" class="menu-link px-3">
+                                <AcaoIcone acao="permissoes" class="me-2" />
                                 Permissões
                             </a>
                         </div>
@@ -90,8 +100,9 @@ async function editar(usuario) {
 
                         <!--begin::Menu item-->
                         <div class="menu-item px-3">
-                            <a href="#" class="menu-link px-3" data-kt-users-table-filter="delete_row">
-                                Delete
+                            <a href="#" class="menu-link px-3 text-danger" data-kt-users-table-filter="delete_row">
+                                <AcaoIcone acao="eliminar" class="me-2" />
+                                Eliminar
                             </a>
                         </div>
                         <!--end::Menu item-->

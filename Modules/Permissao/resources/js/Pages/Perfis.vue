@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import PerfilForm from '../Components/PerfilForm.vue';
 
 defineProps({
@@ -67,13 +68,20 @@ function eliminar(perfil) {
                             </td>
                             <td>{{ perfil.utilizadores_count }}</td>
                             <td class="text-end">
-                                <a :href="`/permissoes/perfis/${perfil.id}/permissoes`" class="btn btn-light btn-sm me-2">Permissões</a>
-                                <button class="btn btn-light btn-sm me-2" @click="abrirEdicao(perfil)">Editar</button>
+                                <a :href="`/permissoes/perfis/${perfil.id}/permissoes`" class="btn btn-light-success btn-sm me-2">
+                                    <AcaoIcone acao="permissoes" class="me-1" />
+                                    Permissões
+                                </a>
+                                <button class="btn btn-light-primary btn-sm me-2" @click="abrirEdicao(perfil)">
+                                    <AcaoIcone acao="editar" class="me-1" />
+                                    Editar
+                                </button>
                                 <button
                                     v-if="!perfil.sistema"
                                     class="btn btn-light-danger btn-sm"
                                     @click="eliminar(perfil)"
                                 >
+                                    <AcaoIcone acao="eliminar" class="me-1" />
                                     Eliminar
                                 </button>
                             </td>
