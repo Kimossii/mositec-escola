@@ -17,11 +17,13 @@ return new class extends Migration
             $table->string('email')->nullable()->unique();
             $table->string('numero_matricula')->nullable()->unique();
             $table->integer('tipo_login')->default(1); // 0: email | 1: matricula
+            $table->string('tipo_login_descricao')->default('Matrícula');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->foreignId('dados_pessoa_id')->nullable()->constrained('dados_pessoas')->onDelete('set null');
             $table->rememberToken();
             $table->integer('estado')->default(1); // 0 = inativo, 1 = ativo
+            $table->string('estado_descricao')->default('Ativo');
             $table->foreignId('criado_por')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('editado_por')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();

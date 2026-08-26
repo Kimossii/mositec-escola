@@ -14,4 +14,12 @@ enum TipoLogin: int
             'matricula' => self::MATRICULA,
         };
     }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::EMAIL => 'Email',
+            self::MATRICULA => 'Matrícula',
+        };
+    }
 }

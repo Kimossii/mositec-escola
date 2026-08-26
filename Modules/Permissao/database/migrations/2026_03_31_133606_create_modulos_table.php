@@ -17,6 +17,7 @@ return new class extends Migration {
             // 18: comunicacao, 19: auditoria,
             $table->string('descricao')->nullable();
             $table->integer('estado')->default(1); // 0: inativo, 1: ativo
+            $table->string('estado_descricao')->default('Ativo');
             $table->timestamps();
         });
     }

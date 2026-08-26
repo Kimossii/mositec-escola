@@ -4,6 +4,7 @@ namespace Modules\Permissao\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\Usuario\Enums\EstadoUsuario;
 use Modules\Usuario\Models\User;
 // use Modules\Permissao\Database\Factories\RoleFactory;
 
@@ -48,6 +49,13 @@ class Role extends Model
     public function eSistema(): bool
     {
         return $this->nome !== self::PERFIL_PERSONALIZADO;
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Role $role) {
+            $role->estado_descricao = EstadoUsuario::from($role->estado ?? 1)->label();
+        });
     }
     // protected static function newFactory(): RoleFactory
     // {

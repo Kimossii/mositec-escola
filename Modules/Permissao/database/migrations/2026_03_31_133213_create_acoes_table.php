@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->string('nome')->nullable();
             $table->integer('numero')->default(0); // 0: ver, 1: criar, 2: editar, 3: eliminar, 4: listar, 5: exportar
             $table->integer('estado')->default(1); // 0: inativo, 1: ativo
+            $table->string('estado_descricao')->default('Ativo');
             $table->timestamps();
         });
     }
