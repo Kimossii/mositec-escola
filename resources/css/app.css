@@ -10,6 +10,15 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+/* Colisão de nomes Tailwind × Bootstrap: o utilitário `.collapse` do Tailwind
+   define visibility:collapse (esconde mantendo o espaço no layout); o
+   componente `.collapse`/`.collapse.show` do Bootstrap (usado nos accordions
+   de permissões) é outra coisa — mostra/esconde via display. O do Tailwind
+   ganhava e deixava o painel aberto mas com o conteúdo invisível. */
+.collapse.show {
+    visibility: visible;
+}
+
 /* Paleta própria da sidebar e da área de conteúdo apenas no modo claro; modo escuro mantém o padrão do Metronic. */
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] {
     --bs-app-bg-color: #FFFFFF;
@@ -143,13 +152,25 @@ html[data-bs-theme='light'] .table.table-hover {
 }
 
 .table.table-hover > tbody > tr:hover > td:first-child {
-    border-top-left-radius: 999px;
-    border-bottom-left-radius: 999px;
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
 }
 
 .table.table-hover > tbody > tr:hover > td:last-child {
-    border-top-right-radius: 999px;
-    border-bottom-right-radius: 999px;
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+/* Seta do botão de colapso (lista de permissões do perfil) gira 180° quando
+   aberto. Testado ao vivo: esta versão do Bootstrap não alterna a classe
+   .collapsed no botão como manda o padrão — só atualiza aria-expanded — por
+   isso a regra se baseia nesse atributo e não na classe. */
+button[data-bs-toggle='collapse'] i {
+    transition: transform 0.2s ease-in-out;
+}
+
+button[data-bs-toggle='collapse'][aria-expanded='true'] i {
+    transform: rotate(180deg);
 }
 
 /* Texto preto nos campos preenchíveis (inputs e selects "solid") no modo claro — o cinza padrão do Metronic ficava pouco visível. */

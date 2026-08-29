@@ -38,6 +38,17 @@ function eliminar(perfil) {
         onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível eliminar o perfil.'),
     });
 }
+
+// Agrupa a lista plana [{ modulo, acao }] por módulo, pra render em colunas
+// (Módulo A: ver, editar / Módulo B: ver) em vez de um saco de badges soltos.
+function agruparPorModulo(permissoes) {
+    const grupos = new Map();
+    for (const { modulo, acao } of permissoes) {
+        if (!grupos.has(modulo)) grupos.set(modulo, []);
+        grupos.get(modulo).push(acao);
+    }
+    return Array.from(grupos, ([modulo, acoes]) => ({ modulo, acoes }));
+}
 </script>
 
 <template>
@@ -59,33 +70,89 @@ function eliminar(perfil) {
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
-                        <tr v-for="perfil in perfis" :key="perfil.id">
-                            <td>{{ perfil.descricao }}</td>
-                            <td>
-                                <span class="badge" :class="perfil.sistema ? 'badge-light-primary' : 'badge-light-info'">
-                                    {{ perfil.sistema ? 'Sistema' : 'Personalizado' }}
-                                </span>
-                            </td>
-                            <td>{{ perfil.utilizadores_count }}</td>
-                            <td class="text-end">
-                                <a :href="`/permissoes/perfis/${perfil.id}/permissoes`" class="btn btn-light-success btn-sm me-2">
-                                    <AcaoIcone acao="permissoes" class="me-1" />
-                                    Permissões
-                                </a>
-                                <button class="btn btn-light-primary btn-sm me-2" @click="abrirEdicao(perfil)">
-                                    <AcaoIcone acao="editar" class="me-1" />
-                                    Editar
-                                </button>
-                                <button
-                                    v-if="!perfil.sistema"
-                                    class="btn btn-light-danger btn-sm"
-                                    @click="eliminar(perfil)"
-                                >
-                                    <AcaoIcone acao="eliminar" class="me-1" />
-                                    Eliminar
-                                </button>
-                            </td>
-                        </tr>
+                        <template v-for="perfil in perfis" :key="perfil.id">
+                            <tr>
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="btn btn-icon btn-sm btn-light-primary me-2"
+                                        data-bs-toggle="collapse"
+                                        :data-bs-target="`#perfil-permissoes-${perfil.id}`"
+                                        aria-expanded="false"
+                                    >
+                                        <i class="ki-duotone ki-down fs-3"></i>
+                                    </button>
+                                    {{ perfil.descricao }}
+                                </td>
+                                <td>
+                                    <span class="badge" :class="perfil.sistema ? 'badge-light-primary' : 'badge-light-info'">
+                                        {{ perfil.sistema ? 'Sistema' : 'Personalizado' }}
+                                    </span>
+                                </td>
+                                <td>{{ perfil.utilizadores_count }}</td>
+                                <td class="text-end">
+                                    <a :href="`/permissoes/perfis/${perfil.id}/permissoes`" class="btn btn-light-success btn-sm me-2">
+                                        <AcaoIcone acao="permissoes" class="me-1" />
+                                        Permissões
+                                    </a>
+                                    <button class="btn btn-light-primary btn-sm me-2" @click="abrirEdicao(perfil)">
+                                        <AcaoIcone acao="editar" class="me-1" />
+                                        Editar
+                                    </button>
+                                    <button
+                                        v-if="!perfil.sistema"
+                                        class="btn btn-light-danger btn-sm"
+                                        @click="eliminar(perfil)"
+                                    >
+                                        <AcaoIcone acao="eliminar" class="me-1" />
+                                        Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="p-0 border-0">
+                                    <div class="collapse" :id="`perfil-permissoes-${perfil.id}`">
+                                        <div
+                                            class="bg-light rounded-3 mx-6 mb-6 overflow-hidden"
+                                            style="border-left: 4px solid var(--bs-success);"
+                                        >
+                                            <div v-if="!perfil.permissoes.length" class="p-6 text-muted fs-6">
+                                                Nenhuma permissão atribuída a este perfil.
+                                            </div>
+
+                                            <div v-else class="table-responsive">
+                                                <table class="table table-permissoes align-middle mb-0">
+                                                    <thead>
+                                                        <tr class="text-muted fw-bold fs-6 text-uppercase">
+                                                            <th class="ps-6 min-w-200px">Módulo</th>
+                                                            <th class="text-start min-w-100px ps-6">Ações</th>
+                                                        </tr>
+                                                    </thead>
+
+                                                    <tbody class="text-gray-800 fw-semibold">
+                                                        <tr v-for="grupo in agruparPorModulo(perfil.permissoes)" :key="grupo.modulo">
+                                                            <td class="ps-6 fw-bold fs-6">{{ grupo.modulo }}</td>
+
+                                                            <td class="ps-6">
+                                                                <div class="d-flex flex-wrap gap-15">
+                                                                    <span
+                                                                        v-for="acao in grupo.acoes"
+                                                                        :key="acao"
+                                                                        class="badge badge-light-success fs-5"
+                                                                    >
+                                                                        {{ acao }}
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>
@@ -101,3 +168,33 @@ function eliminar(perfil) {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* A borda padrão do Bootstrap (--bs-border-color: #F4F4F4) some em cima do
+   fundo bg-light (--bs-light: #F9F9F9) — praticamente a mesma cor. Aqui as
+   linhas (entre módulos) e a coluna (Módulo | Ações) precisam de contraste
+   de verdade pra ficar com cara de tabela mesmo, não só texto lado a lado.
+
+   O !important é necessário: o Bootstrap tem uma regra
+   ".table:not(.table-bordered) tbody tr:last-child th/td { border-bottom: 0
+   !important; }" pra tirar a borda da última linha visível de QUALQUER
+   tabela. Como é seletor descendente (não filho direto), ela "vaza" pra
+   dentro desta tabela aninhada sempre que o perfil expandido for o último
+   da lista — sem !important a borda do cabeçalho some nesse caso. E só
+   !important não bastava: a regra do Bootstrap também é mais específica
+   (3 classes/pseudo-classes) que ".table-permissoes[data-v] th" (2) — por
+   isso aqui usamos as 3 classes que o <table> já tem (table, table-permissoes,
+   align-middle) pra ganhar o empate de especificidade também. */
+.table.table-permissoes.align-middle > tbody > tr:not(:last-child) > td {
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.14) !important;
+}
+
+.table.table-permissoes.align-middle > thead > tr > th {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.14) !important;
+}
+
+.table-permissoes > thead > tr > th:last-child,
+.table-permissoes > tbody > tr > td:last-child {
+    border-left: 1px solid rgba(0, 0, 0, 0.14);
+}
+</style>

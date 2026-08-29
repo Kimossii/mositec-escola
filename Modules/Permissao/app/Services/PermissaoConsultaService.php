@@ -13,13 +13,20 @@ class PermissaoConsultaService
 {
     public function listarPerfis(): Collection
     {
-        return Role::withCount('users')->get()->map(fn (Role $role) => [
-            'id' => $role->id,
-            'descricao' => $role->descricao,
-            'estado' => $role->estado,
-            'sistema' => $role->eSistema(),
-            'utilizadores_count' => $role->users_count,
-        ]);
+        return Role::withCount('users')
+            ->with(['permissoes.modulo:id,descricao', 'permissoes.acao:id,nome'])
+            ->get()
+            ->map(fn (Role $role) => [
+                'id' => $role->id,
+                'descricao' => $role->descricao,
+                'estado' => $role->estado,
+                'sistema' => $role->eSistema(),
+                'utilizadores_count' => $role->users_count,
+                'permissoes' => $role->permissoes->map(fn ($permissao) => [
+                    'modulo' => $permissao->modulo->descricao,
+                    'acao' => $permissao->acao->nome,
+                ])->values(),
+            ]);
     }
 
     public function dadosPermissoesDoPerfil(Role $role): array
