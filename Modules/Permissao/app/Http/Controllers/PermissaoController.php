@@ -24,6 +24,7 @@ class PermissaoController extends Controller
     {
         return Inertia::render('Permissao/Perfis', [
             'perfis' => $this->consulta->listarPerfis(),
+            'acoes' => $this->consulta->acoesDisponiveis(),
         ]);
     }
 

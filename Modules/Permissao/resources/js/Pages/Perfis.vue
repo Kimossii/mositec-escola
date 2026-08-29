@@ -11,6 +11,10 @@ defineProps({
         type: Array,
         required: true,
     },
+    acoes: {
+        type: Array,
+        required: true,
+    },
 });
 defineOptions({ layout: AppLayout });
 
@@ -39,8 +43,8 @@ function eliminar(perfil) {
     });
 }
 
-// Agrupa a lista plana [{ modulo, acao }] por módulo, pra render em colunas
-// (Módulo A: ver, editar / Módulo B: ver) em vez de um saco de badges soltos.
+// Agrupa a lista plana [{ modulo, acao }] por módulo, pra render como matriz
+// Módulo × Ação (uma coluna por ação, igual à página de edição de permissões).
 function agruparPorModulo(permissoes) {
     const grupos = new Map();
     for (const { modulo, acao } of permissoes) {
@@ -48,6 +52,10 @@ function agruparPorModulo(permissoes) {
         grupos.get(modulo).push(acao);
     }
     return Array.from(grupos, ([modulo, acoes]) => ({ modulo, acoes }));
+}
+
+function temAcao(grupo, acao) {
+    return grupo.acoes.includes(acao);
 }
 </script>
 
@@ -125,7 +133,9 @@ function agruparPorModulo(permissoes) {
                                                     <thead>
                                                         <tr class="text-muted fw-bold fs-6 text-uppercase">
                                                             <th class="ps-6 min-w-200px">Módulo</th>
-                                                            <th class="text-start min-w-100px ps-6">Ações</th>
+                                                            <th v-for="acao in acoes" :key="acao" class="text-center">
+                                                                {{ acao }}
+                                                            </th>
                                                         </tr>
                                                     </thead>
 
@@ -133,16 +143,16 @@ function agruparPorModulo(permissoes) {
                                                         <tr v-for="grupo in agruparPorModulo(perfil.permissoes)" :key="grupo.modulo">
                                                             <td class="ps-6 fw-bold fs-6">{{ grupo.modulo }}</td>
 
-                                                            <td class="ps-6">
-                                                                <div class="d-flex flex-wrap gap-15">
-                                                                    <span
-                                                                        v-for="acao in grupo.acoes"
-                                                                        :key="acao"
-                                                                        class="badge badge-light-success fs-5"
-                                                                    >
-                                                                        {{ acao }}
-                                                                    </span>
-                                                                </div>
+                                                            <td v-for="acao in acoes" :key="acao" class="text-center">
+                                                                <span v-if="temAcao(grupo, acao)" class="badge badge-circle badge-success">
+                                                                    <i class="ki-duotone ki-check fs-3 text-white"></i>
+                                                                </span>
+                                                                <span v-else class="badge badge-circle badge-danger">
+                                                                    <i class="ki-duotone ki-cross fs-3 text-white">
+                                                                        <span class="path1"></span>
+                                                                        <span class="path2"></span>
+                                                                    </i>
+                                                                </span>
                                                             </td>
                                                         </tr>
                                                     </tbody>
@@ -193,8 +203,8 @@ function agruparPorModulo(permissoes) {
     border-bottom: 1px solid rgba(0, 0, 0, 0.14) !important;
 }
 
-.table-permissoes > thead > tr > th:last-child,
-.table-permissoes > tbody > tr > td:last-child {
+.table-permissoes > thead > tr > th:not(:first-child),
+.table-permissoes > tbody > tr > td:not(:first-child) {
     border-left: 1px solid rgba(0, 0, 0, 0.14);
 }
 </style>

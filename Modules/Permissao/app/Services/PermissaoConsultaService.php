@@ -29,6 +29,11 @@ class PermissaoConsultaService
             ]);
     }
 
+    public function acoesDisponiveis(): Collection
+    {
+        return Acao::orderBy('numero')->pluck('nome');
+    }
+
     public function dadosPermissoesDoPerfil(Role $role): array
     {
         return [
