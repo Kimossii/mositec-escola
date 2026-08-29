@@ -13,6 +13,7 @@ Route::group(['prefix' => 'usuarios'], function () {
     Route::get('/{user}/editar', [UsuarioController::class, 'edit'])->name('usuario.edit');
     Route::put('/{user}', [UsuarioController::class, 'update'])->name('usuario.update');
     Route::delete('/{user}', [UsuarioController::class, 'destroy'])->name('usuario.destroy');
+    Route::patch('/{user}/estado', [UsuarioController::class, 'alternarEstado'])->name('usuario.alternarEstado');
 
     Route::group(['prefix' => 'alunos'], function () {
         Route::get('/', [UsuarioController::class, 'alunos'])->name('usuario.alunos');

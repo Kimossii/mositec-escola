@@ -71,6 +71,22 @@ class EliminarUsuarioTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $aluno->id]);
     }
 
+    public function test_alterna_estado_do_utilizador(): void
+    {
+        $this->actingAsStaff();
+
+        $professor = User::create(['name' => 'Prof', 'email' => 'prof.estado@example.com', 'password' => Hash::make('x'), 'estado' => 1]);
+
+        $response = $this->patch("/usuarios/{$professor->id}/estado");
+
+        $response->assertRedirect();
+        $this->assertSame(0, $professor->fresh()->estado);
+
+        $this->patch("/usuarios/{$professor->id}/estado");
+
+        $this->assertSame(1, $professor->fresh()->estado);
+    }
+
     public function test_utilizador_sem_permissao_nao_elimina(): void
     {
         $semPermissao = User::create(['name' => 'Sem Permissao', 'email' => 'sem.permissao@example.com', 'password' => Hash::make('x')]);

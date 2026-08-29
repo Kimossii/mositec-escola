@@ -8,6 +8,7 @@ Route::middleware(['auth', 'can:gerir-permissoes'])->prefix('permissoes')->name(
     Route::post('/perfis', [PermissaoController::class, 'store'])->name('perfis.store');
     Route::put('/perfis/{role}', [PermissaoController::class, 'update'])->name('perfis.update');
     Route::delete('/perfis/{role}', [PermissaoController::class, 'destroy'])->name('perfis.destroy');
+    Route::patch('/perfis/{role}/estado', [PermissaoController::class, 'alternarEstado'])->name('perfis.alternarEstado');
 
     Route::get('/perfis/{role}/permissoes', [PermissaoController::class, 'permissoesDoPerfil'])->name('perfis.permissoes');
     Route::put('/perfis/{role}/permissoes', [PermissaoController::class, 'sincronizarPermissoesDoPerfil'])->name('perfis.permissoes.sincronizar');

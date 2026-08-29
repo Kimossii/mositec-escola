@@ -2,6 +2,7 @@
 
 namespace Modules\Usuario\Services;
 
+use Modules\Usuario\Actions\AlternarEstadoUsuarioAction;
 use Modules\Usuario\Actions\AtualizarUsuarioAction;
 use Modules\Usuario\Actions\EliminarUsuarioAction;
 use Modules\Usuario\Actions\UsuarioAction;
@@ -15,6 +16,7 @@ class GestaoUsuarioService
         private UsuarioAction $criarAction,
         private AtualizarUsuarioAction $atualizarAction,
         private EliminarUsuarioAction $eliminarAction,
+        private AlternarEstadoUsuarioAction $alternarEstadoAction,
     ) {}
 
     public function criar(CriarUsuarioRequest $request): User
@@ -32,5 +34,10 @@ class GestaoUsuarioService
     public function eliminar(User $user): void
     {
         $this->eliminarAction->executar($user);
+    }
+
+    public function alternarEstado(User $user): User
+    {
+        return $this->alternarEstadoAction->executar($user);
     }
 }

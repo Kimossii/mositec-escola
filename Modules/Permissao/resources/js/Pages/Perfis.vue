@@ -36,6 +36,15 @@ function fecharModal() {
     modalAberto.value = false;
 }
 
+// estado: 1 = ativo, 0 = inativo (mesma convenção do módulo Usuario).
+function alternarEstado(perfil) {
+    router.patch(`/permissoes/perfis/${perfil.id}/estado`, {}, {
+        preserveScroll: true,
+        onSuccess: () => toast.success(perfil.estado === 1 ? 'Perfil desativado.' : 'Perfil ativado.'),
+        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível atualizar o estado.'),
+    });
+}
+
 const perfilParaEliminar = ref(null);
 const eliminando = ref(false);
 
@@ -91,6 +100,7 @@ function temAcao(grupo, acao) {
                             <th class="min-w-200px">Nome</th>
                             <th class="min-w-100px">Tipo</th>
                             <th class="min-w-100px">Utilizadores</th>
+                            <th class="min-w-100px">Estado</th>
                             <th class="text-end min-w-150px">Ações</th>
                         </tr>
                     </thead>
@@ -115,7 +125,20 @@ function temAcao(grupo, acao) {
                                     </span>
                                 </td>
                                 <td>{{ perfil.utilizadores_count }}</td>
+                                <td>
+                                    <span class="badge" :class="perfil.estado === 1 ? 'badge-light-success' : 'badge-light-danger'">
+                                        {{ perfil.estado === 1 ? 'Ativo' : 'Inativo' }}
+                                    </span>
+                                </td>
                                 <td class="text-end">
+                                    <button
+                                        type="button"
+                                        class="btn btn-light-primary btn-sm me-2"
+                                        @click="alternarEstado(perfil)"
+                                    >
+                                        <AcaoIcone :acao="perfil.estado === 1 ? 'desativar' : 'ativar'" class="me-1" />
+                                        {{ perfil.estado === 1 ? 'Desativar' : 'Ativar' }}
+                                    </button>
                                     <a :href="`/permissoes/perfis/${perfil.id}/permissoes`" class="btn btn-light-success btn-sm me-2">
                                         <AcaoIcone acao="permissoes" class="me-1" />
                                         Permissões
@@ -135,7 +158,7 @@ function temAcao(grupo, acao) {
                                 </td>
                             </tr>
                             <tr>
-                                <td colspan="4" class="p-0 border-0">
+                                <td colspan="5" class="p-0 border-0">
                                     <div class="collapse" :id="`perfil-permissoes-${perfil.id}`">
                                         <div
                                             class="bg-light rounded-3 mx-6 mb-6 overflow-hidden"

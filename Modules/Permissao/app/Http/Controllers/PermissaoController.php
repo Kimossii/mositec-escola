@@ -49,6 +49,13 @@ class PermissaoController extends Controller
         return redirect()->back()->with('success', 'Perfil eliminado com sucesso.');
     }
 
+    public function alternarEstado(Role $role)
+    {
+        $this->gestao->alternarEstadoPerfil($role);
+
+        return redirect()->back()->with('success', 'Estado do perfil atualizado.');
+    }
+
     public function permissoesDoPerfil(Role $role)
     {
         return Inertia::render('Permissao/PerfilPermissoes', $this->consulta->dadosPermissoesDoPerfil($role));

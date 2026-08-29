@@ -4,6 +4,7 @@ import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
+import { ESTADO } from '../Models/Usuario';
 import UsuarioAvatar from './UsuarioAvatar.vue';
 import UsuarioStatusBadge from './UsuarioStatusBadge.vue';
 
@@ -21,6 +22,16 @@ async function editar(usuario) {
     });
     const dados = await resposta.json();
     emit('editar', dados);
+}
+
+function alternarEstado(usuario) {
+    router.patch(`/usuarios/${usuario.id}/estado`, {}, {
+        preserveScroll: true,
+        onSuccess: () => toast.success(
+            usuario.estado === ESTADO.ATIVO ? 'Utilizador desativado.' : 'Utilizador ativado.',
+        ),
+        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível atualizar o estado.'),
+    });
 }
 
 const usuarioParaEliminar = ref(null);
@@ -131,6 +142,15 @@ function confirmarEliminacao() {
                             <a :href="`/permissoes/utilizadores/${usuario.id}/permissoes`" class="menu-link px-3">
                                 <AcaoIcone acao="permissoes" class="me-2" />
                                 Permissões
+                            </a>
+                        </div>
+                        <!--end::Menu item-->
+
+                        <!--begin::Menu item-->
+                        <div class="menu-item px-3">
+                            <a href="#" class="menu-link px-3" @click.prevent="alternarEstado(usuario)">
+                                <AcaoIcone :acao="usuario.estado === ESTADO.ATIVO ? 'desativar' : 'ativar'" class="me-2" />
+                                {{ usuario.estado === ESTADO.ATIVO ? 'Desativar' : 'Ativar' }}
                             </a>
                         </div>
                         <!--end::Menu item-->

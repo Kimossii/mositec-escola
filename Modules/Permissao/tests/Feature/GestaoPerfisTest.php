@@ -83,6 +83,20 @@ class GestaoPerfisTest extends TestCase
         $this->assertDatabaseMissing('roles', ['id' => $role->id]);
     }
 
+    public function test_alterna_estado_do_perfil(): void
+    {
+        $role = Role::create(['nome' => Role::PERFIL_PERSONALIZADO, 'descricao' => 'Diretor', 'estado' => 1]);
+
+        $response = $this->patch("/permissoes/perfis/{$role->id}/estado");
+
+        $response->assertRedirect();
+        $this->assertSame(0, $role->fresh()->estado);
+
+        $this->patch("/permissoes/perfis/{$role->id}/estado");
+
+        $this->assertSame(1, $role->fresh()->estado);
+    }
+
     public function test_sincroniza_permissoes_do_perfil_via_endpoint(): void
     {
         $role = Role::create(['nome' => Role::PERFIL_PERSONALIZADO, 'descricao' => 'Diretor', 'estado' => 1]);

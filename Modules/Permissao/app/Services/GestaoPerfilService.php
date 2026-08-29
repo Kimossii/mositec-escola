@@ -2,6 +2,7 @@
 
 namespace Modules\Permissao\Services;
 
+use Modules\Permissao\Actions\AlternarEstadoPerfilAction;
 use Modules\Permissao\Actions\AtribuirPerfilAction;
 use Modules\Permissao\Actions\AtualizarPerfilAction;
 use Modules\Permissao\Actions\CriarPerfilAction;
@@ -22,6 +23,7 @@ class GestaoPerfilService
         private RemoverPerfilAction $removerPerfilAction,
         private SincronizarPermissoesPerfilAction $sincronizarPermissoesPerfilAction,
         private SincronizarPermissoesUtilizadorAction $sincronizarPermissoesUtilizadorAction,
+        private AlternarEstadoPerfilAction $alternarEstadoPerfilAction,
     ) {}
 
     public function criarPerfil(array $dados): Role
@@ -57,5 +59,10 @@ class GestaoPerfilService
     public function sincronizarPermissoesDoUtilizador(User $user, array $celulas): void
     {
         $this->sincronizarPermissoesUtilizadorAction->executar($user, $celulas);
+    }
+
+    public function alternarEstadoPerfil(Role $role): Role
+    {
+        return $this->alternarEstadoPerfilAction->executar($role);
     }
 }
