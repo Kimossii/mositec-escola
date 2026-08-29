@@ -1,5 +1,9 @@
 <script setup>
+import { ref } from 'vue';
+import { router } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import UsuarioAvatar from './UsuarioAvatar.vue';
 import UsuarioStatusBadge from './UsuarioStatusBadge.vue';
 
@@ -17,6 +21,30 @@ async function editar(usuario) {
     });
     const dados = await resposta.json();
     emit('editar', dados);
+}
+
+const usuarioParaEliminar = ref(null);
+const eliminando = ref(false);
+
+function pedirEliminacao(usuario) {
+    usuarioParaEliminar.value = usuario;
+}
+
+function cancelarEliminacao() {
+    usuarioParaEliminar.value = null;
+}
+
+function confirmarEliminacao() {
+    eliminando.value = true;
+    router.delete(`/usuarios/${usuarioParaEliminar.value.id}`, {
+        preserveScroll: true,
+        onSuccess: () => toast.success('Utilizador eliminado com sucesso.'),
+        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível eliminar o utilizador.'),
+        onFinish: () => {
+            eliminando.value = false;
+            usuarioParaEliminar.value = null;
+        },
+    });
 }
 </script>
 
@@ -109,7 +137,7 @@ async function editar(usuario) {
 
                         <!--begin::Menu item-->
                         <div class="menu-item px-3">
-                            <a href="#" class="menu-link px-3 text-danger" data-kt-users-table-filter="delete_row">
+                            <a href="#" class="menu-link px-3 text-danger" @click.prevent="pedirEliminacao(usuario)">
                                 <AcaoIcone acao="eliminar" class="me-2" />
                                 Eliminar
                             </a>
@@ -122,4 +150,13 @@ async function editar(usuario) {
         </tbody>
     </table>
     <!--end::Table-->
+
+    <ConfirmModal
+        :show="!!usuarioParaEliminar"
+        titulo="Eliminar utilizador"
+        :mensagem="`Tem certeza que deseja eliminar ${usuarioParaEliminar?.name}?`"
+        :processando="eliminando"
+        @confirmar="confirmarEliminacao"
+        @cancelar="cancelarEliminacao"
+    />
 </template>

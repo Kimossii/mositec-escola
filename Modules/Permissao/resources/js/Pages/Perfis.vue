@@ -4,6 +4,7 @@ import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import PerfilForm from '../Components/PerfilForm.vue';
 
 defineProps({
@@ -35,11 +36,27 @@ function fecharModal() {
     modalAberto.value = false;
 }
 
-function eliminar(perfil) {
-    router.delete(`/permissoes/perfis/${perfil.id}`, {
+const perfilParaEliminar = ref(null);
+const eliminando = ref(false);
+
+function pedirEliminacao(perfil) {
+    perfilParaEliminar.value = perfil;
+}
+
+function cancelarEliminacao() {
+    perfilParaEliminar.value = null;
+}
+
+function confirmarEliminacao() {
+    eliminando.value = true;
+    router.delete(`/permissoes/perfis/${perfilParaEliminar.value.id}`, {
         preserveScroll: true,
         onSuccess: () => toast.success('Perfil eliminado com sucesso.'),
         onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível eliminar o perfil.'),
+        onFinish: () => {
+            eliminando.value = false;
+            perfilParaEliminar.value = null;
+        },
     });
 }
 
@@ -110,7 +127,7 @@ function temAcao(grupo, acao) {
                                     <button
                                         v-if="!perfil.sistema"
                                         class="btn btn-light-danger btn-sm"
-                                        @click="eliminar(perfil)"
+                                        @click="pedirEliminacao(perfil)"
                                     >
                                         <AcaoIcone acao="eliminar" class="me-1" />
                                         Eliminar
@@ -176,6 +193,15 @@ function temAcao(grupo, acao) {
                 </div>
             </div>
         </div>
+
+        <ConfirmModal
+            :show="!!perfilParaEliminar"
+            titulo="Eliminar perfil"
+            :mensagem="`Tem certeza que deseja eliminar o perfil ${perfilParaEliminar?.descricao}?`"
+            :processando="eliminando"
+            @confirmar="confirmarEliminacao"
+            @cancelar="cancelarEliminacao"
+        />
     </div>
 </template>
 

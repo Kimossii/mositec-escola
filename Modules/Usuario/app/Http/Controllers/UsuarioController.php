@@ -91,4 +91,11 @@ class UsuarioController extends Controller
 
         return redirect()->back()->with('success', 'Utilizador atualizado com sucesso.');
     }
+
+    public function destroy(User $user)
+    {
+        $this->service->eliminar($user);
+
+        return redirect()->back()->with('success', 'Utilizador eliminado com sucesso.');
+    }
 }
