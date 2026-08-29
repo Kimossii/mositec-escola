@@ -11,12 +11,15 @@
 
     <!-- Slot recebe o conteúdo da página -->
     <slot />
+
+    <Footer />
 </template>
 
 <script setup>
 import { onMounted } from 'vue'
 import AppHeader from '@/Components/Layout/AppHeader.vue'
 import SidebarMenuWrapper from '@/Components/Layout/SidebarMenuWrapper.vue'
+import Footer from '@/Components/Shared/Footer.vue'
 
 onMounted(() => {
     if (window.KTMenu)    window.KTMenu.init()
