@@ -18,7 +18,7 @@ class CriarUsuarioRequest extends BaseRequest
             'perfil' => 'required|in:admin_escola,secretario,professor,aluno,encarregado',
             'tipo_login' => 'required|in:email,matricula',
             'email' => 'required_if:tipo_login,email|nullable|email|unique:users,email',
-            'password' => 'required|min:6',
+            'password' => 'required|min:6|confirmed',
             'dados_pessoa_id' => 'nullable|exists:dados_pessoas,id',
             'estado' => 'nullable|in:1,0',
             'matriculas_educandos' => 'nullable|array',
@@ -49,6 +49,7 @@ class CriarUsuarioRequest extends BaseRequest
 
             'password.required' => 'A senha é obrigatória.',
             'password.min' => 'A senha deve ter pelo menos 6 caracteres.',
+            'password.confirmed' => 'A confirmação da senha não coincide.',
 
             'dados_pessoa_id.exists' => 'O registro de dados pessoais não existe.',
 

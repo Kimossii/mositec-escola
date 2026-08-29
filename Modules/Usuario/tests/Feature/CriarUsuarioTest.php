@@ -55,6 +55,7 @@ class CriarUsuarioTest extends TestCase
             'tipo_login' => 'email',
             'email' => 'professor@example.com',
             'password' => 'segredo123',
+            'password_confirmation' => 'segredo123',
             'estado' => 1,
         ]);
 
@@ -74,6 +75,7 @@ class CriarUsuarioTest extends TestCase
             'perfil' => 'aluno',
             'tipo_login' => 'matricula',
             'password' => 'segredo123',
+            'password_confirmation' => 'segredo123',
             'estado' => 1,
         ]);
 
@@ -95,6 +97,7 @@ class CriarUsuarioTest extends TestCase
             'perfil' => 'professor',
             'tipo_login' => 'email',
             'password' => 'segredo123',
+            'password_confirmation' => 'segredo123',
         ]);
 
         $response->assertSessionHasErrors('email');
@@ -117,6 +120,7 @@ class CriarUsuarioTest extends TestCase
             'tipo_login' => 'email',
             'email' => 'encarregado@example.com',
             'password' => 'segredo123',
+            'password_confirmation' => 'segredo123',
             'matriculas_educandos' => ['2026-0001'],
         ]);
 
@@ -136,6 +140,7 @@ class CriarUsuarioTest extends TestCase
             'perfil' => 'aluno',
             'tipo_login' => 'matricula',
             'password' => 'segredo123',
+            'password_confirmation' => 'segredo123',
             'estado' => 1,
         ]);
 
@@ -161,6 +166,7 @@ class CriarUsuarioTest extends TestCase
             'tipo_login' => 'email',
             'email' => 'encarregado.fluxo@example.com',
             'password' => 'segredo123',
+            'password_confirmation' => 'segredo123',
             'matriculas_educandos' => [$aluno->numero_matricula],
         ]);
 
@@ -182,6 +188,7 @@ class CriarUsuarioTest extends TestCase
             'tipo_login' => 'email',
             'email' => 'professor.extra@example.com',
             'password' => 'segredo123',
+            'password_confirmation' => 'segredo123',
             'celulas' => [
                 ['modulo_id' => $modulo->id, 'acao_id' => $acao->id, 'permitido' => true],
             ],

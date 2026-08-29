@@ -3,9 +3,12 @@
 // Encarregado): nome, email OU matrícula (conforme tipoLogin), senha. Usado
 // pelos Forms de cada lista pra não repetir esse bloco — o que muda entre
 // eles é só a secção de tipo/papel, que fica no próprio Form.
+import PasswordInput from '@/Components/Shared/PasswordInput.vue';
+
 const name = defineModel('name', { default: '' });
 const email = defineModel('email', { default: '' });
 const password = defineModel('password', { default: '' });
+const passwordConfirmation = defineModel('passwordConfirmation', { default: '' });
 
 defineProps({
     tipoLogin: {
@@ -16,6 +19,10 @@ defineProps({
     errors: {
         type: Object,
         default: () => ({}),
+    },
+    edicao: {
+        type: Boolean,
+        default: false,
     },
 });
 </script>
@@ -62,14 +69,30 @@ defineProps({
     <!--begin::Input group-->
     <div class="fv-row mb-7">
         <!--begin::Label-->
-        <label class="required fw-semibold fs-6 mb-2">Senha</label>
+        <label class="fw-semibold fs-6 mb-2" :class="{ required: !edicao }">Senha</label>
         <!--end::Label-->
 
         <!--begin::Input-->
-        <input v-model="password" type="password" name="user_password" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+        <PasswordInput v-model="password" name="user_password" :placeholder="edicao ? 'Deixe em branco para manter a senha atual' : 'Mínimo 6 caracteres'" />
         <!--end::Input-->
 
+        <div class="form-text" v-if="edicao">Preencha apenas se quiser definir uma nova senha.</div>
+
         <div class="text-danger fs-7 mt-1" v-if="errors.password">{{ errors.password[0] }}</div>
+    </div>
+    <!--end::Input group-->
+
+    <!--begin::Input group-->
+    <div class="fv-row mb-7" v-if="!edicao || password">
+        <!--begin::Label-->
+        <label class="fw-semibold fs-6 mb-2" :class="{ required: !edicao }">Confirmar senha</label>
+        <!--end::Label-->
+
+        <!--begin::Input-->
+        <PasswordInput v-model="passwordConfirmation" name="user_password_confirmation" placeholder="Repita a senha" />
+        <!--end::Input-->
+
+        <div class="text-danger fs-7 mt-1" v-if="errors.password_confirmation">{{ errors.password_confirmation[0] }}</div>
     </div>
     <!--end::Input group-->
 </template>

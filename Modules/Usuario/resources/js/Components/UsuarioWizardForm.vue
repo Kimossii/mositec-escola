@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import UsuarioFormFields from './UsuarioFormFields.vue';
 
 const props = defineProps({
@@ -32,6 +33,7 @@ const form = reactive({
     name: props.utilizador?.name ?? '',
     email: props.utilizador?.email ?? '',
     password: '',
+    passwordConfirmation: '',
 });
 
 const perfilSelecionado = ref(props.perfilFixo ?? props.utilizador?.perfil ?? props.perfis[0]?.slug ?? '');
@@ -51,10 +53,9 @@ function removerEducando(matricula) {
     matriculasEducandos.value = matriculasEducandos.value.filter((m) => m !== matricula);
 }
 
-const tipoLogin = computed(() => {
-    if (props.utilizador) return props.utilizador.tipo_login;
-    return perfilSelecionado.value === 'aluno' ? 'matricula' : 'email';
-});
+// Só o perfil "aluno" usa login por matrícula — deriva sempre do perfil em
+// vez de confiar no tipo_login gravado (pode estar errado em registos antigos).
+const tipoLogin = computed(() => (perfilSelecionado.value === 'aluno' ? 'matricula' : 'email'));
 
 const perfilAtual = computed(() => props.perfis.find((p) => p.slug === perfilSelecionado.value));
 
@@ -120,8 +121,16 @@ function fecharModal() {
 }
 
 function guardar() {
-    processing.value = true;
     errors.value = {};
+
+    if (form.password && form.password !== form.passwordConfirmation) {
+        errors.value = { password_confirmation: ['As senhas não coincidem.'] };
+        passo.value = 1;
+        toast.error('As senhas não coincidem.');
+        return;
+    }
+
+    processing.value = true;
 
     const celulas = Object.entries(overridesEstado).map(([k, valor]) => {
         const [modulo_id, acao_id] = k.split('-').map(Number);
@@ -137,10 +146,14 @@ function guardar() {
 
     if (!props.utilizador) {
         payload.password = form.password;
+        payload.password_confirmation = form.passwordConfirmation;
         payload.tipo_login = tipoLogin.value;
         if (perfilSelecionado.value === 'encarregado') {
             payload.matriculas_educandos = matriculasEducandos.value;
         }
+    } else if (form.password) {
+        payload.password = form.password;
+        payload.password_confirmation = form.passwordConfirmation;
     }
 
     const url = props.utilizador ? `/usuarios/${props.utilizador.id}` : props.rotaCriar;
@@ -183,7 +196,8 @@ function guardar() {
 
         <div v-if="passo === 1">
             <UsuarioFormFields v-model:name="form.name" v-model:email="form.email" v-model:password="form.password"
-                :tipo-login="tipoLogin" :errors="errors" />
+                v-model:password-confirmation="form.passwordConfirmation" :tipo-login="tipoLogin" :errors="errors"
+                :edicao="!!props.utilizador" />
 
             <div class="fv-row mb-7">
                 <label class="required fw-semibold fs-6 mb-2">Perfil</label>
@@ -192,9 +206,8 @@ function guardar() {
                         {{ perfis.find((p) => p.slug === perfilFixo)?.descricao }}
                     </span>
                 </div>
-                <select v-else v-model="perfilSelecionado" class="form-select form-select-solid">
-                    <option v-for="perfil in perfis" :key="perfil.slug" :value="perfil.slug">{{ perfil.descricao }}</option>
-                </select>
+                <SelectSolid v-else v-model="perfilSelecionado"
+                    :options="perfis.map((p) => ({ value: p.slug, label: p.descricao }))" />
             </div>
 
             <div class="fv-row mb-7" v-if="perfilSelecionado === 'encarregado'">
@@ -214,6 +227,13 @@ function guardar() {
             </div>
 
             <div class="text-end pt-5">
+                <button type="button" class="btn btn-light-danger me-2" @click="fecharModal">
+                    <i class="ki-duotone ki-cross fs-4 me-1">
+                        <span class="path1"></span>
+                        <span class="path2"></span>
+                    </i>
+                    Cancelar
+                </button>
                 <button type="button" class="btn btn-primary" @click="avancar">Seguinte</button>
             </div>
         </div>
@@ -259,10 +279,19 @@ function guardar() {
                     </i>
                     Voltar
                 </button>
-                <button type="button" class="btn btn-primary" :disabled="processing" @click="guardar">
-                    <span v-if="!processing">Guardar</span>
-                    <span v-else>Aguarde... <Loader size="0.3px" class="align-middle ms-2" /></span>
-                </button>
+                <div>
+                    <button type="button" class="btn btn-light-danger me-2" :disabled="processing" @click="fecharModal">
+                        <i class="ki-duotone ki-cross fs-4 me-1">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" :disabled="processing" @click="guardar">
+                        <span v-if="!processing">Guardar</span>
+                        <span v-else>Aguarde... <Loader size="0.3px" class="align-middle ms-2" /></span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

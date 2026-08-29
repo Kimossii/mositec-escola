@@ -124,14 +124,32 @@ html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar
 }
 
 /* Hover das tabelas de lista — o cinza padrão do Bootstrap fica sem
-   personalidade; usamos um verde muito suave ligado à paleta da app, com
-   transição em vez do salto abrupto do :hover puro. */
+   personalidade; usamos um verde muito suave ligado à paleta da app. As
+   linhas ficam com espaçamento vertical (border-spacing) para a sombra do
+   hover ter lugar para "respirar", e cantos arredondados nas pontas para dar
+   o efeito de pílula/oval em vez de um retângulo colado às vizinhas. */
 html[data-bs-theme='light'] .table.table-hover {
     --bs-table-hover-bg: #F0FDF4;
+    border-collapse: separate;
+    border-spacing: 0 4px;
 }
 
 .table.table-hover > tbody > tr {
-    transition: background-color 0.15s ease-in-out;
+    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.table.table-hover > tbody > tr:hover > td {
+    box-shadow: inset 0 0 0 9999px var(--bs-table-hover-bg), 0 3px 10px -2px rgba(22, 101, 52, 0.18);
+}
+
+.table.table-hover > tbody > tr:hover > td:first-child {
+    border-top-left-radius: 999px;
+    border-bottom-left-radius: 999px;
+}
+
+.table.table-hover > tbody > tr:hover > td:last-child {
+    border-top-right-radius: 999px;
+    border-bottom-right-radius: 999px;
 }
 
 /* Texto preto nos campos preenchíveis (inputs e selects "solid") no modo claro — o cinza padrão do Metronic ficava pouco visível. */

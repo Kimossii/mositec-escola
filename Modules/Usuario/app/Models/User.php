@@ -99,7 +99,7 @@ class User extends Authenticatable
     {
         static::saving(function (User $user) {
             $user->estado_descricao = EstadoUsuario::from($user->estado ?? 1)->label();
-            $user->tipo_login_descricao = ($user->tipo_login ?? TipoLogin::MATRICULA)->label();
+            $user->tipo_login_descricao = ($user->tipo_login ?? TipoLogin::EMAIL)->label();
         });
     }
 }

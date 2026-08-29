@@ -18,6 +18,7 @@ class AtualizarUsuarioRequest extends BaseRequest
             'name' => 'required|string|max:255',
             'perfil' => 'required|in:admin_escola,secretario,professor,aluno,encarregado',
             'email' => ['nullable', 'email', Rule::unique('users', 'email')->ignore($this->route('user'))],
+            'password' => 'nullable|min:6|confirmed',
             'celulas' => 'nullable|array',
             'celulas.*.modulo_id' => 'required_with:celulas|integer|exists:modulos,id',
             'celulas.*.acao_id' => 'required_with:celulas|integer|exists:acoes,id',
@@ -33,6 +34,8 @@ class AtualizarUsuarioRequest extends BaseRequest
             'perfil.in' => 'O perfil indicado é inválido.',
             'email.email' => 'Informe um email válido.',
             'email.unique' => 'Este email já está em uso.',
+            'password.min' => 'A senha deve ter no mínimo 6 caracteres.',
+            'password.confirmed' => 'A confirmação da senha não coincide.',
         ];
     }
 }
