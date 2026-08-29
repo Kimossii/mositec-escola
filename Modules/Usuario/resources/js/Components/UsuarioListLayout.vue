@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 import UsuarioTable from './UsuarioTable.vue';
 import UsuarioToolbar from './UsuarioToolbar.vue';
+import UsuarioVisualizarDrawer from './UsuarioVisualizarDrawer.vue';
 
 /**
  * Casca de página compartilhada pelas 6 listagens de usuários (Todos os
@@ -41,10 +42,17 @@ defineProps({
 });
 
 const utilizadorEmEdicao = ref(null);
+const utilizadorVisualizando = ref(null);
 
 function abrirEdicao(utilizador) {
     utilizadorEmEdicao.value = utilizador;
     window.bootstrap?.Modal.getOrCreateInstance(document.getElementById('kt_modal_add_user')).show();
+}
+
+function abrirVisualizacao(utilizador) {
+    utilizadorVisualizando.value = utilizador;
+    window.KTDrawer?.createInstances();
+    window.KTDrawer?.getInstance(document.getElementById('kt_usuario_visualizar_drawer'))?.show();
 }
 
 onMounted(() => {
@@ -122,7 +130,7 @@ onMounted(() => {
 
                         <!--begin::Card body-->
                         <div class="card-body py-4">
-                            <UsuarioTable :usuarios="usuarios" @editar="abrirEdicao" />
+                            <UsuarioTable :usuarios="usuarios" @editar="abrirEdicao" @visualizar="abrirVisualizacao" />
                         </div>
                         <!--end::Card body-->
                     </div>
@@ -148,6 +156,8 @@ onMounted(() => {
             </div>
         </div>
         <!--end::Footer-->
+
+        <UsuarioVisualizarDrawer :utilizador="utilizadorVisualizando" />
     </div>
     <!--end::Main-->
 </template>

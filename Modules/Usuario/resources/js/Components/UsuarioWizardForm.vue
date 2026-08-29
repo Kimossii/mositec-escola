@@ -90,6 +90,10 @@ function proximoEstado(moduloId, acaoId) {
 }
 
 function validarAntesDeAvancar() {
+    if (form.password && form.password !== form.passwordConfirmation) {
+        errorMessage.value = 'As senhas não coincidem.';
+        return false;
+    }
     if (perfilSelecionado.value === 'encarregado' && matriculasEducandos.value.length === 0) {
         errorMessage.value = 'É preciso ligar pelo menos um educando.';
         return false;

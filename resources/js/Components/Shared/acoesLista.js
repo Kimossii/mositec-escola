@@ -7,6 +7,7 @@
  * (ex: `btn-light-${ACOES_LISTA.editar.cor}`).
  */
 export const ACOES_LISTA = Object.freeze({
+    visualizar: { icone: 'ki-eye', paths: 3, cor: 'info', texto: 'Visualizar' },
     editar: { icone: 'ki-user-edit', paths: 3, cor: 'primary', texto: 'Editar' },
     permissoes: { icone: 'ki-shield-tick', paths: 2, cor: 'success', texto: 'Permissões' },
     eliminar: { icone: 'ki-trash', paths: 5, cor: 'danger', texto: 'Eliminar' },

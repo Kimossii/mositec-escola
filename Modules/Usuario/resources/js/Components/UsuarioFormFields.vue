@@ -3,12 +3,17 @@
 // Encarregado): nome, email OU matrícula (conforme tipoLogin), senha. Usado
 // pelos Forms de cada lista pra não repetir esse bloco — o que muda entre
 // eles é só a secção de tipo/papel, que fica no próprio Form.
+import { computed } from 'vue';
 import PasswordInput from '@/Components/Shared/PasswordInput.vue';
 
 const name = defineModel('name', { default: '' });
 const email = defineModel('email', { default: '' });
 const password = defineModel('password', { default: '' });
 const passwordConfirmation = defineModel('passwordConfirmation', { default: '' });
+
+// Feedback imediato enquanto digita — só acusa depois que a confirmação
+// começou a ser preenchida, pra não mostrar erro antes de terminar de digitar.
+const senhasNaoCoincidem = computed(() => passwordConfirmation.value.length > 0 && password.value !== passwordConfirmation.value);
 
 defineProps({
     tipoLogin: {
@@ -89,10 +94,16 @@ defineProps({
         <!--end::Label-->
 
         <!--begin::Input-->
-        <PasswordInput v-model="passwordConfirmation" name="user_password_confirmation" placeholder="Repita a senha" />
+        <PasswordInput v-model="passwordConfirmation" name="user_password_confirmation" placeholder="Repita a senha"
+            :invalid="senhasNaoCoincidem" />
         <!--end::Input-->
 
-        <div class="text-danger fs-7 mt-1" v-if="errors.password_confirmation">{{ errors.password_confirmation[0] }}</div>
+        <div class="text-danger fs-7 mt-1" v-if="senhasNaoCoincidem">As senhas não coincidem.</div>
+        <div class="text-danger fs-7 mt-1" v-else-if="errors.password_confirmation">{{ errors.password_confirmation[0] }}</div>
+        <div class="text-success fs-7 mt-1" v-else-if="passwordConfirmation">
+            <i class="ki-duotone ki-check-circle fs-7 me-1"><span class="path1"></span><span class="path2"></span></i>
+            As senhas coincidem.
+        </div>
     </div>
     <!--end::Input group-->
 </template>

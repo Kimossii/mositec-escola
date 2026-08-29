@@ -7,6 +7,7 @@ defineProps({
     placeholder: { type: String, default: '' },
     name: { type: String, default: 'password' },
     autocomplete: { type: String, default: 'new-password' },
+    invalid: { type: Boolean, default: false },
 });
 
 const visivel = ref(false);
@@ -21,6 +22,7 @@ const visivel = ref(false);
             :placeholder="placeholder"
             :autocomplete="autocomplete"
             class="form-control form-control-solid mb-3 mb-lg-0"
+            :class="{ 'is-invalid': invalid }"
             style="padding-right: 3rem;"
         />
         <button
