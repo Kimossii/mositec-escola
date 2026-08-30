@@ -8,6 +8,11 @@ defineProps({
         type: [Object, Function],
         default: undefined,
     },
+    utilizadorEmEdicao: { type: Object, default: null },
+    perfis: { type: Array, default: () => [] },
+    modulos: { type: Array, default: () => [] },
+    acoes: { type: Array, default: () => [] },
+    permissoesPorPerfil: { type: Object, default: () => ({}) },
 });
 </script>
 
@@ -105,7 +110,14 @@ defineProps({
         <!--end::Group actions-->
 
         <UsuarioExportModal />
-        <UsuarioCreateModal :form-component="formComponent" />
+        <UsuarioCreateModal
+            :form-component="formComponent"
+            :utilizador="utilizadorEmEdicao"
+            :perfis="perfis"
+            :modulos="modulos"
+            :acoes="acoes"
+            :permissoes-por-perfil="permissoesPorPerfil"
+        />
     </div>
     <!--end::Card toolbar-->
 </template>

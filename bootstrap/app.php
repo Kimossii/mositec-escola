@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,5 +23,16 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Uma ação negada por Gate/Policy (403) não deve mostrar a página de
+        // erro crua do Laravel — volta pra página anterior com a mensagem
+        // (vinda do backend, ex: Response::deny('...') na Policy) no mesmo
+        // canal "errors" que o frontend já usa pra toasts de ValidationException.
+        // O Handler do Laravel converte AuthorizationException sem status em
+        // AccessDeniedHttpException antes de chegar aqui — por isso é esse o
+        // tipo que precisa ser pego, não o AuthorizationException original.
+        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
+            if ($request->header('X-Inertia')) {
+                return redirect()->back()->withErrors(['autorizacao' => $e->getMessage()]);
+            }
+        });
     })->create();

@@ -1,4 +1,10 @@
 <script setup>
+import { ref } from 'vue';
+import { router } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
+import { ESTADO } from '../Models/Usuario';
 import UsuarioAvatar from './UsuarioAvatar.vue';
 import UsuarioStatusBadge from './UsuarioStatusBadge.vue';
 
@@ -8,11 +14,54 @@ defineProps({
         required: true,
     },
 });
+const emit = defineEmits(['editar', 'visualizar']);
+
+async function editar(usuario) {
+    const resposta = await fetch(`/usuarios/${usuario.id}/editar`, {
+        headers: { Accept: 'application/json' },
+    });
+    const dados = await resposta.json();
+    emit('editar', dados);
+}
+
+function alternarEstado(usuario) {
+    router.patch(`/usuarios/${usuario.id}/estado`, {}, {
+        preserveScroll: true,
+        onSuccess: () => toast.success(
+            usuario.estado === ESTADO.ATIVO ? 'Utilizador desativado.' : 'Utilizador ativado.',
+        ),
+        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível atualizar o estado.'),
+    });
+}
+
+const usuarioParaEliminar = ref(null);
+const eliminando = ref(false);
+
+function pedirEliminacao(usuario) {
+    usuarioParaEliminar.value = usuario;
+}
+
+function cancelarEliminacao() {
+    usuarioParaEliminar.value = null;
+}
+
+function confirmarEliminacao() {
+    eliminando.value = true;
+    router.delete(`/usuarios/${usuarioParaEliminar.value.id}`, {
+        preserveScroll: true,
+        onSuccess: () => toast.success('Utilizador eliminado com sucesso.'),
+        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível eliminar o utilizador.'),
+        onFinish: () => {
+            eliminando.value = false;
+            usuarioParaEliminar.value = null;
+        },
+    });
+}
 </script>
 
 <template>
     <!--begin::Table-->
-    <table class="table align-middle table-row-dashed fs-6 gy-5" id="kt_table_users">
+    <table class="table align-middle table-row-dashed table-hover fs-6 gy-5" id="kt_table_users">
         <thead>
             <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                 <th class="w-10px pe-2">
@@ -20,12 +69,12 @@ defineProps({
                         <input class="form-check-input" type="checkbox" data-kt-check="true" data-kt-check-target="#kt_table_users .form-check-input" value="1" />
                     </div>
                 </th>
-                <th class="min-w-125px">User</th>
-                <th class="min-w-125px">Matrícula</th>
-                <th class="min-w-125px">Last login</th>
+                <th class="min-w-125px">Utilizador</th>
+                <th class="min-w-125px">Perfil</th>
+                <th class="min-w-125px">Último acesso</th>
                 <th class="min-w-125px">Estado</th>
-                <th class="min-w-125px">Joined Date</th>
-                <th class="text-end min-w-100px">Actions</th>
+                <th class="min-w-125px">Data de Criação</th>
+                <th class="text-end min-w-100px">Ações</th>
             </tr>
         </thead>
         <tbody class="text-gray-600 fw-semibold">
@@ -45,7 +94,14 @@ defineProps({
                     <!--begin::User details-->
                 </td>
                 <td>
-                    {{ usuario.matricula }}
+                    <span v-if="usuario.perfis.length === 0" class="text-muted">—</span>
+                    <span
+                        v-for="perfilNome in usuario.perfis"
+                        :key="perfilNome"
+                        class="badge badge-light-primary me-1"
+                    >
+                        {{ perfilNome }}
+                    </span>
                 </td>
                 <td>
                     <div class="badge badge-light fw-bold">{{ usuario.ultimo_acesso }}</div>
@@ -58,23 +114,52 @@ defineProps({
                 </td>
                 <td class="text-end">
                     <a href="#" class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
-                        Actions
+                        Ações
                         <i class="ki-duotone ki-down fs-5 ms-1"></i>
                     </a>
                     <!--begin::Menu-->
-                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-125px py-4" data-kt-menu="true">
+                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-175px py-4" data-kt-menu="true">
                         <!--begin::Menu item-->
                         <div class="menu-item px-3">
-                            <a href="#" class="menu-link px-3">
-                                Edit
+                            <a href="#" class="menu-link px-3" @click.prevent="emit('visualizar', usuario)">
+                                <AcaoIcone acao="visualizar" class="me-2" />
+                                Visualizar
                             </a>
                         </div>
                         <!--end::Menu item-->
 
                         <!--begin::Menu item-->
                         <div class="menu-item px-3">
-                            <a href="#" class="menu-link px-3" data-kt-users-table-filter="delete_row">
-                                Delete
+                            <a href="#" class="menu-link px-3" @click.prevent="editar(usuario)">
+                                <AcaoIcone acao="editar" class="me-2" />
+                                Editar
+                            </a>
+                        </div>
+                        <!--end::Menu item-->
+
+                        <!--begin::Menu item-->
+                        <div class="menu-item px-3">
+                            <a :href="`/permissoes/utilizadores/${usuario.id}/permissoes`" class="menu-link px-3">
+                                <AcaoIcone acao="permissoes" class="me-2" />
+                                Permissões
+                            </a>
+                        </div>
+                        <!--end::Menu item-->
+
+                        <!--begin::Menu item-->
+                        <div class="menu-item px-3">
+                            <a href="#" class="menu-link px-3" @click.prevent="alternarEstado(usuario)">
+                                <AcaoIcone :acao="usuario.estado === ESTADO.ATIVO ? 'desativar' : 'ativar'" class="me-2" />
+                                {{ usuario.estado === ESTADO.ATIVO ? 'Desativar' : 'Ativar' }}
+                            </a>
+                        </div>
+                        <!--end::Menu item-->
+
+                        <!--begin::Menu item-->
+                        <div class="menu-item px-3">
+                            <a href="#" class="menu-link px-3 text-danger" @click.prevent="pedirEliminacao(usuario)">
+                                <AcaoIcone acao="eliminar" class="me-2" />
+                                Eliminar
                             </a>
                         </div>
                         <!--end::Menu item-->
@@ -85,4 +170,13 @@ defineProps({
         </tbody>
     </table>
     <!--end::Table-->
+
+    <ConfirmModal
+        :show="!!usuarioParaEliminar"
+        titulo="Eliminar utilizador"
+        :mensagem="`Tem certeza que deseja eliminar ${usuarioParaEliminar?.name}?`"
+        :processando="eliminando"
+        @confirmar="confirmarEliminacao"
+        @cancelar="cancelarEliminacao"
+    />
 </template>

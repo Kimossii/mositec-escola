@@ -2,12 +2,16 @@
 import { onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { usePageScripts } from '@/composables/usePageScripts';
-import { useUsuarios } from '../Composables/useUsuarios';
-import { TIPO_PESSOA } from '../Models/Usuario';
 import UsuarioListLayout from '../Components/UsuarioListLayout.vue';
 import AlunoForm from '../Forms/Alunos/AlunoForm.vue';
 
-const { usuarios } = useUsuarios({ tipoPessoa: TIPO_PESSOA.ALUNO });
+defineProps({
+    usuarios: { type: Array, required: true },
+    perfis: { type: Array, required: true },
+    modulos: { type: Array, required: true },
+    acoes: { type: Array, required: true },
+    permissoesPorPerfil: { type: Object, required: true },
+});
 
 const { loadAll } = usePageScripts([
     '/themes/metronic/assets/plugins/custom/datatables/datatables.bundle.js',
@@ -34,5 +38,9 @@ defineOptions({ layout: AppLayout })
         accent="primary"
         :usuarios="usuarios"
         :form-component="AlunoForm"
+        :perfis="perfis"
+        :modulos="modulos"
+        :acoes="acoes"
+        :permissoes-por-perfil="permissoesPorPerfil"
     />
 </template>

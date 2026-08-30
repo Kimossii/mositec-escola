@@ -1,13 +1,15 @@
 <script setup>
+import { onMounted, ref } from 'vue';
 import UsuarioTable from './UsuarioTable.vue';
 import UsuarioToolbar from './UsuarioToolbar.vue';
+import UsuarioVisualizarDrawer from './UsuarioVisualizarDrawer.vue';
 
 /**
- * Casca de página compartilhada pelas 5 listagens de usuários (Todos os
- * Utilizadores, Alunos, Professores, Funcionários, Administradores). Cada
- * `Pages/*.vue` só define título, ícone, cor e o filtro de tipo_pessoa —
- * a estrutura (breadcrumb, card, toolbar, tabela, footer) fica só aqui,
- * pra evitar 5 cópias do mesmo HTML do Metronic.
+ * Casca de página compartilhada pelas 6 listagens de usuários (Todos os
+ * Utilizadores, Alunos, Professores, Funcionários, Administradores,
+ * Encarregados). Cada `Pages/*.vue` só define título, ícone, cor e o
+ * perfil filtrado — a estrutura (breadcrumb, card, toolbar, tabela,
+ * footer) fica só aqui, pra evitar 6 cópias do mesmo HTML do Metronic.
  */
 defineProps({
     title: {
@@ -33,6 +35,30 @@ defineProps({
         type: [Object, Function],
         default: undefined,
     },
+    perfis: { type: Array, default: () => [] },
+    modulos: { type: Array, default: () => [] },
+    acoes: { type: Array, default: () => [] },
+    permissoesPorPerfil: { type: Object, default: () => ({}) },
+});
+
+const utilizadorEmEdicao = ref(null);
+const utilizadorVisualizando = ref(null);
+
+function abrirEdicao(utilizador) {
+    utilizadorEmEdicao.value = utilizador;
+    window.bootstrap?.Modal.getOrCreateInstance(document.getElementById('kt_modal_add_user')).show();
+}
+
+function abrirVisualizacao(utilizador) {
+    utilizadorVisualizando.value = utilizador;
+    window.KTDrawer?.createInstances();
+    window.KTDrawer?.getInstance(document.getElementById('kt_usuario_visualizar_drawer'))?.show();
+}
+
+onMounted(() => {
+    document.getElementById('kt_modal_add_user')?.addEventListener('hidden.bs.modal', () => {
+        utilizadorEmEdicao.value = null;
+    });
 });
 </script>
 
@@ -91,13 +117,20 @@ defineProps({
                     <div class="card">
                         <!--begin::Card header-->
                         <div class="card-header border-0 pt-6">
-                            <UsuarioToolbar :form-component="formComponent" />
+                            <UsuarioToolbar
+                                :form-component="formComponent"
+                                :utilizador-em-edicao="utilizadorEmEdicao"
+                                :perfis="perfis"
+                                :modulos="modulos"
+                                :acoes="acoes"
+                                :permissoes-por-perfil="permissoesPorPerfil"
+                            />
                         </div>
                         <!--end::Card header-->
 
                         <!--begin::Card body-->
                         <div class="card-body py-4">
-                            <UsuarioTable :usuarios="usuarios" />
+                            <UsuarioTable :usuarios="usuarios" @editar="abrirEdicao" @visualizar="abrirVisualizacao" />
                         </div>
                         <!--end::Card body-->
                     </div>
@@ -108,21 +141,7 @@ defineProps({
             <!--end::Content-->
         </div>
 
-        <!--begin::Footer-->
-        <div id="kt_app_footer" class="app-footer">
-            <div class="app-container container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3">
-                <div class="text-dark order-2 order-md-1">
-                    <span class="text-muted fw-semibold me-1">2023&copy;</span>
-                    <a href="https://keenthemes.com/" target="_blank" class="text-gray-800 text-hover-primary">Keenthemes</a>
-                </div>
-                <ul class="menu menu-gray-600 menu-hover-primary fw-semibold order-1">
-                    <li class="menu-item"><a href="https://keenthemes.com/" target="_blank" class="menu-link px-2">About</a></li>
-                    <li class="menu-item"><a href="https://devs.keenthemes.com/" target="_blank" class="menu-link px-2">Support</a></li>
-                    <li class="menu-item"><a href="https://1.envato.market/EA4JP" target="_blank" class="menu-link px-2">Purchase</a></li>
-                </ul>
-            </div>
-        </div>
-        <!--end::Footer-->
+        <UsuarioVisualizarDrawer :utilizador="utilizadorVisualizando" />
     </div>
     <!--end::Main-->
 </template>
