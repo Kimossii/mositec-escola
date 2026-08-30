@@ -26,6 +26,7 @@ class ModuloSeeder extends Seeder
             ['nome' => 7, 'descricao' => 'Matricula', 'created_at' => $now, 'updated_at' => $now],
             ['nome' => 8, 'descricao' => 'Disciplina', 'created_at' => $now, 'updated_at' => $now],
             ['nome' => 9, 'descricao' => 'Nota', 'created_at' => $now, 'updated_at' => $now],
+            ['nome' => 10, 'descricao' => 'Estabelecimento', 'created_at' => $now, 'updated_at' => $now],
         ]);
     }
 }

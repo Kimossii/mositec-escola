@@ -19,6 +19,11 @@ class UserPermissao extends Model
         'users_id',
         'modulo_id',
         'acao_id',
+        'permitido',
+    ];
+
+    protected $casts = [
+        'permitido' => 'boolean',
     ];
 
     public function user()

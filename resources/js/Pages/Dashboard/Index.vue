@@ -18,12 +18,12 @@ const { loadAll } = usePageScripts([
     'https://cdn.amcharts.com/lib/5/geodata/worldTimeZoneAreasLow.js',
     '/themes/metronic/assets/plugins/custom/datatables/datatables.bundle.js',
     '/themes/metronic/assets/js/widgets.bundle.js',
-    '/themes/metronic/assets/js/components/widgets.js',
-    '/themes/metronic/assets/js/components/apps/chat/chat.js',
-    '/themes/metronic/assets/js/components/utilities/modals/upgrade-plan.js',
-    '/themes/metronic/assets/js/components/utilities/modals/create-app.js',
-    '/themes/metronic/assets/js/components/utilities/modals/new-target.js',
-    '/themes/metronic/assets/js/components/utilities/modals/users-search.js',
+    '/themes/metronic/assets/js/components/custom/widgets.js',
+    '/themes/metronic/assets/js/components/custom/apps/chat/chat.js',
+    '/themes/metronic/assets/js/components/custom/utilities/modals/upgrade-plan.js',
+    '/themes/metronic/assets/js/components/custom/utilities/modals/create-app.js',
+    '/themes/metronic/assets/js/components/custom/utilities/modals/new-target.js',
+    '/themes/metronic/assets/js/components/custom/utilities/modals/users-search.js',
     '/themes/metronic/assets/js/pages/dashboard.js',
 ]);
 
@@ -290,22 +290,6 @@ defineOptions({ layout: AppLayout })
       <!--end::Content-->
 
     </div>
-
-    <!--begin::Footer-->
-    <div id="kt_app_footer" class="app-footer">
-      <div class="app-container container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3">
-        <div class="text-dark order-2 order-md-1">
-          <span class="text-muted fw-semibold me-1">2023&copy;</span>
-          <a href="https://keenthemes.com/" target="_blank" class="text-gray-800 text-hover-primary">Keenthemes</a>
-        </div>
-        <ul class="menu menu-gray-600 menu-hover-primary fw-semibold order-1">
-          <li class="menu-item"><a href="https://keenthemes.com/" target="_blank" class="menu-link px-2">About</a></li>
-          <li class="menu-item"><a href="https://devs.keenthemes.com/" target="_blank" class="menu-link px-2">Support</a></li>
-          <li class="menu-item"><a href="https://1.envato.market/EA4JP" target="_blank" class="menu-link px-2">Purchase</a></li>
-        </ul>
-      </div>
-    </div>
-    <!--end::Footer-->
 
   </div>
   <!--end::Main-->

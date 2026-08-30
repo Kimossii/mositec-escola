@@ -4,11 +4,14 @@ namespace Modules\Permissao\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\Core\Traits\SincronizaEstadoDescricao;
 // use Modules\Permissao\Database\Factories\AcaoFactory;
 
 class Acao extends Model
 {
     use HasFactory;
+    use SincronizaEstadoDescricao;
+
     protected $table = 'acoes';
 
 

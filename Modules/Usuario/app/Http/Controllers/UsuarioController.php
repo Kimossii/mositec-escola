@@ -3,71 +3,107 @@
 namespace Modules\Usuario\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 
-use Log;
-use Modules\Usuario\Actions\UsuarioAction;
-use Modules\Usuario\DTO\UsuarioDTO;
+use Inertia\Inertia;
+use Modules\Permissao\Enums\Perfil;
+use Modules\Usuario\Http\Requests\AtualizarUsuarioRequest;
 use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
+use Modules\Usuario\Models\User;
+use Modules\Usuario\Services\GestaoUsuarioService;
+use Modules\Usuario\Services\UsuarioConsultaService;
+
 class UsuarioController extends Controller
 {
+    public function __construct(
+        private GestaoUsuarioService $service,
+        private UsuarioConsultaService $consulta,
+    ) {}
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return view('usuario::index');
+        return Inertia::render('Usuario/Index', array_merge([
+            'usuarios' => $this->consulta->listarTodos(),
+        ], $this->consulta->dadosDeApoio()));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Lista apenas usuários com o perfil Aluno.
      */
-    public function create()
+    public function alunos()
     {
-        return view('usuario::create');
+        return Inertia::render('Usuario/Alunos', array_merge([
+            'usuarios' => $this->consulta->listarPorPerfil(Perfil::ALUNO),
+        ], $this->consulta->dadosDeApoio()));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Lista apenas usuários com o perfil Professor.
      */
-    public function store(CriarUsuarioRequest $request, UsuarioAction $action)
+    public function professores()
     {
-        $dto = UsuarioDTO::fromArray($request->validated());
-        $usuario = $action->criar($dto);
-        Log::info('Usuário criado: ' . $usuario->email, ['usuario' => $dto]);
-        return response()->json([
-            'message' => 'Usuário criado com sucesso',
-            'data' => $usuario
-        ], 201);
+        return Inertia::render('Usuario/Professores', array_merge([
+            'usuarios' => $this->consulta->listarPorPerfil(Perfil::PROFESSOR),
+        ], $this->consulta->dadosDeApoio()));
     }
 
     /**
-     * Show the specified resource.
+     * Lista apenas usuários com o perfil Secretário (formulário "Funcionário").
      */
-    public function show($id)
+    public function funcionarios()
     {
-        return view('usuario::show');
+        return Inertia::render('Usuario/Funcionarios', array_merge([
+            'usuarios' => $this->consulta->listarPorPerfil(Perfil::SECRETARIO),
+        ], $this->consulta->dadosDeApoio()));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
+    public function administradores()
     {
-        return view('usuario::edit');
+        return Inertia::render('Usuario/Administradores', array_merge([
+            'usuarios' => $this->consulta->listarPorPerfil(Perfil::ADMIN_ESCOLA),
+        ], $this->consulta->dadosDeApoio()));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id)
+    public function encarregados()
     {
+        return Inertia::render('Usuario/Encarregados', array_merge([
+            'usuarios' => $this->consulta->listarPorPerfil(Perfil::ENCARREGADO),
+        ], $this->consulta->dadosDeApoio()));
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id)
+    public function store(CriarUsuarioRequest $request)
     {
+        $this->service->criar($request);
+
+        return redirect()->back()->with('success', 'Utilizador criado com sucesso.');
+    }
+
+    public function edit(User $user)
+    {
+        return response()->json($this->consulta->dadosParaEdicao($user));
+    }
+
+    public function update(AtualizarUsuarioRequest $request, User $user)
+    {
+        $this->service->atualizar($user, $request->validated());
+
+        return redirect()->back()->with('success', 'Utilizador atualizado com sucesso.');
+    }
+
+    public function destroy(User $user)
+    {
+        $this->authorize('delete', $user);
+        $this->service->eliminar($user);
+
+        return redirect()->back()->with('success', 'Utilizador eliminado com sucesso.');
+    }
+
+    public function alternarEstado(User $user)
+    {
+        $this->service->alternarEstado($user);
+
+        return redirect()->back()->with('success', 'Estado do utilizador atualizado.');
     }
 }

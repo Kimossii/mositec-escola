@@ -5,6 +5,7 @@ namespace Modules\Usuario\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Modules\Usuario\Enums\TipoLogin;
 use Modules\Usuario\Models\User;
 
 class UsuarioDatabaseSeeder extends Seeder
@@ -22,6 +23,7 @@ class UsuarioDatabaseSeeder extends Seeder
                 'name' => 'SuperAdmin',
                 'password' => Hash::make('Mositec123!'),
                 'dados_pessoa_id' => null,
+                'tipo_login' => TipoLogin::EMAIL,
                 'estado' => 1,
                 'created_at' => $now,
                 'updated_at' => $now,

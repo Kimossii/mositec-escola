@@ -4,54 +4,95 @@ namespace Modules\Permissao\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Modules\Permissao\Http\Requests\CriarPerfilRequest;
+use Modules\Permissao\Http\Requests\SincronizarPermissoesPerfilRequest;
+use Modules\Permissao\Http\Requests\SincronizarPermissoesUtilizadorRequest;
+use Modules\Permissao\Models\Role;
+use Modules\Permissao\Services\GestaoPerfilService;
+use Modules\Permissao\Services\PermissaoConsultaService;
+use Modules\Usuario\Models\User;
 
 class PermissaoController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function __construct(
+        private PermissaoConsultaService $consulta,
+        private GestaoPerfilService $gestao,
+    ) {}
+
     public function index()
     {
-        return "Permissão index tese";
-        // return view('permissao::index');
+        return Inertia::render('Permissao/Perfis', [
+            'perfis' => $this->consulta->listarPerfis(),
+            'acoes' => $this->consulta->acoesDisponiveis(),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function store(CriarPerfilRequest $request)
     {
-        return view('permissao::create');
+        $this->gestao->criarPerfil($request->validated());
+
+        return redirect()->back()->with('success', 'Perfil criado com sucesso.');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request) {}
-
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
+    public function update(CriarPerfilRequest $request, Role $role)
     {
-        return view('permissao::show');
+        $this->gestao->atualizarPerfil($role, $request->validated());
+
+        return redirect()->back()->with('success', 'Perfil atualizado com sucesso.');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
+    public function destroy(Role $role)
     {
-        return view('permissao::edit');
+        $this->gestao->eliminarPerfil($role);
+
+        return redirect()->back()->with('success', 'Perfil eliminado com sucesso.');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id) {}
+    public function alternarEstado(Role $role)
+    {
+        $this->gestao->alternarEstadoPerfil($role);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
+        return redirect()->back()->with('success', 'Estado do perfil atualizado.');
+    }
+
+    public function permissoesDoPerfil(Role $role)
+    {
+        return Inertia::render('Permissao/PerfilPermissoes', $this->consulta->dadosPermissoesDoPerfil($role));
+    }
+
+    public function sincronizarPermissoesDoPerfil(SincronizarPermissoesPerfilRequest $request, Role $role)
+    {
+        $this->gestao->sincronizarPermissoesDoPerfil($role, $request->celulas);
+
+        return redirect()->back()->with('success', 'Permissões do perfil atualizadas.');
+    }
+
+    public function permissoesDoUtilizador(User $user)
+    {
+        return Inertia::render('Permissao/UtilizadorPermissoes', $this->consulta->dadosPermissoesDoUtilizador($user));
+    }
+
+    public function sincronizarPermissoesDoUtilizador(SincronizarPermissoesUtilizadorRequest $request, User $user)
+    {
+        $this->gestao->sincronizarPermissoesDoUtilizador($user, $request->celulas);
+
+        return redirect()->back()->with('success', 'Permissões do utilizador atualizadas.');
+    }
+
+    public function atribuirPerfil(Request $request, User $user)
+    {
+        $request->validate(['role_id' => 'required|exists:roles,id']);
+
+        $this->gestao->atribuirPerfil($user, $request->role_id);
+
+        return redirect()->back()->with('success', 'Perfil atribuído.');
+    }
+
+    public function removerPerfil(User $user, Role $role)
+    {
+        $this->gestao->removerPerfil($user, $role);
+
+        return redirect()->back()->with('success', 'Perfil removido.');
+    }
 }

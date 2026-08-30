@@ -17,19 +17,11 @@
             id="kt_app_header_menu"
             data-kt-menu="true"
         >
-            <!-- Dashboards -->
-            <div
-                data-kt-menu-trigger="{default: 'click', lg: 'hover'}"
-                data-kt-menu-placement="bottom-start"
-                class="menu-item here show menu-here-bg menu-lg-down-accordion me-0 me-lg-2"
-            >
-                <span class="menu-link">
-                    <span class="menu-title">Dashboards</span>
-                    <span class="menu-arrow d-lg-none"></span>
-                </span>
-                <div class="menu-sub menu-sub-lg-down-accordion menu-sub-lg-dropdown p-0 w-100 w-lg-850px">
-                    <DashboardsMenu />
-                </div>
+            <!-- Início -->
+            <div class="menu-item here show menu-here-bg me-0 me-lg-2">
+                <a href="/" class="menu-link">
+                    <span class="menu-title">Início</span>
+                </a>
             </div>
 
             <!-- Pages -->
@@ -54,7 +46,7 @@
                 class="menu-item menu-lg-down-accordion menu-sub-lg-down-indention me-0 me-lg-2"
             >
                 <span class="menu-link">
-                    <span class="menu-title">Apps</span>
+                    <span class="menu-title">Configurações</span>
                     <span class="menu-arrow d-lg-none"></span>
                 </span>
                 <div class="menu-sub menu-sub-lg-down-accordion menu-sub-lg-dropdown px-lg-2 py-lg-4 w-lg-250px">
@@ -63,7 +55,7 @@
             </div>
 
             <!-- Layouts -->
-            <div
+            <!-- <div
                 data-kt-menu-trigger="{default: 'click', lg: 'hover'}"
                 data-kt-menu-placement="bottom-start"
                 class="menu-item menu-lg-down-accordion me-0 me-lg-2"
@@ -75,10 +67,10 @@
                 <div class="menu-sub menu-sub-lg-down-accordion menu-sub-lg-dropdown p-0 w-100 w-lg-850px">
                     <LayoutsMenu />
                 </div>
-            </div>
+            </div> -->
 
             <!-- Help -->
-            <div
+            <!-- <div
                 data-kt-menu-trigger="{default: 'click', lg: 'hover'}"
                 data-kt-menu-placement="bottom-start"
                 class="menu-item menu-lg-down-accordion menu-sub-lg-down-indention me-0 me-lg-2"
@@ -136,14 +128,13 @@
                         </a>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
 </template>
 
 <script setup>
-import DashboardsMenu from './menus/DashboardsMenu.vue'
 import PagesMenu from './menus/PagesMenu.vue'
 import AppsMenu from './menus/AppsMenu.vue'
-import LayoutsMenu from './menus/LayoutsMenu.vue'
+// import LayoutsMenu from './menus/LayoutsMenu.vue'
 </script>
