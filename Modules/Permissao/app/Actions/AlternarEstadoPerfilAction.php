@@ -2,19 +2,15 @@
 
 namespace Modules\Permissao\Actions;
 
+use Modules\Core\Traits\AlternaEstado;
 use Modules\Permissao\Models\Role;
-use Modules\Usuario\Enums\EstadoUsuario;
 
 class AlternarEstadoPerfilAction
 {
+    use AlternaEstado;
+
     public function executar(Role $role): Role
     {
-        $novoEstado = $role->estado === EstadoUsuario::ATIVO->value
-            ? EstadoUsuario::INATIVO
-            : EstadoUsuario::ATIVO;
-
-        $role->update(['estado' => $novoEstado->value]);
-
-        return $role;
+        return $this->alternarEstado($role);
     }
 }

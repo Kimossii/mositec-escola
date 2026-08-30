@@ -4,7 +4,7 @@ namespace Modules\Permissao\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Modules\Usuario\Enums\EstadoUsuario;
+use Modules\Core\Enums\Estado;
 // use Modules\Permissao\Database\Factories\ModuloFactory;
 
 class Modulo extends Model
@@ -29,7 +29,7 @@ class Modulo extends Model
     protected static function booted(): void
     {
         static::saving(function (Modulo $modulo) {
-            $modulo->estado_descricao = EstadoUsuario::from($modulo->estado ?? 1)->label();
+            $modulo->estado_descricao = Estado::from($modulo->estado ?? 1)->label();
         });
     }
 
