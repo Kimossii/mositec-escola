@@ -32,6 +32,10 @@ class AppServiceProvider extends ServiceProvider
             return $user->roles->contains('nome', Perfil::ADMIN_ESCOLA->value);
         });
 
+        Gate::define('gerir-estabelecimento', function (User $user) {
+            return $user->roles->contains('nome', Perfil::ADMIN_ESCOLA->value);
+        });
+
         RateLimiter::for('api', function ($request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
