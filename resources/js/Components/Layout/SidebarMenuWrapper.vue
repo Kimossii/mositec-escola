@@ -326,6 +326,27 @@
                 </div>
             </div>
 
+            <!-- Estabelecimento -->
+            <div data-kt-menu-trigger="click" :class="['menu-item', 'menu-accordion', { here: estabelecimentoActive, show: estabelecimentoActive }]">
+                <span class="menu-link">
+                    <span class="menu-icon">
+                        <i class="ki-duotone ki-setting-2 fs-2">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                    </span>
+                    <span class="menu-title">Estabelecimento</span>
+                    <span class="menu-arrow"></span>
+                </span>
+                <div class="menu-sub menu-sub-accordion">
+                    <div v-for="item in estabelecimentoItems" :key="item.href" class="menu-item">
+                        <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact }) }]" :href="item.href">
+                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                            <span class="menu-title">{{ item.title }}</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- Customers -->
             <!-- <SidebarAccordion :item="customers" /> -->
 
@@ -751,6 +772,12 @@ const userManagementGroups = [
 const userManagementActive = computed(() =>
     userManagementGroups.some((group) => isGroupActive(group.items))
 )
+
+const estabelecimentoItems = [
+    { href: '/estabelecimento', title: 'Dados da Escola', exact: true },
+    { href: '/estabelecimento/aparencia', title: 'Logótipo & Aparência' },
+]
+const estabelecimentoActive = computed(() => isGroupActive(estabelecimentoItems))
 
 // const customers = {
 //     title: 'Customers', icon: 'ki-abstract-38', paths: 2,
