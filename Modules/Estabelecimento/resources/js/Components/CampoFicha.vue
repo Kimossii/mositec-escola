@@ -100,7 +100,7 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
 
 .ficha-rotulo__icone {
     font-size: 0.9rem;
-    color: var(--bs-gray-500);
+    color: var(--bs-gray-700);
 }
 
 .ficha-valor {
@@ -135,7 +135,7 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
     left: 0.9rem;
     transform: translateY(-50%);
     font-size: 1.1rem;
-    color: var(--bs-gray-500);
+    color: var(--bs-gray-700);
     pointer-events: none;
     transition: color 0.15s ease;
 }
