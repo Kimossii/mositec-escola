@@ -8,7 +8,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\UserPermissao;
-use Modules\Usuario\Enums\EstadoUsuario;
+use Modules\Core\Enums\Estado;
 use Modules\Usuario\Enums\TipoLogin;
 
 class User extends Authenticatable
@@ -98,7 +98,7 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::saving(function (User $user) {
-            $user->estado_descricao = EstadoUsuario::from($user->estado ?? 1)->label();
+            $user->estado_descricao = Estado::from($user->estado ?? 1)->label();
             $user->tipo_login_descricao = ($user->tipo_login ?? TipoLogin::EMAIL)->label();
         });
     }

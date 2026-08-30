@@ -2,8 +2,8 @@
 
 namespace Modules\Usuario\DTO;
 
+use Modules\Core\Enums\Estado;
 use Modules\Permissao\Enums\Perfil;
-use Modules\Usuario\Enums\EstadoUsuario;
 use Modules\Usuario\Enums\TipoLogin;
 
 class UsuarioDTO
@@ -15,7 +15,7 @@ class UsuarioDTO
         public TipoLogin $tipoLogin,
         public ?string $email = null,
         public ?int $dados_pessoa_id = null,
-        public EstadoUsuario $estado = EstadoUsuario::ATIVO,
+        public Estado $estado = Estado::ATIVO,
         public array $matriculasEducandos = [],
         public array $celulas = [],
     ) {
@@ -31,8 +31,8 @@ class UsuarioDTO
             email: $data['email'] ?? null,
             dados_pessoa_id: $data['dados_pessoa_id'] ?? null,
             estado: isset($data['estado'])
-                ? EstadoUsuario::from($data['estado'])
-                : EstadoUsuario::ATIVO,
+                ? Estado::from($data['estado'])
+                : Estado::ATIVO,
             matriculasEducandos: $data['matriculas_educandos'] ?? [],
             celulas: $data['celulas'] ?? [],
         );
