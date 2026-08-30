@@ -8,13 +8,14 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\UserPermissao;
-use Modules\Core\Enums\Estado;
+use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Usuario\Enums\TipoLogin;
 
 class User extends Authenticatable
 {
     use HasFactory;
     use HasApiTokens, Notifiable;
+    use SincronizaEstadoDescricao;
 
     protected $table = 'users';
 
@@ -83,9 +84,6 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-    const ESTADO_INATIVO = 0;
-    const ESTADO_ATIVO = 1;
-
     public function roles()
     {
         return $this->belongsToMany(Role::class, 'user_roles', 'users_id', 'role_id');
@@ -98,7 +96,6 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::saving(function (User $user) {
-            $user->estado_descricao = Estado::from($user->estado ?? 1)->label();
             $user->tipo_login_descricao = ($user->tipo_login ?? TipoLogin::EMAIL)->label();
         });
     }

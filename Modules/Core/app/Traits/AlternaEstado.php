@@ -9,7 +9,11 @@ trait AlternaEstado
 {
     protected function alternarEstado(Model $model): Model
     {
-        $novoEstado = $model->estado === Estado::ATIVO->value
+        $atual = $model->estado instanceof Estado
+            ? $model->estado
+            : Estado::tryFrom((int) $model->estado);
+
+        $novoEstado = $atual === Estado::ATIVO
             ? Estado::INATIVO
             : Estado::ATIVO;
 

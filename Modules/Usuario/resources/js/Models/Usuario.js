@@ -14,7 +14,7 @@
  * @property {string} created_at - "DD MMM YYYY, LT" (formato usado pelo table.js legado)
  */
 
-// Espelha Modules/Usuario/app/Enums/EstadoUsuario.php
+// Espelha Modules/Core/app/Enums/Estado.php
 export const ESTADO = Object.freeze({ INATIVO: 0, ATIVO: 1 });
 
 // Espelha a coluna dados_pessoas.tipo_pessoa (ver migration

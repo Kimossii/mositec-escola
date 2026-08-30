@@ -4,13 +4,15 @@ namespace Modules\Permissao\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Modules\Core\Enums\Estado;
+use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Usuario\Models\User;
 // use Modules\Permissao\Database\Factories\RoleFactory;
 
 class Role extends Model
 {
     use HasFactory;
+    use SincronizaEstadoDescricao;
+
     protected $table = 'roles';
 
     public const PERFIL_PERSONALIZADO = -1;
@@ -51,12 +53,6 @@ class Role extends Model
         return $this->nome !== self::PERFIL_PERSONALIZADO;
     }
 
-    protected static function booted(): void
-    {
-        static::saving(function (Role $role) {
-            $role->estado_descricao = Estado::from($role->estado ?? 1)->label();
-        });
-    }
     // protected static function newFactory(): RoleFactory
     // {
     //     // return RoleFactory::new();

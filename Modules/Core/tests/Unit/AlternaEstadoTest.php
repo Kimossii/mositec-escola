@@ -51,4 +51,22 @@ class AlternaEstadoTest extends TestCase
 
         $this->assertSame(Estado::ATIVO->value, $resultado->estado);
     }
+
+    public function test_alterna_quando_estado_ja_vem_como_instancia_de_estado(): void
+    {
+        $model = new ModeloComEstadoFake(['estado' => Estado::ATIVO]);
+
+        $resultado = (new AlternaEstadoConsumidorFake())->chamar($model);
+
+        $this->assertSame(Estado::INATIVO->value, $resultado->estado);
+    }
+
+    public function test_alterna_quando_estado_inativo_ja_vem_como_instancia_de_estado(): void
+    {
+        $model = new ModeloComEstadoFake(['estado' => Estado::INATIVO]);
+
+        $resultado = (new AlternaEstadoConsumidorFake())->chamar($model);
+
+        $this->assertSame(Estado::ATIVO->value, $resultado->estado);
+    }
 }
