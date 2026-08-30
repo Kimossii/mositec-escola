@@ -87,6 +87,27 @@ class EliminarUsuarioTest extends TestCase
         $this->assertSame(1, $professor->fresh()->estado);
     }
 
+    public function test_nao_elimina_a_propria_conta(): void
+    {
+        $staff = $this->actingAsStaff();
+
+        $response = $this->delete("/usuarios/{$staff->id}");
+
+        $response->assertForbidden();
+        $this->assertDatabaseHas('users', ['id' => $staff->id]);
+    }
+
+    public function test_nao_elimina_a_propria_conta_via_inertia_volta_com_mensagem_amigavel(): void
+    {
+        $staff = $this->actingAsStaff();
+
+        $response = $this->withHeaders(['X-Inertia' => 'true'])->delete("/usuarios/{$staff->id}");
+
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['autorizacao' => 'Não pode eliminar a sua própria conta.']);
+        $this->assertDatabaseHas('users', ['id' => $staff->id]);
+    }
+
     public function test_utilizador_sem_permissao_nao_elimina(): void
     {
         $semPermissao = User::create(['name' => 'Sem Permissao', 'email' => 'sem.permissao@example.com', 'password' => Hash::make('x')]);

@@ -13,7 +13,7 @@ class AlternarEstadoPerfilAction
             ? EstadoUsuario::INATIVO
             : EstadoUsuario::ATIVO;
 
-        $role->update(['estado' => $novoEstado]);
+        $role->update(['estado' => $novoEstado->value]);
 
         return $role;
     }
