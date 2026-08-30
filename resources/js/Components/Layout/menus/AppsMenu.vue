@@ -293,6 +293,13 @@ const userManagementGroups = [
             { href: '/permissoes/perfis', label: 'Perfis e Permissões' },
         ],
     },
+    {
+        title: 'Estabelecimento',
+        links: [
+            { href: '/estabelecimento', label: 'Dados da Escola' },
+            { href: '/estabelecimento/aparencia', label: 'Logótipo & Aparência' },
+        ],
+    },
 ]
 
 // const contactLinks = [
