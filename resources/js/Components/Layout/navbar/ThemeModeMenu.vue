@@ -47,8 +47,8 @@ import { onMounted } from 'vue'
 const menuTrigger = "{default:'click', lg: 'hover'}"
 
 const modes = [
-    { value: 'light', label: 'Light', icon: 'ki-night-day', paths: 10 },
-    { value: 'dark',  label: 'Dark',  icon: 'ki-moon',      paths: 2  },
+    { value: 'light', label: 'Claro', icon: 'ki-night-day', paths: 10 },
+    { value: 'dark',  label: 'Escuro',  icon: 'ki-moon',      paths: 2  },
 ]
 
 const setMode = (mode) => {

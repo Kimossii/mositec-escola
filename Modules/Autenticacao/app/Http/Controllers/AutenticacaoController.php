@@ -24,14 +24,14 @@ class AutenticacaoController extends Controller
         $key = 'login-attempts:' . $request->ip();
 
         $resposta = $gestaoAutenticacao->login(
-            $request->email,
+            $request->login,
             $request->password,
             $request->boolean('remember'),
             $key
         );
 
         if (!$resposta['success']) {
-            return back()->withErrors(['email' => $resposta['message']])->onlyInput('email');
+            return back()->withErrors(['login' => $resposta['message']])->onlyInput('login');
         }
 
         $request->session()->regenerate();

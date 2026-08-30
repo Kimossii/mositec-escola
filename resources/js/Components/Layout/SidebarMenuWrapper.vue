@@ -316,7 +316,7 @@
                         </span>
                         <div class="menu-sub menu-sub-accordion">
                             <div v-for="item in group.items" :key="item.href" class="menu-item">
-                                <a :class="['menu-link', { active: isActive(item.href) }]" :href="item.href">
+                                <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact }) }]" :href="item.href">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">{{ item.title }}</span>
                                 </a>
@@ -733,19 +733,18 @@ const userManagementGroups = [
     {
         title: 'Gestão de utilizadores',
         items: [
-            { href: '/usuarios', title: 'Todos os Utilizadores' },
+            { href: '/usuarios', title: 'Todos os Utilizadores', exact: true },
             { href: '/usuarios/alunos', title: 'Alunos' },
             { href: '/usuarios/professores', title: 'Professores' },
             { href: '/usuarios/funcionarios', title: 'Funcionários' },
             { href: '/usuarios/administradores', title: 'Administradores' },
+            { href: '/usuarios/encarregados', title: 'Encarregados' },
         ],
     },
     {
         title: 'Perfis',
         items: [
-            { href: 'apps/user-management/roles/list.html', title: 'Roles List' },
-            { href: 'apps/user-management/roles/view.html', title: 'View Role' },
-            { href: 'apps/user-management/roles/permissions.html', title: 'Permissions' },
+            { href: '/permissoes/perfis', title: 'Perfis e Permissões' },
         ],
     },
 ]

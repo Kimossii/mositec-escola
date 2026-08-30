@@ -10,6 +10,15 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+/* Colisão de nomes Tailwind × Bootstrap: o utilitário `.collapse` do Tailwind
+   define visibility:collapse (esconde mantendo o espaço no layout); o
+   componente `.collapse`/`.collapse.show` do Bootstrap (usado nos accordions
+   de permissões) é outra coisa — mostra/esconde via display. O do Tailwind
+   ganhava e deixava o painel aberto mas com o conteúdo invisível. */
+.collapse.show {
+    visibility: visible;
+}
+
 /* Paleta própria da sidebar e da área de conteúdo apenas no modo claro; modo escuro mantém o padrão do Metronic. */
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] {
     --bs-app-bg-color: #FFFFFF;
@@ -26,6 +35,13 @@ html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu .menu-item .menu-link,
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu .menu-item .menu-link .menu-title {
     color: #CBD5E1;
+}
+
+/* Ícone de cada módulo (nível 1) — mais claro que o texto porque o efeito
+   duotone já esbate uma das camadas; sem isto o ícone herda um tom apagado
+   e fica pouco visível no fundo escuro. */
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu .menu-item .menu-link .menu-icon i {
+    color: #E2E8F0;
 }
 
 /* Nível 2 e 3 (dentro de qualquer submenu) — estado normal. */
@@ -56,8 +72,10 @@ html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar
 
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.here > .menu-link,
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.here > .menu-link .menu-title,
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.here > .menu-link .menu-icon i,
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.show > .menu-link,
-html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.show > .menu-link .menu-title {
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.show > .menu-link .menu-title,
+html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.show > .menu-link .menu-icon i {
     color: #BBF7D0;
 }
 
@@ -83,10 +101,12 @@ html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar 
     border-left: 2px solid #86EFAC;
 }
 
-/* Nível 3 (subsubmenu) — activo: sem fundo, texto e bullet em verde suave. */
+/* Nível 3 (subsubmenu) — activo: sem fundo, texto e bullet em verde suave,
+   com uma linha por baixo pra marcar bem qual está selecionado. */
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-sub > .menu-item > .menu-link.active {
     background-color: transparent;
     color: #86EFAC;
+    border-bottom: 1px solid #86EFAC;
 }
 
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-sub > .menu-item > .menu-link.active .menu-title {
@@ -95,6 +115,12 @@ html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar
 
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-sub > .menu-item > .menu-link.active .menu-bullet .bullet {
     background-color: #86EFAC;
+}
+
+/* Nível 3 (subsubmenu) — activo, modo escuro: só a linha por baixo, resto
+   igual ao padrão do Metronic (o nível 3 nunca teve variante dark antes). */
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-sub > .menu-item > .menu-link.active {
+    border-bottom: 1px solid #86EFAC;
 }
 
 /* Botão "Guardar rascunho" dos forms de utilizador — cor castanho, sem equivalente nativo no Bootstrap/Metronic. */
@@ -112,6 +138,47 @@ html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar
     color: #FFFFFF;
     border-color: #6F4A29;
     background-color: #6F4A29;
+}
+
+/* Hover das tabelas de lista — o cinza padrão do Bootstrap fica sem
+   personalidade; usamos um verde muito suave ligado à paleta da app. As
+   linhas ficam com espaçamento vertical (border-spacing) para a sombra do
+   hover ter lugar para "respirar", e cantos arredondados nas pontas para dar
+   o efeito de pílula/oval em vez de um retângulo colado às vizinhas. */
+html[data-bs-theme='light'] .table.table-hover {
+    --bs-table-hover-bg: #F0FDF4;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+}
+
+.table.table-hover > tbody > tr {
+    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.table.table-hover > tbody > tr:hover > td {
+    box-shadow: inset 0 0 0 9999px var(--bs-table-hover-bg), 0 3px 10px -2px rgba(22, 101, 52, 0.18);
+}
+
+.table.table-hover > tbody > tr:hover > td:first-child {
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+}
+
+.table.table-hover > tbody > tr:hover > td:last-child {
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+/* Seta do botão de colapso (lista de permissões do perfil) gira 180° quando
+   aberto. Testado ao vivo: esta versão do Bootstrap não alterna a classe
+   .collapsed no botão como manda o padrão — só atualiza aria-expanded — por
+   isso a regra se baseia nesse atributo e não na classe. */
+button[data-bs-toggle='collapse'] i {
+    transition: transform 0.2s ease-in-out;
+}
+
+button[data-bs-toggle='collapse'][aria-expanded='true'] i {
+    transform: rotate(180deg);
 }
 
 /* Texto preto nos campos preenchíveis (inputs e selects "solid") no modo claro — o cinza padrão do Metronic ficava pouco visível. */

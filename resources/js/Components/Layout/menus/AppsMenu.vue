@@ -284,14 +284,13 @@ const userManagementGroups = [
             { href: '/usuarios/professores', label: 'Professores' },
             { href: '/usuarios/funcionarios', label: 'Funcionários' },
             { href: '/usuarios/administradores', label: 'Administradores' },
+            { href: '/usuarios/encarregados', label: 'Encarregados' },
         ],
     },
     {
         title: 'Perfis',
         links: [
-            { href: 'apps/user-management/roles/list.html', label: 'Roles List' },
-            { href: 'apps/user-management/roles/view.html', label: 'View Role' },
-            { href: 'apps/user-management/roles/permissions.html', label: 'Permissions' },
+            { href: '/permissoes/perfis', label: 'Perfis e Permissões' },
         ],
     },
 ]
