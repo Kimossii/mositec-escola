@@ -29,9 +29,6 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
 <template>
     <div class="ficha-campo">
         <span class="ficha-rotulo" :class="{ required: editing && required }">
-            <i v-if="icon" class="ki-duotone ficha-rotulo__icone" :class="icon">
-                <span v-for="n in iconPaths" :key="n" :class="`path${n}`"></span>
-            </i>
             {{ label }}
         </span>
 
@@ -46,9 +43,11 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
             ></textarea>
 
             <div v-else class="ficha-input-wrap" :class="{ 'ficha-input-wrap--icone': temCampoComIcone }">
-                <i v-if="temCampoComIcone" class="ki-duotone ficha-input-wrap__icone" :class="icon">
-                    <span v-for="n in iconPaths" :key="n" :class="`path${n}`"></span>
-                </i>
+                <span v-if="temCampoComIcone" class="ficha-input-wrap__icone-emblema">
+                    <i class="ki-duotone ficha-input-wrap__icone" :class="icon">
+                        <span v-for="n in iconPaths" :key="n" :class="`path${n}`"></span>
+                    </i>
+                </span>
 
                 <select
                     v-if="type === 'select'"
@@ -72,8 +71,15 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
             <span class="text-danger fs-8 mt-1" v-if="error">{{ error }}</span>
         </template>
 
-        <span v-else class="ficha-valor" :class="{ 'ficha-valor--vazio': !valorExibido && valorExibido !== 0 }">
-            {{ (valorExibido || valorExibido === 0) ? valorExibido : 'Não definido' }}
+        <span v-else class="ficha-valor-wrap">
+            <span v-if="temCampoComIcone" class="ficha-valor__icone-emblema">
+                <i class="ki-duotone ficha-valor__icone" :class="icon">
+                    <span v-for="n in iconPaths" :key="n" :class="`path${n}`"></span>
+                </i>
+            </span>
+            <span class="ficha-valor" :class="{ 'ficha-valor--vazio': !valorExibido && valorExibido !== 0 }">
+                {{ (valorExibido || valorExibido === 0) ? valorExibido : 'Não definido' }}
+            </span>
         </span>
     </div>
 </template>
@@ -90,7 +96,7 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
 .ficha-rotulo {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
     font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -98,13 +104,30 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
     color: var(--bs-gray-900);
 }
 
-.ficha-rotulo__icone {
-    font-size: 0.9rem;
-    color: var(--bs-gray-700);
+.ficha-valor-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.ficha-valor__icone-emblema {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.55rem;
+    background-color: var(--bs-primary);
+}
+
+.ficha-valor__icone {
+    font-size: 1.15rem;
+    color: var(--bs-primary-inverse);
 }
 
 .ficha-valor {
-    font-size: 0.975rem;
+    font-size: 1.1rem;
     font-weight: 500;
     color: var(--bs-gray-900);
     word-break: break-word;
@@ -126,22 +149,32 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
 }
 
 .ficha-input-wrap--icone .ficha-input {
-    padding-left: 2.75rem;
+    padding-left: 3.5rem;
+}
+
+.ficha-input-wrap__icone-emblema {
+    position: absolute;
+    top: 50%;
+    left: 0.6rem;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.55rem;
+    background-color: var(--bs-primary);
+    pointer-events: none;
+    transition: background-color 0.15s ease;
 }
 
 .ficha-input-wrap__icone {
-    position: absolute;
-    top: 50%;
-    left: 0.9rem;
-    transform: translateY(-50%);
-    font-size: 1.1rem;
-    color: var(--bs-gray-700);
-    pointer-events: none;
-    transition: color 0.15s ease;
+    font-size: 1.15rem;
+    color: var(--bs-primary-inverse);
 }
 
-.ficha-input-wrap:focus-within .ficha-input-wrap__icone {
-    color: var(--bs-success);
+.ficha-input-wrap:focus-within .ficha-input-wrap__icone-emblema {
+    background-color: var(--bs-success);
 }
 
 .ficha-input-wrap:focus-within .ficha-input {

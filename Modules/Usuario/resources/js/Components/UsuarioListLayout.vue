@@ -71,9 +71,9 @@ onMounted(() => {
                 <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
                     <!--begin::Page title-->
                     <div class="page-title d-flex align-items-center flex-wrap me-3">
-                        <span class="symbol symbol-40px me-3" :class="`bg-light-${accent}`" style="border-radius: 0.475rem;">
-                            <span class="symbol-label">
-                                <i class="ki-duotone fs-2" :class="[icon, `text-${accent}`]">
+                        <span class="symbol symbol-50px me-3" style="border-radius: 0.55rem;">
+                            <span class="symbol-label" :class="`bg-${accent}`">
+                                <i class="ki-duotone fs-1" :class="[icon, `text-inverse-${accent}`]">
                                     <span class="path1"></span>
                                     <span class="path2"></span>
                                     <span class="path3"></span>

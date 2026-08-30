@@ -1,8 +1,8 @@
 <?php
 
-namespace Modules\Usuario\Enums;
+namespace Modules\Core\Enums;
 
-enum EstadoUsuario: int
+enum Estado: int
 {
     case INATIVO = 0;
     case ATIVO = 1;

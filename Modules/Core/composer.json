@@ -1,0 +1,13 @@
+{
+    "name": "nwidart/core",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Core\\": "app/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Core\\Tests\\": "tests/"
+        }
+    }
+}

@@ -4,12 +4,14 @@ namespace Modules\Permissao\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Modules\Usuario\Enums\EstadoUsuario;
+use Modules\Core\Traits\SincronizaEstadoDescricao;
 // use Modules\Permissao\Database\Factories\ModuloFactory;
 
 class Modulo extends Model
 {
     use HasFactory;
+    use SincronizaEstadoDescricao;
+
     protected $table = 'modulos';
 
     /**
@@ -24,13 +26,6 @@ class Modulo extends Model
     public function permissoes()
     {
         return $this->hasMany(UserPermissao::class, 'modulo_id');
-    }
-
-    protected static function booted(): void
-    {
-        static::saving(function (Modulo $modulo) {
-            $modulo->estado_descricao = EstadoUsuario::from($modulo->estado ?? 1)->label();
-        });
     }
 
     // protected static function newFactory(): ModuloFactory
