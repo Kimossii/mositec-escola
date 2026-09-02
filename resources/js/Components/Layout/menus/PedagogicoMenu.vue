@@ -28,7 +28,7 @@ const generalSections = [
         title: 'Pedagógico',
         links: [
             { href: '#', label: 'Disciplinas' },
-            { href: '#', label: 'Horários' },
+            { href: '/horarios', label: 'Horários' },
             { href: '#', label: 'Planos de Aula' },
             { href: '#', label: 'Avaliações / Notas' },
             { href: '#', label: 'Pautas' },

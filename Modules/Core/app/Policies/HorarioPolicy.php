@@ -2,7 +2,6 @@
 
 namespace Modules\Core\Policies;
 
-use Modules\Core\Models\Horario;
 use Modules\Usuario\Models\User;
 
 class HorarioPolicy
@@ -17,7 +16,7 @@ class HorarioPolicy
         return $user->can('gerir-estabelecimento');
     }
 
-    public function view(User $user, Horario $horario): bool
+    public function view(User $user): bool
     {
         return $user->can('gerir-estabelecimento');
     }
@@ -27,12 +26,12 @@ class HorarioPolicy
         return $user->can('gerir-estabelecimento');
     }
 
-    public function update(User $user, Horario $horario): bool
+    public function update(User $user): bool
     {
         return $user->can('gerir-estabelecimento');
     }
 
-    public function delete(User $user, Horario $horario): bool
+    public function delete(User $user): bool
     {
         return $user->can('gerir-estabelecimento');
     }
