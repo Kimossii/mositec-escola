@@ -13,4 +13,5 @@ export const ACOES_LISTA = Object.freeze({
     eliminar: { icone: 'ki-trash', paths: 5, cor: 'danger', texto: 'Eliminar' },
     ativar: { icone: 'ki-toggle-on-circle', paths: 2, cor: 'success', texto: 'Ativar' },
     desativar: { icone: 'ki-toggle-off-circle', paths: 2, cor: 'muted', texto: 'Desativar' },
+    encerrar: { icone: 'ki-lock-2', paths: 5, cor: 'dark', texto: 'Encerrar' },
 });
