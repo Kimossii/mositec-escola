@@ -13,7 +13,7 @@ class AtualizarHorarioRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('gerir-estabelecimento') ?? false;
     }
 
     /**

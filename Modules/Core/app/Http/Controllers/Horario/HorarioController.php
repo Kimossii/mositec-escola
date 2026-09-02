@@ -3,54 +3,53 @@
 namespace Modules\Core\Http\Controllers\Horario;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Modules\Core\Http\Requests\Horario\AtualizarHorarioRequest;
+use Modules\Core\Http\Requests\Horario\CriarHorarioRequest;
+use Modules\Core\Models\Horario;
+use Modules\Core\Services\GestaoHorarioService;
+use Modules\Core\Services\HorarioConsultaService;
 
 class HorarioController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function __construct(
+        private GestaoHorarioService $service,
+        private HorarioConsultaService $consulta,
+    ) {}
+
     public function index()
     {
-        return view('core::index');
+        $this->authorize('view', Horario::class);
+
+        return Inertia::render('Core::Horario/Index', [
+            'horarios' => $this->consulta->listar(),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function store(CriarHorarioRequest $request)
     {
-        return view('core::create');
+        $this->authorize('create', Horario::class);
+
+        $this->service->criar($request);
+
+        return redirect()->back()->with('success', 'Horário criado com sucesso.');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request) {}
-
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
+    public function update(AtualizarHorarioRequest $request, Horario $horario)
     {
-        return view('core::show');
+        $this->authorize('update', $horario);
+
+        $this->service->atualizar($horario, $request);
+
+        return redirect()->back()->with('success', 'Horário atualizado com sucesso.');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
+    public function destroy(Horario $horario)
     {
-        return view('core::edit');
+        $this->authorize('delete', $horario);
+
+        $this->service->eliminar($horario);
+
+        return redirect()->back()->with('success', 'Horário eliminado com sucesso.');
     }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id) {}
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
 }

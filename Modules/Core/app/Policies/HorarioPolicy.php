@@ -2,49 +2,38 @@
 
 namespace Modules\Core\Policies;
 
-use App\Models\User;
 use Modules\Core\Models\Horario;
+use Modules\Usuario\Models\User;
 
 class HorarioPolicy
 {
     /**
-     * Determina se o utilizador pode visualizar horários.
+     * Horario é um bloco reutilizável do Core — a autorização é delegada à
+     * gate já existente para a configuração do estabelecimento, em vez de
+     * o Core definir a sua própria gate.
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('visualizar', Horario::class);
+        return $user->can('gerir-estabelecimento');
     }
 
-    /**
-     * Determina se o utilizador pode visualizar um horário.
-     */
     public function view(User $user, Horario $horario): bool
     {
-        return $user->can('visualizar', $horario);
+        return $user->can('gerir-estabelecimento');
     }
 
-    /**
-     * Determina se o utilizador pode criar horários.
-     */
     public function create(User $user): bool
     {
-        return $user->can('criar', Horario::class);
+        return $user->can('gerir-estabelecimento');
     }
 
-    /**
-     * Determina se o utilizador pode atualizar um horário.
-     */
     public function update(User $user, Horario $horario): bool
     {
-        return $user->can('editar', $horario);
+        return $user->can('gerir-estabelecimento');
     }
 
-    /**
-     * Determina se o utilizador pode eliminar um horário.
-     */
     public function delete(User $user, Horario $horario): bool
     {
-        return $user->can('eliminar', $horario);
+        return $user->can('gerir-estabelecimento');
     }
 }
-

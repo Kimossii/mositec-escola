@@ -2,13 +2,18 @@
 
 namespace Modules\Core\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Core\Traits\RegistaAutoria;
+use Modules\Core\Traits\SincronizaEstadoDescricao;
+use Modules\Usuario\Models\User;
 
 class Horario extends Model
 {
     use HasFactory;
+    use SincronizaEstadoDescricao;
+    use RegistaAutoria;
 
     protected $fillable = [
         'nome',
@@ -19,23 +24,17 @@ class Horario extends Model
         'editado_por',
     ];
 
-    /**
-     * Utilizador que criou o horário.
-     */
-    protected function casts(): array
-    {
-        return [
-            'tipo' => TipoHorario::class,
-            'estado' => EstadoHorario::class,
-        ];
-    }
+    protected $casts = [
+        'hora_inicio' => 'datetime:H:i',
+        'hora_fim' => 'datetime:H:i',
+    ];
 
-    public function criadoPor()
+    public function criadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'criado_por');
     }
 
-    public function editadoPor()
+    public function editadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'editado_por');
     }

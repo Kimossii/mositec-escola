@@ -2,29 +2,28 @@
 
 namespace Modules\Core\DTO;
 
-use Modules\Core\Enums\EstadoHorario;
+use Illuminate\Foundation\Http\FormRequest;
+use Modules\Core\Enums\Estado;
 
 class HorarioDTO
 {
     public function __construct(
         public readonly string $nome,
-        public readonly string $hora_inicio,
-        public readonly string $hora_fim,
-        public readonly EstadoHorario $estado = EstadoHorario::ATIVO,
-        public readonly ?int $criado_por = null,
-        public readonly ?int $editado_por = null,
+        public readonly string $horaInicio,
+        public readonly string $horaFim,
+        public readonly Estado $estado = Estado::ATIVO,
     ) {
     }
 
-    public function toArray(): array
+    public static function fromRequest(FormRequest $request): self
     {
-        return [
-            'nome' => $this->nome,
-            'hora_inicio' => $this->hora_inicio,
-            'hora_fim' => $this->hora_fim,
-            'estado' => $this->estado->value,
-            'criado_por' => $this->criado_por,
-            'editado_por' => $this->editado_por,
-        ];
+        $dados = $request->validated();
+
+        return new self(
+            nome: $dados['nome'],
+            horaInicio: $dados['hora_inicio'],
+            horaFim: $dados['hora_fim'],
+            estado: isset($dados['estado']) ? Estado::from((int) $dados['estado']) : Estado::ATIVO,
+        );
     }
 }
