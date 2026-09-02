@@ -3,5 +3,6 @@
     "Autenticacao": true,
     "Permissao": true,
     "Estabelecimento": true,
-    "Core": true
+    "Core": true,
+    "AnoLectivo": true
 }

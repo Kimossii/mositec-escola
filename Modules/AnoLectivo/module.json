@@ -1,0 +1,11 @@
+{
+    "name": "AnoLectivo",
+    "alias": "anolectivo",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\AnoLectivo\\Providers\\AnoLectivoServiceProvider"
+    ],
+    "files": []
+}

@@ -7,7 +7,8 @@
         <div class="menu menu-column menu-rounded menu-sub-indention px-3" id="kt_app_sidebar_menu" data-kt-menu="true"
             data-kt-menu-expand="false">
             <!-- ── Dashboards ──────────────────────────────────────── -->
-            <div data-kt-menu-trigger="click" :class="['menu-item', 'menu-accordion', { here: dashboardsActive, show: dashboardsActive }]">
+            <div data-kt-menu-trigger="click"
+                :class="['menu-item', 'menu-accordion', { here: dashboardsActive, show: dashboardsActive }]">
                 <span class="menu-link">
                     <span class="menu-icon">
                         <i class="ki-duotone ki-element-11 fs-2">
@@ -52,15 +53,26 @@
                 </div>
             </div>
 
-            <!-- ── Section: Pages ─────────────────────────────────── -->
+            <!-- ── Section: Académico ─────────────────────────────────── -->
             <div class="menu-item pt-5">
                 <div class="menu-content">
-                    <span class="menu-heading fw-bold text-uppercase fs-7">Pages</span>
+                    <span class="menu-heading fw-bold text-uppercase fs-7">
+                        Académico
+                    </span>
+                </div>
+            </div>
+
+            <SidebarAccordion :item="academico" />
+
+            <!-- ── Section: Pedagogia ─────────────────────────────────── -->
+            <div class="menu-item pt-5">
+                <div class="menu-content">
+                    <span class="menu-heading fw-bold text-uppercase fs-7">Pedagogia</span>
                 </div>
             </div>
 
             <!-- User Profile -->
-            <SidebarAccordion :item="userProfile" />
+            <SidebarAccordion :item="pedagogico" />
 
             <!-- Account -->
             <!-- <SidebarAccordion :item="account" /> -->
@@ -295,8 +307,9 @@
                 </div>
             </div> -->
 
-            <!-- User Management (com sub-grupos) -->
-            <div data-kt-menu-trigger="click" :class="['menu-item', 'menu-accordion', { here: userManagementActive, show: userManagementActive }]">
+            <!-- ConfiguracoesMenu (com sub-grupos) -->
+            <div data-kt-menu-trigger="click"
+                :class="['menu-item', 'menu-accordion', { here: userManagementActive, show: userManagementActive }]">
                 <span class="menu-link">
                     <span class="menu-icon">
                         <i class="ki-duotone ki-abstract-28 fs-2">
@@ -307,7 +320,7 @@
                     <span class="menu-arrow"></span>
                 </span>
                 <div class="menu-sub menu-sub-accordion">
-                    <div v-for="group in userManagementGroups" :key="group.title" data-kt-menu-trigger="click"
+                    <div v-for="group in configuracoesMenu" :key="group.title" data-kt-menu-trigger="click"
                         :class="['menu-item', 'menu-accordion', { here: isGroupActive(group.items), show: isGroupActive(group.items) }]">
                         <span class="menu-link">
                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
@@ -316,7 +329,8 @@
                         </span>
                         <div class="menu-sub menu-sub-accordion">
                             <div v-for="item in group.items" :key="item.href" class="menu-item">
-                                <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact }) }]" :href="item.href">
+                                <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact }) }]"
+                                    :href="item.href">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">{{ item.title }}</span>
                                 </a>
@@ -327,7 +341,8 @@
             </div>
 
             <!-- Estabelecimento -->
-            <div data-kt-menu-trigger="click" :class="['menu-item', 'menu-accordion', { here: estabelecimentoActive, show: estabelecimentoActive }]">
+            <div data-kt-menu-trigger="click"
+                :class="['menu-item', 'menu-accordion', { here: estabelecimentoActive, show: estabelecimentoActive }]">
                 <span class="menu-link">
                     <span class="menu-icon">
                         <i class="ki-duotone ki-setting-2 fs-2">
@@ -339,7 +354,31 @@
                 </span>
                 <div class="menu-sub menu-sub-accordion">
                     <div v-for="item in estabelecimentoItems" :key="item.href" class="menu-item">
-                        <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact }) }]" :href="item.href">
+                        <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact }) }]"
+                            :href="item.href">
+                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                            <span class="menu-title">{{ item.title }}</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ano Lectivo -->
+            <div data-kt-menu-trigger="click"
+                :class="['menu-item', 'menu-accordion', { here: anoLectivoActive, show: anoLectivoActive }]">
+                <span class="menu-link">
+                    <span class="menu-icon">
+                        <i class="ki-duotone ki-calendar-8 fs-2">
+                            <span v-for="n in 6" :key="n" :class="`path${n}`"></span>
+                        </i>
+                    </span>
+                    <span class="menu-title">Ano Lectivo</span>
+                    <span class="menu-arrow"></span>
+                </span>
+                <div class="menu-sub menu-sub-accordion">
+                    <div v-for="item in anoLectivoItems" :key="item.href" class="menu-item">
+                        <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact }) }]"
+                            :href="item.href">
                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                             <span class="menu-title">{{ item.title }}</span>
                         </a>
@@ -462,16 +501,35 @@ const dashboards = {
 }
 const dashboardsActive = computed(() => isGroupActive(dashboards.items))
 
-// ── Pages ────────────────────────────────────────────────────────────────────
-const userProfile = {
-    title: 'User Profile', icon: 'ki-address-book', paths: 3,
+// ── Academico ────────────────────────────────────────────────────────────────────
+const academico = {
+    title: 'Académico',
+    icon: 'ki-profile-user',
+    paths: 3,
     items: [
-        { href: 'pages/user-profile/overview.html', title: 'Overview' },
-        { href: 'pages/user-profile/projects.html', title: 'Projects' },
-        { href: 'pages/user-profile/campaigns.html', title: 'Campaigns' },
-        { href: 'pages/user-profile/documents.html', title: 'Documents' },
-        { href: 'pages/user-profile/followers.html', title: 'Followers' },
-        { href: 'pages/user-profile/activity.html', title: 'Activity' },
+        { href: '#', title: 'Alunos' },
+        { href: '#', title: 'Encarregados de Educação' },
+        { href: '#', title: 'Turmas' },
+        { href: '#', title: 'Matrículas' },
+        { href: '#', title: 'Transferências' },
+        { href: '#', title: 'Histórico Escolar' },
+        { href: '#', title: 'Ficha do Aluno' },
+    ],
+}
+
+// ── Pedagogico ────────────────────────────────────────────────────────────────────
+const pedagogico = {
+    title: 'Pedagógico',
+    icon: 'ki-address-book',
+    paths: 3,
+    items: [
+        { href: '#', title: 'Disciplinas' },
+        { href: '#', title: 'Horários' },
+        { href: '#', title: 'Planos de Aula' },
+        { href: '#', title: 'Avaliações / Notas' },
+        { href: '#', title: 'Pautas' },
+        { href: '#', title: 'Conselho de Turma' },
+        { href: '#', title: 'Exames / Recuperações' },
     ],
 }
 
@@ -750,7 +808,7 @@ const userProfile = {
 //     },
 // ]
 
-const userManagementGroups = [
+const configuracoesMenu = [
     {
         title: 'Gestão de utilizadores',
         items: [
@@ -770,7 +828,7 @@ const userManagementGroups = [
     },
 ]
 const userManagementActive = computed(() =>
-    userManagementGroups.some((group) => isGroupActive(group.items))
+    configuracoesMenu.some((group) => isGroupActive(group.items))
 )
 
 const estabelecimentoItems = [
@@ -778,6 +836,11 @@ const estabelecimentoItems = [
     { href: '/estabelecimento/aparencia', title: 'Logótipo & Aparência' },
 ]
 const estabelecimentoActive = computed(() => isGroupActive(estabelecimentoItems))
+
+const anoLectivoItems = [
+    { href: '/ano-lectivos', title: 'Anos Lectivos', exact: true },
+]
+const anoLectivoActive = computed(() => isGroupActive(anoLectivoItems))
 
 // const customers = {
 //     title: 'Customers', icon: 'ki-abstract-38', paths: 2,
