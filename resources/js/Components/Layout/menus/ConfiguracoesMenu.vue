@@ -300,6 +300,12 @@ const userManagementGroups = [
             { href: '/estabelecimento/aparencia', label: 'Logótipo & Aparência' },
         ],
     },
+    {
+        title: 'Ano Lectivo',
+        links: [
+            { href: '/ano-lectivos', label: 'Anos Lectivos' },
+        ],
+    },
 ]
 
 // const contactLinks = [
