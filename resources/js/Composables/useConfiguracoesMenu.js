@@ -10,7 +10,7 @@ const gruposConfiguracoes = [
     {
         title: 'Utilizadores',
         links: [
-            { href: '/usuarios', label: 'Todos os Utilizadores', permissao: 'usuario.ver' },
+            { href: '/usuarios', label: 'Todos os Utilizadores', exact: true, permissao: 'usuario.ver' },
             { href: '/usuarios/alunos', label: 'Alunos', permissao: 'usuario.ver' },
             { href: '/usuarios/professores', label: 'Professores', permissao: 'usuario.ver' },
             { href: '/usuarios/funcionarios', label: 'Funcionários', permissao: 'usuario.ver' },
@@ -21,13 +21,13 @@ const gruposConfiguracoes = [
     {
         title: 'Perfis & Permissões',
         links: [
-            { href: '/permissoes/perfis', label: 'Perfis e Permissões', permissao: 'autorizacao.ver' },
+            { href: '/permissoes/perfis', label: 'Perfis e Permissões', permissao: 'autorizacao.ver', activePrefix: '/permissoes' },
         ],
     },
     {
         title: 'Estabelecimento',
         links: [
-            { href: '/estabelecimento', label: 'Dados da Escola', permissao: 'estabelecimento.ver' },
+            { href: '/estabelecimento', label: 'Dados da Escola', exact: true, permissao: 'estabelecimento.ver' },
             { href: '/estabelecimento/aparencia', label: 'Logótipo & Aparência', permissao: 'estabelecimento.ver' },
         ],
     },

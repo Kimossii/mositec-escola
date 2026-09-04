@@ -9,7 +9,7 @@
                         </h4>
 
                         <div v-for="link in section.links" :key="link.href" class="menu-item p-0 m-0">
-                            <a :href="link.href" class="menu-link">
+                            <a :href="link.href" :class="['menu-link', { active: isActive(link.href) }]">
                                 <span class="menu-title">
                                     {{ link.label }}
                                 </span>
@@ -24,7 +24,9 @@
 
 <script setup>
 import { usePedagogicoMenu } from '@/Composables/usePedagogicoMenu'
+import { useActiveMenu } from '@/composables/useActiveMenu'
 
 const { seccoesVisiveis } = usePedagogicoMenu()
+const { isActive } = useActiveMenu()
 </script>
 

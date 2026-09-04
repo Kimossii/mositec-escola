@@ -330,7 +330,7 @@
                         </span>
                         <div class="menu-sub menu-sub-accordion">
                             <div v-for="item in group.items" :key="item.href" class="menu-item">
-                                <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact }) }]"
+                                <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact, prefix: item.activePrefix }) }]"
                                     :href="item.href">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">{{ item.title }}</span>
@@ -879,7 +879,7 @@ const configuracoesMenu = [
     {
         title: 'Perfis & Permissões',
         items: [
-            { href: '/permissoes/perfis', title: 'Perfis e Permissões', permissao: 'autorizacao.ver' },
+            { href: '/permissoes/perfis', title: 'Perfis e Permissões', permissao: 'autorizacao.ver', activePrefix: '/permissoes' },
         ],
     },
     {
@@ -892,7 +892,7 @@ const configuracoesMenu = [
     {
         title: 'Ano Lectivo',
         items: [
-            { href: '/ano-lectivos', title: 'Anos Lectivos', exact: true, permissao: 'ano-lectivo.ver' },
+            { href: '/ano-lectivos', title: 'Anos Lectivos', permissao: 'ano-lectivo.ver' },
         ],
     },
     // Por implementar — descomentar quando o módulo Sistema existir:
