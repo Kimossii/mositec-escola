@@ -3,12 +3,17 @@
 namespace Modules\Usuario\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
+use Modules\Permissao\Enums\Perfil;
 
 class CriarUsuarioRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('gerir-usuarios') ?? false;
+        // Criar um utilizador com perfil Admin Escola é um acto de
+        // autorização, não de simples gestão de contas.
+        $vaiSerAdmin = $this->input('perfil') === Perfil::ADMIN_ESCOLA->slug();
+
+        return $this->user()?->can($vaiSerAdmin ? 'autorizacao.criar' : 'usuario.criar') ?? false;
     }
 
     public function rules(): array

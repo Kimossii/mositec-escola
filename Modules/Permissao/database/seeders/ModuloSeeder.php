@@ -13,7 +13,7 @@ class ModuloSeeder extends Seeder
     public function run(): void
     {
         $modulos = [
-            ['nome' => 0, 'descricao' => 'Usuario'],
+            ['nome' => 0, 'descricao' => 'Utilizadores'],
             ['nome' => 1, 'descricao' => 'Autorizacao'],
             ['nome' => 2, 'descricao' => 'Ano Letivo'],
             ['nome' => 3, 'descricao' => 'Licenca'],

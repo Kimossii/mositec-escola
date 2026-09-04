@@ -4,12 +4,20 @@ namespace Modules\Usuario\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
+use Modules\Permissao\Enums\Perfil;
 
 class AtualizarUsuarioRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('gerir-usuarios') ?? false;
+        // Se o alvo já é Admin Escola, OU se este pedido o vai tornar Admin
+        // Escola (promoção via troca de perfil), exige autorizacao.editar —
+        // usuario.editar sozinho nunca chega a mexer num Admin Escola.
+        $eraAdmin = $this->route('user')?->roles->contains('nome', Perfil::ADMIN_ESCOLA->value) ?? false;
+        $vaiSerAdmin = $this->input('perfil') === Perfil::ADMIN_ESCOLA->slug();
+        $precisaAutorizacao = $eraAdmin || $vaiSerAdmin;
+
+        return $this->user()?->can($precisaAutorizacao ? 'autorizacao.editar' : 'usuario.editar') ?? false;
     }
 
     public function rules(): array

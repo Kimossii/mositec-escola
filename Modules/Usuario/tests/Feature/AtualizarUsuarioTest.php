@@ -4,7 +4,7 @@ namespace Modules\Usuario\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Modules\Permissao\Database\Seeders\RoleSeeder;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo;
@@ -21,7 +21,7 @@ class AtualizarUsuarioTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(RoleSeeder::class);
+        $this->seed(PermissaoDatabaseSeeder::class);
     }
 
     private function actingAsStaff(): User
@@ -41,8 +41,8 @@ class AtualizarUsuarioTest extends TestCase
         $roleProfessor = Role::where('nome', Perfil::PROFESSOR->value)->first();
         $professor->roles()->attach($roleProfessor->id);
 
-        $modulo = Modulo::create(['nome' => 0, 'descricao' => 'Usuario', 'estado' => 1]);
-        $acao = Acao::create(['nome' => 'eliminar', 'numero' => 3, 'estado' => 1]);
+        $modulo = Modulo::where('nome', 0)->first();
+        $acao = Acao::where('nome', 'eliminar')->first();
         $professor->permissoes()->create(['modulo_id' => $modulo->id, 'acao_id' => $acao->id, 'permitido' => false]);
 
         $response = $this->getJson("/usuarios/{$professor->id}/editar");
@@ -65,8 +65,8 @@ class AtualizarUsuarioTest extends TestCase
         $roleProfessor = Role::where('nome', Perfil::PROFESSOR->value)->first();
         $professor->roles()->attach($roleProfessor->id);
 
-        $modulo = Modulo::create(['nome' => 0, 'descricao' => 'Usuario', 'estado' => 1]);
-        $acao = Acao::create(['nome' => 'eliminar', 'numero' => 3, 'estado' => 1]);
+        $modulo = Modulo::where('nome', 0)->first();
+        $acao = Acao::where('nome', 'eliminar')->first();
 
         $response = $this->put("/usuarios/{$professor->id}", [
             'name' => 'Prof Atualizado',

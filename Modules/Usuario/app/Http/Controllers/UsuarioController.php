@@ -102,6 +102,7 @@ class UsuarioController extends Controller
 
     public function alternarEstado(User $user)
     {
+        $this->authorize('alternarEstado', $user);
         $this->service->alternarEstado($user);
 
         return redirect()->back()->with('success', 'Estado do utilizador atualizado.');

@@ -15,42 +15,54 @@ class RolePermissaoSeeder extends Seeder
 {
     /**
      * Concede a ADMIN_ESCOLA exactamente o que as antigas gates fixas
-     * ('gerir-ano-letivo', 'gerir-estabelecimento') já davam, para migrar
-     * sem regressão de acesso. Nenhuma outra role recebe nada aqui.
+     * ('gerir-ano-letivo', 'gerir-estabelecimento', 'gerir-usuarios',
+     * 'gerir-permissoes') já davam, para migrar sem regressão de acesso.
+     * SECRETARIO ganha gestão de contas (usuario.*) por decisão de desenho
+     * aprovada — nunca autorizacao.* (perfis/permissões/administradores
+     * fica reservado a ADMIN_ESCOLA).
      */
     public function run(): void
     {
-        $adminEscola = Role::where('nome', Perfil::ADMIN_ESCOLA->value)->first();
-        if (!$adminEscola) {
-            Log::warning('RolePermissaoSeeder: role ADMIN_ESCOLA não encontrada — seeder não vai conceder nenhuma permissão.');
-            return;
-        }
-
-        $mapa = [
-            Modulo::ANO_LECTIVO->value => ['ver', 'criar', 'editar', 'eliminar'],
-            Modulo::ESTABELECIMENTO->value => ['ver', 'editar'],
-            Modulo::HORARIO->value => ['ver', 'criar', 'editar', 'eliminar'],
+        $mapaPorRole = [
+            Perfil::ADMIN_ESCOLA->value => [
+                Modulo::ANO_LECTIVO->value => ['ver', 'criar', 'editar', 'eliminar'],
+                Modulo::ESTABELECIMENTO->value => ['ver', 'editar'],
+                Modulo::HORARIO->value => ['ver', 'criar', 'editar', 'eliminar'],
+                Modulo::USUARIO->value => ['ver', 'criar', 'editar', 'eliminar'],
+                Modulo::AUTORIZACAO->value => ['ver', 'criar', 'editar', 'eliminar'],
+            ],
+            Perfil::SECRETARIO->value => [
+                Modulo::USUARIO->value => ['ver', 'criar', 'editar'],
+            ],
         ];
 
-        foreach ($mapa as $moduloNome => $acoes) {
-            $modulo = ModuloRegistro::where('nome', $moduloNome)->first();
-            if (!$modulo) {
-                Log::warning("RolePermissaoSeeder: módulo com nome={$moduloNome} não encontrado — permissões de {$moduloNome} não foram concedidas a ADMIN_ESCOLA.");
+        foreach ($mapaPorRole as $roleNome => $mapa) {
+            $role = Role::where('nome', $roleNome)->first();
+            if (!$role) {
+                Log::warning("RolePermissaoSeeder: role com nome={$roleNome} não encontrada — permissões não concedidas.");
                 continue;
             }
 
-            foreach ($acoes as $acaoNome) {
-                $acao = Acao::where('nome', $acaoNome)->first();
-                if (!$acao) {
-                    Log::warning("RolePermissaoSeeder: acção '{$acaoNome}' não encontrada — permissão {$acaoNome}/módulo nome={$moduloNome} não foi concedida a ADMIN_ESCOLA.");
+            foreach ($mapa as $moduloNome => $acoes) {
+                $modulo = ModuloRegistro::where('nome', $moduloNome)->first();
+                if (!$modulo) {
+                    Log::warning("RolePermissaoSeeder: módulo com nome={$moduloNome} não encontrado — permissões não concedidas a role {$roleNome}.");
                     continue;
                 }
 
-                RolePermissao::firstOrCreate([
-                    'role_id' => $adminEscola->id,
-                    'modulo_id' => $modulo->id,
-                    'acao_id' => $acao->id,
-                ]);
+                foreach ($acoes as $acaoNome) {
+                    $acao = Acao::where('nome', $acaoNome)->first();
+                    if (!$acao) {
+                        Log::warning("RolePermissaoSeeder: acção '{$acaoNome}' não encontrada — permissão não concedida (role={$roleNome}, módulo={$moduloNome}).");
+                        continue;
+                    }
+
+                    RolePermissao::firstOrCreate([
+                        'role_id' => $role->id,
+                        'modulo_id' => $modulo->id,
+                        'acao_id' => $acao->id,
+                    ]);
+                }
             }
         }
     }

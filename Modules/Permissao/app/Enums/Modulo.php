@@ -49,7 +49,7 @@ enum Modulo: int
     public function label(): string
     {
         return match ($this) {
-            self::USUARIO => 'Usuário',
+            self::USUARIO => 'Utilizadores',
             self::AUTORIZACAO => 'Autorização',
             self::ANO_LECTIVO => 'Ano Lectivo',
             self::LICENCA => 'Licença',
