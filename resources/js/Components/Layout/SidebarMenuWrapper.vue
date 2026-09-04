@@ -341,7 +341,7 @@
             </div>
 
             <!-- Estabelecimento -->
-            <div data-kt-menu-trigger="click"
+            <div v-if="estabelecimentoItemsVisiveis.length" data-kt-menu-trigger="click"
                 :class="['menu-item', 'menu-accordion', { here: estabelecimentoActive, show: estabelecimentoActive }]">
                 <span class="menu-link">
                     <span class="menu-icon">
@@ -353,7 +353,7 @@
                     <span class="menu-arrow"></span>
                 </span>
                 <div class="menu-sub menu-sub-accordion">
-                    <div v-for="item in estabelecimentoItems" :key="item.href" class="menu-item">
+                    <div v-for="item in estabelecimentoItemsVisiveis" :key="item.href" class="menu-item">
                         <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact }) }]"
                             :href="item.href">
                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
@@ -364,7 +364,7 @@
             </div>
 
             <!-- Ano Lectivo -->
-            <div data-kt-menu-trigger="click"
+            <div v-if="anoLectivoItemsVisiveis.length" data-kt-menu-trigger="click"
                 :class="['menu-item', 'menu-accordion', { here: anoLectivoActive, show: anoLectivoActive }]">
                 <span class="menu-link">
                     <span class="menu-icon">
@@ -376,7 +376,7 @@
                     <span class="menu-arrow"></span>
                 </span>
                 <div class="menu-sub menu-sub-accordion">
-                    <div v-for="item in anoLectivoItems" :key="item.href" class="menu-item">
+                    <div v-for="item in anoLectivoItemsVisiveis" :key="item.href" class="menu-item">
                         <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact }) }]"
                             :href="item.href">
                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
@@ -471,6 +471,7 @@
 import { computed } from 'vue'
 import SidebarAccordion from './sidebar/SidebarAccordion.vue'
 import { useActiveMenu } from '@/composables/useActiveMenu'
+import { podeVer } from '@/Composables/usePermissoes'
 
 const { isActive, isGroupActive } = useActiveMenu()
 
@@ -832,15 +833,17 @@ const userManagementActive = computed(() =>
 )
 
 const estabelecimentoItems = [
-    { href: '/estabelecimento', title: 'Dados da Escola', exact: true },
-    { href: '/estabelecimento/aparencia', title: 'Logótipo & Aparência' },
+    { href: '/estabelecimento', title: 'Dados da Escola', exact: true, permissao: 'estabelecimento.ver' },
+    { href: '/estabelecimento/aparencia', title: 'Logótipo & Aparência', permissao: 'estabelecimento.ver' },
 ]
-const estabelecimentoActive = computed(() => isGroupActive(estabelecimentoItems))
+const estabelecimentoItemsVisiveis = computed(() => estabelecimentoItems.filter(podeVer))
+const estabelecimentoActive = computed(() => isGroupActive(estabelecimentoItemsVisiveis.value))
 
 const anoLectivoItems = [
-    { href: '/ano-lectivos', title: 'Anos Lectivos', exact: true },
+    { href: '/ano-lectivos', title: 'Anos Lectivos', exact: true, permissao: 'ano-lectivo.ver' },
 ]
-const anoLectivoActive = computed(() => isGroupActive(anoLectivoItems))
+const anoLectivoItemsVisiveis = computed(() => anoLectivoItems.filter(podeVer))
+const anoLectivoActive = computed(() => isGroupActive(anoLectivoItemsVisiveis.value))
 
 // const customers = {
 //     title: 'Customers', icon: 'ki-abstract-38', paths: 2,

@@ -8,7 +8,7 @@
                             {{ section.title }}
                         </h4>
 
-                        <div v-for="link in section.links" :key="link.href" class="menu-item p-0 m-0">
+                        <div v-for="link in section.links.filter(podeVer)" :key="link.href" class="menu-item p-0 m-0">
                             <a :href="link.href" class="menu-link">
                                 <span class="menu-title">
                                     {{ link.label }}
@@ -23,12 +23,14 @@
 </template>
 
 <script setup>
+import { podeVer } from '@/Composables/usePermissoes'
+
 const generalSections = [
     {
         title: 'Pedagógico',
         links: [
             { href: '#', label: 'Disciplinas' },
-            { href: '/horarios', label: 'Horários' },
+            { href: '/horarios', label: 'Horários', permissao: 'horario.ver' },
             { href: '#', label: 'Planos de Aula' },
             { href: '#', label: 'Avaliações / Notas' },
             { href: '#', label: 'Pautas' },

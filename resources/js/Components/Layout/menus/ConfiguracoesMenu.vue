@@ -129,7 +129,7 @@
             </span>
             <div class="menu-sub menu-sub-lg-down-accordion menu-sub-lg-dropdown menu-active-bg px-lg-2 py-lg-4 w-lg-225px">
                 <div
-                    v-for="group in userManagementGroups"
+                    v-for="group in gruposVisiveis"
                     :key="group.title"
                     data-kt-menu-trigger="click"
                     class="menu-item menu-accordion menu-sub-indention"
@@ -222,6 +222,8 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { podeVer } from '@/Composables/usePermissoes'
 // import AppSubMenu from './AppSubMenu.vue'
 
 // const projectLinks = [
@@ -296,17 +298,26 @@ const userManagementGroups = [
     {
         title: 'Estabelecimento',
         links: [
-            { href: '/estabelecimento', label: 'Dados da Escola' },
-            { href: '/estabelecimento/aparencia', label: 'Logótipo & Aparência' },
+            { href: '/estabelecimento', label: 'Dados da Escola', permissao: 'estabelecimento.ver' },
+            { href: '/estabelecimento/aparencia', label: 'Logótipo & Aparência', permissao: 'estabelecimento.ver' },
         ],
     },
     {
         title: 'Ano Lectivo',
         links: [
-            { href: '/ano-lectivos', label: 'Anos Lectivos' },
+            { href: '/ano-lectivos', label: 'Anos Lectivos', permissao: 'ano-lectivo.ver' },
         ],
     },
 ]
+
+// Links de Usuários/Perfis ficam sem `permissao` de propósito — a
+// autorização deles não passa por este mecanismo ainda. Só filtramos
+// (e escondemos o grupo todo) os que já têm permissao real.
+const gruposVisiveis = computed(() =>
+    userManagementGroups
+        .map((group) => ({ ...group, links: group.links.filter(podeVer) }))
+        .filter((group) => group.links.length > 0)
+)
 
 // const contactLinks = [
 //     { href: 'apps/contacts/getting-started.html', label: 'Getting Started' },
