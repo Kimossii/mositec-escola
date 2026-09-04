@@ -24,7 +24,7 @@ class SincronizarPermissoesPerfilActionTest extends TestCase
 
         RolePermissao::create(['role_id' => $role->id, 'modulo_id' => $modulo1->id, 'acao_id' => $acaoVer->id]);
 
-        (new SincronizarPermissoesPerfilAction())->executar($role, [
+        app(SincronizarPermissoesPerfilAction::class)->executar($role, [
             ['modulo_id' => $modulo2->id, 'acao_id' => $acaoCriar->id],
         ]);
 
@@ -41,7 +41,7 @@ class SincronizarPermissoesPerfilActionTest extends TestCase
 
         RolePermissao::create(['role_id' => $role->id, 'modulo_id' => $modulo->id, 'acao_id' => $acao->id]);
 
-        (new SincronizarPermissoesPerfilAction())->executar($role, []);
+        app(SincronizarPermissoesPerfilAction::class)->executar($role, []);
 
         $this->assertSame(0, RolePermissao::where('role_id', $role->id)->count());
     }

@@ -19,7 +19,7 @@ class HorarioController extends Controller
 
     public function index()
     {
-        $this->authorize('view', Horario::class);
+        $this->authorize('horario.ver');
 
         return Inertia::render('Core/Horario/Index', [
             'horarios' => $this->consulta->listar(),
@@ -28,7 +28,7 @@ class HorarioController extends Controller
 
     public function store(CriarHorarioRequest $request)
     {
-        $this->authorize('create', Horario::class);
+        $this->authorize('horario.criar');
 
         $this->service->criar($request);
 
@@ -37,7 +37,7 @@ class HorarioController extends Controller
 
     public function update(AtualizarHorarioRequest $request, Horario $horario)
     {
-        $this->authorize('update', Horario::class);
+        $this->authorize('horario.editar');
 
         $this->service->atualizar($horario, $request);
 
@@ -46,7 +46,7 @@ class HorarioController extends Controller
 
     public function destroy(Horario $horario)
     {
-        $this->authorize('delete', Horario::class);
+        $this->authorize('horario.eliminar');
 
         $this->service->eliminar($horario);
 

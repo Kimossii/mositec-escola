@@ -24,7 +24,7 @@ class SincronizarPermissoesUtilizadorActionTest extends TestCase
 
         UserPermissao::create(['users_id' => $user->id, 'modulo_id' => $modulo1->id, 'acao_id' => $acao->id, 'permitido' => true]);
 
-        (new SincronizarPermissoesUtilizadorAction())->executar($user, [
+        app(SincronizarPermissoesUtilizadorAction::class)->executar($user, [
             ['modulo_id' => $modulo2->id, 'acao_id' => $acao->id, 'permitido' => false],
         ]);
 
@@ -40,7 +40,7 @@ class SincronizarPermissoesUtilizadorActionTest extends TestCase
 
         UserPermissao::create(['users_id' => $user->id, 'modulo_id' => $modulo->id, 'acao_id' => $acao->id, 'permitido' => true]);
 
-        (new SincronizarPermissoesUtilizadorAction())->executar($user, []);
+        app(SincronizarPermissoesUtilizadorAction::class)->executar($user, []);
 
         $this->assertSame(0, UserPermissao::where('users_id', $user->id)->count());
     }

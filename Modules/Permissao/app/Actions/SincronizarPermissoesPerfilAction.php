@@ -5,9 +5,14 @@ namespace Modules\Permissao\Actions;
 use Illuminate\Support\Facades\DB;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\RolePermissao;
+use Modules\Permissao\Support\PermissaoCache;
 
 class SincronizarPermissoesPerfilAction
 {
+    public function __construct(private readonly PermissaoCache $cache)
+    {
+    }
+
     public function executar(Role $role, array $celulas): void
     {
         DB::transaction(function () use ($role, $celulas) {
@@ -25,5 +30,7 @@ class SincronizarPermissoesPerfilAction
                 RolePermissao::insert($linhas);
             }
         });
+
+        $this->cache->invalidarTudo();
     }
 }
