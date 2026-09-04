@@ -281,18 +281,18 @@ const userManagementGroups = [
     {
         title: 'Gestão de utilizadores',
         links: [
-            { href: '/usuarios', label: 'Todos os Utilizadores' },
-            { href: '/usuarios/alunos', label: 'Alunos' },
-            { href: '/usuarios/professores', label: 'Professores' },
-            { href: '/usuarios/funcionarios', label: 'Funcionários' },
-            { href: '/usuarios/administradores', label: 'Administradores' },
-            { href: '/usuarios/encarregados', label: 'Encarregados' },
+            { href: '/usuarios', label: 'Todos os Utilizadores', permissao: 'usuario.ver' },
+            { href: '/usuarios/alunos', label: 'Alunos', permissao: 'usuario.ver' },
+            { href: '/usuarios/professores', label: 'Professores', permissao: 'usuario.ver' },
+            { href: '/usuarios/funcionarios', label: 'Funcionários', permissao: 'usuario.ver' },
+            { href: '/usuarios/administradores', label: 'Administradores', permissao: 'autorizacao.ver' },
+            { href: '/usuarios/encarregados', label: 'Encarregados', permissao: 'usuario.ver' },
         ],
     },
     {
         title: 'Perfis',
         links: [
-            { href: '/permissoes/perfis', label: 'Perfis e Permissões' },
+            { href: '/permissoes/perfis', label: 'Perfis e Permissões', permissao: 'autorizacao.ver' },
         ],
     },
     {
@@ -310,9 +310,8 @@ const userManagementGroups = [
     },
 ]
 
-// Links de Usuários/Perfis ficam sem `permissao` de propósito — a
-// autorização deles não passa por este mecanismo ainda. Só filtramos
-// (e escondemos o grupo todo) os que já têm permissao real.
+// Esconde o grupo todo quando nenhum dos seus links sobra depois do filtro
+// (ex: Funcionário sem autorizacao.ver não vê o grupo "Perfis" de todo).
 const gruposVisiveis = computed(() =>
     userManagementGroups
         .map((group) => ({ ...group, links: group.links.filter(podeVer) }))

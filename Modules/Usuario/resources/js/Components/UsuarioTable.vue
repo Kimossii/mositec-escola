@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
+import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import { ESTADO } from '../Models/Usuario';
@@ -15,6 +16,15 @@ defineProps({
     },
 });
 const emit = defineEmits(['editar', 'visualizar']);
+
+// Mexer num utilizador com perfil Admin Escola é sempre autorizacao.*, nunca
+// usuario.* sozinho — mesma fronteira usada no backend (UserPolicy).
+function podeEditar(usuario) {
+    return can(usuario.perfis.includes('Admin escola') ? 'autorizacao.editar' : 'usuario.editar');
+}
+function podeEliminar(usuario) {
+    return can(usuario.perfis.includes('Admin escola') ? 'autorizacao.eliminar' : 'usuario.eliminar');
+}
 
 async function editar(usuario) {
     const resposta = await fetch(`/usuarios/${usuario.id}/editar`, {
@@ -129,7 +139,7 @@ function confirmarEliminacao() {
                         <!--end::Menu item-->
 
                         <!--begin::Menu item-->
-                        <div class="menu-item px-3">
+                        <div v-if="podeEditar(usuario)" class="menu-item px-3">
                             <a href="#" class="menu-link px-3" @click.prevent="editar(usuario)">
                                 <AcaoIcone acao="editar" class="me-2" />
                                 Editar
@@ -138,7 +148,7 @@ function confirmarEliminacao() {
                         <!--end::Menu item-->
 
                         <!--begin::Menu item-->
-                        <div class="menu-item px-3">
+                        <div v-if="can('autorizacao.ver')" class="menu-item px-3">
                             <a :href="`/permissoes/utilizadores/${usuario.id}/permissoes`" class="menu-link px-3">
                                 <AcaoIcone acao="permissoes" class="me-2" />
                                 Permissões
@@ -147,7 +157,7 @@ function confirmarEliminacao() {
                         <!--end::Menu item-->
 
                         <!--begin::Menu item-->
-                        <div class="menu-item px-3">
+                        <div v-if="podeEditar(usuario)" class="menu-item px-3">
                             <a href="#" class="menu-link px-3" @click.prevent="alternarEstado(usuario)">
                                 <AcaoIcone :acao="usuario.estado === ESTADO.ATIVO ? 'desativar' : 'ativar'" class="me-2" />
                                 {{ usuario.estado === ESTADO.ATIVO ? 'Desativar' : 'Ativar' }}
@@ -156,7 +166,7 @@ function confirmarEliminacao() {
                         <!--end::Menu item-->
 
                         <!--begin::Menu item-->
-                        <div class="menu-item px-3">
+                        <div v-if="podeEliminar(usuario)" class="menu-item px-3">
                             <a href="#" class="menu-link px-3 text-danger" @click.prevent="pedirEliminacao(usuario)">
                                 <AcaoIcone acao="eliminar" class="me-2" />
                                 Eliminar

@@ -3,6 +3,7 @@ import { reactive } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { can } from '@/Composables/usePermissoes';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 
 const props = defineProps({
@@ -66,6 +67,7 @@ function guardar() {
                                     type="checkbox"
                                     class="form-check-input"
                                     :checked="!!estado[`${modulo.id}-${acao.id}`]"
+                                    :disabled="!can('autorizacao.editar')"
                                     @change="alternar(modulo.id, acao.id)"
                                 />
                             </td>
@@ -73,7 +75,7 @@ function guardar() {
                     </tbody>
                 </table>
 
-                <div class="text-end mt-5">
+                <div v-if="can('autorizacao.editar')" class="text-end mt-5">
                     <button class="btn btn-primary" @click="guardar">Guardar</button>
                 </div>
             </div>

@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { can } from '@/Composables/usePermissoes';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 
 const props = defineProps({
@@ -90,10 +91,10 @@ function guardarOverrides() {
                 <div class="d-flex flex-wrap gap-2 mb-4">
                     <span v-for="roleId in perfisAtribuidos" :key="roleId" class="badge badge-light-primary fs-7">
                         {{ perfis.find((p) => p.id === roleId)?.descricao }}
-                        <a href="#" class="ms-2 text-danger" @click.prevent="removerPerfil(roleId)">&times;</a>
+                        <a v-if="can('autorizacao.editar')" href="#" class="ms-2 text-danger" @click.prevent="removerPerfil(roleId)">&times;</a>
                     </span>
                 </div>
-                <div class="d-flex gap-2">
+                <div v-if="can('autorizacao.editar')" class="d-flex gap-2">
                     <select v-model="novoPerfilId" class="form-select form-select-solid w-auto">
                         <option value="">Selecione um perfil...</option>
                         <option v-for="perfil in perfis" :key="perfil.id" :value="perfil.id">{{ perfil.descricao }}</option>
@@ -129,6 +130,7 @@ function guardarOverrides() {
                                         'btn-light-success btn-permissao-concedido': estadoCelula(modulo.id, acao.id) === 1,
                                         'btn-light-danger': estadoCelula(modulo.id, acao.id) === 0,
                                     }"
+                                    :disabled="!can('autorizacao.editar')"
                                     @click="proximoEstado(modulo.id, acao.id)"
                                 >
                                     {{ estadoCelula(modulo.id, acao.id) === 1 ? 'Concedido' : 'Negado' }}
@@ -138,7 +140,7 @@ function guardarOverrides() {
                     </tbody>
                 </table>
 
-                <div class="text-end mt-5">
+                <div v-if="can('autorizacao.editar')" class="text-end mt-5">
                     <button class="btn btn-primary" @click="guardarOverrides">Guardar</button>
                 </div>
             </div>

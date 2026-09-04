@@ -308,7 +308,7 @@
             </div> -->
 
             <!-- ConfiguracoesMenu (com sub-grupos) -->
-            <div data-kt-menu-trigger="click"
+            <div v-if="configuracoesMenuVisivel.length" data-kt-menu-trigger="click"
                 :class="['menu-item', 'menu-accordion', { here: userManagementActive, show: userManagementActive }]">
                 <span class="menu-link">
                     <span class="menu-icon">
@@ -320,7 +320,7 @@
                     <span class="menu-arrow"></span>
                 </span>
                 <div class="menu-sub menu-sub-accordion">
-                    <div v-for="group in configuracoesMenu" :key="group.title" data-kt-menu-trigger="click"
+                    <div v-for="group in configuracoesMenuVisivel" :key="group.title" data-kt-menu-trigger="click"
                         :class="['menu-item', 'menu-accordion', { here: isGroupActive(group.items), show: isGroupActive(group.items) }]">
                         <span class="menu-link">
                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
@@ -813,23 +813,28 @@ const configuracoesMenu = [
     {
         title: 'Gestão de utilizadores',
         items: [
-            { href: '/usuarios', title: 'Todos os Utilizadores', exact: true },
-            { href: '/usuarios/alunos', title: 'Alunos' },
-            { href: '/usuarios/professores', title: 'Professores' },
-            { href: '/usuarios/funcionarios', title: 'Funcionários' },
-            { href: '/usuarios/administradores', title: 'Administradores' },
-            { href: '/usuarios/encarregados', title: 'Encarregados' },
+            { href: '/usuarios', title: 'Todos os Utilizadores', exact: true, permissao: 'usuario.ver' },
+            { href: '/usuarios/alunos', title: 'Alunos', permissao: 'usuario.ver' },
+            { href: '/usuarios/professores', title: 'Professores', permissao: 'usuario.ver' },
+            { href: '/usuarios/funcionarios', title: 'Funcionários', permissao: 'usuario.ver' },
+            { href: '/usuarios/administradores', title: 'Administradores', permissao: 'autorizacao.ver' },
+            { href: '/usuarios/encarregados', title: 'Encarregados', permissao: 'usuario.ver' },
         ],
     },
     {
         title: 'Perfis',
         items: [
-            { href: '/permissoes/perfis', title: 'Perfis e Permissões' },
+            { href: '/permissoes/perfis', title: 'Perfis e Permissões', permissao: 'autorizacao.ver' },
         ],
     },
 ]
+const configuracoesMenuVisivel = computed(() =>
+    configuracoesMenu
+        .map((group) => ({ ...group, items: group.items.filter(podeVer) }))
+        .filter((group) => group.items.length > 0)
+)
 const userManagementActive = computed(() =>
-    configuracoesMenu.some((group) => isGroupActive(group.items))
+    configuracoesMenuVisivel.value.some((group) => isGroupActive(group.items))
 )
 
 const estabelecimentoItems = [
