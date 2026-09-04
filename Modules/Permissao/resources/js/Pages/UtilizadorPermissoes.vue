@@ -11,34 +11,34 @@ const props = defineProps({
     perfisAtribuidos: { type: Array, required: true },
     modulos: { type: Array, required: true },
     acoes: { type: Array, required: true },
-    herdadas: { type: Array, required: true },
     overrides: { type: Array, required: true },
 });
 defineOptions({ layout: AppLayout });
 
 const chave = (moduloId, acaoId) => `${moduloId}-${acaoId}`;
 
-// -1 = herda, 1 = concede, 0 = nega
+// 1 = concedido, 0 = negado — apenas estes dois estados existem.
+// Uma célula sem override guardado ainda arranca como Negado (o padrão seguro);
+// não há um terceiro estado "herda" nem valor nulo em lado nenhum.
 const overridesEstado = reactive(
     Object.fromEntries(
-        props.overrides.map((o) => [chave(o.modulo_id, o.acao_id), o.permitido ? 1 : 0]),
+        props.modulos.flatMap((modulo) =>
+            props.acoes.map((acao) => {
+                const k = chave(modulo.id, acao.id);
+                const existente = props.overrides.find((o) => o.modulo_id === modulo.id && o.acao_id === acao.id);
+                return [k, existente?.permitido ? 1 : 0];
+            }),
+        ),
     ),
 );
 
 function estadoCelula(moduloId, acaoId) {
-    return overridesEstado[chave(moduloId, acaoId)] ?? -1;
+    return overridesEstado[chave(moduloId, acaoId)];
 }
 
 function proximoEstado(moduloId, acaoId) {
     const k = chave(moduloId, acaoId);
-    const atual = overridesEstado[k] ?? -1;
-    const seguinte = atual === -1 ? 1 : atual === 1 ? 0 : -1;
-
-    if (seguinte === -1) {
-        delete overridesEstado[k];
-    } else {
-        overridesEstado[k] = seguinte;
-    }
+    overridesEstado[k] = overridesEstado[k] === 1 ? 0 : 1;
 }
 
 const novoPerfilId = ref('');
@@ -103,8 +103,7 @@ function guardarOverrides() {
             <div class="card-body">
                 <h3 class="fs-5 mb-4">Permissões individuais</h3>
                 <p class="text-muted fs-7">
-                    Clique numa célula para alternar entre Herda (cinza), Concede (verde) e Nega (vermelho).
-                    "Herda" usa o que os perfis atribuídos já dão por padrão.
+                    Clique numa célula para alternar entre Concedido (verde) e Negado (vermelho).
                 </p>
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5">
                     <thead>
@@ -123,13 +122,12 @@ function guardarOverrides() {
                                     type="button"
                                     class="btn btn-sm"
                                     :class="{
-                                        'btn-light': estadoCelula(modulo.id, acao.id) === -1,
                                         'btn-light-success': estadoCelula(modulo.id, acao.id) === 1,
                                         'btn-light-danger': estadoCelula(modulo.id, acao.id) === 0,
                                     }"
                                     @click="proximoEstado(modulo.id, acao.id)"
                                 >
-                                    {{ estadoCelula(modulo.id, acao.id) === -1 ? 'Herda' : estadoCelula(modulo.id, acao.id) === 1 ? 'Concede' : 'Nega' }}
+                                    {{ estadoCelula(modulo.id, acao.id) === 1 ? 'Concedido' : 'Negado' }}
                                 </button>
                             </td>
                         </tr>

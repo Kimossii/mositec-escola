@@ -7,7 +7,6 @@ use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo;
 use Modules\Permissao\Models\Role;
-use Modules\Permissao\Models\RolePermissao;
 use Modules\Usuario\Enums\TipoLogin;
 use Modules\Usuario\Models\User;
 
@@ -35,16 +34,10 @@ class UsuarioConsultaService
             'descricao' => $perfil->label(),
         ]);
 
-        $roleIds = $perfis->pluck('id')->filter()->values();
-
         return [
             'perfis' => $perfis->values(),
             'modulos' => Modulo::orderBy('nome')->get(['id', 'nome', 'descricao']),
             'acoes' => Acao::orderBy('numero')->get(['id', 'nome']),
-            'permissoesPorPerfil' => RolePermissao::whereIn('role_id', $roleIds)
-                ->get(['role_id', 'modulo_id', 'acao_id'])
-                ->groupBy('role_id')
-                ->map(fn ($grupo) => $grupo->map(fn ($p) => ['modulo_id' => $p->modulo_id, 'acao_id' => $p->acao_id])->values()),
         ];
     }
 

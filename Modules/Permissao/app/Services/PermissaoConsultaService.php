@@ -6,7 +6,6 @@ use Illuminate\Support\Collection;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo;
 use Modules\Permissao\Models\Role;
-use Modules\Permissao\Models\RolePermissao;
 use Modules\Usuario\Models\User;
 
 class PermissaoConsultaService
@@ -52,23 +51,7 @@ class PermissaoConsultaService
             'perfisAtribuidos' => $user->roles()->pluck('roles.id'),
             'modulos' => Modulo::orderBy('nome')->get(['id', 'nome', 'descricao']),
             'acoes' => Acao::orderBy('numero')->get(['id', 'nome']),
-            'herdadas' => $this->permissoesHerdadas($user),
             'overrides' => $user->permissoes()->get(['modulo_id', 'acao_id', 'permitido']),
         ];
-    }
-
-    public function permissoesHerdadas(User $user): array
-    {
-        $roleIds = $user->roles()->pluck('roles.id');
-
-        return RolePermissao::whereIn('role_id', $roleIds)
-            ->get(['modulo_id', 'acao_id'])
-            ->unique(fn ($permissao) => "{$permissao->modulo_id}-{$permissao->acao_id}")
-            ->values()
-            ->map(fn ($permissao) => [
-                'modulo_id' => $permissao->modulo_id,
-                'acao_id' => $permissao->acao_id,
-            ])
-            ->all();
     }
 }

@@ -5,7 +5,7 @@
 
 ## 1. Problema
 
-O MosiTec já tem, na parte de cadastro, um sistema de permissões completo: Perfis (`Role`), Módulos (`Modulo`), Ações (`Acao`), permissões por perfil (`role_permissoes`) e overrides individuais por utilizador com três estados — Herda, Concede, Nega (`user_permissoes.permitido`: `null`, `true`, `false`).
+O MosiTec já tem, na parte de cadastro, um sistema de permissões completo: Perfis (`Role`), Módulos (`Modulo`), Ações (`Acao`), permissões por perfil (`role_permissoes`) e overrides individuais por utilizador (`user_permissoes.permitido`: `true` = Concedido, `false` = Negado — nunca `null`; a coluna é `NOT NULL` e a validação exige `boolean`). Não existir uma linha para um dado `(utilizador, módulo, acção)` significa simplesmente "sem override" — a decisão cai para o que o perfil concede; isto nunca é apresentado nem guardado como um terceiro estado nomeado, só a ausência de uma linha.
 
 Nada disto é consultado em runtime hoje. Toda a autorização real (AnoLectivo, Estabelecimento, Horario) usa gates fixas, cabladas a um único perfil:
 
@@ -65,7 +65,7 @@ Para `PermissionResolver::can($user, 'turmas.criar')`:
 2. Procura em `user_permissoes` uma linha para `(user, modulo, acao)`:
    - `permitido = true` → **permitido**, decisão final (Concede vence sempre, mesmo Admin Escola).
    - `permitido = false` → **negado**, decisão final (Nega vence sempre, mesmo Admin Escola).
-   - sem linha, ou `permitido = null` (Herda) → passa ao passo 3.
+   - sem linha (sem override para este utilizador) → passa ao passo 3.
 3. Para cada role do utilizador (um utilizador pode ter mais que uma), procura uma linha em `role_permissoes` para `(role, modulo, acao)`. Se **alguma** existir → **permitido**.
 4. Nenhuma role concede, e não há override → **negado**. Um utilizador sem nenhuma role e sem nenhum override é sempre negado (nunca "permite por omissão").
 

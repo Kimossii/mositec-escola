@@ -9,7 +9,6 @@ defineProps({
     perfis: { type: Array, required: true },
     modulos: { type: Array, required: true },
     acoes: { type: Array, required: true },
-    permissoesPorPerfil: { type: Object, required: true },
 });
 
 const { loadAll } = usePageScripts([
@@ -39,6 +38,5 @@ defineOptions({ layout: AppLayout })
         :perfis="perfis"
         :modulos="modulos"
         :acoes="acoes"
-        :permissoes-por-perfil="permissoesPorPerfil"
     />
 </template>

@@ -11,7 +11,6 @@ const props = defineProps({
     perfis: { type: Array, required: true },
     modulos: { type: Array, required: true },
     acoes: { type: Array, required: true },
-    permissoesPorPerfil: { type: Object, required: true },
     utilizador: { type: Object, default: null },
     rotaCriar: { type: String, required: true },
 });
@@ -57,36 +56,30 @@ function removerEducando(matricula) {
 // vez de confiar no tipo_login gravado (pode estar errado em registos antigos).
 const tipoLogin = computed(() => (perfilSelecionado.value === 'aluno' ? 'matricula' : 'email'));
 
-const perfilAtual = computed(() => props.perfis.find((p) => p.slug === perfilSelecionado.value));
-
 const chave = (moduloId, acaoId) => `${moduloId}-${acaoId}`;
 
-// -1 = herda, 1 = concede, 0 = nega
+// 1 = concedido, 0 = negado — apenas estes dois estados existem.
+// Uma célula sem override guardado ainda arranca como Negado (o padrão seguro);
+// não há um terceiro estado "herda" nem valor nulo em lado nenhum.
 const overridesEstado = reactive(
     Object.fromEntries(
-        (props.utilizador?.celulas ?? []).map((o) => [chave(o.modulo_id, o.acao_id), o.permitido ? 1 : 0]),
+        props.modulos.flatMap((modulo) =>
+            props.acoes.map((acao) => {
+                const k = chave(modulo.id, acao.id);
+                const existente = (props.utilizador?.celulas ?? []).find((o) => o.modulo_id === modulo.id && o.acao_id === acao.id);
+                return [k, existente?.permitido ? 1 : 0];
+            }),
+        ),
     ),
 );
 
-function permiteDefault(moduloId, acaoId) {
-    const permissoes = props.permissoesPorPerfil[perfilAtual.value?.id] ?? [];
-    return permissoes.some((p) => p.modulo_id === moduloId && p.acao_id === acaoId);
-}
-
 function estadoCelula(moduloId, acaoId) {
-    return overridesEstado[chave(moduloId, acaoId)] ?? -1;
+    return overridesEstado[chave(moduloId, acaoId)];
 }
 
 function proximoEstado(moduloId, acaoId) {
     const k = chave(moduloId, acaoId);
-    const atual = overridesEstado[k] ?? -1;
-    const seguinte = atual === -1 ? 1 : atual === 1 ? 0 : -1;
-
-    if (seguinte === -1) {
-        delete overridesEstado[k];
-    } else {
-        overridesEstado[k] = seguinte;
-    }
+    overridesEstado[k] = overridesEstado[k] === 1 ? 0 : 1;
 }
 
 function validarAntesDeAvancar() {
@@ -244,8 +237,7 @@ function guardar() {
 
         <div v-else>
             <p class="text-muted fs-7">
-                Clique numa célula para alternar entre Herda (o que o perfil "{{ perfilAtual?.descricao }}" já dá por
-                padrão), Concede e Nega.
+                Clique numa célula para alternar entre Concedido (verde) e Negado (vermelho).
             </p>
             <table class="table align-middle">
                 <thead>
@@ -262,13 +254,12 @@ function guardar() {
                                 type="button"
                                 class="btn btn-sm"
                                 :class="{
-                                    'btn-light': estadoCelula(modulo.id, acao.id) === -1 && !permiteDefault(modulo.id, acao.id),
-                                    'btn-light-success': estadoCelula(modulo.id, acao.id) === 1 || (estadoCelula(modulo.id, acao.id) === -1 && permiteDefault(modulo.id, acao.id)),
+                                    'btn-light-success': estadoCelula(modulo.id, acao.id) === 1,
                                     'btn-light-danger': estadoCelula(modulo.id, acao.id) === 0,
                                 }"
                                 @click="proximoEstado(modulo.id, acao.id)"
                             >
-                                {{ estadoCelula(modulo.id, acao.id) === -1 ? (permiteDefault(modulo.id, acao.id) ? 'Herda (concede)' : 'Herda (nega)') : estadoCelula(modulo.id, acao.id) === 1 ? 'Concede' : 'Nega' }}
+                                {{ estadoCelula(modulo.id, acao.id) === 1 ? 'Concedido' : 'Negado' }}
                             </button>
                         </td>
                     </tr>

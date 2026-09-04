@@ -3,7 +3,6 @@ defineProps({
     perfis: { type: Array, required: true },
     modulos: { type: Array, required: true },
     acoes: { type: Array, required: true },
-    permissoesPorPerfil: { type: Object, required: true },
     utilizador: { type: Object, default: null },
 });
 </script>
@@ -14,7 +13,6 @@ defineProps({
         :perfis="perfis"
         :modulos="modulos"
         :acoes="acoes"
-        :permissoes-por-perfil="permissoesPorPerfil"
         :utilizador="utilizador"
         rota-criar="/usuarios/administradores/cadastrar"
     />

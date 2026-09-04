@@ -32,7 +32,7 @@ class SincronizarPermissoesUtilizadorActionTest extends TestCase
         $this->assertDatabaseHas('user_permissoes', ['users_id' => $user->id, 'modulo_id' => $modulo2->id, 'acao_id' => $acao->id, 'permitido' => false]);
     }
 
-    public function test_lista_vazia_remove_todos_os_overrides_voltando_a_herdar(): void
+    public function test_lista_vazia_remove_todos_os_overrides_do_utilizador(): void
     {
         $user = User::create(['name' => 'Prof', 'email' => 'prof2@example.com', 'password' => Hash::make('x')]);
         $modulo = Modulo::create(['nome' => 0, 'descricao' => 'Usuario', 'estado' => 1]);

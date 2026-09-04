@@ -38,7 +38,6 @@ defineProps({
     perfis: { type: Array, default: () => [] },
     modulos: { type: Array, default: () => [] },
     acoes: { type: Array, default: () => [] },
-    permissoesPorPerfil: { type: Object, default: () => ({}) },
 });
 
 const utilizadorEmEdicao = ref(null);
@@ -123,7 +122,6 @@ onMounted(() => {
                                 :perfis="perfis"
                                 :modulos="modulos"
                                 :acoes="acoes"
-                                :permissoes-por-perfil="permissoesPorPerfil"
                             />
                         </div>
                         <!--end::Card header-->

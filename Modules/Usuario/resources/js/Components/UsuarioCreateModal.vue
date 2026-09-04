@@ -10,7 +10,6 @@ defineProps({
     perfis: { type: Array, default: () => [] },
     modulos: { type: Array, default: () => [] },
     acoes: { type: Array, default: () => [] },
-    permissoesPorPerfil: { type: Object, default: () => ({}) },
 });
 </script>
 
@@ -44,7 +43,6 @@ defineProps({
                         :perfis="perfis"
                         :modulos="modulos"
                         :acoes="acoes"
-                        :permissoes-por-perfil="permissoesPorPerfil"
                     />
                 </div>
                 <!--end::Modal body-->
