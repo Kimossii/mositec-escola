@@ -18,7 +18,7 @@ class CriarUsuarioRequest extends BaseRequest
         // Definir overrides individuais (celulas) — mesmo ao criar um
         // utilizador comum — é sempre autorizacao.editar, nunca
         // usuario.criar sozinho. Sem isto, quem só gere contas (ex:
-        // Secretário) podia esconder num "cadastro" a concessão de
+        // Funcionário) podia esconder num "cadastro" a concessão de
         // qualquer permissão, incluindo autorizacao.editar, a quem quisesse.
         if (!empty($this->input('celulas'))) {
             return $this->user()?->can('autorizacao.editar') ?? false;
@@ -31,7 +31,7 @@ class CriarUsuarioRequest extends BaseRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'perfil' => 'required|in:admin_escola,secretario,professor,aluno,encarregado',
+            'perfil' => 'required|in:admin_escola,funcionario,professor,aluno,encarregado',
             'tipo_login' => 'required|in:email,matricula',
             'email' => 'required_if:tipo_login,email|nullable|email|unique:users,email',
             'password' => 'required|min:6|confirmed',

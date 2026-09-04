@@ -71,7 +71,7 @@ class AtualizarUsuarioTest extends TestCase
         $response = $this->put("/usuarios/{$professor->id}", [
             'name' => 'Prof Atualizado',
             'email' => 'prof2@example.com',
-            'perfil' => 'secretario',
+            'perfil' => 'funcionario',
             'celulas' => [
                 ['modulo_id' => $modulo->id, 'acao_id' => $acao->id, 'permitido' => true],
             ],
@@ -81,8 +81,8 @@ class AtualizarUsuarioTest extends TestCase
         $professor->refresh();
         $this->assertSame('Prof Atualizado', $professor->name);
 
-        $roleSecretario = Role::where('nome', Perfil::SECRETARIO->value)->first();
-        $this->assertTrue($professor->roles->contains($roleSecretario));
+        $roleFuncionario = Role::where('nome', Perfil::FUNCIONARIO->value)->first();
+        $this->assertTrue($professor->roles->contains($roleFuncionario));
         $this->assertTrue($professor->roles->contains($roleProfessor), 'não deve remover o perfil anterior');
 
         $this->assertDatabaseHas('user_permissoes', [
@@ -93,11 +93,11 @@ class AtualizarUsuarioTest extends TestCase
         ]);
     }
 
-    public function test_secretario_nao_consegue_esconder_uma_concessao_de_autorizacao_ao_editar(): void
+    public function test_funcionario_nao_consegue_esconder_uma_concessao_de_autorizacao_ao_editar(): void
     {
-        $secretario = User::create(['name' => 'Secretário', 'email' => 'secretario@example.com', 'password' => Hash::make('x')]);
-        $secretario->roles()->attach(Role::where('nome', Perfil::SECRETARIO->value)->first()->id);
-        $this->actingAs($secretario);
+        $funcionario = User::create(['name' => 'Funcionário', 'email' => 'funcionario@example.com', 'password' => Hash::make('x')]);
+        $funcionario->roles()->attach(Role::where('nome', Perfil::FUNCIONARIO->value)->first()->id);
+        $this->actingAs($funcionario);
 
         $professor = User::create(['name' => 'Prof', 'email' => 'prof3@example.com', 'password' => Hash::make('x'), 'tipo_login' => TipoLogin::EMAIL]);
         $professor->roles()->attach(Role::where('nome', Perfil::PROFESSOR->value)->first()->id);
@@ -105,7 +105,7 @@ class AtualizarUsuarioTest extends TestCase
         $moduloAutorizacao = Modulo::where('nome', 1)->first();
         $acaoEditar = Acao::where('nome', 'editar')->first();
 
-        // O Secretário tem usuario.editar (pode editar um Professor), mas
+        // O Funcionário tem usuario.editar (pode editar um Professor), mas
         // nunca devia conseguir, pelo mesmo pedido, conceder-lhe
         // autorizacao.editar via celulas.
         $response = $this->put("/usuarios/{$professor->id}", [

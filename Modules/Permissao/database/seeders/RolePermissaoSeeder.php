@@ -17,7 +17,7 @@ class RolePermissaoSeeder extends Seeder
      * Concede a ADMIN_ESCOLA exactamente o que as antigas gates fixas
      * ('gerir-ano-letivo', 'gerir-estabelecimento', 'gerir-usuarios',
      * 'gerir-permissoes') já davam, para migrar sem regressão de acesso.
-     * SECRETARIO ganha gestão de contas (usuario.*) por decisão de desenho
+     * FUNCIONARIO ganha gestão de contas (usuario.*) por decisão de desenho
      * aprovada — nunca autorizacao.* (perfis/permissões/administradores
      * fica reservado a ADMIN_ESCOLA).
      */
@@ -31,7 +31,7 @@ class RolePermissaoSeeder extends Seeder
                 Modulo::USUARIO->value => ['ver', 'criar', 'editar', 'eliminar'],
                 Modulo::AUTORIZACAO->value => ['ver', 'criar', 'editar', 'eliminar'],
             ],
-            Perfil::SECRETARIO->value => [
+            Perfil::FUNCIONARIO->value => [
                 Modulo::USUARIO->value => ['ver', 'criar', 'editar'],
             ],
         ];

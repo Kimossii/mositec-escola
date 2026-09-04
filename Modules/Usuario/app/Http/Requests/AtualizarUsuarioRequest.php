@@ -14,7 +14,7 @@ class AtualizarUsuarioRequest extends BaseRequest
         // usuario.editar sozinho nunca devia poder mexer: o alvo já é (ou
         // vai passar a ser, via troca de perfil) Admin Escola, ou o pedido
         // traz overrides individuais (celulas) — sem isto, quem só gere
-        // contas (ex: Secretário) podia esconder num "editar" a concessão
+        // contas (ex: Funcionário) podia esconder num "editar" a concessão
         // de qualquer permissão, incluindo autorizacao.editar, a quem quisesse.
         $eraAdmin = $this->route('user')?->roles->contains('nome', Perfil::ADMIN_ESCOLA->value) ?? false;
         $vaiSerAdmin = $this->input('perfil') === Perfil::ADMIN_ESCOLA->slug();
@@ -28,7 +28,7 @@ class AtualizarUsuarioRequest extends BaseRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'perfil' => 'required|in:admin_escola,secretario,professor,aluno,encarregado',
+            'perfil' => 'required|in:admin_escola,funcionario,professor,aluno,encarregado',
             'email' => ['nullable', 'email', Rule::unique('users', 'email')->ignore($this->route('user'))],
             'password' => 'nullable|min:6|confirmed',
             'celulas' => 'nullable|array',

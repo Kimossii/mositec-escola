@@ -204,19 +204,19 @@ class CriarUsuarioTest extends TestCase
         ]);
     }
 
-    public function test_secretario_nao_consegue_esconder_uma_concessao_de_autorizacao_no_cadastro(): void
+    public function test_funcionario_nao_consegue_esconder_uma_concessao_de_autorizacao_no_cadastro(): void
     {
-        $secretario = User::create(['name' => 'Secretário', 'email' => 'secretario@example.com', 'password' => Hash::make('x')]);
-        $secretario->roles()->attach(Role::where('nome', Perfil::SECRETARIO->value)->first()->id);
-        $this->actingAs($secretario);
+        $funcionario = User::create(['name' => 'Funcionário', 'email' => 'funcionario@example.com', 'password' => Hash::make('x')]);
+        $funcionario->roles()->attach(Role::where('nome', Perfil::FUNCIONARIO->value)->first()->id);
+        $this->actingAs($funcionario);
 
         $moduloAutorizacao = \Modules\Permissao\Models\Modulo::where('nome', 1)->first();
         $acaoEditar = \Modules\Permissao\Models\Acao::where('nome', 'editar')->first();
 
-        // O Secretário tem usuario.criar (pode cadastrar um Professor), mas
+        // O Funcionário tem usuario.criar (pode cadastrar um Professor), mas
         // NUNCA devia conseguir, através do mesmo pedido, conceder-lhe
         // autorizacao.editar via celulas — isso é autorizacao.editar, que
-        // o Secretário não tem.
+        // o Funcionário não tem.
         $response = $this->post('/usuarios/cadastrarUsuario', [
             'name' => 'Professor Escalado',
             'perfil' => 'professor',
