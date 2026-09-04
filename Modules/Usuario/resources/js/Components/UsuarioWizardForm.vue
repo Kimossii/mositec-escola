@@ -11,6 +11,7 @@ const props = defineProps({
     perfis: { type: Array, required: true },
     modulos: { type: Array, required: true },
     acoes: { type: Array, required: true },
+    permissoesPorPerfil: { type: Object, required: true },
     utilizador: { type: Object, default: null },
     rotaCriar: { type: String, required: true },
 });
@@ -58,28 +59,34 @@ const tipoLogin = computed(() => (perfilSelecionado.value === 'aluno' ? 'matricu
 
 const chave = (moduloId, acaoId) => `${moduloId}-${acaoId}`;
 
-// 1 = concedido, 0 = negado — apenas estes dois estados existem.
-// Uma célula sem override guardado ainda arranca como Negado (o padrão seguro);
-// não há um terceiro estado "herda" nem valor nulo em lado nenhum.
+// overridesEstado só guarda as células que o admin decidiu explicitamente
+// (tocou nesta sessão, ou já vinham gravadas como override do utilizador).
+// 1 = concedido, 0 = negado — só estes dois valores, nunca "herda" nem null.
+// Uma célula sem entrada aqui usa o que o perfil seleccionado já dá por
+// padrão (ver permiteDefault) — é assim que "o perfil vence por defeito,
+// overrides são só a excepção" continua verdadeiro depois de guardar.
 const overridesEstado = reactive(
     Object.fromEntries(
-        props.modulos.flatMap((modulo) =>
-            props.acoes.map((acao) => {
-                const k = chave(modulo.id, acao.id);
-                const existente = (props.utilizador?.celulas ?? []).find((o) => o.modulo_id === modulo.id && o.acao_id === acao.id);
-                return [k, existente?.permitido ? 1 : 0];
-            }),
-        ),
+        (props.utilizador?.celulas ?? []).map((o) => [chave(o.modulo_id, o.acao_id), o.permitido ? 1 : 0]),
     ),
 );
 
+const roleIdDoPerfilSelecionado = computed(() => props.perfis.find((p) => p.slug === perfilSelecionado.value)?.id);
+
+function permiteDefault(moduloId, acaoId) {
+    const permissoes = props.permissoesPorPerfil[roleIdDoPerfilSelecionado.value] ?? [];
+    return permissoes.some((p) => p.modulo_id === moduloId && p.acao_id === acaoId);
+}
+
 function estadoCelula(moduloId, acaoId) {
-    return overridesEstado[chave(moduloId, acaoId)];
+    const k = chave(moduloId, acaoId);
+    if (k in overridesEstado) return overridesEstado[k];
+    return permiteDefault(moduloId, acaoId) ? 1 : 0;
 }
 
 function proximoEstado(moduloId, acaoId) {
     const k = chave(moduloId, acaoId);
-    overridesEstado[k] = overridesEstado[k] === 1 ? 0 : 1;
+    overridesEstado[k] = estadoCelula(moduloId, acaoId) === 1 ? 0 : 1;
 }
 
 function validarAntesDeAvancar() {

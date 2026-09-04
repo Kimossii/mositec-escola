@@ -11,34 +11,38 @@ const props = defineProps({
     perfisAtribuidos: { type: Array, required: true },
     modulos: { type: Array, required: true },
     acoes: { type: Array, required: true },
+    permitidasPeloPerfil: { type: Array, required: true },
     overrides: { type: Array, required: true },
 });
 defineOptions({ layout: AppLayout });
 
 const chave = (moduloId, acaoId) => `${moduloId}-${acaoId}`;
 
-// 1 = concedido, 0 = negado — apenas estes dois estados existem.
-// Uma célula sem override guardado ainda arranca como Negado (o padrão seguro);
-// não há um terceiro estado "herda" nem valor nulo em lado nenhum.
+// overridesEstado só guarda as células que o admin decidiu explicitamente
+// (já eram override do utilizador, ou tocadas nesta sessão). 1 = concedido,
+// 0 = negado — só estes dois valores, nunca "herda" nem null. Uma célula sem
+// entrada aqui usa o que os perfis atribuídos já dão por padrão (ver
+// permiteDefault) — assim "o perfil vence por defeito, overrides são só a
+// excepção" continua verdadeiro depois de guardar.
 const overridesEstado = reactive(
     Object.fromEntries(
-        props.modulos.flatMap((modulo) =>
-            props.acoes.map((acao) => {
-                const k = chave(modulo.id, acao.id);
-                const existente = props.overrides.find((o) => o.modulo_id === modulo.id && o.acao_id === acao.id);
-                return [k, existente?.permitido ? 1 : 0];
-            }),
-        ),
+        props.overrides.map((o) => [chave(o.modulo_id, o.acao_id), o.permitido ? 1 : 0]),
     ),
 );
 
+function permiteDefault(moduloId, acaoId) {
+    return props.permitidasPeloPerfil.some((p) => p.modulo_id === moduloId && p.acao_id === acaoId);
+}
+
 function estadoCelula(moduloId, acaoId) {
-    return overridesEstado[chave(moduloId, acaoId)];
+    const k = chave(moduloId, acaoId);
+    if (k in overridesEstado) return overridesEstado[k];
+    return permiteDefault(moduloId, acaoId) ? 1 : 0;
 }
 
 function proximoEstado(moduloId, acaoId) {
     const k = chave(moduloId, acaoId);
-    overridesEstado[k] = overridesEstado[k] === 1 ? 0 : 1;
+    overridesEstado[k] = estadoCelula(moduloId, acaoId) === 1 ? 0 : 1;
 }
 
 const novoPerfilId = ref('');
