@@ -28,7 +28,7 @@
 
 
             <!-- Académico -->
-            <div data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="bottom-start"
+            <div v-if="academicoSeccoesVisiveis.length" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="bottom-start"
                 class="menu-item menu-lg-down-accordion me-0 me-lg-2">
                 <span class="menu-link">
                     <span class="menu-icon">
@@ -50,7 +50,7 @@
             </div>
 
             <!-- Pedagógico -->
-            <div data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="bottom-start"
+            <div v-if="pedagogicoSeccoesVisiveis.length" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="bottom-start"
                 class="menu-item menu-lg-down-accordion me-0 me-lg-2">
                 <span class="menu-link">
                     <span class="menu-icon">
@@ -73,7 +73,7 @@
             </div>
 
             <!-- Configurações -->
-            <div data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="bottom-start"
+            <div v-if="configuracoesGruposVisiveis.length" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="bottom-start"
                 class="menu-item menu-lg-down-accordion menu-sub-lg-down-indention me-0 me-lg-2">
                 <span class="menu-link">
                     <span class="menu-icon">
@@ -177,4 +177,11 @@ import AcademicoMenu from './menus/AcademicoMenu.vue'
 import PagesMenu from './menus/PedagogicoMenu.vue'
 import ConfiguracoesMenu from './menus/ConfiguracoesMenu.vue'
 // import LayoutsMenu from './menus/LayoutsMenu.vue'
+import { useAcademicoMenu } from '@/Composables/useAcademicoMenu'
+import { usePedagogicoMenu } from '@/Composables/usePedagogicoMenu'
+import { useConfiguracoesMenu } from '@/Composables/useConfiguracoesMenu'
+
+const { seccoesVisiveis: academicoSeccoesVisiveis } = useAcademicoMenu()
+const { seccoesVisiveis: pedagogicoSeccoesVisiveis } = usePedagogicoMenu()
+const { gruposVisiveis: configuracoesGruposVisiveis } = useConfiguracoesMenu()
 </script>

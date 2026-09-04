@@ -3,7 +3,7 @@
         <div class="tab-content py-4 py-lg-8 px-lg-7">
             <div class="tab-pane active" id="kt_app_header_menu_academico">
                 <div class="d-flex">
-                    <div v-for="section in generalSections" :key="section.title" class="me-10">
+                    <div v-for="section in seccoesVisiveis" :key="section.title" class="me-10">
                         <h4 class="fs-6 fs-lg-4 fw-bold mb-3">
                             {{ section.title }}
                         </h4>
@@ -23,18 +23,7 @@
 </template>
 
 <script setup>
-const generalSections = [
-    {
-        title: 'Académico',
-        links: [
-            { href: '#', label: 'Alunos' },
-            { href: '#', label: 'Encarregados de Educação' },
-            { href: '#', label: 'Turmas' },
-            { href: '#', label: 'Matrículas' },
-            { href: '#', label: 'Transferências' },
-            { href: '#', label: 'Histórico Escolar' },
-            { href: '#', label: 'Ficha do Aluno' },
-        ],
-    },
-]
+import { useAcademicoMenu } from '@/Composables/useAcademicoMenu'
+
+const { seccoesVisiveis } = useAcademicoMenu()
 </script>

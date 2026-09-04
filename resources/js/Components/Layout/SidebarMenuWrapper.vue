@@ -54,86 +54,25 @@
             </div>
 
             <!-- ── Section: Académico (por implementar) ───────────────── -->
-            <!-- <div class="menu-item pt-5">
-                <div class="menu-content">
-                    <span class="menu-heading fw-bold text-uppercase fs-7">
-                        Académico
-                    </span>
-                </div>
-            </div>
-
-            <SidebarAccordion :item="academico" /> -->
+            <!-- <SidebarAccordion :item="academico" heading="Académico" /> -->
 
             <!-- ── Section: Pedagogia ─────────────────────────────────── -->
-            <div class="menu-item pt-5">
-                <div class="menu-content">
-                    <span class="menu-heading fw-bold text-uppercase fs-7">Pedagogia</span>
-                </div>
-            </div>
-
-            <!-- User Profile -->
-            <SidebarAccordion :item="pedagogico" />
+            <SidebarAccordion :item="pedagogico" heading="Pedagogia" />
 
             <!-- ── Sections por implementar: Frequência, Pessoal, Financeiro,
                  Comunicação, Documentos, Biblioteca, Infraestrutura, Relatórios.
-                 Descomentar (a secção + o seu <SidebarAccordion>) uma a uma,
-                 sequencialmente, à medida que cada módulo for implementado. -->
+                 Descomentar uma a uma, sequencialmente, à medida que cada
+                 módulo for implementado — cabeçalho e acordeão já vêm juntos
+                 num só <SidebarAccordion>, controlados pelo mesmo v-if. -->
             <!--
-            <div class="menu-item pt-5">
-                <div class="menu-content">
-                    <span class="menu-heading fw-bold text-uppercase fs-7">Frequência</span>
-                </div>
-            </div>
-            <SidebarAccordion :item="frequencia" />
-
-            <div class="menu-item pt-5">
-                <div class="menu-content">
-                    <span class="menu-heading fw-bold text-uppercase fs-7">Pessoal</span>
-                </div>
-            </div>
-            <SidebarAccordion :item="pessoal" />
-
-            <div class="menu-item pt-5">
-                <div class="menu-content">
-                    <span class="menu-heading fw-bold text-uppercase fs-7">Financeiro</span>
-                </div>
-            </div>
-            <SidebarAccordion :item="financeiro" />
-
-            <div class="menu-item pt-5">
-                <div class="menu-content">
-                    <span class="menu-heading fw-bold text-uppercase fs-7">Comunicação</span>
-                </div>
-            </div>
-            <SidebarAccordion :item="comunicacao" />
-
-            <div class="menu-item pt-5">
-                <div class="menu-content">
-                    <span class="menu-heading fw-bold text-uppercase fs-7">Documentos</span>
-                </div>
-            </div>
-            <SidebarAccordion :item="documentos" />
-
-            <div class="menu-item pt-5">
-                <div class="menu-content">
-                    <span class="menu-heading fw-bold text-uppercase fs-7">Biblioteca</span>
-                </div>
-            </div>
-            <SidebarAccordion :item="biblioteca" />
-
-            <div class="menu-item pt-5">
-                <div class="menu-content">
-                    <span class="menu-heading fw-bold text-uppercase fs-7">Infraestrutura</span>
-                </div>
-            </div>
-            <SidebarAccordion :item="infraestrutura" />
-
-            <div class="menu-item pt-5">
-                <div class="menu-content">
-                    <span class="menu-heading fw-bold text-uppercase fs-7">Relatórios</span>
-                </div>
-            </div>
-            <SidebarAccordion :item="relatorios" />
+            <SidebarAccordion :item="frequencia" heading="Frequência" />
+            <SidebarAccordion :item="pessoal" heading="Pessoal" />
+            <SidebarAccordion :item="financeiro" heading="Financeiro" />
+            <SidebarAccordion :item="comunicacao" heading="Comunicação" />
+            <SidebarAccordion :item="documentos" heading="Documentos" />
+            <SidebarAccordion :item="biblioteca" heading="Biblioteca" />
+            <SidebarAccordion :item="infraestrutura" heading="Infraestrutura" />
+            <SidebarAccordion :item="relatorios" heading="Relatórios" />
             -->
 
             <!-- Account -->
@@ -281,7 +220,7 @@
             <!-- <SidebarAccordion :item="widgets" /> -->
 
             <!-- ── Section: Apps ───────────────────────────────────── -->
-            <div class="menu-item pt-5">
+            <div v-if="configuracoesMenuVisivel.length" class="menu-item pt-5">
                 <div class="menu-content">
                     <span class="menu-heading fw-bold text-uppercase fs-7">Configurações</span>
                 </div>
