@@ -15,7 +15,7 @@
                             <span v-for="n in 4" :key="n" :class="`path${n}`"></span>
                         </i>
                     </span>
-                    <span class="menu-title">Dashboards</span>
+                    <span class="menu-title">Início</span>
                     <span class="menu-arrow"></span>
                 </span>
                 <div class="menu-sub menu-sub-accordion">
@@ -53,8 +53,8 @@
                 </div>
             </div>
 
-            <!-- ── Section: Académico ─────────────────────────────────── -->
-            <div class="menu-item pt-5">
+            <!-- ── Section: Académico (por implementar) ───────────────── -->
+            <!-- <div class="menu-item pt-5">
                 <div class="menu-content">
                     <span class="menu-heading fw-bold text-uppercase fs-7">
                         Académico
@@ -62,7 +62,7 @@
                 </div>
             </div>
 
-            <SidebarAccordion :item="academico" />
+            <SidebarAccordion :item="academico" /> -->
 
             <!-- ── Section: Pedagogia ─────────────────────────────────── -->
             <div class="menu-item pt-5">
@@ -73,6 +73,68 @@
 
             <!-- User Profile -->
             <SidebarAccordion :item="pedagogico" />
+
+            <!-- ── Sections por implementar: Frequência, Pessoal, Financeiro,
+                 Comunicação, Documentos, Biblioteca, Infraestrutura, Relatórios.
+                 Descomentar (a secção + o seu <SidebarAccordion>) uma a uma,
+                 sequencialmente, à medida que cada módulo for implementado. -->
+            <!--
+            <div class="menu-item pt-5">
+                <div class="menu-content">
+                    <span class="menu-heading fw-bold text-uppercase fs-7">Frequência</span>
+                </div>
+            </div>
+            <SidebarAccordion :item="frequencia" />
+
+            <div class="menu-item pt-5">
+                <div class="menu-content">
+                    <span class="menu-heading fw-bold text-uppercase fs-7">Pessoal</span>
+                </div>
+            </div>
+            <SidebarAccordion :item="pessoal" />
+
+            <div class="menu-item pt-5">
+                <div class="menu-content">
+                    <span class="menu-heading fw-bold text-uppercase fs-7">Financeiro</span>
+                </div>
+            </div>
+            <SidebarAccordion :item="financeiro" />
+
+            <div class="menu-item pt-5">
+                <div class="menu-content">
+                    <span class="menu-heading fw-bold text-uppercase fs-7">Comunicação</span>
+                </div>
+            </div>
+            <SidebarAccordion :item="comunicacao" />
+
+            <div class="menu-item pt-5">
+                <div class="menu-content">
+                    <span class="menu-heading fw-bold text-uppercase fs-7">Documentos</span>
+                </div>
+            </div>
+            <SidebarAccordion :item="documentos" />
+
+            <div class="menu-item pt-5">
+                <div class="menu-content">
+                    <span class="menu-heading fw-bold text-uppercase fs-7">Biblioteca</span>
+                </div>
+            </div>
+            <SidebarAccordion :item="biblioteca" />
+
+            <div class="menu-item pt-5">
+                <div class="menu-content">
+                    <span class="menu-heading fw-bold text-uppercase fs-7">Infraestrutura</span>
+                </div>
+            </div>
+            <SidebarAccordion :item="infraestrutura" />
+
+            <div class="menu-item pt-5">
+                <div class="menu-content">
+                    <span class="menu-heading fw-bold text-uppercase fs-7">Relatórios</span>
+                </div>
+            </div>
+            <SidebarAccordion :item="relatorios" />
+            -->
 
             <!-- Account -->
             <!-- <SidebarAccordion :item="account" /> -->
@@ -316,7 +378,7 @@
                             <span class="path1"></span><span class="path2"></span>
                         </i>
                     </span>
-                    <span class="menu-title">Utilizadores & Perfis</span>
+                    <span class="menu-title">Configurações</span>
                     <span class="menu-arrow"></span>
                 </span>
                 <div class="menu-sub menu-sub-accordion">
@@ -336,52 +398,6 @@
                                 </a>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Estabelecimento -->
-            <div v-if="estabelecimentoItemsVisiveis.length" data-kt-menu-trigger="click"
-                :class="['menu-item', 'menu-accordion', { here: estabelecimentoActive, show: estabelecimentoActive }]">
-                <span class="menu-link">
-                    <span class="menu-icon">
-                        <i class="ki-duotone ki-setting-2 fs-2">
-                            <span class="path1"></span><span class="path2"></span>
-                        </i>
-                    </span>
-                    <span class="menu-title">Estabelecimento</span>
-                    <span class="menu-arrow"></span>
-                </span>
-                <div class="menu-sub menu-sub-accordion">
-                    <div v-for="item in estabelecimentoItemsVisiveis" :key="item.href" class="menu-item">
-                        <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact }) }]"
-                            :href="item.href">
-                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                            <span class="menu-title">{{ item.title }}</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Ano Lectivo -->
-            <div v-if="anoLectivoItemsVisiveis.length" data-kt-menu-trigger="click"
-                :class="['menu-item', 'menu-accordion', { here: anoLectivoActive, show: anoLectivoActive }]">
-                <span class="menu-link">
-                    <span class="menu-icon">
-                        <i class="ki-duotone ki-calendar-8 fs-2">
-                            <span v-for="n in 6" :key="n" :class="`path${n}`"></span>
-                        </i>
-                    </span>
-                    <span class="menu-title">Ano Lectivo</span>
-                    <span class="menu-arrow"></span>
-                </span>
-                <div class="menu-sub menu-sub-accordion">
-                    <div v-for="item in anoLectivoItemsVisiveis" :key="item.href" class="menu-item">
-                        <a :class="['menu-link', { active: isActive(item.href, { exact: item.exact }) }]"
-                            :href="item.href">
-                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                            <span class="menu-title">{{ item.title }}</span>
-                        </a>
                     </div>
                 </div>
             </div>
@@ -478,7 +494,7 @@ const { isActive, isGroupActive } = useActiveMenu()
 // ── Dashboards ───────────────────────────────────────────────────────────────
 const dashboards = {
     items: [
-        { href: '/', title: 'Página inicial' },
+        { href: '/', title: 'Dashboard Principal' },
         // { href: 'dashboards/ecommerce.html', title: 'eCommerce' },
         // { href: 'dashboards/projects.html', title: 'Projects' },
         // { href: 'dashboards/online-courses.html', title: 'Online Courses' },
@@ -502,21 +518,21 @@ const dashboards = {
 }
 const dashboardsActive = computed(() => isGroupActive(dashboards.items))
 
-// ── Academico ────────────────────────────────────────────────────────────────────
-const academico = {
-    title: 'Académico',
-    icon: 'ki-profile-user',
-    paths: 3,
-    items: [
-        { href: '#', title: 'Alunos' },
-        { href: '#', title: 'Encarregados de Educação' },
-        { href: '#', title: 'Turmas' },
-        { href: '#', title: 'Matrículas' },
-        { href: '#', title: 'Transferências' },
-        { href: '#', title: 'Histórico Escolar' },
-        { href: '#', title: 'Ficha do Aluno' },
-    ],
-}
+// ── Academico (por implementar — descomentar junto com a secção no template) ──
+// const academico = {
+//     title: 'Académico',
+//     icon: 'ki-profile-user',
+//     paths: 3,
+//     items: [
+//         { href: '#', title: 'Alunos' },
+//         { href: '#', title: 'Encarregados de Educação' },
+//         { href: '#', title: 'Turmas' },
+//         { href: '#', title: 'Matrículas' },
+//         { href: '#', title: 'Transferências' },
+//         { href: '#', title: 'Histórico Escolar' },
+//         { href: '#', title: 'Ficha do Aluno' },
+//     ],
+// }
 
 // ── Pedagogico ────────────────────────────────────────────────────────────────────
 const pedagogico = {
@@ -525,7 +541,7 @@ const pedagogico = {
     paths: 3,
     items: [
         { href: '#', title: 'Disciplinas' },
-        { href: '#', title: 'Horários' },
+        { href: '/horarios', title: 'Horários', permissao: 'horario.ver' },
         { href: '#', title: 'Planos de Aula' },
         { href: '#', title: 'Avaliações / Notas' },
         { href: '#', title: 'Pautas' },
@@ -533,6 +549,106 @@ const pedagogico = {
         { href: '#', title: 'Exames / Recuperações' },
     ],
 }
+
+// ── Secções por implementar (descomentar junto com o bloco correspondente
+//    no template, uma a uma, sequencialmente, à medida que forem construídas) ──
+// const frequencia = {
+//     title: 'Frequência',
+//     icon: 'ki-time',
+//     paths: 2,
+//     items: [
+//         { href: '#', title: 'Presenças dos Alunos' },
+//         { href: '#', title: 'Faltas' },
+//         { href: '#', title: 'Justificação de Faltas' },
+//         { href: '#', title: 'Mapa de Frequência' },
+//     ],
+// }
+//
+// const pessoal = {
+//     title: 'Pessoal',
+//     icon: 'ki-briefcase',
+//     paths: 2,
+//     items: [
+//         { href: '#', title: 'Docentes' },
+//         { href: '#', title: 'Funcionários' },
+//         { href: '#', title: 'Assiduidade do Pessoal' },
+//         { href: '#', title: 'Horários do Pessoal' },
+//     ],
+// }
+//
+// const financeiro = {
+//     title: 'Financeiro',
+//     icon: 'ki-dollar',
+//     paths: 2,
+//     items: [
+//         { href: '#', title: 'Propinas' },
+//         { href: '#', title: 'Pagamentos' },
+//         { href: '#', title: 'Dívidas' },
+//         { href: '#', title: 'Descontos / Bolsas' },
+//         { href: '#', title: 'Recibos' },
+//         { href: '#', title: 'Relatórios Financeiros' },
+//     ],
+// }
+//
+// const comunicacao = {
+//     title: 'Comunicação',
+//     icon: 'ki-message-text-2',
+//     paths: 3,
+//     items: [
+//         { href: '#', title: 'Avisos / Circulares' },
+//         { href: '#', title: 'Mensagens Internas' },
+//         { href: '#', title: 'Notificações' },
+//     ],
+// }
+//
+// const documentos = {
+//     title: 'Documentos',
+//     icon: 'ki-file',
+//     paths: 2,
+//     items: [
+//         { href: '#', title: 'Declarações' },
+//         { href: '#', title: 'Certificados' },
+//         { href: '#', title: 'Modelos de Documentos' },
+//         { href: '#', title: 'Arquivo' },
+//     ],
+// }
+//
+// const biblioteca = {
+//     title: 'Biblioteca',
+//     icon: 'ki-book',
+//     paths: 2,
+//     items: [
+//         { href: '#', title: 'Livros' },
+//         { href: '#', title: 'Categorias' },
+//         { href: '#', title: 'Empréstimos' },
+//         { href: '#', title: 'Devoluções' },
+//     ],
+// }
+//
+// const infraestrutura = {
+//     title: 'Infraestrutura',
+//     icon: 'ki-bank',
+//     paths: 2,
+//     items: [
+//         { href: '#', title: 'Salas' },
+//         { href: '#', title: 'Equipamentos' },
+//         { href: '#', title: 'Inventário' },
+//         { href: '#', title: 'Manutenção' },
+//     ],
+// }
+//
+// const relatorios = {
+//     title: 'Relatórios',
+//     icon: 'ki-chart',
+//     paths: 2,
+//     items: [
+//         { href: '#', title: 'Desempenho Escolar' },
+//         { href: '#', title: 'Assiduidade' },
+//         { href: '#', title: 'Boletins' },
+//         { href: '#', title: 'Matrículas' },
+//         { href: '#', title: 'Turmas' },
+//     ],
+// }
 
 // const account = {
 //     title: 'Account', icon: 'ki-element-plus', paths: 5,
@@ -811,7 +927,7 @@ const pedagogico = {
 
 const configuracoesMenu = [
     {
-        title: 'Gestão de utilizadores',
+        title: 'Utilizadores',
         items: [
             { href: '/usuarios', title: 'Todos os Utilizadores', exact: true, permissao: 'usuario.ver' },
             { href: '/usuarios/alunos', title: 'Alunos', permissao: 'usuario.ver' },
@@ -822,11 +938,35 @@ const configuracoesMenu = [
         ],
     },
     {
-        title: 'Perfis',
+        title: 'Perfis & Permissões',
         items: [
             { href: '/permissoes/perfis', title: 'Perfis e Permissões', permissao: 'autorizacao.ver' },
         ],
     },
+    {
+        title: 'Estabelecimento',
+        items: [
+            { href: '/estabelecimento', title: 'Dados da Escola', exact: true, permissao: 'estabelecimento.ver' },
+            { href: '/estabelecimento/aparencia', title: 'Logótipo & Aparência', permissao: 'estabelecimento.ver' },
+        ],
+    },
+    {
+        title: 'Ano Lectivo',
+        items: [
+            { href: '/ano-lectivos', title: 'Anos Lectivos', exact: true, permissao: 'ano-lectivo.ver' },
+        ],
+    },
+    // Por implementar — descomentar quando o módulo Sistema existir:
+    // {
+    //     title: 'Sistema',
+    //     items: [
+    //         { href: '#', title: 'Parâmetros Gerais' },
+    //         { href: '#', title: 'Sessões Activas' },
+    //         { href: '#', title: 'Histórico de Logins' },
+    //         { href: '#', title: 'Backups' },
+    //         { href: '#', title: 'Registos de Actividade' },
+    //     ],
+    // },
 ]
 const configuracoesMenuVisivel = computed(() =>
     configuracoesMenu
@@ -836,19 +976,6 @@ const configuracoesMenuVisivel = computed(() =>
 const userManagementActive = computed(() =>
     configuracoesMenuVisivel.value.some((group) => isGroupActive(group.items))
 )
-
-const estabelecimentoItems = [
-    { href: '/estabelecimento', title: 'Dados da Escola', exact: true, permissao: 'estabelecimento.ver' },
-    { href: '/estabelecimento/aparencia', title: 'Logótipo & Aparência', permissao: 'estabelecimento.ver' },
-]
-const estabelecimentoItemsVisiveis = computed(() => estabelecimentoItems.filter(podeVer))
-const estabelecimentoActive = computed(() => isGroupActive(estabelecimentoItemsVisiveis.value))
-
-const anoLectivoItems = [
-    { href: '/ano-lectivos', title: 'Anos Lectivos', exact: true, permissao: 'ano-lectivo.ver' },
-]
-const anoLectivoItemsVisiveis = computed(() => anoLectivoItems.filter(podeVer))
-const anoLectivoActive = computed(() => isGroupActive(anoLectivoItemsVisiveis.value))
 
 // const customers = {
 //     title: 'Customers', icon: 'ki-abstract-38', paths: 2,
