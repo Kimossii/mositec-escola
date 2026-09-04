@@ -9,8 +9,10 @@ use Modules\Usuario\Models\User;
 
 class SincronizarPermissoesUtilizadorAction
 {
-    public function __construct(private readonly PermissaoCache $cache)
-    {
+    public function __construct(
+        private readonly PermissaoCache $cache,
+        private readonly GarantirAdministradorEfetivoAction $garantirAdministrador,
+    ) {
     }
 
     public function executar(User $user, array $celulas): void
@@ -30,8 +32,9 @@ class SincronizarPermissoesUtilizadorAction
             if (! empty($linhas)) {
                 UserPermissao::insert($linhas);
             }
-        });
 
-        $this->cache->esquecerUtilizador($user->id);
+            $this->cache->esquecerUtilizador($user->id);
+            $this->garantirAdministrador->verificar();
+        });
     }
 }

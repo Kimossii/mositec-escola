@@ -92,4 +92,36 @@ class AtualizarUsuarioTest extends TestCase
             'permitido' => true,
         ]);
     }
+
+    public function test_secretario_nao_consegue_esconder_uma_concessao_de_autorizacao_ao_editar(): void
+    {
+        $secretario = User::create(['name' => 'Secretário', 'email' => 'secretario@example.com', 'password' => Hash::make('x')]);
+        $secretario->roles()->attach(Role::where('nome', Perfil::SECRETARIO->value)->first()->id);
+        $this->actingAs($secretario);
+
+        $professor = User::create(['name' => 'Prof', 'email' => 'prof3@example.com', 'password' => Hash::make('x'), 'tipo_login' => TipoLogin::EMAIL]);
+        $professor->roles()->attach(Role::where('nome', Perfil::PROFESSOR->value)->first()->id);
+
+        $moduloAutorizacao = Modulo::where('nome', 1)->first();
+        $acaoEditar = Acao::where('nome', 'editar')->first();
+
+        // O Secretário tem usuario.editar (pode editar um Professor), mas
+        // nunca devia conseguir, pelo mesmo pedido, conceder-lhe
+        // autorizacao.editar via celulas.
+        $response = $this->put("/usuarios/{$professor->id}", [
+            'name' => 'Prof',
+            'email' => 'prof3@example.com',
+            'perfil' => 'professor',
+            'celulas' => [
+                ['modulo_id' => $moduloAutorizacao->id, 'acao_id' => $acaoEditar->id, 'permitido' => true],
+            ],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('user_permissoes', [
+            'users_id' => $professor->id,
+            'modulo_id' => $moduloAutorizacao->id,
+            'acao_id' => $acaoEditar->id,
+        ]);
+    }
 }

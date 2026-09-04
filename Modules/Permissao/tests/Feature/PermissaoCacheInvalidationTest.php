@@ -12,6 +12,7 @@ use Modules\Permissao\Actions\SincronizarPermissoesPerfilAction;
 use Modules\Permissao\Actions\SincronizarPermissoesUtilizadorAction;
 use Modules\Permissao\Database\Seeders\AcaoSeeder;
 use Modules\Permissao\Database\Seeders\ModuloSeeder;
+use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo as ModuloRegistro;
 use Modules\Permissao\Models\Role;
@@ -30,6 +31,16 @@ class PermissaoCacheInvalidationTest extends TestCase
         parent::setUp();
         $this->seed(ModuloSeeder::class);
         $this->seed(AcaoSeeder::class);
+
+        // Garante um administrador efectivo à parte de tudo o resto que os
+        // testes fazem, senão o guardião anti-lockout bloquearia os syncs
+        // de perfil/utilizador exercidos aqui.
+        $adminRole = Role::create(['nome' => Perfil::ADMIN_ESCOLA->value, 'descricao' => 'Admin escola']);
+        $modulo = ModuloRegistro::where('nome', 1)->first();
+        $acao = Acao::where('nome', 'editar')->first();
+        RolePermissao::create(['role_id' => $adminRole->id, 'modulo_id' => $modulo->id, 'acao_id' => $acao->id]);
+        $admin = User::create(['name' => 'Admin', 'email' => 'admin.fixture@example.com', 'password' => Hash::make('x')]);
+        $admin->roles()->attach($adminRole->id);
     }
 
     public function test_sincronizar_permissoes_do_perfil_invalida_a_cache_de_quem_tem_essa_role(): void

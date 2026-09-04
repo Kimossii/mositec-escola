@@ -203,4 +203,33 @@ class CriarUsuarioTest extends TestCase
             'permitido' => true,
         ]);
     }
+
+    public function test_secretario_nao_consegue_esconder_uma_concessao_de_autorizacao_no_cadastro(): void
+    {
+        $secretario = User::create(['name' => 'Secretário', 'email' => 'secretario@example.com', 'password' => Hash::make('x')]);
+        $secretario->roles()->attach(Role::where('nome', Perfil::SECRETARIO->value)->first()->id);
+        $this->actingAs($secretario);
+
+        $moduloAutorizacao = \Modules\Permissao\Models\Modulo::where('nome', 1)->first();
+        $acaoEditar = \Modules\Permissao\Models\Acao::where('nome', 'editar')->first();
+
+        // O Secretário tem usuario.criar (pode cadastrar um Professor), mas
+        // NUNCA devia conseguir, através do mesmo pedido, conceder-lhe
+        // autorizacao.editar via celulas — isso é autorizacao.editar, que
+        // o Secretário não tem.
+        $response = $this->post('/usuarios/cadastrarUsuario', [
+            'name' => 'Professor Escalado',
+            'perfil' => 'professor',
+            'tipo_login' => 'email',
+            'email' => 'professor.escalado@example.com',
+            'password' => 'segredo123',
+            'password_confirmation' => 'segredo123',
+            'celulas' => [
+                ['modulo_id' => $moduloAutorizacao->id, 'acao_id' => $acaoEditar->id, 'permitido' => true],
+            ],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('users', ['email' => 'professor.escalado@example.com']);
+    }
 }

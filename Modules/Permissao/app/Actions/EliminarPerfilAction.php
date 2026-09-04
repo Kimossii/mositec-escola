@@ -2,14 +2,17 @@
 
 namespace Modules\Permissao\Actions;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Support\PermissaoCache;
 
 class EliminarPerfilAction
 {
-    public function __construct(private readonly PermissaoCache $cache)
-    {
+    public function __construct(
+        private readonly PermissaoCache $cache,
+        private readonly GarantirAdministradorEfetivoAction $garantirAdministrador,
+    ) {
     }
 
     public function executar(Role $role): void
@@ -26,7 +29,10 @@ class EliminarPerfilAction
             ]);
         }
 
-        $role->delete();
-        $this->cache->invalidarTudo();
+        DB::transaction(function () use ($role) {
+            $role->delete();
+            $this->cache->invalidarTudo();
+            $this->garantirAdministrador->verificar();
+        });
     }
 }

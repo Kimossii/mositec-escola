@@ -10,12 +10,16 @@ class AtualizarUsuarioRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        // Se o alvo já é Admin Escola, OU se este pedido o vai tornar Admin
-        // Escola (promoção via troca de perfil), exige autorizacao.editar —
-        // usuario.editar sozinho nunca chega a mexer num Admin Escola.
+        // Autorizacao.editar é exigido sempre que o pedido toca em algo que
+        // usuario.editar sozinho nunca devia poder mexer: o alvo já é (ou
+        // vai passar a ser, via troca de perfil) Admin Escola, ou o pedido
+        // traz overrides individuais (celulas) — sem isto, quem só gere
+        // contas (ex: Secretário) podia esconder num "editar" a concessão
+        // de qualquer permissão, incluindo autorizacao.editar, a quem quisesse.
         $eraAdmin = $this->route('user')?->roles->contains('nome', Perfil::ADMIN_ESCOLA->value) ?? false;
         $vaiSerAdmin = $this->input('perfil') === Perfil::ADMIN_ESCOLA->slug();
-        $precisaAutorizacao = $eraAdmin || $vaiSerAdmin;
+        $temOverrides = !empty($this->input('celulas'));
+        $precisaAutorizacao = $eraAdmin || $vaiSerAdmin || $temOverrides;
 
         return $this->user()?->can($precisaAutorizacao ? 'autorizacao.editar' : 'usuario.editar') ?? false;
     }

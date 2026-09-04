@@ -3,16 +3,32 @@
 namespace Modules\Permissao\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Modules\Permissao\Actions\SincronizarPermissoesPerfilAction;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
+use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\RolePermissao;
+use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
 class SincronizarPermissoesPerfilActionTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Garante um administrador efectivo, senão o guardião anti-lockout
+        // (GarantirAdministradorEfetivoAction) bloquearia estes syncs, já
+        // que este teste não usa mais ninguém com autorizacao.editar.
+        $this->seed(PermissaoDatabaseSeeder::class);
+        $admin = User::create(['name' => 'Admin', 'email' => 'admin.fixture@example.com', 'password' => Hash::make('x')]);
+        $admin->roles()->attach(Role::where('nome', Perfil::ADMIN_ESCOLA->value)->first()->id);
+    }
 
     public function test_sincroniza_permissoes_do_perfil_substituindo_o_estado_anterior(): void
     {

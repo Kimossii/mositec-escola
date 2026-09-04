@@ -9,8 +9,10 @@ use Modules\Permissao\Support\PermissaoCache;
 
 class SincronizarPermissoesPerfilAction
 {
-    public function __construct(private readonly PermissaoCache $cache)
-    {
+    public function __construct(
+        private readonly PermissaoCache $cache,
+        private readonly GarantirAdministradorEfetivoAction $garantirAdministrador,
+    ) {
     }
 
     public function executar(Role $role, array $celulas): void
@@ -29,8 +31,9 @@ class SincronizarPermissoesPerfilAction
             if (! empty($linhas)) {
                 RolePermissao::insert($linhas);
             }
-        });
 
-        $this->cache->invalidarTudo();
+            $this->cache->invalidarTudo();
+            $this->garantirAdministrador->verificar();
+        });
     }
 }

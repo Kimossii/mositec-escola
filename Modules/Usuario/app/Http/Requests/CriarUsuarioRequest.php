@@ -11,9 +11,20 @@ class CriarUsuarioRequest extends BaseRequest
     {
         // Criar um utilizador com perfil Admin Escola é um acto de
         // autorização, não de simples gestão de contas.
-        $vaiSerAdmin = $this->input('perfil') === Perfil::ADMIN_ESCOLA->slug();
+        if ($this->input('perfil') === Perfil::ADMIN_ESCOLA->slug()) {
+            return $this->user()?->can('autorizacao.criar') ?? false;
+        }
 
-        return $this->user()?->can($vaiSerAdmin ? 'autorizacao.criar' : 'usuario.criar') ?? false;
+        // Definir overrides individuais (celulas) — mesmo ao criar um
+        // utilizador comum — é sempre autorizacao.editar, nunca
+        // usuario.criar sozinho. Sem isto, quem só gere contas (ex:
+        // Secretário) podia esconder num "cadastro" a concessão de
+        // qualquer permissão, incluindo autorizacao.editar, a quem quisesse.
+        if (!empty($this->input('celulas'))) {
+            return $this->user()?->can('autorizacao.editar') ?? false;
+        }
+
+        return $this->user()?->can('usuario.criar') ?? false;
     }
 
     public function rules(): array

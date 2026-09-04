@@ -5,8 +5,11 @@ namespace Modules\Permissao\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Modules\Permissao\Actions\SincronizarPermissoesUtilizadorAction;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
+use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo;
+use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\UserPermissao;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
@@ -14,6 +17,18 @@ use Tests\TestCase;
 class SincronizarPermissoesUtilizadorActionTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Garante um administrador efectivo, senão o guardião anti-lockout
+        // bloquearia estes syncs — o utilizador alvo aqui não tem nenhum
+        // perfil, então sem isto o sistema ficaria com zero admins.
+        $this->seed(PermissaoDatabaseSeeder::class);
+        $admin = User::create(['name' => 'Admin', 'email' => 'admin.fixture@example.com', 'password' => Hash::make('x')]);
+        $admin->roles()->attach(Role::where('nome', Perfil::ADMIN_ESCOLA->value)->first()->id);
+    }
 
     public function test_sincroniza_overrides_do_utilizador_substituindo_o_estado_anterior(): void
     {
