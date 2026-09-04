@@ -46,6 +46,28 @@ function proximoEstado(moduloId, acaoId) {
     overridesEstado[k] = estadoCelula(moduloId, acaoId) === 1 ? 0 : 1;
 }
 
+function todosConcedidosNaColuna(acaoId) {
+    return props.modulos.every((modulo) => estadoCelula(modulo.id, acaoId) === 1);
+}
+
+function alternarColuna(acaoId) {
+    const marcar = todosConcedidosNaColuna(acaoId) ? 0 : 1;
+    props.modulos.forEach((modulo) => {
+        overridesEstado[chave(modulo.id, acaoId)] = marcar;
+    });
+}
+
+function todosConcedidosNaLinha(moduloId) {
+    return props.acoes.every((acao) => estadoCelula(moduloId, acao.id) === 1);
+}
+
+function alternarLinha(moduloId) {
+    const marcar = todosConcedidosNaLinha(moduloId) ? 0 : 1;
+    props.acoes.forEach((acao) => {
+        overridesEstado[chave(moduloId, acao.id)] = marcar;
+    });
+}
+
 const novoPerfilId = ref('');
 
 function atribuirPerfil() {
@@ -115,13 +137,35 @@ function guardarOverrides() {
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>Módulo</th>
                             <th v-for="acao in acoes" :key="acao.id" class="text-center text-capitalize">
-                                {{ acao.nome }}
+                                <div class="d-flex flex-column align-items-center gap-1">
+                                    <span>{{ acao.nome }}</span>
+                                    <input
+                                        type="checkbox"
+                                        class="form-check-input"
+                                        title="Marcar/desmarcar toda a coluna"
+                                        :checked="todosConcedidosNaColuna(acao.id)"
+                                        :disabled="!can('autorizacao.editar')"
+                                        @change="alternarColuna(acao.id)"
+                                    />
+                                </div>
                             </th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="modulo in modulos" :key="modulo.id">
-                            <td>{{ modulo.descricao }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        class="form-check-input"
+                                        title="Marcar/desmarcar toda a linha"
+                                        :checked="todosConcedidosNaLinha(modulo.id)"
+                                        :disabled="!can('autorizacao.editar')"
+                                        @change="alternarLinha(modulo.id)"
+                                    />
+                                    <span>{{ modulo.descricao }}</span>
+                                </div>
+                            </td>
                             <td v-for="acao in acoes" :key="acao.id" class="text-center">
                                 <button
                                     type="button"
