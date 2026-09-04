@@ -261,7 +261,7 @@ function guardar() {
                                 type="button"
                                 class="btn btn-sm"
                                 :class="{
-                                    'btn-light-success': estadoCelula(modulo.id, acao.id) === 1,
+                                    'btn-light-success btn-permissao-concedido': estadoCelula(modulo.id, acao.id) === 1,
                                     'btn-light-danger': estadoCelula(modulo.id, acao.id) === 0,
                                 }"
                                 @click="proximoEstado(modulo.id, acao.id)"

@@ -199,3 +199,11 @@ html[data-bs-theme='light'] .form-select.form-select-solid:focus,
 html[data-bs-theme='light'] .form-select.form-select-solid.focus {
     color: #000000;
 }
+
+/* Botão "Concedido" da grelha de permissões individuais: o verde padrão do
+   Metronic (.btn-light-success) fica pouco visível no modo claro; no modo
+   escuro já está bem. Reforça só a cor no claro. */
+html[data-bs-theme='light'] .btn-permissao-concedido {
+    color: #0b5c2e;
+    background-color: #a8e6bd;
+}
