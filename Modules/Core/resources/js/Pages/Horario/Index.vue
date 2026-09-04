@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import HorarioStatusBadge from '../../Components/HorarioStatusBadge.vue';
@@ -93,7 +94,7 @@ function confirmarEliminacao() {
                     Intervalos de tempo reutilizáveis (ex: turnos, blocos do dia) que outros módulos poderão usar para montar os seus próprios horários.
                 </p>
             </div>
-            <button class="btn btn-primary" @click="abrirCriacao">Novo Horário</button>
+            <button v-if="can('horario.criar')" class="btn btn-primary" @click="abrirCriacao">Novo Horário</button>
         </div>
 
         <div class="card">
@@ -118,10 +119,10 @@ function confirmarEliminacao() {
                                 <HorarioStatusBadge :estado="horario.estado" :estado-descricao="horario.estado_descricao" />
                             </td>
                             <td class="text-end">
-                                <button type="button" class="btn btn-icon btn-sm btn-light-primary me-2" @click="abrirEdicao(horario)">
+                                <button v-if="can('horario.editar')" type="button" class="btn btn-icon btn-sm btn-light-primary me-2" @click="abrirEdicao(horario)">
                                     <AcaoIcone acao="editar" />
                                 </button>
-                                <button type="button" class="btn btn-icon btn-sm btn-light-danger" @click="pedirEliminacao(horario)">
+                                <button v-if="can('horario.eliminar')" type="button" class="btn btn-icon btn-sm btn-light-danger" @click="pedirEliminacao(horario)">
                                     <AcaoIcone acao="eliminar" />
                                 </button>
                             </td>

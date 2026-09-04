@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { can } from '@/Composables/usePermissoes';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import AnoLectivoStatusBadge from '../Components/AnoLectivoStatusBadge.vue';
 import AnoLectivoFormModal from '../Components/AnoLectivoFormModal.vue';
@@ -182,7 +183,7 @@ function guardarEvento(payload) {
                     <div class="text-muted fs-6 mb-2">{{ anoLectivo.data_inicio }} — {{ anoLectivo.data_fim }}</div>
                     <AnoLectivoStatusBadge :estado="anoLectivo.estado" :estado-descricao="anoLectivo.estado_descricao" />
                 </div>
-                <button class="btn btn-light-primary" @click="abrirEdicaoAnoLectivo">Editar</button>
+                <button v-if="can('ano-lectivo.editar')" class="btn btn-light-primary" @click="abrirEdicaoAnoLectivo">Editar</button>
             </div>
         </div>
 
@@ -201,11 +202,13 @@ function guardarEvento(payload) {
 
         <div v-if="abaAtual === 'periodos'" class="card">
             <div class="card-header d-flex justify-content-end align-items-center">
-                <button class="btn btn-primary btn-sm" @click="abrirCriacaoPeriodo">Novo Período</button>
+                <button v-if="can('ano-lectivo.criar')" class="btn btn-primary btn-sm" @click="abrirCriacaoPeriodo">Novo Período</button>
             </div>
             <div class="card-body p-0">
                 <PeriodoTable
                     :periodos="anoLectivo.periodos"
+                    :pode-editar="can('ano-lectivo.editar')"
+                    :pode-eliminar="can('ano-lectivo.eliminar')"
                     @editar-periodo="abrirEdicaoPeriodo"
                     @eliminar-periodo="pedirEliminacaoPeriodo"
                 />
@@ -214,12 +217,14 @@ function guardarEvento(payload) {
 
         <div v-if="abaAtual === 'calendario'" class="card">
             <div class="card-header d-flex justify-content-end align-items-center">
-                <button class="btn btn-primary btn-sm" @click="abrirCriacaoEvento(anoLectivo.data_inicio)">Novo Evento</button>
+                <button v-if="can('ano-lectivo.criar')" class="btn btn-primary btn-sm" @click="abrirCriacaoEvento(anoLectivo.data_inicio)">Novo Evento</button>
             </div>
             <div class="card-body">
                 <AnoLectivoCalendario
                     :ano-lectivo="anoLectivo"
                     :eventos="anoLectivo.eventos_calendario"
+                    :pode-criar="can('ano-lectivo.criar')"
+                    :pode-editar="can('ano-lectivo.editar')"
                     @criar-evento="abrirCriacaoEvento"
                     @editar-evento="abrirEdicaoEvento"
                 />
