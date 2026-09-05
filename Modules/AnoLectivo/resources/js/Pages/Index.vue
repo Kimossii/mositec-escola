@@ -40,7 +40,7 @@ function criar(payload) {
         },
         onError: (erros) => {
             errors.value = erros;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível criar o Ano Lectivo.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             processing.value = false;
@@ -75,7 +75,7 @@ function confirmarAlteracaoEstado() {
         onSuccess: () => toast.success(
             novoEstado.value === ESTADO_ANO_LECTIVO.ATIVO ? 'Ano Lectivo activado.' : 'Ano Lectivo encerrado.',
         ),
-        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível alterar o estado.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
         onFinish: () => {
             alterandoEstado.value = false;
             anoLectivoParaAlterarEstado.value = null;
@@ -101,7 +101,7 @@ function confirmarEliminacao() {
     router.delete(`/ano-lectivos/${anoLectivoParaEliminar.value.id}`, {
         preserveScroll: true,
         onSuccess: () => toast.success('Ano Lectivo eliminado com sucesso.'),
-        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível eliminar o Ano Lectivo.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
         onFinish: () => {
             eliminando.value = false;
             anoLectivoParaEliminar.value = null;

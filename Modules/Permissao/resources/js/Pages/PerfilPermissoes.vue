@@ -60,7 +60,7 @@ function guardar() {
     router.put(`/permissoes/perfis/${props.perfil.id}/permissoes`, { celulas }, {
         preserveScroll: true,
         onSuccess: () => toast.success('Permissões do perfil atualizadas.'),
-        onError: () => toast.error('Não foi possível guardar as permissões.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
     });
 }
 </script>

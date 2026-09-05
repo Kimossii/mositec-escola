@@ -40,7 +40,7 @@ function alternarEstado(usuario) {
         onSuccess: () => toast.success(
             usuario.estado === ESTADO.ATIVO ? 'Utilizador desativado.' : 'Utilizador ativado.',
         ),
-        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível atualizar o estado.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
     });
 }
 
@@ -60,7 +60,7 @@ function confirmarEliminacao() {
     router.delete(`/usuarios/${usuarioParaEliminar.value.id}`, {
         preserveScroll: true,
         onSuccess: () => toast.success('Utilizador eliminado com sucesso.'),
-        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível eliminar o utilizador.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
         onFinish: () => {
             eliminando.value = false;
             usuarioParaEliminar.value = null;

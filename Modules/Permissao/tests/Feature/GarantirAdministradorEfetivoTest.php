@@ -163,6 +163,36 @@ class GarantirAdministradorEfetivoTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $admin->id]);
     }
 
+    public function test_mensagem_de_erro_chega_a_sessao_no_formato_que_o_inertia_entrega_ao_frontend(): void
+    {
+        // Cobre a camada que os testes acima (ao nível da Action) não tocam:
+        // HTTP -> ValidationException -> sessão -> o que o Inertia expõe em
+        // page.props.errors. O frontend já não tem texto fixo de fallback —
+        // depende inteiramente desta mensagem chegar como string não-vazia
+        // na chave certa, tal como Inertia\Middleware::resolveValidationErrors
+        // a devolve ($errors->first($campo), nunca um array).
+        $admin = $this->criarUnicoAdministrador();
+        $this->actingAs($admin);
+
+        $resposta = $this->put("/permissoes/perfis/{$this->adminRole->id}/permissoes", [
+            'celulas' => [],
+        ]);
+
+        $resposta->assertSessionHasErrors('autorizacao');
+
+        $mensagem = session('errors')->get('autorizacao')[0];
+        $this->assertIsString($mensagem);
+        $this->assertNotEmpty($mensagem);
+        $this->assertStringContainsString('autorizacao.editar', $mensagem);
+
+        // Nada foi persistido — a transacção reverteu.
+        $this->assertDatabaseHas('role_permissoes', [
+            'role_id' => $this->adminRole->id,
+            'modulo_id' => $this->moduloAutorizacao->id,
+            'acao_id' => $this->acaoEditar->id,
+        ]);
+    }
+
     public function test_elimina_perfil_personalizado_sem_utilizadores_mesmo_com_o_guardiao_activo(): void
     {
         // Um perfil personalizado sem ninguém atribuído nunca pode ser a

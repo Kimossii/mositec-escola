@@ -51,7 +51,7 @@ function submeter() {
         },
         onError: (erros) => {
             errors.value = erros;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível atualizar o logótipo.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             processing.value = false;

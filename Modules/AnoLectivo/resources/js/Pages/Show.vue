@@ -44,7 +44,7 @@ function guardarAnoLectivo(payload) {
         },
         onError: (erros) => {
             editErrors.value = erros;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível atualizar o Ano Lectivo.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             editProcessing.value = false;
@@ -91,7 +91,7 @@ function guardarPeriodo(payload) {
         },
         onError: (erros) => {
             periodoErrors.value = erros;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível guardar o período.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             periodoProcessing.value = false;
@@ -115,7 +115,7 @@ function confirmarEliminacaoPeriodo() {
     router.delete(`/periodos/${periodoParaEliminar.value.id}`, {
         preserveScroll: true,
         onSuccess: () => toast.success('Período eliminado com sucesso.'),
-        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível eliminar o período.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
         onFinish: () => {
             eliminandoPeriodo.value = false;
             periodoParaEliminar.value = null;
@@ -165,7 +165,7 @@ function guardarEvento(payload) {
         },
         onError: (erros) => {
             eventoErrors.value = erros;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível guardar o evento.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             eventoProcessing.value = false;

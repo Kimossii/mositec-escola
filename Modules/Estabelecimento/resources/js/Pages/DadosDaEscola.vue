@@ -76,7 +76,7 @@ function submeter() {
         },
         onError: (erros) => {
             errors.value = erros;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível guardar os dados.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             processing.value = false;

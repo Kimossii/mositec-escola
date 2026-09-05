@@ -42,7 +42,7 @@ function alternarEstado(perfil) {
     router.patch(`/permissoes/perfis/${perfil.id}/estado`, {}, {
         preserveScroll: true,
         onSuccess: () => toast.success(perfil.estado === 1 ? 'Perfil desativado.' : 'Perfil ativado.'),
-        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível atualizar o estado.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
     });
 }
 
@@ -62,7 +62,7 @@ function confirmarEliminacao() {
     router.delete(`/permissoes/perfis/${perfilParaEliminar.value.id}`, {
         preserveScroll: true,
         onSuccess: () => toast.success('Perfil eliminado com sucesso.'),
-        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível eliminar o perfil.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
         onFinish: () => {
             eliminando.value = false;
             perfilParaEliminar.value = null;

@@ -51,7 +51,7 @@ function guardar(payload) {
         },
         onError: (erros) => {
             errors.value = erros;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível guardar o horário.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             processing.value = false;
@@ -76,7 +76,7 @@ function confirmarEliminacao() {
     router.delete(`/horarios/${horarioParaEliminar.value.id}`, {
         preserveScroll: true,
         onSuccess: () => toast.success('Horário eliminado com sucesso.'),
-        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível eliminar o horário.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
         onFinish: () => {
             eliminando.value = false;
             horarioParaEliminar.value = null;

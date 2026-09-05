@@ -195,7 +195,7 @@ function guardar() {
         onError: (erros) => {
             errors.value = erros;
             passo.value = 1;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível guardar o utilizador.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             processing.value = false;

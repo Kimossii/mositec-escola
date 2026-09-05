@@ -76,7 +76,7 @@ function atribuirPerfil() {
     router.post(`/permissoes/utilizadores/${props.utilizador.id}/perfis`, { role_id: novoPerfilId.value }, {
         preserveScroll: true,
         onSuccess: () => toast.success('Perfil atribuído.'),
-        onError: () => toast.error('Não foi possível atribuir o perfil.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
     });
 }
 
@@ -84,7 +84,7 @@ function removerPerfil(roleId) {
     router.delete(`/permissoes/utilizadores/${props.utilizador.id}/perfis/${roleId}`, {
         preserveScroll: true,
         onSuccess: () => toast.success('Perfil removido.'),
-        onError: () => toast.error('Não foi possível remover o perfil.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
     });
 }
 
@@ -97,7 +97,7 @@ function guardarOverrides() {
     router.put(`/permissoes/utilizadores/${props.utilizador.id}/permissoes`, { celulas }, {
         preserveScroll: true,
         onSuccess: () => toast.success('Permissões do utilizador atualizadas.'),
-        onError: () => toast.error('Não foi possível guardar as permissões.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
     });
 }
 </script>
