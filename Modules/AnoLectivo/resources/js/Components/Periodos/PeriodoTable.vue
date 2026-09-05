@@ -3,6 +3,8 @@ import { tipoPeriodoLabel } from '../../Models/AnoLectivo';
 
 defineProps({
     periodos: { type: Array, required: true },
+    podeEditar: { type: Boolean, default: false },
+    podeEliminar: { type: Boolean, default: false },
 });
 defineEmits(['editar-periodo', 'eliminar-periodo']);
 </script>
@@ -28,10 +30,10 @@ defineEmits(['editar-periodo', 'eliminar-periodo']);
                 <td>{{ periodo.numero ?? '—' }}</td>
                 <td>{{ periodo.data_inicio }} — {{ periodo.data_fim }}</td>
                 <td class="text-end">
-                    <button class="btn btn-light-primary btn-sm me-2" @click="$emit('editar-periodo', periodo)">
+                    <button v-if="podeEditar" class="btn btn-light-primary btn-sm me-2" @click="$emit('editar-periodo', periodo)">
                         Editar
                     </button>
-                    <button class="btn btn-light-danger btn-sm" @click="$emit('eliminar-periodo', periodo)">
+                    <button v-if="podeEliminar" class="btn btn-light-danger btn-sm" @click="$emit('eliminar-periodo', periodo)">
                         Eliminar
                     </button>
                 </td>

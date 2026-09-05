@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { can } from '@/Composables/usePermissoes';
 import EstabelecimentoCabecalho from '../Components/EstabelecimentoCabecalho.vue';
 import EstabelecimentoTabs from '../Components/EstabelecimentoTabs.vue';
 import CampoFicha from '../Components/CampoFicha.vue';
@@ -45,7 +46,9 @@ function snapshot() {
 }
 
 const form = reactive(snapshot());
-const editando = ref(!props.estabelecimento);
+// Sem estabelecimento ainda (1º acesso) só entra logo em edição se o
+// utilizador já tiver o direito — senão fica só a ver o formulário vazio.
+const editando = ref(!props.estabelecimento && can('estabelecimento.editar'));
 const processing = ref(false);
 const errors = ref({});
 
@@ -73,7 +76,7 @@ function submeter() {
         },
         onError: (erros) => {
             errors.value = erros;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível guardar os dados.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             processing.value = false;
@@ -92,7 +95,7 @@ function submeter() {
                 Estes dados identificam oficialmente o estabelecimento e são usados em documentos como faturas, recibos e relatórios.
             </p>
 
-            <button v-if="!editando" type="button" class="btn btn-sm btn-light-primary" @click="editar">
+            <button v-if="!editando && can('estabelecimento.editar')" type="button" class="btn btn-sm btn-light-primary" @click="editar">
                 <i class="ki-duotone ki-pencil fs-4 me-1"><span class="path1"></span><span class="path2"></span></i>
                 Editar dados
             </button>

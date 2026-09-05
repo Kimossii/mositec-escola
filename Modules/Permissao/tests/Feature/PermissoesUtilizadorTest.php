@@ -4,6 +4,8 @@ namespace Modules\Permissao\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
+use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo;
 use Modules\Permissao\Models\Role;
@@ -18,9 +20,10 @@ class PermissoesUtilizadorTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(PermissaoDatabaseSeeder::class);
+
         $staff = User::create(['name' => 'Staff', 'email' => 'staff@example.com', 'password' => Hash::make('x')]);
-        $adminRole = Role::create(['nome' => 0, 'descricao' => 'Admin escola', 'estado' => 1]);
-        $staff->roles()->attach($adminRole->id);
+        $staff->roles()->attach(Role::where('nome', Perfil::ADMIN_ESCOLA->value)->first()->id);
 
         $this->actingAs($staff);
     }
@@ -42,8 +45,8 @@ class PermissoesUtilizadorTest extends TestCase
     public function test_sincroniza_overrides_do_utilizador_via_endpoint(): void
     {
         $user = User::create(['name' => 'Prof', 'email' => 'prof5@example.com', 'password' => Hash::make('x')]);
-        $modulo = Modulo::create(['nome' => 0, 'descricao' => 'Usuario', 'estado' => 1]);
-        $acao = Acao::create(['nome' => 'eliminar', 'numero' => 3, 'estado' => 1]);
+        $modulo = Modulo::where('nome', 0)->first();
+        $acao = Acao::where('nome', 'eliminar')->first();
 
         $response = $this->put("/permissoes/utilizadores/{$user->id}/permissoes", [
             'celulas' => [['modulo_id' => $modulo->id, 'acao_id' => $acao->id, 'permitido' => false]],

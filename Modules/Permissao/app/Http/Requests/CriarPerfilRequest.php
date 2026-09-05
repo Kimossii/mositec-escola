@@ -6,9 +6,13 @@ use App\Http\Requests\BaseRequest;
 
 class CriarPerfilRequest extends BaseRequest
 {
+    // Reutilizado no store (POST) e no update (PUT) do perfil — a acção
+    // exigida depende do verbo, já que não há dois FormRequests para isto.
     public function authorize(): bool
     {
-        return $this->user()?->can('gerir-permissoes') ?? false;
+        $acao = $this->isMethod('post') ? 'criar' : 'editar';
+
+        return $this->user()?->can("autorizacao.{$acao}") ?? false;
     }
 
     public function rules(): array

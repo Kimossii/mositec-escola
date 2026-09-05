@@ -4,7 +4,7 @@ namespace Modules\Usuario\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Modules\Permissao\Database\Seeders\RoleSeeder;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo;
@@ -21,7 +21,7 @@ class AtualizarUsuarioTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(RoleSeeder::class);
+        $this->seed(PermissaoDatabaseSeeder::class);
     }
 
     private function actingAsStaff(): User
@@ -41,8 +41,8 @@ class AtualizarUsuarioTest extends TestCase
         $roleProfessor = Role::where('nome', Perfil::PROFESSOR->value)->first();
         $professor->roles()->attach($roleProfessor->id);
 
-        $modulo = Modulo::create(['nome' => 0, 'descricao' => 'Usuario', 'estado' => 1]);
-        $acao = Acao::create(['nome' => 'eliminar', 'numero' => 3, 'estado' => 1]);
+        $modulo = Modulo::where('nome', 0)->first();
+        $acao = Acao::where('nome', 'eliminar')->first();
         $professor->permissoes()->create(['modulo_id' => $modulo->id, 'acao_id' => $acao->id, 'permitido' => false]);
 
         $response = $this->getJson("/usuarios/{$professor->id}/editar");
@@ -65,13 +65,13 @@ class AtualizarUsuarioTest extends TestCase
         $roleProfessor = Role::where('nome', Perfil::PROFESSOR->value)->first();
         $professor->roles()->attach($roleProfessor->id);
 
-        $modulo = Modulo::create(['nome' => 0, 'descricao' => 'Usuario', 'estado' => 1]);
-        $acao = Acao::create(['nome' => 'eliminar', 'numero' => 3, 'estado' => 1]);
+        $modulo = Modulo::where('nome', 0)->first();
+        $acao = Acao::where('nome', 'eliminar')->first();
 
         $response = $this->put("/usuarios/{$professor->id}", [
             'name' => 'Prof Atualizado',
             'email' => 'prof2@example.com',
-            'perfil' => 'secretario',
+            'perfil' => 'funcionario',
             'celulas' => [
                 ['modulo_id' => $modulo->id, 'acao_id' => $acao->id, 'permitido' => true],
             ],
@@ -81,8 +81,8 @@ class AtualizarUsuarioTest extends TestCase
         $professor->refresh();
         $this->assertSame('Prof Atualizado', $professor->name);
 
-        $roleSecretario = Role::where('nome', Perfil::SECRETARIO->value)->first();
-        $this->assertTrue($professor->roles->contains($roleSecretario));
+        $roleFuncionario = Role::where('nome', Perfil::FUNCIONARIO->value)->first();
+        $this->assertTrue($professor->roles->contains($roleFuncionario));
         $this->assertTrue($professor->roles->contains($roleProfessor), 'não deve remover o perfil anterior');
 
         $this->assertDatabaseHas('user_permissoes', [
@@ -90,6 +90,38 @@ class AtualizarUsuarioTest extends TestCase
             'modulo_id' => $modulo->id,
             'acao_id' => $acao->id,
             'permitido' => true,
+        ]);
+    }
+
+    public function test_funcionario_nao_consegue_esconder_uma_concessao_de_autorizacao_ao_editar(): void
+    {
+        $funcionario = User::create(['name' => 'Funcionário', 'email' => 'funcionario@example.com', 'password' => Hash::make('x')]);
+        $funcionario->roles()->attach(Role::where('nome', Perfil::FUNCIONARIO->value)->first()->id);
+        $this->actingAs($funcionario);
+
+        $professor = User::create(['name' => 'Prof', 'email' => 'prof3@example.com', 'password' => Hash::make('x'), 'tipo_login' => TipoLogin::EMAIL]);
+        $professor->roles()->attach(Role::where('nome', Perfil::PROFESSOR->value)->first()->id);
+
+        $moduloAutorizacao = Modulo::where('nome', 1)->first();
+        $acaoEditar = Acao::where('nome', 'editar')->first();
+
+        // O Funcionário tem usuario.editar (pode editar um Professor), mas
+        // nunca devia conseguir, pelo mesmo pedido, conceder-lhe
+        // autorizacao.editar via celulas.
+        $response = $this->put("/usuarios/{$professor->id}", [
+            'name' => 'Prof',
+            'email' => 'prof3@example.com',
+            'perfil' => 'professor',
+            'celulas' => [
+                ['modulo_id' => $moduloAutorizacao->id, 'acao_id' => $acaoEditar->id, 'permitido' => true],
+            ],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('user_permissoes', [
+            'users_id' => $professor->id,
+            'modulo_id' => $moduloAutorizacao->id,
+            'acao_id' => $acaoEditar->id,
         ]);
     }
 }

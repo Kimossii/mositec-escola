@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { can } from '@/Composables/usePermissoes';
 import EstabelecimentoCabecalho from '../Components/EstabelecimentoCabecalho.vue';
 import EstabelecimentoTabs from '../Components/EstabelecimentoTabs.vue';
 
@@ -50,7 +51,7 @@ function submeter() {
         },
         onError: (erros) => {
             errors.value = erros;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível atualizar o logótipo.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             processing.value = false;
@@ -91,7 +92,7 @@ function submeter() {
                         <div class="text-muted fs-8 text-center mt-2">Pré-visualização na barra lateral</div>
                     </div>
 
-                    <div class="col-md-7">
+                    <div v-if="can('estabelecimento.editar')" class="col-md-7">
                         <form @submit.prevent="submeter">
                             <label class="fw-semibold fs-6 mb-2">Novo ficheiro</label>
                             <input

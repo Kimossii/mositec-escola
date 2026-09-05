@@ -15,7 +15,8 @@ class GestaoEstabelecimentoService
     public function __construct(
         private AtualizarDadosEstabelecimentoAction $atualizarDadosAction,
         private AtualizarLogotipoEstabelecimentoAction $atualizarLogotipoAction,
-    ) {}
+    ) {
+    }
 
     public function obterAtual(): ?Estabelecimento
     {
@@ -33,7 +34,7 @@ class GestaoEstabelecimentoService
     {
         $estabelecimento = Estabelecimento::current();
 
-        if (! $estabelecimento) {
+        if (!$estabelecimento) {
             throw ValidationException::withMessages([
                 'estabelecimento' => 'É necessário cadastrar os dados do estabelecimento antes de definir o logótipo.',
             ]);

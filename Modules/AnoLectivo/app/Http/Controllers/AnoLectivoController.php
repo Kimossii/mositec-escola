@@ -21,7 +21,7 @@ class AnoLectivoController extends Controller
 
     public function index()
     {
-        $this->authorize('view', AnoLectivo::class);
+        $this->authorize('ano-lectivo.ver');
 
         return Inertia::render('AnoLectivo/Index', [
             'anoLectivos' => $this->consulta->listar(),
@@ -30,7 +30,7 @@ class AnoLectivoController extends Controller
 
     public function show(AnoLectivo $anoLectivo)
     {
-        $this->authorize('view', AnoLectivo::class);
+        $this->authorize('ano-lectivo.ver');
 
         return Inertia::render('AnoLectivo/Show', [
             'anoLectivo' => $this->consulta->comRelacoes($anoLectivo),
@@ -39,7 +39,7 @@ class AnoLectivoController extends Controller
 
     public function store(CriarAnoLectivoRequest $request)
     {
-        $this->authorize('create', AnoLectivo::class);
+        $this->authorize('ano-lectivo.criar');
 
         $this->service->criar($request);
 
@@ -48,7 +48,7 @@ class AnoLectivoController extends Controller
 
     public function update(AtualizarAnoLectivoRequest $request, AnoLectivo $anoLectivo)
     {
-        $this->authorize('update', AnoLectivo::class);
+        $this->authorize('ano-lectivo.editar');
 
         $this->service->atualizar($anoLectivo, $request);
 
@@ -57,7 +57,7 @@ class AnoLectivoController extends Controller
 
     public function alterarEstado(AlterarEstadoAnoLectivoRequest $request, AnoLectivo $anoLectivo)
     {
-        $this->authorize('update', AnoLectivo::class);
+        $this->authorize('ano-lectivo.editar');
 
         $this->service->alterarEstado($anoLectivo, EstadoAnoLectivo::from((int) $request->validated('estado')));
 
@@ -66,7 +66,7 @@ class AnoLectivoController extends Controller
 
     public function destroy(AnoLectivo $anoLectivo)
     {
-        $this->authorize('delete', AnoLectivo::class);
+        $this->authorize('ano-lectivo.eliminar');
 
         $this->service->eliminar($anoLectivo);
 
