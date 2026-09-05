@@ -4,6 +4,8 @@ namespace Modules\Permissao\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
+use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo;
 use Modules\Permissao\Models\Role;
@@ -18,9 +20,10 @@ class GestaoPerfisTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(PermissaoDatabaseSeeder::class);
+
         $staff = User::create(['name' => 'Staff', 'email' => 'staff@example.com', 'password' => Hash::make('x')]);
-        $adminRole = Role::create(['nome' => 0, 'descricao' => 'Admin escola', 'estado' => 1]);
-        $staff->roles()->attach($adminRole->id);
+        $staff->roles()->attach(Role::where('nome', Perfil::ADMIN_ESCOLA->value)->first()->id);
 
         $this->actingAs($staff);
     }
@@ -100,8 +103,8 @@ class GestaoPerfisTest extends TestCase
     public function test_sincroniza_permissoes_do_perfil_via_endpoint(): void
     {
         $role = Role::create(['nome' => Role::PERFIL_PERSONALIZADO, 'descricao' => 'Diretor', 'estado' => 1]);
-        $modulo = Modulo::create(['nome' => 0, 'descricao' => 'Usuario', 'estado' => 1]);
-        $acao = Acao::create(['nome' => 'ver', 'numero' => 0, 'estado' => 1]);
+        $modulo = Modulo::where('nome', 0)->first();
+        $acao = Acao::where('nome', 'ver')->first();
 
         $response = $this->put("/permissoes/perfis/{$role->id}/permissoes", [
             'celulas' => [['modulo_id' => $modulo->id, 'acao_id' => $acao->id]],

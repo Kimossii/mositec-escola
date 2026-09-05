@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Enums\TipoEventoCalendario;
 use Modules\AnoLectivo\Models\AnoLectivo;
-use Modules\Permissao\Database\Seeders\RoleSeeder;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\Usuario\Models\User;
@@ -21,7 +21,7 @@ class EventoCalendarioModelTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(RoleSeeder::class);
+        $this->seed(PermissaoDatabaseSeeder::class);
     }
 
     private function actingAsStaff(): User

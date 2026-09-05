@@ -12,21 +12,26 @@ class ModuloSeeder extends Seeder
      */
     public function run(): void
     {
-        // $this->call([]);
-        Modulo::truncate();
-        $now = now();
-        Modulo::insert([
-            ['nome' => 0, 'descricao' => 'Usuario', 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 1, 'descricao' => 'Autorizacao', 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 2, 'descricao' => 'Ano Letivo', 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 3, 'descricao' => 'Licenca', 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 4, 'descricao' => 'Aluno', 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 5, 'descricao' => 'Professor', 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 6, 'descricao' => 'Turmas', 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 7, 'descricao' => 'Matricula', 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 8, 'descricao' => 'Disciplina', 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 9, 'descricao' => 'Nota', 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 10, 'descricao' => 'Estabelecimento', 'created_at' => $now, 'updated_at' => $now],
-        ]);
+        $modulos = [
+            ['nome' => 0, 'descricao' => 'Utilizadores'],
+            ['nome' => 1, 'descricao' => 'Autorizacao'],
+            ['nome' => 2, 'descricao' => 'Ano Letivo'],
+            ['nome' => 3, 'descricao' => 'Licenca'],
+            ['nome' => 4, 'descricao' => 'Aluno'],
+            ['nome' => 5, 'descricao' => 'Professor'],
+            ['nome' => 6, 'descricao' => 'Turmas'],
+            ['nome' => 7, 'descricao' => 'Matricula'],
+            ['nome' => 8, 'descricao' => 'Disciplina'],
+            ['nome' => 9, 'descricao' => 'Nota'],
+            ['nome' => 10, 'descricao' => 'Estabelecimento'],
+            ['nome' => 11, 'descricao' => 'Horario'],
+        ];
+
+        foreach ($modulos as $modulo) {
+            Modulo::updateOrCreate(
+                ['nome' => $modulo['nome']],
+                ['descricao' => $modulo['descricao']],
+            );
+        }
     }
 }

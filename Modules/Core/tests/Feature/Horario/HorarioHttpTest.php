@@ -4,7 +4,7 @@ namespace Modules\Core\Tests\Feature\Horario;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Core\Models\Horario;
-use Modules\Permissao\Database\Seeders\RoleSeeder;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\Usuario\Models\User;
@@ -18,7 +18,7 @@ class HorarioHttpTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(RoleSeeder::class);
+        $this->seed(PermissaoDatabaseSeeder::class);
     }
 
     private function actingAsAdmin(): User
@@ -71,7 +71,7 @@ class HorarioHttpTest extends TestCase
         $this->assertDatabaseMissing('horarios', ['id' => $horario->id]);
     }
 
-    public function test_utilizador_sem_gerir_estabelecimento_recebe_403(): void
+    public function test_utilizador_sem_permissao_recebe_403_em_todas_as_rotas(): void
     {
         $professor = User::create(['name' => 'Professor', 'email' => 'professor-horario@example.com', 'password' => 'x']);
         $professor->roles()->syncWithoutDetaching([Role::where('nome', Perfil::PROFESSOR->value)->first()->id]);

@@ -50,12 +50,12 @@ class UsuarioController extends Controller
     }
 
     /**
-     * Lista apenas usuários com o perfil Secretário (formulário "Funcionário").
+     * Lista apenas usuários com o perfil Funcionário.
      */
     public function funcionarios()
     {
         return Inertia::render('Usuario/Funcionarios', array_merge([
-            'usuarios' => $this->consulta->listarPorPerfil(Perfil::SECRETARIO),
+            'usuarios' => $this->consulta->listarPorPerfil(Perfil::FUNCIONARIO),
         ], $this->consulta->dadosDeApoio()));
     }
 
@@ -102,6 +102,7 @@ class UsuarioController extends Controller
 
     public function alternarEstado(User $user)
     {
+        $this->authorize('alternarEstado', $user);
         $this->service->alternarEstado($user);
 
         return redirect()->back()->with('success', 'Estado do utilizador atualizado.');

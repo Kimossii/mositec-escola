@@ -52,12 +52,16 @@ class PermissaoConsultaService
             'perfisAtribuidos' => $user->roles()->pluck('roles.id'),
             'modulos' => Modulo::orderBy('nome')->get(['id', 'nome', 'descricao']),
             'acoes' => Acao::orderBy('numero')->get(['id', 'nome']),
-            'herdadas' => $this->permissoesHerdadas($user),
+            // União do que os perfis atribuídos já concedem — só para pintar
+            // a grelha com o estado correcto (célula que o perfil já dá
+            // arranca Concedida, não Negada). Não é guardado nem é um 3º
+            // estado; é só o valor inicial correcto de cada célula.
+            'permitidasPeloPerfil' => $this->permissoesDosPerfis($user),
             'overrides' => $user->permissoes()->get(['modulo_id', 'acao_id', 'permitido']),
         ];
     }
 
-    public function permissoesHerdadas(User $user): array
+    private function permissoesDosPerfis(User $user): array
     {
         $roleIds = $user->roles()->pluck('roles.id');
 

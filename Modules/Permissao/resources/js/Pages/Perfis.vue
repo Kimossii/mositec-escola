@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import PerfilForm from '../Components/PerfilForm.vue';
@@ -41,7 +42,7 @@ function alternarEstado(perfil) {
     router.patch(`/permissoes/perfis/${perfil.id}/estado`, {}, {
         preserveScroll: true,
         onSuccess: () => toast.success(perfil.estado === 1 ? 'Perfil desativado.' : 'Perfil ativado.'),
-        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível atualizar o estado.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
     });
 }
 
@@ -61,7 +62,7 @@ function confirmarEliminacao() {
     router.delete(`/permissoes/perfis/${perfilParaEliminar.value.id}`, {
         preserveScroll: true,
         onSuccess: () => toast.success('Perfil eliminado com sucesso.'),
-        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível eliminar o perfil.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
         onFinish: () => {
             eliminando.value = false;
             perfilParaEliminar.value = null;
@@ -89,7 +90,7 @@ function temAcao(grupo, acao) {
     <div class="app-container container-xxl py-6">
         <div class="d-flex justify-content-between align-items-center mb-6">
             <h1 class="fs-2 fw-bold">Perfis</h1>
-            <button class="btn btn-primary" @click="abrirCriacao">Novo perfil</button>
+            <button v-if="can('autorizacao.criar')" class="btn btn-primary" @click="abrirCriacao">Novo perfil</button>
         </div>
 
         <div class="card">
@@ -132,6 +133,7 @@ function temAcao(grupo, acao) {
                                 </td>
                                 <td class="text-end">
                                     <button
+                                        v-if="can('autorizacao.editar')"
                                         type="button"
                                         class="btn btn-light-primary btn-sm me-2"
                                         @click="alternarEstado(perfil)"
@@ -139,16 +141,16 @@ function temAcao(grupo, acao) {
                                         <AcaoIcone :acao="perfil.estado === 1 ? 'desativar' : 'ativar'" class="me-1" />
                                         {{ perfil.estado === 1 ? 'Desativar' : 'Ativar' }}
                                     </button>
-                                    <a :href="`/permissoes/perfis/${perfil.id}/permissoes`" class="btn btn-light-success btn-sm me-2">
+                                    <a v-if="can('autorizacao.ver')" :href="`/permissoes/perfis/${perfil.id}/permissoes`" class="btn btn-light-success btn-sm me-2">
                                         <AcaoIcone acao="permissoes" class="me-1" />
                                         Permissões
                                     </a>
-                                    <button class="btn btn-light-primary btn-sm me-2" @click="abrirEdicao(perfil)">
+                                    <button v-if="can('autorizacao.editar')" class="btn btn-light-primary btn-sm me-2" @click="abrirEdicao(perfil)">
                                         <AcaoIcone acao="editar" class="me-1" />
                                         Editar
                                     </button>
                                     <button
-                                        v-if="!perfil.sistema"
+                                        v-if="!perfil.sistema && can('autorizacao.eliminar')"
                                         class="btn btn-light-danger btn-sm"
                                         @click="pedirEliminacao(perfil)"
                                     >
