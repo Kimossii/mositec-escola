@@ -4,6 +4,7 @@ namespace Modules\Turma\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -35,6 +36,11 @@ class NivelAcademico extends Model
     public function estabelecimento(): BelongsTo
     {
         return $this->belongsTo(Estabelecimento::class, 'estabelecimento_id');
+    }
+
+    public function turmas(): HasMany
+    {
+        return $this->hasMany(Turma::class);
     }
 
     public function criadoPor(): BelongsTo

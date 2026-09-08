@@ -90,9 +90,10 @@ class TurmaHttpTest extends TestCase
         $this->assertSame('Ativo', $nivel->estado_descricao);
     }
 
-    public function test_cria_turno_via_http(): void
+    public function test_cria_turno_via_http_infere_estabelecimento_actual(): void
     {
         $this->actingAsStaff();
+        $this->criarEstabelecimento();
 
         $this->post(route('turnos.store'), [
             'nome' => 'Manhã',
@@ -100,7 +101,46 @@ class TurmaHttpTest extends TestCase
 
         $turno = Turno::firstWhere('nome', 'Manhã');
         $this->assertNotNull($turno);
+        $this->assertSame(Estabelecimento::current()->id, $turno->estabelecimento_id);
         $this->assertSame('Ativo', $turno->estado_descricao);
+    }
+
+    public function test_turno_com_mesmo_nome_e_permitido_em_estabelecimentos_diferentes(): void
+    {
+        $estabelecimentoA = Estabelecimento::create(['nome' => 'Escola A', 'tipo' => 1, 'is_active' => true]);
+        $turnoA = Turno::create(['estabelecimento_id' => $estabelecimentoA->id, 'nome' => 'Manhã']);
+
+        $estabelecimentoB = Estabelecimento::create(['nome' => 'Escola B', 'tipo' => 1, 'is_active' => false]);
+        $turnoB = Turno::create(['estabelecimento_id' => $estabelecimentoB->id, 'nome' => 'Manhã']);
+
+        $this->assertNotSame($turnoA->id, $turnoB->id);
+        $this->assertDatabaseHas('turnos', ['id' => $turnoA->id, 'nome' => 'Manhã']);
+        $this->assertDatabaseHas('turnos', ['id' => $turnoB->id, 'nome' => 'Manhã']);
+    }
+
+    public function test_nao_elimina_turno_associado_a_turma(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        $turno = Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
+        Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'turno_id' => $turno->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+
+        $this->delete(route('turnos.destroy', $turno))->assertSessionHasErrors('turno');
+        $this->assertDatabaseHas('turnos', ['id' => $turno->id]);
+    }
+
+    public function test_nao_elimina_nivel_academico_associado_a_turma(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+
+        $this->delete(route('niveis-academicos.destroy', $nivel))->assertSessionHasErrors('nivelAcademico');
+        $this->assertDatabaseHas('niveis_academicos', ['id' => $nivel->id]);
     }
 
     public function test_cria_turma_via_http_e_regista_autoria(): void
@@ -161,7 +201,7 @@ class TurmaHttpTest extends TestCase
         $estabelecimento = $this->criarEstabelecimento();
         $this->criarAnoLectivo($estabelecimento);
         NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
-        Turno::create(['nome' => 'Manhã']);
+        Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
 
         $this->get(route('turmas.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Turma/Turmas/Index')
@@ -213,8 +253,9 @@ class TurmaHttpTest extends TestCase
     public function test_adiciona_horario_ao_turno_via_http(): void
     {
         $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
         $horario = \Modules\Core\Models\Horario::create(['nome' => 'Bloco 1', 'hora_inicio' => '07:00', 'hora_fim' => '07:45']);
-        $turno = Turno::create(['nome' => 'Manhã']);
+        $turno = Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
 
         $this->post(route('turnos.horarios.store', $turno), [
             'horario_id' => $horario->id,
