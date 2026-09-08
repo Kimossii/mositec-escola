@@ -4,6 +4,7 @@ namespace Modules\Core\DTO;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Core\Enums\Estado;
+use Modules\Core\Enums\TipoHorarioEnum;
 
 class HorarioDTO
 {
@@ -12,6 +13,7 @@ class HorarioDTO
         public readonly string $horaInicio,
         public readonly string $horaFim,
         public readonly Estado $estado = Estado::ATIVO,
+        public readonly TipoHorarioEnum $tipo = TipoHorarioEnum::TEMPO,
     ) {
     }
 
@@ -24,6 +26,7 @@ class HorarioDTO
             horaInicio: $dados['hora_inicio'],
             horaFim: $dados['hora_fim'],
             estado: isset($dados['estado']) ? Estado::from((int) $dados['estado']) : Estado::ATIVO,
+            tipo: isset($dados['tipo']) ? TipoHorarioEnum::from((int) $dados['tipo']) : TipoHorarioEnum::TEMPO,
         );
     }
 }
