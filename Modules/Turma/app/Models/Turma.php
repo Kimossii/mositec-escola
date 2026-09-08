@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Turma\app\Models\NivelAcademico;
 use Modules\Usuario\Models\User;
+
 
 class Turma extends Model
 {
@@ -17,6 +19,7 @@ class Turma extends Model
 
     protected $fillable = [
         'ano_lectivo_id',
+        'nivel_academico_id',
         'codigo',
         'nome',
         'turno_id',
@@ -33,6 +36,10 @@ class Turma extends Model
     public function anoLectivo(): BelongsTo
     {
         return $this->belongsTo(AnoLectivo::class);
+    }
+    public function nivelAcademico(): BelongsTo
+    {
+        return $this->belongsTo(NivelAcademico::class);
     }
 
     public function turno(): BelongsTo
