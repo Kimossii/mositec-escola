@@ -1,0 +1,30 @@
+{
+    "name": "nwidart/turma",
+    "description": "",
+    "authors": [
+        {
+            "name": "Nicolas Widart",
+            "email": "n.widart@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Turma\\": "app/",
+            "Modules\\Turma\\Database\\Factories\\": "database/factories/",
+            "Modules\\Turma\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Turma\\Tests\\": "tests/"
+        }
+    }
+}
