@@ -4,5 +4,6 @@
     "Permissao": true,
     "Estabelecimento": true,
     "Core": true,
-    "AnoLectivo": true
+    "AnoLectivo": true,
+    "Turma": true
 }
