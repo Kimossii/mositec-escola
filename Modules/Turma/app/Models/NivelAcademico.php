@@ -1,14 +1,20 @@
 <?php
 
-namespace Modules\Turma\app\Models;
+namespace Modules\Turma\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
-use Modules\Estabelecimento\Models\Estabelecimento;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Core\Traits\RegistaAutoria;
+use Modules\Core\Traits\SincronizaEstadoDescricao;
+use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Usuario\Models\User;
 
 class NivelAcademico extends Model
 {
+    use RegistaAutoria;
+    use SincronizaEstadoDescricao;
+
     protected $table = 'niveis_academicos';
 
     protected $fillable = [
@@ -30,6 +36,11 @@ class NivelAcademico extends Model
     public function estabelecimento(): BelongsTo
     {
         return $this->belongsTo(Estabelecimento::class, 'estabelecimento_id');
+    }
+
+    public function turmas(): HasMany
+    {
+        return $this->hasMany(Turma::class);
     }
 
     public function criadoPor(): BelongsTo

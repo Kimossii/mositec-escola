@@ -8,7 +8,7 @@ class CriarTurmaRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('turma.criar') ?? false;
+        return $this->user()?->can('turmas.criar') ?? false;
     }
 
     public function rules(): array

@@ -467,7 +467,7 @@ const academico = {
     items: [
         // { href: '#', title: 'Alunos' },
         // { href: '#', title: 'Encarregados de Educação' },
-        { href: '#', title: 'Turmas' },
+        { href: '/turmas', title: 'Turmas', permissao: 'turmas.ver' },
         // { href: '#', title: 'Matrículas' },
         // { href: '#', title: 'Transferências' },
         // { href: '#', title: 'Histórico Escolar' },

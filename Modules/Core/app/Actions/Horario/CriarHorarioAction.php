@@ -14,6 +14,7 @@ class CriarHorarioAction
             'hora_inicio' => $dto->horaInicio,
             'hora_fim' => $dto->horaFim,
             'estado' => $dto->estado->value,
+            'tipo' => $dto->tipo->value,
         ]);
     }
 }
