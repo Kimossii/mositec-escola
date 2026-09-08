@@ -5,20 +5,15 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('horarios', function (Blueprint $table) {
+        Schema::create('turnos', function (Blueprint $table) {
             $table->id();
-            $table->string('nome');
-            $table->time('hora_inicio');
-            $table->time('hora_fim');
-            $table->unsignedTinyInteger('estado')->default(1); // 0: inativo, 1: ativo
+
+            $table->string('nome')->unique();
+            $table->text('descricao')->nullable();
+            $table->unsignedTinyInteger('estado')->default(1);
             $table->string('estado_descricao')->default('Ativo');
-            $table->unsignedTinyInteger('tipo')->default(2);
-            $table->string('tipo_descricao')->default('Tempo');
             $table->foreignId('criado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('editado_por')->nullable()->constrained('users')->nullOnDelete();
 
@@ -26,11 +21,8 @@ return new class extends Migration {
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('horarios');
+        Schema::dropIfExists('turnos');
     }
 };

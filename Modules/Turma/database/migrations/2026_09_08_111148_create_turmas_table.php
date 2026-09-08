@@ -4,33 +4,27 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-    /**
-     * Run the migrations.
-     */
+return new class extends Migration
+{
     public function up(): void
     {
-        Schema::create('horarios', function (Blueprint $table) {
+        Schema::create('turmas', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('ano_lectivo_id')->constrained('ano_lectivos')->restrictOnDelete();
+            $table->string('codigo');
             $table->string('nome');
-            $table->time('hora_inicio');
-            $table->time('hora_fim');
-            $table->unsignedTinyInteger('estado')->default(1); // 0: inativo, 1: ativo
+            $table->foreignId('turno_id')->nullable()->constrained('turnos')->restrictOnDelete();
+            $table->unsignedTinyInteger('estado')->default(1);
             $table->string('estado_descricao')->default('Ativo');
-            $table->unsignedTinyInteger('tipo')->default(2);
-            $table->string('tipo_descricao')->default('Tempo');
             $table->foreignId('criado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('editado_por')->nullable()->constrained('users')->nullOnDelete();
-
             $table->timestamps();
+            $table->unique(['ano_lectivo_id','codigo',]);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('horarios');
+        Schema::dropIfExists('turmas');
     }
 };
