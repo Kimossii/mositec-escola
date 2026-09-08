@@ -16,6 +16,7 @@ enum Modulo: int
     case NOTA = 9;
     case ESTABELECIMENTO = 10;
     case HORARIO = 11;
+    case INFRAESTRUTURA = 12;
 
     public function slug(): string
     {
@@ -32,6 +33,7 @@ enum Modulo: int
             self::NOTA => 'nota',
             self::ESTABELECIMENTO => 'estabelecimento',
             self::HORARIO => 'horario',
+            self::INFRAESTRUTURA => 'infraestrutura',
         };
     }
 
@@ -61,6 +63,7 @@ enum Modulo: int
             self::NOTA => 'Nota',
             self::ESTABELECIMENTO => 'Estabelecimento',
             self::HORARIO => 'Horário',
+            self::INFRAESTRUTURA => 'Infraestrutura',
         };
     }
 }
