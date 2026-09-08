@@ -54,7 +54,7 @@
             </div>
 
             <!-- ── Section: Académico (por implementar) ───────────────── -->
-            <!-- <SidebarAccordion :item="academico" heading="Académico" /> -->
+            <SidebarAccordion :item="academico" heading="Académico" />
 
             <!-- ── Section: Pedagogia ─────────────────────────────────── -->
             <SidebarAccordion :item="pedagogico" heading="Pedagogia" />
@@ -460,20 +460,20 @@ const dashboards = {
 const dashboardsActive = computed(() => isGroupActive(dashboards.items))
 
 // ── Academico (por implementar — descomentar junto com a secção no template) ──
-// const academico = {
-//     title: 'Académico',
-//     icon: 'ki-profile-user',
-//     paths: 3,
-//     items: [
-//         { href: '#', title: 'Alunos' },
-//         { href: '#', title: 'Encarregados de Educação' },
-//         { href: '#', title: 'Turmas' },
-//         { href: '#', title: 'Matrículas' },
-//         { href: '#', title: 'Transferências' },
-//         { href: '#', title: 'Histórico Escolar' },
-//         { href: '#', title: 'Ficha do Aluno' },
-//     ],
-// }
+const academico = {
+    title: 'Académico',
+    icon: 'ki-profile-user',
+    paths: 3,
+    items: [
+        // { href: '#', title: 'Alunos' },
+        // { href: '#', title: 'Encarregados de Educação' },
+        { href: '#', title: 'Turmas' },
+        // { href: '#', title: 'Matrículas' },
+        // { href: '#', title: 'Transferências' },
+        // { href: '#', title: 'Histórico Escolar' },
+        // { href: '#', title: 'Ficha do Aluno' },
+    ],
+}
 
 // ── Pedagogico ────────────────────────────────────────────────────────────────────
 const pedagogico = {
