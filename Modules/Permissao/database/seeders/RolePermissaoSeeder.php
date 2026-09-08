@@ -31,6 +31,7 @@ class RolePermissaoSeeder extends Seeder
                 Modulo::USUARIO->value => ['ver', 'criar', 'editar', 'eliminar'],
                 Modulo::AUTORIZACAO->value => ['ver', 'criar', 'editar', 'eliminar'],
                 Modulo::INFRAESTRUTURA->value => ['ver', 'criar', 'editar', 'eliminar'],
+                Modulo::TURMAS->value => ['ver', 'criar', 'editar', 'eliminar'],
             ],
             Perfil::FUNCIONARIO->value => [
                 Modulo::USUARIO->value => ['ver', 'criar', 'editar'],

@@ -5,5 +5,6 @@
     "Estabelecimento": true,
     "Core": true,
     "AnoLectivo": true,
-    "Infraestrutura": true
+    "Infraestrutura": true,
+    "Turma": true
 }

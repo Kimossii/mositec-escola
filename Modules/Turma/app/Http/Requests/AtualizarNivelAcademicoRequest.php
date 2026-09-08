@@ -8,7 +8,7 @@ class AtualizarNivelAcademicoRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('nivel-academico.editar') ?? false;
+        return $this->user()?->can('turmas.editar') ?? false;
     }
 
     public function rules(): array

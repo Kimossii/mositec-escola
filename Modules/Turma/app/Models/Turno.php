@@ -5,13 +5,20 @@ namespace Modules\Turma\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Core\Traits\RegistaAutoria;
+use Modules\Core\Traits\SincronizaEstadoDescricao;
+use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Usuario\Models\User;
 
 class Turno extends Model
 {
+    use RegistaAutoria;
+    use SincronizaEstadoDescricao;
+
     protected $table = 'turnos';
 
     protected $fillable = [
+        'estabelecimento_id',
         'nome',
         'descricao',
         'estado',
@@ -23,6 +30,11 @@ class Turno extends Model
     protected $casts = [
         'estado' => 'integer',
     ];
+
+    public function estabelecimento(): BelongsTo
+    {
+        return $this->belongsTo(Estabelecimento::class, 'estabelecimento_id');
+    }
 
     public function turmas(): HasMany
     {

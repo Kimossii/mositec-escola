@@ -2,7 +2,6 @@
 
 namespace Modules\Turma\Actions;
 
-use Illuminate\Support\Facades\Auth;
 use Modules\Turma\DTO\TurmaDTO;
 use Modules\Turma\Models\Turma;
 
@@ -16,9 +15,6 @@ class CriarTurmaAction
             'codigo' => $dto->codigo,
             'nome' => $dto->nome,
             'turno_id' => $dto->turno_id,
-            'estado' => 1,
-            'estado_descricao' => 'Ativo',
-            'criado_por' => Auth::id(),
         ]);
     }
 }
