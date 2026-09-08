@@ -3,8 +3,10 @@
 namespace Modules\Turma\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
+use Illuminate\Validation\Rules\Enum;
+use Modules\Core\Enums\Estado;
 
-class EncerrarSalaTurmaRequest extends BaseRequest
+class AlterarEstadoNivelAcademicoRequest extends BaseRequest
 {
     public function authorize(): bool
     {
@@ -14,15 +16,14 @@ class EncerrarSalaTurmaRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'fim' => 'required|date',
+            'estado' => ['required', new Enum(Estado::class)],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'fim.required' => 'A data de fim é obrigatória.',
-            'fim.date' => 'A data de fim deve ser uma data válida.',
+            'estado.required' => 'O novo estado é obrigatório.',
         ];
     }
 }

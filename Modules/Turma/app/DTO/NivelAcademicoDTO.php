@@ -11,7 +11,6 @@ class NivelAcademicoDTO
         public string $codigo,
         public string $nome,
         public int $ordem,
-        public ?int $estabelecimento_id = null,
     ) {
     }
 
@@ -24,7 +23,6 @@ class NivelAcademicoDTO
             codigo: $dados['codigo'],
             nome: $dados['nome'],
             ordem: (int) $dados['ordem'],
-            estabelecimento_id: (int) $dados['estabelecimento_id'],
         );
     }
 

@@ -5,10 +5,15 @@ namespace Modules\Turma\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Core\Traits\RegistaAutoria;
+use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Usuario\Models\User;
 
 class Turno extends Model
 {
+    use RegistaAutoria;
+    use SincronizaEstadoDescricao;
+
     protected $table = 'turnos';
 
     protected $fillable = [

@@ -8,7 +8,7 @@ class AdicionarHorarioTurnoRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('turno.editar') ?? false;
+        return $this->user()?->can('turmas.editar') ?? false;
     }
 
     public function rules(): array

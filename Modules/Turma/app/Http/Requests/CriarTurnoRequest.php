@@ -8,7 +8,7 @@ class CriarTurnoRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('turno.criar') ?? false;
+        return $this->user()?->can('turmas.criar') ?? false;
     }
 
     public function rules(): array

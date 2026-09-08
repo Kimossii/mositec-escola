@@ -1,14 +1,19 @@
 <?php
 
-namespace Modules\Turma\app\Models;
+namespace Modules\Turma\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
-use Modules\Estabelecimento\Models\Estabelecimento;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Core\Traits\RegistaAutoria;
+use Modules\Core\Traits\SincronizaEstadoDescricao;
+use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Usuario\Models\User;
 
 class NivelAcademico extends Model
 {
+    use RegistaAutoria;
+    use SincronizaEstadoDescricao;
+
     protected $table = 'niveis_academicos';
 
     protected $fillable = [
