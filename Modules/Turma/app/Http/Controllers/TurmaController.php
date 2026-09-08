@@ -26,18 +26,21 @@ class TurmaController extends Controller
     {
         $this->authorize('turmas.ver');
 
-        return Inertia::render('Turma/Turmas/Index', [
+        return Inertia::render('Turma/Turmas/Index', array_merge([
             'turmas' => $this->consulta->listar(),
-        ]);
+        ], $this->consulta->opcoesFormulario()));
     }
 
     public function show(Turma $turma)
     {
         $this->authorize('turmas.ver');
 
-        return Inertia::render('Turma/Turmas/Show', [
+        $turma->load(['anoLectivo', 'nivelAcademico', 'turno', 'turmaSalas.sala']);
+
+        return Inertia::render('Turma/Turmas/Show', array_merge([
             'turma' => $turma,
-        ]);
+            'salas' => $this->consulta->salasDisponiveis(),
+        ], $this->consulta->opcoesFormulario()));
     }
 
     public function store(CriarTurmaRequest $request)
@@ -88,6 +91,8 @@ class TurmaController extends Controller
     public function encerrarSala(EncerrarSalaTurmaRequest $request, Turma $turma, TurmaSala $sala)
     {
         $this->authorize('turmas.editar');
+
+        abort_unless($sala->turma_id === $turma->id, 404);
 
         $this->service->encerrarSala($sala, $request);
 

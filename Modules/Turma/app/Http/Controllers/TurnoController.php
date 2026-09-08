@@ -26,6 +26,7 @@ class TurnoController extends Controller
 
         return Inertia::render('Turma/Turnos/Index', [
             'turnos' => $this->consulta->listar(),
+            'horariosDisponiveis' => $this->consulta->horariosDisponiveis(),
         ]);
     }
 

@@ -4,6 +4,7 @@ namespace Modules\Turma\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia as Assert;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Enums\Estado;
@@ -152,6 +153,79 @@ class TurmaHttpTest extends TestCase
         $this->delete(route('turmas.destroy', $turma))->assertRedirect();
 
         $this->assertSoftDeleted('turmas', ['id' => $turma->id]);
+    }
+
+    public function test_index_da_turma_expoe_opcoes_de_formulario(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $this->criarAnoLectivo($estabelecimento);
+        NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        Turno::create(['nome' => 'Manhã']);
+
+        $this->get(route('turmas.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('Turma/Turmas/Index')
+            ->has('turmas')
+            ->has('anoLectivos', 1)
+            ->has('niveisAcademicos', 1)
+            ->has('turnos', 1)
+        );
+    }
+
+    public function test_show_da_turma_carrega_relacoes_e_salas_associadas(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $sala = \Modules\Infraestrutura\Models\Sala::create(['codigo' => 'A101', 'nome' => 'Sala 101', 'tipo' => 0]);
+
+        $this->post(route('turmas.salas.store', $turma), [
+            'sala_id' => $sala->id,
+            'inicio' => '2026-01-01',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->get(route('turmas.show', $turma))->assertInertia(fn (Assert $page) => $page
+            ->component('Turma/Turmas/Show')
+            ->where('turma.nivel_academico.nome', '1ª Classe')
+            ->has('turma.turma_salas', 1)
+            ->where('turma.turma_salas.0.sala.codigo', 'A101')
+        );
+    }
+
+    public function test_encerrar_sala_de_outra_turma_devolve_404(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        $turmaA = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'TA', 'nome' => 'Turma A']);
+        $turmaB = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'TB', 'nome' => 'Turma B']);
+        $sala = \Modules\Infraestrutura\Models\Sala::create(['codigo' => 'A101', 'nome' => 'Sala 101', 'tipo' => 0]);
+        $turmaSalaDeA = $turmaA->turmaSalas()->create(['sala_id' => $sala->id, 'inicio' => '2026-01-01']);
+
+        $this->patch(route('turmas.salas.encerrar', [$turmaB, $turmaSalaDeA]), [
+            'fim' => '2026-02-01',
+        ])->assertNotFound();
+    }
+
+    public function test_adiciona_horario_ao_turno_via_http(): void
+    {
+        $this->actingAsStaff();
+        $horario = \Modules\Core\Models\Horario::create(['nome' => 'Bloco 1', 'hora_inicio' => '07:00', 'hora_fim' => '07:45']);
+        $turno = Turno::create(['nome' => 'Manhã']);
+
+        $this->post(route('turnos.horarios.store', $turno), [
+            'horario_id' => $horario->id,
+            'ordem' => 1,
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->get(route('turnos.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('Turma/Turnos/Index')
+            ->has('turnos.0.turno_horarios', 1)
+            ->where('turnos.0.turno_horarios.0.horario.nome', 'Bloco 1')
+        );
     }
 
     public function test_professor_recebe_403_em_todas_as_rotas_de_escrita(): void
