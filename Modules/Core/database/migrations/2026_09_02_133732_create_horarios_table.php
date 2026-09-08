@@ -17,6 +17,8 @@ return new class extends Migration {
             $table->time('hora_fim');
             $table->unsignedTinyInteger('estado')->default(1); // 0: inativo, 1: ativo
             $table->string('estado_descricao')->default('Ativo');
+            $table->unsignedTinyInteger('tipo')->default(2);
+            $table->string('tipo_descricao')->default('Tempo');
             $table->foreignId('criado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('editado_por')->nullable()->constrained('users')->nullOnDelete();
 
