@@ -17,7 +17,7 @@ class PeriodoController extends Controller
 
     public function store(CriarPeriodoRequest $request, AnoLectivo $anoLectivo)
     {
-        $this->authorize('create', Periodo::class);
+        $this->authorize('ano-lectivo.criar');
 
         $this->service->criarPeriodo($anoLectivo, $request);
 
@@ -26,7 +26,7 @@ class PeriodoController extends Controller
 
     public function update(AtualizarPeriodoRequest $request, Periodo $periodo)
     {
-        $this->authorize('update', Periodo::class);
+        $this->authorize('ano-lectivo.editar');
 
         $this->service->atualizarPeriodo($periodo, $request);
 
@@ -35,7 +35,7 @@ class PeriodoController extends Controller
 
     public function destroy(Periodo $periodo)
     {
-        $this->authorize('delete', Periodo::class);
+        $this->authorize('ano-lectivo.eliminar');
 
         $this->service->eliminarPeriodo($periodo);
 

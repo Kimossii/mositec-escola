@@ -41,6 +41,10 @@ class UsuarioConsultaService
             'perfis' => $perfis->values(),
             'modulos' => Modulo::orderBy('nome')->get(['id', 'nome', 'descricao']),
             'acoes' => Acao::orderBy('numero')->get(['id', 'nome']),
+            // O que cada perfil já concede por padrão — usado só para pintar
+            // a grelha de overrides com o estado correcto ao abrir o wizard
+            // (célula que o perfil já dá deve arrancar Concedida, não Negada).
+            // Não é um 3º estado nem é guardado; é só o valor inicial correcto.
             'permissoesPorPerfil' => RolePermissao::whereIn('role_id', $roleIds)
                 ->get(['role_id', 'modulo_id', 'acao_id'])
                 ->groupBy('role_id')

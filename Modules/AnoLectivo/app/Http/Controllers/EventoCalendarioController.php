@@ -17,7 +17,7 @@ class EventoCalendarioController extends Controller
 
     public function store(CriarEventoCalendarioRequest $request, AnoLectivo $anoLectivo)
     {
-        $this->authorize('create', EventoCalendario::class);
+        $this->authorize('ano-lectivo.criar');
 
         $this->service->criarEventoCalendario($anoLectivo, $request);
 
@@ -26,7 +26,7 @@ class EventoCalendarioController extends Controller
 
     public function update(AtualizarEventoCalendarioRequest $request, EventoCalendario $evento)
     {
-        $this->authorize('update', EventoCalendario::class);
+        $this->authorize('ano-lectivo.editar');
 
         $this->service->atualizarEventoCalendario($evento, $request);
 
@@ -35,7 +35,7 @@ class EventoCalendarioController extends Controller
 
     public function destroy(EventoCalendario $evento)
     {
-        $this->authorize('delete', EventoCalendario::class);
+        $this->authorize('ano-lectivo.eliminar');
 
         $this->service->eliminarEventoCalendario($evento);
 

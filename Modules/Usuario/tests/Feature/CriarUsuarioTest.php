@@ -5,7 +5,7 @@ namespace Modules\Usuario\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Modules\Permissao\Database\Seeders\RoleSeeder;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\Usuario\Enums\TipoLogin;
@@ -20,7 +20,7 @@ class CriarUsuarioTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(RoleSeeder::class);
+        $this->seed(PermissaoDatabaseSeeder::class);
     }
 
     private function actingAsStaff(): User
@@ -202,5 +202,34 @@ class CriarUsuarioTest extends TestCase
             'acao_id' => $acao->id,
             'permitido' => true,
         ]);
+    }
+
+    public function test_funcionario_nao_consegue_esconder_uma_concessao_de_autorizacao_no_cadastro(): void
+    {
+        $funcionario = User::create(['name' => 'Funcionário', 'email' => 'funcionario@example.com', 'password' => Hash::make('x')]);
+        $funcionario->roles()->attach(Role::where('nome', Perfil::FUNCIONARIO->value)->first()->id);
+        $this->actingAs($funcionario);
+
+        $moduloAutorizacao = \Modules\Permissao\Models\Modulo::where('nome', 1)->first();
+        $acaoEditar = \Modules\Permissao\Models\Acao::where('nome', 'editar')->first();
+
+        // O Funcionário tem usuario.criar (pode cadastrar um Professor), mas
+        // NUNCA devia conseguir, através do mesmo pedido, conceder-lhe
+        // autorizacao.editar via celulas — isso é autorizacao.editar, que
+        // o Funcionário não tem.
+        $response = $this->post('/usuarios/cadastrarUsuario', [
+            'name' => 'Professor Escalado',
+            'perfil' => 'professor',
+            'tipo_login' => 'email',
+            'email' => 'professor.escalado@example.com',
+            'password' => 'segredo123',
+            'password_confirmation' => 'segredo123',
+            'celulas' => [
+                ['modulo_id' => $moduloAutorizacao->id, 'acao_id' => $acaoEditar->id, 'permitido' => true],
+            ],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('users', ['email' => 'professor.escalado@example.com']);
     }
 }

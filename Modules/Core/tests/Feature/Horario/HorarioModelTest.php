@@ -5,7 +5,7 @@ namespace Modules\Core\Tests\Feature\Horario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Core\Enums\Estado;
 use Modules\Core\Models\Horario;
-use Modules\Permissao\Database\Seeders\RoleSeeder;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\Usuario\Models\User;
@@ -19,7 +19,7 @@ class HorarioModelTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(RoleSeeder::class);
+        $this->seed(PermissaoDatabaseSeeder::class);
     }
 
     public function test_sincroniza_estado_descricao_ao_criar(): void

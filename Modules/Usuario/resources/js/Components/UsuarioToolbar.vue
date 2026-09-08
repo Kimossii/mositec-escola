@@ -1,4 +1,5 @@
 <script setup>
+import { can } from '@/Composables/usePermissoes';
 import UsuarioExportModal from './UsuarioExportModal.vue';
 import UsuarioCreateModal from './UsuarioCreateModal.vue';
 
@@ -13,6 +14,7 @@ defineProps({
     modulos: { type: Array, default: () => [] },
     acoes: { type: Array, default: () => [] },
     permissoesPorPerfil: { type: Object, default: () => ({}) },
+    criarPermissao: { type: String, default: 'usuario.criar' },
 });
 </script>
 
@@ -89,7 +91,7 @@ defineProps({
             <!--end::Export-->
 
             <!--begin::Add user-->
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_user">
+            <button v-if="can(criarPermissao)" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_user">
                 <i class="ki-duotone ki-plus fs-2"></i>
                 Registar utilizador
             </button>

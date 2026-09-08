@@ -4,10 +4,17 @@ namespace Modules\Permissao\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Modules\Permissao\Models\UserPermissao;
+use Modules\Permissao\Support\PermissaoCache;
 use Modules\Usuario\Models\User;
 
 class SincronizarPermissoesUtilizadorAction
 {
+    public function __construct(
+        private readonly PermissaoCache $cache,
+        private readonly GarantirAdministradorEfetivoAction $garantirAdministrador,
+    ) {
+    }
+
     public function executar(User $user, array $celulas): void
     {
         DB::transaction(function () use ($user, $celulas) {
@@ -25,6 +32,9 @@ class SincronizarPermissoesUtilizadorAction
             if (! empty($linhas)) {
                 UserPermissao::insert($linhas);
             }
+
+            $this->cache->esquecerUtilizador($user->id);
+            $this->garantirAdministrador->verificar();
         });
     }
 }

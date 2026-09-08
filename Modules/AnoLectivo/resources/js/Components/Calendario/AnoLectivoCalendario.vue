@@ -9,6 +9,8 @@ import { tipoEventoCalendarioCor } from '../../Models/AnoLectivo';
 const props = defineProps({
     anoLectivo: { type: Object, required: true },
     eventos: { type: Array, required: true },
+    podeCriar: { type: Boolean, default: false },
+    podeEditar: { type: Boolean, default: false },
 });
 const emit = defineEmits(['criar-evento', 'editar-evento']);
 
@@ -36,7 +38,7 @@ const calendarOptions = computed(() => ({
         start: props.anoLectivo.data_inicio,
         end: proximoDia(props.anoLectivo.data_fim),
     },
-    selectable: true,
+    selectable: props.podeCriar,
     editable: false,
     events: props.eventos.map((evento) => ({
         id: String(evento.id),
@@ -48,8 +50,12 @@ const calendarOptions = computed(() => ({
         borderColor: tipoEventoCalendarioCor(evento.tipo),
         extendedProps: { original: evento },
     })),
-    dateClick: (info) => emit('criar-evento', info.dateStr),
-    eventClick: (info) => emit('editar-evento', info.event.extendedProps.original),
+    dateClick: (info) => {
+        if (props.podeCriar) emit('criar-evento', info.dateStr);
+    },
+    eventClick: (info) => {
+        if (props.podeEditar) emit('editar-evento', info.event.extendedProps.original);
+    },
 }));
 </script>
 

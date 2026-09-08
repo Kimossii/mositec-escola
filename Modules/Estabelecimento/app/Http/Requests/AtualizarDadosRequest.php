@@ -8,7 +8,7 @@ class AtualizarDadosRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('gerir-estabelecimento') ?? false;
+        return $this->user()?->can('estabelecimento.editar') ?? false;
     }
 
     public function rules(): array

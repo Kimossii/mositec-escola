@@ -10,7 +10,7 @@ defineProps({
 
 <template>
     <UsuarioWizardForm
-        perfil-fixo="secretario"
+        perfil-fixo="funcionario"
         :perfis="perfis"
         :modulos="modulos"
         :acoes="acoes"

@@ -8,7 +8,7 @@ class SincronizarPermissoesPerfilRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('gerir-permissoes') ?? false;
+        return $this->user()?->can('autorizacao.editar') ?? false;
     }
 
     public function rules(): array

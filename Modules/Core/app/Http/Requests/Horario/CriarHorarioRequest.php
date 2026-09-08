@@ -8,12 +8,10 @@ class CriarHorarioRequest extends FormRequest
 {
     /**
      * Determina se o utilizador está autorizado a realizar esta ação.
-     *
-     * A autorização é tratada pela Policy.
      */
     public function authorize(): bool
     {
-        return $this->user()?->can('gerir-estabelecimento') ?? false;
+        return $this->user()?->can('horario.criar') ?? false;
     }
 
     /**

@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import AnoLectivoStatusBadge from '../Components/AnoLectivoStatusBadge.vue';
@@ -39,7 +40,7 @@ function criar(payload) {
         },
         onError: (erros) => {
             errors.value = erros;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível criar o Ano Lectivo.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             processing.value = false;
@@ -74,7 +75,7 @@ function confirmarAlteracaoEstado() {
         onSuccess: () => toast.success(
             novoEstado.value === ESTADO_ANO_LECTIVO.ATIVO ? 'Ano Lectivo activado.' : 'Ano Lectivo encerrado.',
         ),
-        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível alterar o estado.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
         onFinish: () => {
             alterandoEstado.value = false;
             anoLectivoParaAlterarEstado.value = null;
@@ -100,7 +101,7 @@ function confirmarEliminacao() {
     router.delete(`/ano-lectivos/${anoLectivoParaEliminar.value.id}`, {
         preserveScroll: true,
         onSuccess: () => toast.success('Ano Lectivo eliminado com sucesso.'),
-        onError: (erros) => toast.error(Object.values(erros)[0] ?? 'Não foi possível eliminar o Ano Lectivo.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
         onFinish: () => {
             eliminando.value = false;
             anoLectivoParaEliminar.value = null;
@@ -113,7 +114,7 @@ function confirmarEliminacao() {
     <div class="app-container container-xxl py-6">
         <div class="d-flex justify-content-between align-items-center mb-6">
             <h1 class="fs-2 fw-bold">Anos Lectivos</h1>
-            <button class="btn btn-primary" @click="abrirCriacao">Novo Ano Lectivo</button>
+            <button v-if="can('ano-lectivo.criar')" class="btn btn-primary" @click="abrirCriacao">Novo Ano Lectivo</button>
         </div>
 
         <div class="card">
@@ -149,19 +150,19 @@ function confirmarEliminacao() {
                                             Ver
                                         </a>
                                     </div>
-                                    <div v-if="anoLectivo.estado === 0" class="menu-item px-3">
+                                    <div v-if="anoLectivo.estado === 0 && can('ano-lectivo.editar')" class="menu-item px-3">
                                         <a href="#" class="menu-link px-3" @click.prevent="pedirActivacao(anoLectivo)">
                                             <AcaoIcone acao="ativar" class="me-2" />
                                             Activar
                                         </a>
                                     </div>
-                                    <div v-if="anoLectivo.estado === 1" class="menu-item px-3">
+                                    <div v-if="anoLectivo.estado === 1 && can('ano-lectivo.editar')" class="menu-item px-3">
                                         <a href="#" class="menu-link px-3" @click.prevent="pedirEncerramento(anoLectivo)">
                                             <AcaoIcone acao="encerrar" class="me-2" />
                                             Encerrar
                                         </a>
                                     </div>
-                                    <div class="menu-item px-3">
+                                    <div v-if="can('ano-lectivo.eliminar')" class="menu-item px-3">
                                         <a href="#" class="menu-link px-3 text-danger" @click.prevent="pedirEliminacao(anoLectivo)">
                                             <AcaoIcone acao="eliminar" class="me-2" />
                                             Eliminar

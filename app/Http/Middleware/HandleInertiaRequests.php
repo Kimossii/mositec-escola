@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Modules\Permissao\Services\PermissionResolver;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -40,6 +41,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'permissoes' => $request->user()
+                ? app(PermissionResolver::class)->conjuntoConcedido($request->user())
+                : [],
         ];
     }
 }

@@ -12,7 +12,7 @@ class CriarAnoLectivoRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('gerir-ano-letivo') ?? false;
+        return $this->user()?->can('ano-lectivo.criar') ?? false;
     }
 
     public function rules(): array

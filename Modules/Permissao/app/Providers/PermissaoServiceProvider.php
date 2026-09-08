@@ -4,6 +4,9 @@ namespace Modules\Permissao\Providers;
 
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Gate;
+use Modules\Permissao\Services\PermissionResolver;
+use Modules\Usuario\Models\User;
 
 class PermissaoServiceProvider extends ModuleServiceProvider
 {
@@ -33,11 +36,29 @@ class PermissaoServiceProvider extends ModuleServiceProvider
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
+
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->singleton(PermissionResolver::class);
+    }
+
     public function boot(): void
     {
         parent::boot();
         // Carrega as migrations do módulo
         $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
+
+        Gate::before(function (User $user, string $ability) {
+            $resolver = app(PermissionResolver::class);
+
+            if (!$resolver->reconhece($ability)) {
+                return null;
+            }
+
+            return $resolver->can($user, $ability);
+        });
     }
 
     /**

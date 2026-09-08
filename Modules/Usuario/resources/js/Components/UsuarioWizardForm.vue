@@ -57,36 +57,58 @@ function removerEducando(matricula) {
 // vez de confiar no tipo_login gravado (pode estar errado em registos antigos).
 const tipoLogin = computed(() => (perfilSelecionado.value === 'aluno' ? 'matricula' : 'email'));
 
-const perfilAtual = computed(() => props.perfis.find((p) => p.slug === perfilSelecionado.value));
-
 const chave = (moduloId, acaoId) => `${moduloId}-${acaoId}`;
 
-// -1 = herda, 1 = concede, 0 = nega
+// overridesEstado só guarda as células que o admin decidiu explicitamente
+// (tocou nesta sessão, ou já vinham gravadas como override do utilizador).
+// 1 = concedido, 0 = negado — só estes dois valores, nunca "herda" nem null.
+// Uma célula sem entrada aqui usa o que o perfil seleccionado já dá por
+// padrão (ver permiteDefault) — é assim que "o perfil vence por defeito,
+// overrides são só a excepção" continua verdadeiro depois de guardar.
 const overridesEstado = reactive(
     Object.fromEntries(
         (props.utilizador?.celulas ?? []).map((o) => [chave(o.modulo_id, o.acao_id), o.permitido ? 1 : 0]),
     ),
 );
 
+const roleIdDoPerfilSelecionado = computed(() => props.perfis.find((p) => p.slug === perfilSelecionado.value)?.id);
+
 function permiteDefault(moduloId, acaoId) {
-    const permissoes = props.permissoesPorPerfil[perfilAtual.value?.id] ?? [];
+    const permissoes = props.permissoesPorPerfil[roleIdDoPerfilSelecionado.value] ?? [];
     return permissoes.some((p) => p.modulo_id === moduloId && p.acao_id === acaoId);
 }
 
 function estadoCelula(moduloId, acaoId) {
-    return overridesEstado[chave(moduloId, acaoId)] ?? -1;
+    const k = chave(moduloId, acaoId);
+    if (k in overridesEstado) return overridesEstado[k];
+    return permiteDefault(moduloId, acaoId) ? 1 : 0;
 }
 
 function proximoEstado(moduloId, acaoId) {
     const k = chave(moduloId, acaoId);
-    const atual = overridesEstado[k] ?? -1;
-    const seguinte = atual === -1 ? 1 : atual === 1 ? 0 : -1;
+    overridesEstado[k] = estadoCelula(moduloId, acaoId) === 1 ? 0 : 1;
+}
 
-    if (seguinte === -1) {
-        delete overridesEstado[k];
-    } else {
-        overridesEstado[k] = seguinte;
-    }
+function todosConcedidosNaColuna(acaoId) {
+    return props.modulos.every((modulo) => estadoCelula(modulo.id, acaoId) === 1);
+}
+
+function alternarColuna(acaoId) {
+    const marcar = todosConcedidosNaColuna(acaoId) ? 0 : 1;
+    props.modulos.forEach((modulo) => {
+        overridesEstado[chave(modulo.id, acaoId)] = marcar;
+    });
+}
+
+function todosConcedidosNaLinha(moduloId) {
+    return props.acoes.every((acao) => estadoCelula(moduloId, acao.id) === 1);
+}
+
+function alternarLinha(moduloId) {
+    const marcar = todosConcedidosNaLinha(moduloId) ? 0 : 1;
+    props.acoes.forEach((acao) => {
+        overridesEstado[chave(moduloId, acao.id)] = marcar;
+    });
 }
 
 function validarAntesDeAvancar() {
@@ -173,7 +195,7 @@ function guardar() {
         onError: (erros) => {
             errors.value = erros;
             passo.value = 1;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível guardar o utilizador.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             processing.value = false;
@@ -244,31 +266,51 @@ function guardar() {
 
         <div v-else>
             <p class="text-muted fs-7">
-                Clique numa célula para alternar entre Herda (o que o perfil "{{ perfilAtual?.descricao }}" já dá por
-                padrão), Concede e Nega.
+                Clique numa célula para alternar entre Concedido (verde) e Negado (vermelho).
             </p>
             <table class="table align-middle">
                 <thead>
                     <tr>
                         <th>Módulo</th>
-                        <th v-for="acao in acoes" :key="acao.id" class="text-center text-capitalize">{{ acao.nome }}</th>
+                        <th v-for="acao in acoes" :key="acao.id" class="text-center text-capitalize">
+                            <div class="d-flex flex-column align-items-center gap-1">
+                                <span>{{ acao.nome }}</span>
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    title="Marcar/desmarcar toda a coluna"
+                                    :checked="todosConcedidosNaColuna(acao.id)"
+                                    @change="alternarColuna(acao.id)"
+                                />
+                            </div>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="modulo in modulos" :key="modulo.id">
-                        <td>{{ modulo.descricao }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    title="Marcar/desmarcar toda a linha"
+                                    :checked="todosConcedidosNaLinha(modulo.id)"
+                                    @change="alternarLinha(modulo.id)"
+                                />
+                                <span>{{ modulo.descricao }}</span>
+                            </div>
+                        </td>
                         <td v-for="acao in acoes" :key="acao.id" class="text-center">
                             <button
                                 type="button"
                                 class="btn btn-sm"
                                 :class="{
-                                    'btn-light': estadoCelula(modulo.id, acao.id) === -1 && !permiteDefault(modulo.id, acao.id),
-                                    'btn-light-success': estadoCelula(modulo.id, acao.id) === 1 || (estadoCelula(modulo.id, acao.id) === -1 && permiteDefault(modulo.id, acao.id)),
+                                    'btn-light-success btn-permissao-concedido': estadoCelula(modulo.id, acao.id) === 1,
                                     'btn-light-danger': estadoCelula(modulo.id, acao.id) === 0,
                                 }"
                                 @click="proximoEstado(modulo.id, acao.id)"
                             >
-                                {{ estadoCelula(modulo.id, acao.id) === -1 ? (permiteDefault(modulo.id, acao.id) ? 'Herda (concede)' : 'Herda (nega)') : estadoCelula(modulo.id, acao.id) === 1 ? 'Concede' : 'Nega' }}
+                                {{ estadoCelula(modulo.id, acao.id) === 1 ? 'Concedido' : 'Negado' }}
                             </button>
                         </td>
                     </tr>

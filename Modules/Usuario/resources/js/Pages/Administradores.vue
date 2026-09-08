@@ -42,5 +42,6 @@ defineOptions({ layout: AppLayout })
         :modulos="modulos"
         :acoes="acoes"
         :permissoes-por-perfil="permissoesPorPerfil"
+        criar-permissao="autorizacao.criar"
     />
 </template>

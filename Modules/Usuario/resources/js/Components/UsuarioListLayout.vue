@@ -39,6 +39,8 @@ defineProps({
     modulos: { type: Array, default: () => [] },
     acoes: { type: Array, default: () => [] },
     permissoesPorPerfil: { type: Object, default: () => ({}) },
+    /** ability exigida para "Registar utilizador" nesta lista — Administradores usa autorizacao.criar, as restantes usuario.criar */
+    criarPermissao: { type: String, default: 'usuario.criar' },
 });
 
 const utilizadorEmEdicao = ref(null);
@@ -124,6 +126,7 @@ onMounted(() => {
                                 :modulos="modulos"
                                 :acoes="acoes"
                                 :permissoes-por-perfil="permissoesPorPerfil"
+                                :criar-permissao="criarPermissao"
                             />
                         </div>
                         <!--end::Card header-->

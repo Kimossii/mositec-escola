@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Inertia\Inertia;
 use Modules\Estabelecimento\Http\Requests\AtualizarDadosRequest;
 use Modules\Estabelecimento\Http\Requests\AtualizarLogotipoRequest;
-use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Estabelecimento\Services\GestaoEstabelecimentoService;
 
 class EstabelecimentoController extends Controller
@@ -17,7 +16,7 @@ class EstabelecimentoController extends Controller
 
     public function dados()
     {
-        $this->authorize('view', Estabelecimento::class);
+        $this->authorize('estabelecimento.ver');
 
         return Inertia::render('Estabelecimento/DadosDaEscola', [
             'estabelecimento' => $this->service->obterAtual(),
@@ -26,7 +25,7 @@ class EstabelecimentoController extends Controller
 
     public function aparencia()
     {
-        $this->authorize('view', Estabelecimento::class);
+        $this->authorize('estabelecimento.ver');
 
         return Inertia::render('Estabelecimento/Aparencia', [
             'estabelecimento' => $this->service->obterAtual(),
@@ -35,7 +34,7 @@ class EstabelecimentoController extends Controller
 
     public function update(AtualizarDadosRequest $request)
     {
-        $this->authorize('update', Estabelecimento::class);
+        $this->authorize('estabelecimento.editar');
 
         $this->service->atualizarDados($request);
 
@@ -44,7 +43,7 @@ class EstabelecimentoController extends Controller
 
     public function updateLogotipo(AtualizarLogotipoRequest $request)
     {
-        $this->authorize('updateLogotipo', Estabelecimento::class);
+        $this->authorize('estabelecimento.editar');
 
         $this->service->atualizarLogotipo($request->file('logotipo'));
 

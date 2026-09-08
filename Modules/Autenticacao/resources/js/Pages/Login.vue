@@ -21,7 +21,7 @@ function submit() {
         onError: (erros) => {
             errors.value = erros;
             processing.value = false;
-            toast.error(Object.values(erros)[0] ?? 'Não foi possível iniciar sessão.');
+            toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
             processing.value = false;

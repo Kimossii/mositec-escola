@@ -15,6 +15,7 @@ class PermissaoDatabaseSeeder extends Seeder
             AcaoSeeder::class,
             RoleSeeder::class,
             ModuloSeeder::class,
+            RolePermissaoSeeder::class,
         ]);
     }
 }
