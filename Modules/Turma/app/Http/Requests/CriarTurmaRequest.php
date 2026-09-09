@@ -16,6 +16,7 @@ class CriarTurmaRequest extends BaseRequest
         return [
             'ano_lectivo_id' => 'required|integer|exists:ano_lectivos,id',
             'nivel_academico_id' => 'required|integer|exists:niveis_academicos,id',
+            'curso_id' => 'required|integer|exists:cursos,id',
             'codigo' => 'required|string|max:50',
             'nome' => 'required|string|max:255',
             'turno_id' => 'nullable|integer|exists:turnos,id',
@@ -30,6 +31,9 @@ class CriarTurmaRequest extends BaseRequest
 
             'nivel_academico_id.required' => 'O nível académico é obrigatório.',
             'nivel_academico_id.exists' => 'O nível académico indicado não existe.',
+
+            'curso_id.required' => 'O curso é obrigatório.',
+            'curso_id.exists' => 'O curso indicado não existe.',
 
             'codigo.required' => 'O código da turma é obrigatório.',
             'codigo.max' => 'O código da turma não pode ultrapassar 50 caracteres.',

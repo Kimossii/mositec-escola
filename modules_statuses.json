@@ -6,5 +6,6 @@
     "Core": true,
     "AnoLectivo": true,
     "Infraestrutura": true,
-    "Turma": true
+    "Turma": true,
+    "Curso": true
 }

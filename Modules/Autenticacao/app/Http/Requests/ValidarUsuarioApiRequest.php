@@ -14,7 +14,7 @@ class ValidarUsuarioApiRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email|exists:users,email',
+            'email' => 'required|email',
             'password' => 'required|min:6',
         ];
     }
@@ -24,7 +24,6 @@ class ValidarUsuarioApiRequest extends BaseRequest
         return [
             'email.required' => 'O email é obrigatório.',
             'email.email' => 'Informe um email válido.',
-            'email.exists' => 'O email informado não está cadastrado.',
             'password.required' => 'A senha é obrigatória.',
             'password.min' => 'A senha deve ter pelo menos 6 caracteres.',
 

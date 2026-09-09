@@ -5,7 +5,7 @@ use Modules\Turma\Http\Controllers\NivelAcademicoController;
 use Modules\Turma\Http\Controllers\TurmaController;
 use Modules\Turma\Http\Controllers\TurnoController;
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::prefix('turmas')->name('turmas.')->group(function () {
         Route::get('/', [TurmaController::class, 'index'])->middleware('can:turmas.ver')->name('index');
         Route::post('/', [TurmaController::class, 'store'])->middleware('can:turmas.criar')->name('store');
@@ -15,6 +15,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/{turma}', [TurmaController::class, 'destroy'])->middleware('can:turmas.eliminar')->name('destroy');
 
         Route::post('/{turma}/salas', [TurmaController::class, 'associarSala'])->middleware('can:turmas.editar')->name('salas.store');
+        Route::put('/{turma}/salas/{sala}', [TurmaController::class, 'atualizarSala'])->middleware('can:turmas.editar')->name('salas.update');
         Route::patch('/{turma}/salas/{sala}/encerrar', [TurmaController::class, 'encerrarSala'])->middleware('can:turmas.editar')->name('salas.encerrar');
     });
 

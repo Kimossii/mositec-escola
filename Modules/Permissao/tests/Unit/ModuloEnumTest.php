@@ -25,6 +25,7 @@ class ModuloEnumTest extends TestCase
         $this->assertSame('turmas', Modulo::TURMAS->slug());
         $this->assertSame('ano-lectivo', Modulo::ANO_LECTIVO->slug());
         $this->assertSame('estabelecimento', Modulo::ESTABELECIMENTO->slug());
+        $this->assertSame('curso', Modulo::CURSO->slug());
     }
 
     public function test_tryfrom_nativo_devolve_null_para_int_desconhecido(): void
