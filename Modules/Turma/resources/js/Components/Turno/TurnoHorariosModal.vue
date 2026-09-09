@@ -31,7 +31,7 @@ function submeter() {
             <div class="modal-content p-6">
                 <h3 class="mb-5">Horários do Turno — {{ turno?.nome }}</h3>
 
-                <table v-if="turno?.turno_horarios?.length" class="table table-row-dashed fs-6 gy-3 mb-6">
+                <table v-if="turno?.turno_horarios?.length" class="table align-middle table-row-dashed table-hover fs-6 gy-3 mb-6">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th class="min-w-50px">Ordem</th>
