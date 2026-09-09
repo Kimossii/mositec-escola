@@ -15,6 +15,7 @@ const props = defineProps({
     salas: { type: Array, required: true },
     anoLectivos: { type: Array, required: true },
     niveisAcademicos: { type: Array, required: true },
+    cursos: { type: Array, required: true },
     turnos: { type: Array, required: true },
 });
 defineOptions({ layout: AppLayout });
@@ -125,6 +126,10 @@ function encerrarSala(turmaSala) {
                         <div class="fs-6">{{ turma.nivel_academico?.nome ?? '—' }}</div>
                     </div>
                     <div class="col-md-4 mb-6">
+                        <div class="text-muted fs-7 text-uppercase fw-bold mb-1">Curso</div>
+                        <div class="fs-6">{{ turma.curso.nome }}</div>
+                    </div>
+                    <div class="col-md-4 mb-6">
                         <div class="text-muted fs-7 text-uppercase fw-bold mb-1">Turno</div>
                         <div class="fs-6">{{ turma.turno?.nome ?? '—' }}</div>
                     </div>
@@ -181,6 +186,7 @@ function encerrarSala(turmaSala) {
             :turma="turma"
             :ano-lectivos="anoLectivos"
             :niveis-academicos="niveisAcademicos"
+            :cursos="cursos"
             :turnos="turnos"
             :processing="editProcessing"
             :errors="editErrors"

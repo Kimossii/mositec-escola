@@ -11,6 +11,7 @@ const seccoesAcademico = [
         links: [
             { href: '#', label: 'Alunos' },
             { href: '#', label: 'Encarregados de Educação' },
+            { href: '/cursos', label: 'Cursos', permissao: 'curso.ver' },
             { href: '/turmas', label: 'Turmas', permissao: 'turmas.ver' },
             { href: '#', label: 'Matrículas' },
             { href: '#', label: 'Transferências' },

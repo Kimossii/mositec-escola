@@ -8,6 +8,7 @@ const props = defineProps({
     turma: { type: Object, default: null },
     anoLectivos: { type: Array, required: true },
     niveisAcademicos: { type: Array, required: true },
+    cursos: { type: Array, required: true },
     turnos: { type: Array, required: true },
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
@@ -21,11 +22,13 @@ const ESTADO_OPCOES = [
 
 const opcoesAnoLectivo = () => props.anoLectivos.map((a) => ({ value: a.id, label: a.nome }));
 const opcoesNivelAcademico = () => props.niveisAcademicos.map((n) => ({ value: n.id, label: n.nome }));
+const opcoesCurso = () => props.cursos.map((c) => ({ value: c.id, label: c.nome }));
 const opcoesTurno = () => [{ value: '', label: 'Sem turno' }, ...props.turnos.map((t) => ({ value: t.id, label: t.nome }))];
 
 const form = reactive({
     ano_lectivo_id: '',
     nivel_academico_id: '',
+    curso_id: '',
     codigo: '',
     nome: '',
     turno_id: '',
@@ -36,6 +39,7 @@ watch(() => props.show, (show) => {
     if (!show) return;
     form.ano_lectivo_id = props.turma?.ano_lectivo_id ?? '';
     form.nivel_academico_id = props.turma?.nivel_academico_id ?? '';
+    form.curso_id = props.turma?.curso_id ?? '';
     form.codigo = props.turma?.codigo ?? '';
     form.nome = props.turma?.nome ?? '';
     form.turno_id = props.turma?.turno_id ?? '';
@@ -62,10 +66,17 @@ function submeter() {
                         <div class="text-danger fs-7 mt-1" v-if="errors.ano_lectivo_id">{{ errors.ano_lectivo_id }}</div>
                     </div>
 
-                    <div class="fv-row mb-7">
-                        <label class="required fw-semibold fs-6 mb-2">Nível Académico</label>
-                        <SelectSolid v-model="form.nivel_academico_id" :options="opcoesNivelAcademico()" placeholder="Selecione o nível académico" />
-                        <div class="text-danger fs-7 mt-1" v-if="errors.nivel_academico_id">{{ errors.nivel_academico_id }}</div>
+                    <div class="row">
+                        <div class="col-md-6 fv-row mb-7">
+                            <label class="required fw-semibold fs-6 mb-2">Nível Académico</label>
+                            <SelectSolid v-model="form.nivel_academico_id" :options="opcoesNivelAcademico()" placeholder="Selecione o nível académico" />
+                            <div class="text-danger fs-7 mt-1" v-if="errors.nivel_academico_id">{{ errors.nivel_academico_id }}</div>
+                        </div>
+                        <div class="col-md-6 fv-row mb-7">
+                            <label class="required fw-semibold fs-6 mb-2">Curso</label>
+                            <SelectSolid v-model="form.curso_id" :options="opcoesCurso()" placeholder="Selecione o curso" />
+                            <div class="text-danger fs-7 mt-1" v-if="errors.curso_id">{{ errors.curso_id }}</div>
+                        </div>
                     </div>
 
                     <div class="row">

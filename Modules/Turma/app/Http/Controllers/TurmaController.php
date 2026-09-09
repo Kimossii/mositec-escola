@@ -35,7 +35,7 @@ class TurmaController extends Controller
     {
         $this->authorize('turmas.ver');
 
-        $turma->load(['anoLectivo', 'nivelAcademico', 'turno', 'turmaSalas.sala']);
+        $turma->load(['anoLectivo', 'nivelAcademico', 'curso', 'turno', 'turmaSalas.sala']);
 
         return Inertia::render('Turma/Turmas/Show', array_merge([
             'turma' => $turma,
