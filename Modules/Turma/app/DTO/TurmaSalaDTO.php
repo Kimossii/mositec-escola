@@ -3,6 +3,7 @@
 namespace Modules\Turma\DTO;
 
 use Modules\Turma\Http\Requests\AssociarSalaTurmaRequest;
+use Modules\Turma\Http\Requests\AtualizarSalaTurmaRequest;
 use Modules\Turma\Http\Requests\EncerrarSalaTurmaRequest;
 
 class TurmaSalaDTO
@@ -16,6 +17,17 @@ class TurmaSalaDTO
 
     public static function fromAssociarRequest(
         AssociarSalaTurmaRequest $request
+    ): self {
+        $dados = $request->validated();
+
+        return new self(
+            sala_id: (int) $dados['sala_id'],
+            inicio: $dados['inicio'],
+        );
+    }
+
+    public static function fromAtualizarRequest(
+        AtualizarSalaTurmaRequest $request
     ): self {
         $dados = $request->validated();
 

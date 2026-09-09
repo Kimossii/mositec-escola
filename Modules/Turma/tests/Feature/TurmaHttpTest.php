@@ -297,6 +297,44 @@ class TurmaHttpTest extends TestCase
         );
     }
 
+    public function test_atualiza_sala_associada_a_turma_via_http(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        $curso = $this->criarCurso($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $salaErrada = \Modules\Infraestrutura\Models\Sala::create(['codigo' => 'A101', 'nome' => 'Sala 101', 'tipo' => 0]);
+        $salaCorreta = \Modules\Infraestrutura\Models\Sala::create(['codigo' => 'A102', 'nome' => 'Sala 102', 'tipo' => 0]);
+        $turmaSala = $turma->turmaSalas()->create(['sala_id' => $salaErrada->id, 'inicio' => '2026-01-01']);
+
+        $this->put(route('turmas.salas.update', [$turma, $turmaSala]), [
+            'sala_id' => $salaCorreta->id,
+            'inicio' => '2026-01-01',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame($salaCorreta->id, $turmaSala->fresh()->sala_id);
+    }
+
+    public function test_atualizar_sala_de_outra_turma_devolve_404(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        $curso = $this->criarCurso($estabelecimento);
+        $turmaA = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'TA', 'nome' => 'Turma A']);
+        $turmaB = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'TB', 'nome' => 'Turma B']);
+        $sala = \Modules\Infraestrutura\Models\Sala::create(['codigo' => 'A101', 'nome' => 'Sala 101', 'tipo' => 0]);
+        $turmaSalaDeA = $turmaA->turmaSalas()->create(['sala_id' => $sala->id, 'inicio' => '2026-01-01']);
+
+        $this->put(route('turmas.salas.update', [$turmaB, $turmaSalaDeA]), [
+            'sala_id' => $sala->id,
+            'inicio' => '2026-02-01',
+        ])->assertNotFound();
+    }
+
     public function test_encerrar_sala_de_outra_turma_devolve_404(): void
     {
         $this->actingAsStaff();

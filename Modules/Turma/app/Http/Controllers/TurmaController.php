@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use Modules\Core\Enums\Estado;
 use Modules\Turma\Http\Requests\AlterarEstadoTurmaRequest;
 use Modules\Turma\Http\Requests\AssociarSalaTurmaRequest;
+use Modules\Turma\Http\Requests\AtualizarSalaTurmaRequest;
 use Modules\Turma\Http\Requests\AtualizarTurmaRequest;
 use Modules\Turma\Http\Requests\CriarTurmaRequest;
 use Modules\Turma\Http\Requests\EncerrarSalaTurmaRequest;
@@ -86,6 +87,17 @@ class TurmaController extends Controller
         $this->service->associarSala($turma, $request);
 
         return redirect()->back()->with('success', 'Sala associada à turma com sucesso.');
+    }
+
+    public function atualizarSala(AtualizarSalaTurmaRequest $request, Turma $turma, TurmaSala $sala)
+    {
+        $this->authorize('turmas.editar');
+
+        abort_unless($sala->turma_id === $turma->id, 404);
+
+        $this->service->atualizarSala($sala, $request);
+
+        return redirect()->back()->with('success', 'Associação da sala atualizada com sucesso.');
     }
 
     public function encerrarSala(EncerrarSalaTurmaRequest $request, Turma $turma, TurmaSala $sala)

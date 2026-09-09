@@ -55,23 +55,39 @@ function guardar(payload) {
 const associarModalAberto = ref(false);
 const associarProcessing = ref(false);
 const associarErrors = ref({});
+const turmaSalaEmEdicao = ref(null);
 
 function abrirAssociarSala() {
+    turmaSalaEmEdicao.value = null;
+    associarErrors.value = {};
+    associarModalAberto.value = true;
+}
+
+function abrirEdicaoSala(turmaSala) {
+    turmaSalaEmEdicao.value = turmaSala;
     associarErrors.value = {};
     associarModalAberto.value = true;
 }
 
 function fecharAssociarSala() {
     associarModalAberto.value = false;
+    turmaSalaEmEdicao.value = null;
 }
 
 function associarSala(payload) {
     associarProcessing.value = true;
     associarErrors.value = {};
-    router.post(`/turmas/${props.turma.id}/salas`, payload, {
+
+    const emEdicao = turmaSalaEmEdicao.value;
+    const url = emEdicao
+        ? `/turmas/${props.turma.id}/salas/${emEdicao.id}`
+        : `/turmas/${props.turma.id}/salas`;
+    const metodo = emEdicao ? 'put' : 'post';
+
+    router[metodo](url, payload, {
         preserveScroll: true,
         onSuccess: () => {
-            toast.success('Sala associada à turma com sucesso.');
+            toast.success(emEdicao ? 'Associação da sala atualizada com sucesso.' : 'Sala associada à turma com sucesso.');
             fecharAssociarSala();
         },
         onError: (erros) => {
@@ -82,6 +98,12 @@ function associarSala(payload) {
             associarProcessing.value = false;
         },
     });
+}
+
+function formatarData(data) {
+    if (!data) return '—';
+    const [ano, mes, dia] = data.slice(0, 10).split('-');
+    return `${dia}/${mes}/${ano}`;
 }
 
 const encerrando = ref(null);
@@ -162,9 +184,17 @@ function encerrarSala(turmaSala) {
                         </tr>
                         <tr v-for="turmaSala in turma.turma_salas" :key="turmaSala.id">
                             <td>{{ turmaSala.sala?.codigo }} — {{ turmaSala.sala?.nome }}</td>
-                            <td>{{ turmaSala.inicio }}</td>
-                            <td>{{ turmaSala.fim ?? '—' }}</td>
+                            <td>{{ formatarData(turmaSala.inicio) }}</td>
+                            <td>{{ formatarData(turmaSala.fim) }}</td>
                             <td class="text-end">
+                                <button
+                                    v-if="can('turmas.editar')"
+                                    class="btn btn-sm btn-light-primary me-2"
+                                    @click="abrirEdicaoSala(turmaSala)"
+                                >
+                                    <AcaoIcone acao="editar" class="me-1" />
+                                    Editar
+                                </button>
                                 <button
                                     v-if="can('turmas.editar') && !turmaSala.fim"
                                     class="btn btn-sm btn-light-danger"
@@ -197,6 +227,7 @@ function encerrarSala(turmaSala) {
         <AssociarSalaModal
             :show="associarModalAberto"
             :salas="salas"
+            :turma-sala="turmaSalaEmEdicao"
             :processing="associarProcessing"
             :errors="associarErrors"
             @submit="associarSala"

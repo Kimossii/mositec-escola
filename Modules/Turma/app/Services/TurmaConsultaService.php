@@ -23,15 +23,15 @@ class TurmaConsultaService
         $estabelecimentoId = Estabelecimento::current()?->id;
 
         return [
-            'anoLectivos' => AnoLectivo::where('estabelecimento_id', $estabelecimentoId)->orderByDesc('nome')->get(['id', 'nome']),
-            'niveisAcademicos' => NivelAcademico::where('estabelecimento_id', $estabelecimentoId)->orderBy('ordem')->get(['id', 'nome']),
-            'cursos' => Curso::where('estabelecimento_id', $estabelecimentoId)->orderBy('nome')->get(['id', 'nome']),
-            'turnos' => Turno::where('estabelecimento_id', $estabelecimentoId)->orderBy('nome')->get(['id', 'nome']),
+            'anoLectivos' => AnoLectivo::where('estabelecimento_id', $estabelecimentoId)->where('estado',1)->orderByDesc('nome')->get(['id', 'nome']),
+            'niveisAcademicos' => NivelAcademico::where('estabelecimento_id', $estabelecimentoId)->where('estado',1)->orderBy('ordem')->get(['id', 'nome']),
+            'cursos' => Curso::where('estabelecimento_id', $estabelecimentoId)->where('estado',1)->orderBy('nome')->get(['id', 'nome']),
+            'turnos' => Turno::where('estabelecimento_id', $estabelecimentoId)->where('estado',1)->orderBy('nome')->get(['id', 'nome']),
         ];
     }
 
     public function salasDisponiveis(): Collection
     {
-        return Sala::orderBy('codigo')->get(['id', 'codigo', 'nome']);
+        return Sala::where('estado',0)->orderBy('codigo')->get(['id', 'codigo', 'nome']);
     }
 }
