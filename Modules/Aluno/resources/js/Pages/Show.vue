@@ -26,6 +26,12 @@ function fecharModal() {
     modalAberto.value = false;
 }
 
+function formatarData(data) {
+    if (!data) return '—';
+    const [ano, mes, dia] = data.slice(0, 10).split('-');
+    return `${dia}/${mes}/${ano}`;
+}
+
 function guardar(payload) {
     processing.value = true;
     errors.value = {};
@@ -76,7 +82,7 @@ function guardar(payload) {
                 </div>
                 <div class="row mb-4">
                     <div class="col-md-3 fw-bold text-muted">Data de nascimento</div>
-                    <div class="col-md-9">{{ aluno.dados_pessoa?.data_nascimento ?? '—' }}</div>
+                    <div class="col-md-9">{{ formatarData(aluno.dados_pessoa?.data_nascimento) }}</div>
                 </div>
                 <div class="row mb-4">
                     <div class="col-md-3 fw-bold text-muted">Número de identificação</div>

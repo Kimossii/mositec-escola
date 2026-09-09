@@ -38,7 +38,7 @@ watch(() => props.show, (show) => {
     form.nome_completo = pessoa.nome_completo ?? '';
     form.email = pessoa.email ?? '';
     form.telefone = pessoa.telefone ?? '';
-    form.data_nascimento = pessoa.data_nascimento ?? '';
+    form.data_nascimento = pessoa.data_nascimento?.slice(0, 10) ?? '';
     form.sexo = pessoa.sexo ?? 0;
     form.numero_identificacao = pessoa.numero_identificacao ?? '';
     form.estado = props.aluno?.estado ?? ESTADO.ATIVO;
