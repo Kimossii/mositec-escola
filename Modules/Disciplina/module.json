@@ -1,0 +1,11 @@
+{
+    "name": "Disciplina",
+    "alias": "disciplina",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Disciplina\\Providers\\DisciplinaServiceProvider"
+    ],
+    "files": []
+}

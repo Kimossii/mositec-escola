@@ -482,7 +482,7 @@ const pedagogico = {
     icon: 'ki-address-book',
     paths: 3,
     items: [
-        { href: '#', title: 'Disciplinas' },
+        { href: '/disciplinas', title: 'Disciplinas', permissao: 'disciplina.ver' },
         { href: '/horarios', title: 'Horários', permissao: 'horario.ver' },
         { href: '#', title: 'Planos de Aula' },
         { href: '#', title: 'Avaliações / Notas' },
