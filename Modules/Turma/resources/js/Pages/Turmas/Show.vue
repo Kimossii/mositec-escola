@@ -175,7 +175,7 @@ function encerrarSala(turmaSala) {
                             <th class="min-w-150px">Sala</th>
                             <th class="min-w-100px">Início</th>
                             <th class="min-w-100px">Fim</th>
-                            <th class="text-end min-w-100px">Ações</th>
+                            <th class="text-end min-w-125px">Ações</th>
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
@@ -187,23 +187,35 @@ function encerrarSala(turmaSala) {
                             <td>{{ formatarData(turmaSala.inicio) }}</td>
                             <td>{{ formatarData(turmaSala.fim) }}</td>
                             <td class="text-end">
-                                <button
+                                <a
                                     v-if="can('turmas.editar')"
-                                    class="btn btn-sm btn-light-primary me-2"
-                                    @click="abrirEdicaoSala(turmaSala)"
+                                    href="#"
+                                    class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm"
+                                    data-kt-menu-trigger="click"
+                                    data-kt-menu-placement="bottom-end"
                                 >
-                                    <AcaoIcone acao="editar" class="me-1" />
-                                    Editar
-                                </button>
-                                <button
-                                    v-if="can('turmas.editar') && !turmaSala.fim"
-                                    class="btn btn-sm btn-light-danger"
-                                    :disabled="encerrando === turmaSala.id"
-                                    @click="encerrarSala(turmaSala)"
-                                >
-                                    <AcaoIcone acao="encerrar" class="me-1" />
-                                    Encerrar
-                                </button>
+                                    Ações
+                                    <i class="ki-duotone ki-down fs-5 ms-1"></i>
+                                </a>
+                                <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4" data-kt-menu="true">
+                                    <div class="menu-item px-3">
+                                        <a href="#" class="menu-link px-3" @click.prevent="abrirEdicaoSala(turmaSala)">
+                                            <AcaoIcone acao="editar" class="me-2" />
+                                            Editar
+                                        </a>
+                                    </div>
+                                    <div v-if="!turmaSala.fim" class="menu-item px-3">
+                                        <a
+                                            href="#"
+                                            class="menu-link px-3"
+                                            :class="{ 'pe-none opacity-50': encerrando === turmaSala.id }"
+                                            @click.prevent="encerrarSala(turmaSala)"
+                                        >
+                                            <AcaoIcone acao="encerrar" class="me-2" />
+                                            Encerrar
+                                        </a>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
