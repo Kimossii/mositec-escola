@@ -268,10 +268,10 @@ function guardar() {
             <p class="text-muted fs-7">
                 Clique numa célula para alternar entre Concedido (verde) e Negado (vermelho).
             </p>
-            <table class="table align-middle">
+            <table class="table align-middle table-row-dashed table-hover fs-6 gy-5">
                 <thead>
-                    <tr>
-                        <th>Módulo</th>
+                    <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                        <th class="min-w-200px">Módulo</th>
                         <th v-for="acao in acoes" :key="acao.id" class="text-center text-capitalize">
                             <div class="d-flex flex-column align-items-center gap-1">
                                 <span>{{ acao.nome }}</span>
@@ -303,7 +303,7 @@ function guardar() {
                         <td v-for="acao in acoes" :key="acao.id" class="text-center">
                             <button
                                 type="button"
-                                class="btn btn-sm"
+                                class="btn btn-sm min-w-100px"
                                 :class="{
                                     'btn-light-success btn-permissao-concedido': estadoCelula(modulo.id, acao.id) === 1,
                                     'btn-light-danger': estadoCelula(modulo.id, acao.id) === 0,

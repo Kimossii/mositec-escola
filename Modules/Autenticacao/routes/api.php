@@ -5,7 +5,7 @@ use Modules\Autenticacao\Http\Controllers\AutenticacaoAPIController;
 
 Route::group(['prefix' => 'v1'], function () {
     Route::group(['prefix' => 'autenticacaoApi'], function () {
-        Route::post('/api/login', [AutenticacaoAPIController::class, 'login']);
+        Route::post('/api/login', [AutenticacaoAPIController::class, 'login'])->middleware('throttle:5,1');
         Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/api/logout', [AutenticacaoAPIController::class, 'logout']);
             Route::post('/api/logout-all-devices', [AutenticacaoAPIController::class, 'logoutAllDevices']);

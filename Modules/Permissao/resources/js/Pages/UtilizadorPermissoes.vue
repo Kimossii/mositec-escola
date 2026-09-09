@@ -169,7 +169,7 @@ function guardarOverrides() {
                             <td v-for="acao in acoes" :key="acao.id" class="text-center">
                                 <button
                                     type="button"
-                                    class="btn btn-sm"
+                                    class="btn btn-sm min-w-100px"
                                     :class="{
                                         'btn-light-success btn-permissao-concedido': estadoCelula(modulo.id, acao.id) === 1,
                                         'btn-light-danger': estadoCelula(modulo.id, acao.id) === 0,

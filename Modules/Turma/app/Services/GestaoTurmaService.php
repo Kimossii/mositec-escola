@@ -5,6 +5,7 @@ namespace Modules\Turma\Services;
 use Modules\Core\Enums\Estado;
 use Modules\Turma\Actions\AlterarEstadoTurmaAction;
 use Modules\Turma\Actions\AssociarSalaTurmaAction;
+use Modules\Turma\Actions\AtualizarSalaTurmaAction;
 use Modules\Turma\Actions\AtualizarTurmaAction;
 use Modules\Turma\Actions\CriarTurmaAction;
 use Modules\Turma\Actions\EliminarTurmaAction;
@@ -12,6 +13,7 @@ use Modules\Turma\Actions\EncerrarSalaTurmaAction;
 use Modules\Turma\DTO\TurmaDTO;
 use Modules\Turma\DTO\TurmaSalaDTO;
 use Modules\Turma\Http\Requests\AssociarSalaTurmaRequest;
+use Modules\Turma\Http\Requests\AtualizarSalaTurmaRequest;
 use Modules\Turma\Http\Requests\AtualizarTurmaRequest;
 use Modules\Turma\Http\Requests\CriarTurmaRequest;
 use Modules\Turma\Http\Requests\EncerrarSalaTurmaRequest;
@@ -26,6 +28,7 @@ class GestaoTurmaService
         private AlterarEstadoTurmaAction $alterarEstadoTurma,
         private EliminarTurmaAction $eliminarTurma,
         private AssociarSalaTurmaAction $associarSalaTurma,
+        private AtualizarSalaTurmaAction $atualizarSalaTurma,
         private EncerrarSalaTurmaAction $encerrarSalaTurma,
     ) {}
 
@@ -52,6 +55,11 @@ class GestaoTurmaService
     public function associarSala(Turma $turma, AssociarSalaTurmaRequest $request): TurmaSala
     {
         return $this->associarSalaTurma->executar($turma, TurmaSalaDTO::fromAssociarRequest($request));
+    }
+
+    public function atualizarSala(TurmaSala $turmaSala, AtualizarSalaTurmaRequest $request): TurmaSala
+    {
+        return $this->atualizarSalaTurma->executar($turmaSala, TurmaSalaDTO::fromAtualizarRequest($request));
     }
 
     public function encerrarSala(TurmaSala $turmaSala, EncerrarSalaTurmaRequest $request): TurmaSala

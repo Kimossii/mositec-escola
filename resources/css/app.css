@@ -169,6 +169,27 @@ html[data-bs-theme='light'] .table.table-hover {
     border-bottom-right-radius: 12px;
 }
 
+/* Respiro horizontal nas pontas das tabelas — o padding padrão do Bootstrap
+   (0.75rem) deixa a primeira e a última coluna coladas à borda do cartão,
+   já que as tabelas de lista vivem dentro de um card-body sem padding
+   próprio (p-0). Reforça só as pontas (mesmo valor do utilitário ps-6/pe-6
+   já usado na tabela de permissões); as colunas internas mantêm o padding
+   original do Bootstrap.
+   Precisa de !important: o próprio Metronic zera esse padding em
+   `.table:not(.table-bordered) th:first-child/td:first-child` (e o
+   equivalente para :last-child) — regra mais específica que a nossa por
+   causa do :not(), e todas as tabelas do projeto usam table-row-dashed
+   (nunca table-bordered), portanto essa regra do tema bate sempre. */
+.table > thead > tr > th:first-child,
+.table > tbody > tr > td:first-child {
+    padding-left: 1.5rem !important;
+}
+
+.table > thead > tr > th:last-child,
+.table > tbody > tr > td:last-child {
+    padding-right: 1.5rem !important;
+}
+
 /* Seta do botão de colapso (lista de permissões do perfil) gira 180° quando
    aberto. Testado ao vivo: esta versão do Bootstrap não alterna a classe
    .collapsed no botão como manda o padrão — só atualiza aria-expanded — por

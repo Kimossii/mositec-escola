@@ -12,6 +12,7 @@ class TurmaDTO
         public string $nome,
         public ?int $ano_lectivo_id = null,
         public ?int $nivel_academico_id = null,
+        public ?int $curso_id = null,
         public ?int $turno_id = null,
     ) {
     }
@@ -26,6 +27,7 @@ class TurmaDTO
             nome: $dados['nome'],
             ano_lectivo_id: (int) $dados['ano_lectivo_id'],
             nivel_academico_id: (int) $dados['nivel_academico_id'],
+            curso_id: (int) $dados['curso_id'],
             turno_id: isset($dados['turno_id'])
             ? (int) $dados['turno_id']
             : null,
@@ -41,6 +43,7 @@ class TurmaDTO
             codigo: $dados['codigo'],
             nome: $dados['nome'],
             nivel_academico_id: (int) $dados['nivel_academico_id'],
+            curso_id: (int) $dados['curso_id'],
             turno_id: isset($dados['turno_id'])
             ? (int) $dados['turno_id']
             : null,

@@ -15,6 +15,7 @@ const props = defineProps({
     turmas: { type: Array, required: true },
     anoLectivos: { type: Array, required: true },
     niveisAcademicos: { type: Array, required: true },
+    cursos: { type: Array, required: true },
     turnos: { type: Array, required: true },
 });
 defineOptions({ layout: AppLayout });
@@ -132,17 +133,19 @@ function confirmarEliminacao() {
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th class="min-w-100px">Código</th>
                             <th class="min-w-200px">Nome</th>
+                            <th class="min-w-150px">Curso</th>
                             <th class="min-w-125px">Estado</th>
                             <th class="text-end min-w-125px">Ações</th>
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="turmas.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhuma turma criada.</td>
+                            <td colspan="5" class="text-center text-muted py-6">Nenhuma turma criada.</td>
                         </tr>
                         <tr v-for="turma in turmas" :key="turma.id">
                             <td>{{ turma.codigo }}</td>
                             <td>{{ turma.nome }}</td>
+                            <td>{{ turma.curso.nome }}</td>
                             <td>
                                 <EstadoBadge :estado="turma.estado" :estado-descricao="turma.estado_descricao" />
                             </td>
@@ -195,6 +198,7 @@ function confirmarEliminacao() {
             :turma="turmaEmEdicao"
             :ano-lectivos="anoLectivos"
             :niveis-academicos="niveisAcademicos"
+            :cursos="cursos"
             :turnos="turnos"
             :processing="processing"
             :errors="errors"

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
+use Modules\Curso\Models\Curso;
 use Modules\Usuario\Models\User;
 
 class Turma extends Model
@@ -22,6 +23,7 @@ class Turma extends Model
     protected $fillable = [
         'ano_lectivo_id',
         'nivel_academico_id',
+        'curso_id',
         'codigo',
         'nome',
         'turno_id',
@@ -42,6 +44,11 @@ class Turma extends Model
     public function nivelAcademico(): BelongsTo
     {
         return $this->belongsTo(NivelAcademico::class);
+    }
+
+    public function curso(): BelongsTo
+    {
+        return $this->belongsTo(Curso::class);
     }
 
     public function turno(): BelongsTo

@@ -5,6 +5,7 @@ import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 const props = defineProps({
     show: { type: Boolean, default: false },
     salas: { type: Array, required: true },
+    turmaSala: { type: Object, default: null },
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
 });
@@ -19,6 +20,11 @@ const form = reactive({
 
 watch(() => props.show, (show) => {
     if (!show) return;
+    if (props.turmaSala) {
+        form.sala_id = props.turmaSala.sala_id;
+        form.inicio = props.turmaSala.inicio?.slice(0, 10) ?? '';
+        return;
+    }
     form.sala_id = '';
     form.inicio = new Date().toISOString().slice(0, 10);
 });
@@ -32,7 +38,7 @@ function submeter() {
     <div v-if="show" class="modal d-block" style="background: rgba(0,0,0,0.5);" @click.self="emit('cancelar')">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content p-6">
-                <h3 class="mb-5">Associar Sala à Turma</h3>
+                <h3 class="mb-5">{{ turmaSala ? 'Editar Sala Associada' : 'Associar Sala à Turma' }}</h3>
                 <form @submit.prevent="submeter">
                     <div class="fv-row mb-7">
                         <label class="required fw-semibold fs-6 mb-2">Sala</label>
@@ -50,7 +56,7 @@ function submeter() {
                         <button type="button" class="btn btn-light-danger me-2" :disabled="processing" @click="emit('cancelar')">
                             Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary" :disabled="processing">Associar</button>
+                        <button type="submit" class="btn btn-primary" :disabled="processing">{{ turmaSala ? 'Guardar' : 'Associar' }}</button>
                     </div>
                 </form>
             </div>

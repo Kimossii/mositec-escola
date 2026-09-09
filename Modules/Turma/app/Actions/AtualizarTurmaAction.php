@@ -13,6 +13,7 @@ class AtualizarTurmaAction
     ): Turma {
         $turma->fill([
             'nivel_academico_id' => $dto->nivel_academico_id,
+            'curso_id' => $dto->curso_id,
             'codigo' => $dto->codigo,
             'nome' => $dto->nome,
             'turno_id' => $dto->turno_id,

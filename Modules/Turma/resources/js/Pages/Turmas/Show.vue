@@ -15,6 +15,7 @@ const props = defineProps({
     salas: { type: Array, required: true },
     anoLectivos: { type: Array, required: true },
     niveisAcademicos: { type: Array, required: true },
+    cursos: { type: Array, required: true },
     turnos: { type: Array, required: true },
 });
 defineOptions({ layout: AppLayout });
@@ -54,23 +55,39 @@ function guardar(payload) {
 const associarModalAberto = ref(false);
 const associarProcessing = ref(false);
 const associarErrors = ref({});
+const turmaSalaEmEdicao = ref(null);
 
 function abrirAssociarSala() {
+    turmaSalaEmEdicao.value = null;
+    associarErrors.value = {};
+    associarModalAberto.value = true;
+}
+
+function abrirEdicaoSala(turmaSala) {
+    turmaSalaEmEdicao.value = turmaSala;
     associarErrors.value = {};
     associarModalAberto.value = true;
 }
 
 function fecharAssociarSala() {
     associarModalAberto.value = false;
+    turmaSalaEmEdicao.value = null;
 }
 
 function associarSala(payload) {
     associarProcessing.value = true;
     associarErrors.value = {};
-    router.post(`/turmas/${props.turma.id}/salas`, payload, {
+
+    const emEdicao = turmaSalaEmEdicao.value;
+    const url = emEdicao
+        ? `/turmas/${props.turma.id}/salas/${emEdicao.id}`
+        : `/turmas/${props.turma.id}/salas`;
+    const metodo = emEdicao ? 'put' : 'post';
+
+    router[metodo](url, payload, {
         preserveScroll: true,
         onSuccess: () => {
-            toast.success('Sala associada à turma com sucesso.');
+            toast.success(emEdicao ? 'Associação da sala atualizada com sucesso.' : 'Sala associada à turma com sucesso.');
             fecharAssociarSala();
         },
         onError: (erros) => {
@@ -81,6 +98,12 @@ function associarSala(payload) {
             associarProcessing.value = false;
         },
     });
+}
+
+function formatarData(data) {
+    if (!data) return '—';
+    const [ano, mes, dia] = data.slice(0, 10).split('-');
+    return `${dia}/${mes}/${ano}`;
 }
 
 const encerrando = ref(null);
@@ -125,6 +148,10 @@ function encerrarSala(turmaSala) {
                         <div class="fs-6">{{ turma.nivel_academico?.nome ?? '—' }}</div>
                     </div>
                     <div class="col-md-4 mb-6">
+                        <div class="text-muted fs-7 text-uppercase fw-bold mb-1">Curso</div>
+                        <div class="fs-6">{{ turma.curso.nome }}</div>
+                    </div>
+                    <div class="col-md-4 mb-6">
                         <div class="text-muted fs-7 text-uppercase fw-bold mb-1">Turno</div>
                         <div class="fs-6">{{ turma.turno?.nome ?? '—' }}</div>
                     </div>
@@ -148,7 +175,7 @@ function encerrarSala(turmaSala) {
                             <th class="min-w-150px">Sala</th>
                             <th class="min-w-100px">Início</th>
                             <th class="min-w-100px">Fim</th>
-                            <th class="text-end min-w-100px">Ações</th>
+                            <th class="text-end min-w-125px">Ações</th>
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
@@ -157,18 +184,38 @@ function encerrarSala(turmaSala) {
                         </tr>
                         <tr v-for="turmaSala in turma.turma_salas" :key="turmaSala.id">
                             <td>{{ turmaSala.sala?.codigo }} — {{ turmaSala.sala?.nome }}</td>
-                            <td>{{ turmaSala.inicio }}</td>
-                            <td>{{ turmaSala.fim ?? '—' }}</td>
+                            <td>{{ formatarData(turmaSala.inicio) }}</td>
+                            <td>{{ formatarData(turmaSala.fim) }}</td>
                             <td class="text-end">
-                                <button
-                                    v-if="can('turmas.editar') && !turmaSala.fim"
-                                    class="btn btn-sm btn-light-danger"
-                                    :disabled="encerrando === turmaSala.id"
-                                    @click="encerrarSala(turmaSala)"
+                                <a
+                                    v-if="can('turmas.editar')"
+                                    href="#"
+                                    class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm"
+                                    data-kt-menu-trigger="click"
+                                    data-kt-menu-placement="bottom-end"
                                 >
-                                    <AcaoIcone acao="encerrar" class="me-1" />
-                                    Encerrar
-                                </button>
+                                    Ações
+                                    <i class="ki-duotone ki-down fs-5 ms-1"></i>
+                                </a>
+                                <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4" data-kt-menu="true">
+                                    <div class="menu-item px-3">
+                                        <a href="#" class="menu-link px-3" @click.prevent="abrirEdicaoSala(turmaSala)">
+                                            <AcaoIcone acao="editar" class="me-2" />
+                                            Editar
+                                        </a>
+                                    </div>
+                                    <div v-if="!turmaSala.fim" class="menu-item px-3">
+                                        <a
+                                            href="#"
+                                            class="menu-link px-3"
+                                            :class="{ 'pe-none opacity-50': encerrando === turmaSala.id }"
+                                            @click.prevent="encerrarSala(turmaSala)"
+                                        >
+                                            <AcaoIcone acao="encerrar" class="me-2" />
+                                            Encerrar
+                                        </a>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -181,6 +228,7 @@ function encerrarSala(turmaSala) {
             :turma="turma"
             :ano-lectivos="anoLectivos"
             :niveis-academicos="niveisAcademicos"
+            :cursos="cursos"
             :turnos="turnos"
             :processing="editProcessing"
             :errors="editErrors"
@@ -191,6 +239,7 @@ function encerrarSala(turmaSala) {
         <AssociarSalaModal
             :show="associarModalAberto"
             :salas="salas"
+            :turma-sala="turmaSalaEmEdicao"
             :processing="associarProcessing"
             :errors="associarErrors"
             @submit="associarSala"

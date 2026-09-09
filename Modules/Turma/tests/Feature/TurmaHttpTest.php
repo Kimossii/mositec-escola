@@ -8,6 +8,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Enums\Estado;
+use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
@@ -71,6 +72,15 @@ class TurmaHttpTest extends TestCase
         ]);
     }
 
+    private function criarCurso(Estabelecimento $estabelecimento): Curso
+    {
+        return Curso::create([
+            'estabelecimento_id' => $estabelecimento->id,
+            'codigo' => 'INF',
+            'nome' => 'Informática',
+        ]);
+    }
+
     public function test_cria_nivel_academico_via_http_infere_estabelecimento_actual_e_regista_autoria(): void
     {
         $staff = $this->actingAsStaff();
@@ -125,7 +135,8 @@ class TurmaHttpTest extends TestCase
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
         $turno = Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
-        Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'turno_id' => $turno->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $curso = $this->criarCurso($estabelecimento);
+        Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'turno_id' => $turno->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
 
         $this->delete(route('turnos.destroy', $turno))->assertSessionHasErrors('turno');
         $this->assertDatabaseHas('turnos', ['id' => $turno->id]);
@@ -137,7 +148,8 @@ class TurmaHttpTest extends TestCase
         $estabelecimento = $this->criarEstabelecimento();
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
-        Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $curso = $this->criarCurso($estabelecimento);
+        Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
 
         $this->delete(route('niveis-academicos.destroy', $nivel))->assertSessionHasErrors('nivelAcademico');
         $this->assertDatabaseHas('niveis_academicos', ['id' => $nivel->id]);
@@ -149,10 +161,12 @@ class TurmaHttpTest extends TestCase
         $estabelecimento = $this->criarEstabelecimento();
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        $curso = $this->criarCurso($estabelecimento);
 
         $this->post(route('turmas.store'), [
             'ano_lectivo_id' => $anoLectivo->id,
             'nivel_academico_id' => $nivel->id,
+            'curso_id' => $curso->id,
             'codigo' => 'T1',
             'nome' => 'Turma 1',
         ])->assertSessionHasNoErrors()->assertRedirect();
@@ -164,13 +178,45 @@ class TurmaHttpTest extends TestCase
         $this->assertSame('Ativo', $turma->estado_descricao);
     }
 
+    public function test_criar_turma_sem_curso_id_falha_com_erro_de_validacao(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+
+        $this->post(route('turmas.store'), [
+            'ano_lectivo_id' => $anoLectivo->id,
+            'nivel_academico_id' => $nivel->id,
+            'codigo' => 'T1',
+            'nome' => 'Turma 1',
+        ])->assertSessionHasErrors('curso_id');
+    }
+
+    public function test_editar_turma_sem_curso_id_falha_com_erro_de_validacao(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        $curso = $this->criarCurso($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+
+        $this->put(route('turmas.update', $turma), [
+            'nivel_academico_id' => $nivel->id,
+            'codigo' => 'T1',
+            'nome' => 'Turma 1',
+        ])->assertSessionHasErrors('curso_id');
+    }
+
     public function test_altera_estado_da_turma_via_http_e_sincroniza_descricao(): void
     {
         $staff = $this->actingAsStaff();
         $estabelecimento = $this->criarEstabelecimento();
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
-        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $curso = $this->criarCurso($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
 
         $this->patch(route('turmas.alterar-estado', $turma), [
             'estado' => Estado::INATIVO->value,
@@ -188,7 +234,8 @@ class TurmaHttpTest extends TestCase
         $estabelecimento = $this->criarEstabelecimento();
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
-        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $curso = $this->criarCurso($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
 
         $this->delete(route('turmas.destroy', $turma))->assertRedirect();
 
@@ -212,13 +259,29 @@ class TurmaHttpTest extends TestCase
         );
     }
 
+    public function test_index_da_turma_expoe_cursos_nas_opcoes_de_formulario(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $this->criarAnoLectivo($estabelecimento);
+        NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
+        $this->criarCurso($estabelecimento);
+
+        $this->get(route('turmas.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('Turma/Turmas/Index')
+            ->has('cursos', 1)
+        );
+    }
+
     public function test_show_da_turma_carrega_relacoes_e_salas_associadas(): void
     {
         $this->actingAsStaff();
         $estabelecimento = $this->criarEstabelecimento();
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
-        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $curso = $this->criarCurso($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
         $sala = \Modules\Infraestrutura\Models\Sala::create(['codigo' => 'A101', 'nome' => 'Sala 101', 'tipo' => 0]);
 
         $this->post(route('turmas.salas.store', $turma), [
@@ -234,14 +297,53 @@ class TurmaHttpTest extends TestCase
         );
     }
 
+    public function test_atualiza_sala_associada_a_turma_via_http(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        $curso = $this->criarCurso($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $salaErrada = \Modules\Infraestrutura\Models\Sala::create(['codigo' => 'A101', 'nome' => 'Sala 101', 'tipo' => 0]);
+        $salaCorreta = \Modules\Infraestrutura\Models\Sala::create(['codigo' => 'A102', 'nome' => 'Sala 102', 'tipo' => 0]);
+        $turmaSala = $turma->turmaSalas()->create(['sala_id' => $salaErrada->id, 'inicio' => '2026-01-01']);
+
+        $this->put(route('turmas.salas.update', [$turma, $turmaSala]), [
+            'sala_id' => $salaCorreta->id,
+            'inicio' => '2026-01-01',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame($salaCorreta->id, $turmaSala->fresh()->sala_id);
+    }
+
+    public function test_atualizar_sala_de_outra_turma_devolve_404(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        $curso = $this->criarCurso($estabelecimento);
+        $turmaA = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'TA', 'nome' => 'Turma A']);
+        $turmaB = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'TB', 'nome' => 'Turma B']);
+        $sala = \Modules\Infraestrutura\Models\Sala::create(['codigo' => 'A101', 'nome' => 'Sala 101', 'tipo' => 0]);
+        $turmaSalaDeA = $turmaA->turmaSalas()->create(['sala_id' => $sala->id, 'inicio' => '2026-01-01']);
+
+        $this->put(route('turmas.salas.update', [$turmaB, $turmaSalaDeA]), [
+            'sala_id' => $sala->id,
+            'inicio' => '2026-02-01',
+        ])->assertNotFound();
+    }
+
     public function test_encerrar_sala_de_outra_turma_devolve_404(): void
     {
         $this->actingAsStaff();
         $estabelecimento = $this->criarEstabelecimento();
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
-        $turmaA = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'TA', 'nome' => 'Turma A']);
-        $turmaB = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'TB', 'nome' => 'Turma B']);
+        $curso = $this->criarCurso($estabelecimento);
+        $turmaA = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'TA', 'nome' => 'Turma A']);
+        $turmaB = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'TB', 'nome' => 'Turma B']);
         $sala = \Modules\Infraestrutura\Models\Sala::create(['codigo' => 'A101', 'nome' => 'Sala 101', 'tipo' => 0]);
         $turmaSalaDeA = $turmaA->turmaSalas()->create(['sala_id' => $sala->id, 'inicio' => '2026-01-01']);
 
