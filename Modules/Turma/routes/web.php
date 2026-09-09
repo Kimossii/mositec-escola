@@ -5,7 +5,7 @@ use Modules\Turma\Http\Controllers\NivelAcademicoController;
 use Modules\Turma\Http\Controllers\TurmaController;
 use Modules\Turma\Http\Controllers\TurnoController;
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::prefix('turmas')->name('turmas.')->group(function () {
         Route::get('/', [TurmaController::class, 'index'])->middleware('can:turmas.ver')->name('index');
         Route::post('/', [TurmaController::class, 'store'])->middleware('can:turmas.criar')->name('store');
