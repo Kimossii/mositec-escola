@@ -1,0 +1,28 @@
+{
+    "name": "nwidart/disciplina",
+    "description": "",
+    "authors": [
+        {
+            "name": "Nicolas Widart",
+            "email": "n.widart@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Disciplina\\": "app/",
+            "Modules\\Disciplina\\Database\\Factories\\": "database/factories/",
+            "Modules\\Disciplina\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Disciplina\\Tests\\": "tests/"
+        }
+    }
+}

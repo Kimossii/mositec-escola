@@ -7,5 +7,6 @@
     "AnoLectivo": true,
     "Infraestrutura": true,
     "Turma": true,
-    "Curso": true
+    "Curso": true,
+    "Disciplina": true
 }
