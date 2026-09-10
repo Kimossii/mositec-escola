@@ -8,5 +8,6 @@
     "Infraestrutura": true,
     "Turma": true,
     "Curso": true,
-    "Disciplina": true
+    "Disciplina": true,
+    "Aluno": true
 }
