@@ -465,7 +465,7 @@ const academico = {
     icon: 'ki-profile-user',
     paths: 3,
     items: [
-        // { href: '#', title: 'Alunos' },
+        { href: '/alunos', title: 'Alunos', permissao: 'aluno.ver' },
         // { href: '#', title: 'Encarregados de Educação' },
         { href: '/cursos', title: 'Cursos', permissao: 'curso.ver' },
         { href: '/turmas', title: 'Turmas', permissao: 'turmas.ver' },

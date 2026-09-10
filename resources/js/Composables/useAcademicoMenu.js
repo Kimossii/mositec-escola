@@ -9,7 +9,7 @@ const seccoesAcademico = [
     {
         title: 'Académico',
         links: [
-            { href: '#', label: 'Alunos' },
+            { href: '/alunos', label: 'Alunos', permissao: 'aluno.ver' },
             { href: '#', label: 'Encarregados de Educação' },
             { href: '/cursos', label: 'Cursos', permissao: 'curso.ver' },
             { href: '/turmas', label: 'Turmas', permissao: 'turmas.ver' },
