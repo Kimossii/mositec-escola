@@ -34,7 +34,7 @@ class CursoController extends Controller
         $this->authorize('curso.ver');
 
         return Inertia::render('Curso/Show', [
-            'curso' => $curso,
+            'curso' => $this->consulta->comRelacoes($curso),
         ]);
     }
 

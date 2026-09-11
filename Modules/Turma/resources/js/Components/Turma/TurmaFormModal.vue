@@ -37,7 +37,10 @@ const form = reactive({
 
 watch(() => props.show, (show) => {
     if (!show) return;
-    form.ano_lectivo_id = props.turma?.ano_lectivo_id ?? '';
+    // props.anoLectivos já vem filtrado ao ano lectivo activo (ver
+    // TurmaConsultaService::opcoesFormulario) — pré-seleccionar o primeiro
+    // evita o utilizador ter de escolher manualmente o ano óbvio.
+    form.ano_lectivo_id = props.turma?.ano_lectivo_id ?? props.anoLectivos[0]?.id ?? '';
     form.nivel_academico_id = props.turma?.nivel_academico_id ?? '';
     form.curso_id = props.turma?.curso_id ?? '';
     form.codigo = props.turma?.codigo ?? '';

@@ -2,6 +2,7 @@
 
 namespace Modules\Estabelecimento\DTO;
 
+use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Http\Requests\AtualizarDadosRequest;
 
@@ -10,6 +11,7 @@ class EstabelecimentoDTO
     public function __construct(
         public string $nome,
         public TipoEstabelecimentoEnum $tipo,
+        public TipoEnsinoEnum $tipo_ensino,
         public ?string $nome_abreviado = null,
         public ?string $nif = null,
         public ?string $codigo_mined = null,
@@ -36,6 +38,7 @@ class EstabelecimentoDTO
         return new self(
             nome: $dados['nome'],
             tipo: TipoEstabelecimentoEnum::from((int) $dados['tipo']),
+            tipo_ensino: TipoEnsinoEnum::from((int) $dados['tipo_ensino']),
             nome_abreviado: $dados['nome_abreviado'] ?? null,
             nif: $dados['nif'] ?? null,
             codigo_mined: $dados['codigo_mined'] ?? null,

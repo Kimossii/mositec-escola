@@ -17,6 +17,7 @@ class AtualizarDadosEstabelecimentoAction
                 'nome' => $dto->nome,
                 'nome_abreviado' => $dto->nome_abreviado,
                 'tipo' => $dto->tipo,
+                'tipo_ensino' => $dto->tipo_ensino,
                 'nif' => $dto->nif,
                 'codigo_mined' => $dto->codigo_mined,
                 'numero_alvara' => $dto->numero_alvara,

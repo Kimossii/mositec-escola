@@ -4,9 +4,11 @@ namespace Modules\Curso\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\Usuario\Models\User;
 
 class Curso extends Model
@@ -48,5 +50,10 @@ class Curso extends Model
     public function editadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'editado_por');
+    }
+
+    public function planosCurriculares(): HasMany
+    {
+        return $this->hasMany(PlanoCurricular::class);
     }
 }

@@ -22,11 +22,18 @@ const tipos = [
     { value: 3, label: 'Cooperativo' },
 ];
 
+const tiposEnsino = [
+    { value: 1, label: 'Ensino Geral' },
+    { value: 2, label: 'Ensino Técnico' },
+    { value: 3, label: 'Ensino Universitário' },
+];
+
 function snapshot() {
     return {
         nome: props.estabelecimento?.nome ?? '',
         nome_abreviado: props.estabelecimento?.nome_abreviado ?? '',
         tipo: props.estabelecimento?.tipo ?? 2,
+        tipo_ensino: props.estabelecimento?.tipo_ensino ?? 1,
         nif: props.estabelecimento?.nif ?? '',
         codigo_mined: props.estabelecimento?.codigo_mined ?? '',
         numero_alvara: props.estabelecimento?.numero_alvara ?? '',
@@ -125,6 +132,12 @@ function submeter() {
                             <CampoFicha
                                 v-model="form.tipo" label="Tipo" type="select" :options="tipos" required
                                 :editing="editando" :error="errors.tipo?.[0]" icon="ki-category" :icon-paths="4"
+                            />
+                        </div>
+                        <div class="col-md-4">
+                            <CampoFicha
+                                v-model="form.tipo_ensino" label="Tipo de Ensino" type="select" :options="tiposEnsino" required
+                                :editing="editando" :error="errors.tipo_ensino?.[0]" icon="ki-book-open" :icon-paths="2"
                             />
                         </div>
                         <div class="col-md-4">

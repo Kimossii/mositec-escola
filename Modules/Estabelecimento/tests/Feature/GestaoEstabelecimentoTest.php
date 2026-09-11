@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
@@ -41,6 +42,7 @@ class GestaoEstabelecimentoTest extends TestCase
         $response = $this->put('/estabelecimento', [
             'nome' => 'Escola Exemplo',
             'tipo' => TipoEstabelecimentoEnum::PRIVADO->value,
+            'tipo_ensino' => TipoEnsinoEnum::GERAL->value,
             'nif' => '5000123456',
         ]);
 
@@ -49,6 +51,8 @@ class GestaoEstabelecimentoTest extends TestCase
             'nome' => 'Escola Exemplo',
             'tipo' => TipoEstabelecimentoEnum::PRIVADO->value,
             'tipo_descricao' => 'Privado',
+            'tipo_ensino' => TipoEnsinoEnum::GERAL->value,
+            'tipo_ensino_descricao' => 'Ensino Geral',
             'is_active' => true,
         ]);
     }
@@ -57,11 +61,12 @@ class GestaoEstabelecimentoTest extends TestCase
     {
         $this->actingAsAdmin();
 
-        Estabelecimento::create(['nome' => 'Escola Antiga', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'is_active' => true]);
+        Estabelecimento::create(['nome' => 'Escola Antiga', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL, 'is_active' => true]);
 
         $response = $this->put('/estabelecimento', [
             'nome' => 'Escola Renomeada',
             'tipo' => TipoEstabelecimentoEnum::COOPERATIVO->value,
+            'tipo_ensino' => TipoEnsinoEnum::TECNICO->value,
         ]);
 
         $response->assertRedirect();
@@ -70,6 +75,35 @@ class GestaoEstabelecimentoTest extends TestCase
             'nome' => 'Escola Renomeada',
             'tipo' => TipoEstabelecimentoEnum::COOPERATIVO->value,
         ]);
+    }
+
+    public function test_atualiza_tipo_ensino_com_valores_validos(): void
+    {
+        $this->actingAsAdmin();
+
+        foreach ([1 => 'Ensino Geral', 2 => 'Ensino Técnico', 3 => 'Ensino Universitário'] as $valor => $descricao) {
+            $this->put('/estabelecimento', [
+                'nome' => 'Escola Teste',
+                'tipo' => TipoEstabelecimentoEnum::PRIVADO->value,
+                'tipo_ensino' => $valor,
+            ])->assertSessionHasNoErrors();
+
+            $this->assertDatabaseHas('estabelecimentos', [
+                'tipo_ensino' => $valor,
+                'tipo_ensino_descricao' => $descricao,
+            ]);
+        }
+    }
+
+    public function test_rejeita_tipo_ensino_invalido(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->put('/estabelecimento', [
+            'nome' => 'Escola Teste',
+            'tipo' => TipoEstabelecimentoEnum::PRIVADO->value,
+            'tipo_ensino' => 99,
+        ])->assertSessionHasErrors('tipo_ensino');
     }
 
     public function test_utilizador_sem_permissao_nao_acede_ao_estabelecimento(): void
@@ -86,7 +120,7 @@ class GestaoEstabelecimentoTest extends TestCase
     {
         $this->actingAsAdmin();
 
-        Estabelecimento::create(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'is_active' => true]);
+        Estabelecimento::create(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL, 'is_active' => true]);
 
         $response = $this->get('/estabelecimento');
 
@@ -101,7 +135,7 @@ class GestaoEstabelecimentoTest extends TestCase
     {
         $this->actingAsAdmin();
 
-        Estabelecimento::create(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'is_active' => true]);
+        Estabelecimento::create(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL, 'is_active' => true]);
 
         $response = $this->get('/estabelecimento/aparencia');
 
@@ -117,7 +151,7 @@ class GestaoEstabelecimentoTest extends TestCase
         Storage::fake('public');
         $this->actingAsAdmin();
 
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'is_active' => true]);
+        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL, 'is_active' => true]);
 
         $response = $this->post('/estabelecimento/logotipo', [
             'logotipo' => UploadedFile::fake()->image('logo.png'),

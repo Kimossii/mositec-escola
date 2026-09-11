@@ -1,0 +1,11 @@
+{
+    "name": "PlanoCurricular",
+    "alias": "planocurricular",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\PlanoCurricular\\Providers\\PlanoCurricularServiceProvider"
+    ],
+    "files": []
+}

@@ -22,6 +22,13 @@ class ModuloSeederTest extends TestCase
         $this->assertDatabaseHas('modulos', ['nome' => 11, 'descricao' => 'Horario']);
     }
 
+    public function test_seeder_inclui_o_modulo_plano_curricular(): void
+    {
+        $this->seed(ModuloSeeder::class);
+
+        $this->assertDatabaseHas('modulos', ['nome' => 14, 'descricao' => 'Plano Curricular']);
+    }
+
     public function test_seeder_e_idempotente(): void
     {
         $this->seed(ModuloSeeder::class);
@@ -30,7 +37,7 @@ class ModuloSeederTest extends TestCase
         $this->seed(ModuloSeeder::class);
 
         $this->assertSame($contagemInicial, Modulo::count());
-        $this->assertSame(14, Modulo::count());
+        $this->assertSame(15, Modulo::count());
     }
 
     public function test_seeder_nao_apaga_role_permissoes_dependentes(): void
