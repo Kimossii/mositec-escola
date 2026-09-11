@@ -33,4 +33,11 @@ class ModuloEnumTest extends TestCase
         $this->assertNull(Modulo::tryFrom(999));
         $this->assertSame(Modulo::HORARIO, Modulo::tryFrom(11));
     }
+
+    public function test_plano_curricular_slug_e_label(): void
+    {
+        $this->assertSame('plano-curricular', Modulo::PLANO_CURRICULAR->slug());
+        $this->assertSame('Plano Curricular', Modulo::PLANO_CURRICULAR->label());
+        $this->assertSame(Modulo::PLANO_CURRICULAR, Modulo::fromSlug('plano-curricular'));
+    }
 }

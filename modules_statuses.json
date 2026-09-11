@@ -9,5 +9,6 @@
     "Turma": true,
     "Curso": true,
     "Disciplina": true,
-    "Aluno": true
+    "Aluno": true,
+    "PlanoCurricular": true
 }

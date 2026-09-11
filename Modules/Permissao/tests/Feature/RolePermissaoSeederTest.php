@@ -54,5 +54,31 @@ class RolePermissaoSeederTest extends TestCase
         $this->assertFalse($resolver->can($professor, 'ano-lectivo.ver'));
         $this->assertFalse($resolver->can($professor, 'horario.ver'));
         $this->assertFalse($resolver->can($professor, 'estabelecimento.ver'));
+        $this->assertFalse($resolver->can($professor, 'plano-curricular.ver'));
+    }
+
+    public function test_admin_escola_tem_permissoes_de_plano_curricular(): void
+    {
+        $admin = User::create(['name' => 'Admin', 'email' => 'admin2@example.com', 'password' => Hash::make('x')]);
+        $admin->roles()->attach(Role::where('nome', Perfil::ADMIN_ESCOLA->value)->first()->id);
+
+        $resolver = app(PermissionResolver::class);
+
+        foreach (['ver', 'criar', 'editar'] as $acao) {
+            $this->assertTrue($resolver->can($admin, "plano-curricular.{$acao}"), "plano-curricular.{$acao}");
+        }
+        $this->assertFalse($resolver->can($admin, 'plano-curricular.eliminar'), 'Plano Curricular não tem eliminar mapeado');
+    }
+
+    public function test_professor_nao_tem_nenhuma_permissao_de_plano_curricular(): void
+    {
+        $professor = User::create(['name' => 'P2', 'email' => 'p2@example.com', 'password' => Hash::make('x')]);
+        $professor->roles()->attach(Role::where('nome', Perfil::PROFESSOR->value)->first()->id);
+
+        $resolver = app(PermissionResolver::class);
+
+        foreach (['ver', 'criar', 'editar'] as $acao) {
+            $this->assertFalse($resolver->can($professor, "plano-curricular.{$acao}"), "plano-curricular.{$acao}");
+        }
     }
 }
