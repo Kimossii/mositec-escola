@@ -259,7 +259,7 @@ function formatarDataHora(valor) {
                 </div>
             </div>
             <div class="card-body p-0">
-                <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
+                <table class="table align-middle table-row-dashed fs-6 gy-5 mb-0">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th class="min-w-200px">Disciplina</th>
@@ -277,8 +277,8 @@ function formatarDataHora(valor) {
                         </tr>
                     </tbody>
                     <tbody v-for="grupo in gruposDisciplinas" :key="grupo.nome" class="text-gray-600 fw-semibold">
-                        <tr class="bg-light-primary">
-                            <td colspan="7" class="fw-bold text-gray-800">{{ grupo.nome }}</td>
+                        <tr class="bg-nivel-academico">
+                            <td colspan="7" class="fw-bold">{{ grupo.nome }}</td>
                         </tr>
                         <tr v-for="disciplina in grupo.disciplinas" :key="disciplina.id">
                             <td>{{ disciplina.disciplina?.nome }}</td>
