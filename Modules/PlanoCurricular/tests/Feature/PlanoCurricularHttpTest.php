@@ -100,24 +100,6 @@ class PlanoCurricularHttpTest extends TestCase
         ]);
     }
 
-    public function test_index_expoe_apenas_planos_do_estabelecimento_actual(): void
-    {
-        $this->actingAsStaff();
-        $estabelecimentoActual = $this->criarEstabelecimento();
-        $cursoActual = $this->criarCurso($estabelecimentoActual);
-        $this->criarPlano($estabelecimentoActual, $cursoActual, 'PLI');
-
-        $outroEstabelecimento = $this->criarEstabelecimento(false);
-        $cursoOutro = $this->criarCurso($outroEstabelecimento, 'CONT');
-        $this->criarPlano($outroEstabelecimento, $cursoOutro, 'PLC');
-
-        $this->get(route('planos-curriculares.index'))->assertInertia(fn (Assert $page) => $page
-            ->component('PlanoCurricular/Index')
-            ->has('planosCurriculares', 1)
-            ->where('planosCurriculares.0.codigo', 'PLI')
-        );
-    }
-
     public function test_store_cria_plano_associado_ao_curso(): void
     {
         $staff = $this->actingAsStaff();
@@ -334,12 +316,5 @@ class PlanoCurricularHttpTest extends TestCase
         $this->post(route('planos-curriculares.store'), ['curso_id' => $curso->id, 'codigo' => 'PLX', 'nome' => 'Outro Plano'])->assertForbidden();
         $this->put(route('planos-curriculares.update', $plano), ['curso_id' => $curso->id, 'codigo' => 'PLI', 'nome' => 'Plano Renovado'])->assertForbidden();
         $this->patch(route('planos-curriculares.alterar-estado', $plano), ['estado' => Estado::INATIVO->value])->assertForbidden();
-    }
-
-    public function test_professor_recebe_403_ao_listar(): void
-    {
-        $this->actingAsProfessor();
-
-        $this->get(route('planos-curriculares.index'))->assertForbidden();
     }
 }

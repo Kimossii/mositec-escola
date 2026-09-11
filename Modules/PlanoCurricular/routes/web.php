@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Route;
 use Modules\PlanoCurricular\Http\Controllers\PlanoCurricularController;
 
 Route::middleware(['auth'])->prefix('planos-curriculares')->name('planos-curriculares.')->group(function () {
-    Route::get('/', [PlanoCurricularController::class, 'index'])->middleware('can:plano-curricular.ver')->name('index');
     Route::post('/', [PlanoCurricularController::class, 'store'])->middleware('can:plano-curricular.criar')->name('store');
     Route::get('/{planoCurricular}', [PlanoCurricularController::class, 'show'])->middleware('can:plano-curricular.ver')->name('show');
     Route::put('/{planoCurricular}', [PlanoCurricularController::class, 'update'])->middleware('can:plano-curricular.editar')->name('update');

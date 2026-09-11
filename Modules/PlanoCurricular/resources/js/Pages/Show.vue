@@ -220,7 +220,7 @@ function formatarDataHora(valor) {
 
 <template>
     <div class="app-container container-xxl py-6">
-        <BotaoVoltar href="/planos-curriculares" class="mb-4" />
+        <BotaoVoltar :href="`/cursos/${planoCurricular.curso_id}`" class="mb-4" />
 
         <div class="card mb-6">
             <div class="card-body d-flex justify-content-between align-items-start">
@@ -390,6 +390,7 @@ function formatarDataHora(valor) {
         <DisciplinaPlanoFormModal
             :show="disciplinaModalAberto"
             :disciplina="disciplinaEmEdicao"
+            :disciplinas-existentes="planoCurricular.disciplinas"
             :opcoes="opcoes"
             :processing="disciplinaProcessing"
             :errors="disciplinaErrors"

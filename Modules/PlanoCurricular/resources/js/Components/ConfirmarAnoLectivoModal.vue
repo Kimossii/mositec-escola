@@ -17,10 +17,19 @@ const anosJaConfirmadosIds = computed(() =>
         .filter((id) => id !== undefined && id !== null),
 );
 
+const anosLectivosDisponiveis = computed(() =>
+    props.opcoes.anosLectivos.filter((ano) => !anosJaConfirmadosIds.value.includes(ano.id)),
+);
+
 const opcoesAnosLectivos = computed(() =>
-    props.opcoes.anosLectivos
-        .filter((ano) => !anosJaConfirmadosIds.value.includes(ano.id))
-        .map((ano) => ({ value: ano.id, label: ano.nome })),
+    anosLectivosDisponiveis.value.map((ano) => ({ value: ano.id, label: ano.nome })),
+);
+
+// Ano Lectivo activo (estado 1) pré-seleccionado por defeito, para o
+// utilizador saber sempre a que ano se está a referir sem ter de escolher
+// manualmente — ele só muda se quiser mesmo confirmar para outro ano.
+const anoLectivoAtivoId = computed(() =>
+    anosLectivosDisponiveis.value.find((ano) => ano.estado === 1)?.id ?? '',
 );
 
 const form = reactive({
@@ -30,7 +39,7 @@ const form = reactive({
 
 watch(() => props.show, (show) => {
     if (!show) return;
-    form.ano_lectivo_id = '';
+    form.ano_lectivo_id = anoLectivoAtivoId.value;
     form.observacoes = '';
 });
 

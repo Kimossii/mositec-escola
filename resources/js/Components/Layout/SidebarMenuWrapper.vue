@@ -468,7 +468,6 @@ const academico = {
         { href: '/alunos', title: 'Alunos', permissao: 'aluno.ver' },
         // { href: '#', title: 'Encarregados de Educação' },
         { href: '/cursos', title: 'Cursos', permissao: 'curso.ver' },
-        { href: '/planos-curriculares', title: 'Planos Curriculares', permissao: 'plano-curricular.ver' },
         { href: '/turmas', title: 'Turmas', permissao: 'turmas.ver' },
         // { href: '#', title: 'Matrículas' },
         // { href: '#', title: 'Transferências' },

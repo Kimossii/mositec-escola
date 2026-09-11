@@ -14,4 +14,9 @@ class CursoConsultaService
             ->orderBy('nome')
             ->get();
     }
+
+    public function comRelacoes(Curso $curso): Curso
+    {
+        return $curso->load(['planosCurriculares' => fn ($query) => $query->orderBy('nome')]);
+    }
 }

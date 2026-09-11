@@ -5,6 +5,7 @@ import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 const props = defineProps({
     show: { type: Boolean, default: false },
     disciplina: { type: Object, default: null },
+    disciplinasExistentes: { type: Array, default: () => [] },
     opcoes: { type: Object, required: true },
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
@@ -33,6 +34,14 @@ const opcoesNiveisAcademicos = computed(() =>
         .map((n) => ({ value: n.id, label: n.nome })),
 );
 
+// Sugestão de ordem para uma disciplina nova: a seguir à última já
+// existente no plano. O campo continua editável — é só um ponto de
+// partida, para o utilizador não ter de ir contar manualmente.
+const proximaOrdemSugerida = computed(() => {
+    if (!props.disciplinasExistentes.length) return 0;
+    return Math.max(...props.disciplinasExistentes.map((d) => d.ordem)) + 1;
+});
+
 const form = reactive({
     disciplina_id: '',
     nivel_academico_id: '',
@@ -53,7 +62,7 @@ watch(() => props.show, (show) => {
     form.componente = props.disciplina?.componente ?? null;
     form.tipo = props.disciplina?.tipo ?? 0;
     form.obrigatoria = props.disciplina?.obrigatoria ?? true;
-    form.ordem = props.disciplina?.ordem ?? 0;
+    form.ordem = props.disciplina?.ordem ?? proximaOrdemSugerida.value;
 });
 
 function submeter() {

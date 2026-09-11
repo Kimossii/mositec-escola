@@ -8,7 +8,6 @@ use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Curso\Models\Curso;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\Estabelecimento\Models\Estabelecimento;
-use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\PlanoCurricular\Services\PlanoCurricularConsultaService;
 use Modules\Turma\Models\NivelAcademico;
 use Tests\TestCase;
@@ -16,23 +15,6 @@ use Tests\TestCase;
 class PlanoCurricularConsultaServiceTest extends TestCase
 {
     use RefreshDatabase;
-
-    public function test_listar_devolve_apenas_planos_do_estabelecimento_actual(): void
-    {
-        $atual = Estabelecimento::create(['nome' => 'Escola Actual', 'tipo' => 1, 'is_active' => true]);
-        $outra = Estabelecimento::create(['nome' => 'Outra Escola', 'tipo' => 1, 'is_active' => false]);
-
-        $cursoAtual = Curso::create(['estabelecimento_id' => $atual->id, 'codigo' => 'C1', 'nome' => 'Curso Actual']);
-        $cursoOutro = Curso::create(['estabelecimento_id' => $outra->id, 'codigo' => 'C1', 'nome' => 'Curso Outro']);
-
-        $planoAtual = PlanoCurricular::create(['estabelecimento_id' => $atual->id, 'curso_id' => $cursoAtual->id, 'codigo' => 'PC1', 'nome' => 'Plano Actual']);
-        PlanoCurricular::create(['estabelecimento_id' => $outra->id, 'curso_id' => $cursoOutro->id, 'codigo' => 'PC1', 'nome' => 'Plano Outro']);
-
-        $planos = (new PlanoCurricularConsultaService())->listar();
-
-        $this->assertCount(1, $planos);
-        $this->assertSame($planoAtual->id, $planos->first()->id);
-    }
 
     public function test_opcoes_formulario_filtra_pelo_estabelecimento_actual(): void
     {

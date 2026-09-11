@@ -25,16 +25,6 @@ class PlanoCurricularController extends Controller
     ) {
     }
 
-    public function index()
-    {
-        $this->authorize('plano-curricular.ver');
-
-        return Inertia::render('PlanoCurricular/Index', [
-            'planosCurriculares' => $this->consulta->listar(),
-            'opcoes' => $this->consulta->opcoesFormulario(),
-        ]);
-    }
-
     public function show(PlanoCurricular $planoCurricular)
     {
         $this->authorize('plano-curricular.ver');
