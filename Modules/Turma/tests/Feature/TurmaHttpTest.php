@@ -233,6 +233,35 @@ class TurmaHttpTest extends TestCase
         $this->assertDatabaseHas('niveis_academicos', ['id' => $nivel->id]);
     }
 
+    public function test_elimina_turno_associado_a_turma_soft_deleted(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turno = Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
+        $curso = $this->criarCurso($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'turno_id' => $turno->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $turma->delete();
+
+        $this->delete(route('turnos.destroy', $turno))->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertSoftDeleted('turnos', ['id' => $turno->id]);
+    }
+
+    public function test_elimina_nivel_academico_associado_a_turma_soft_deleted(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $curso = $this->criarCurso($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $turma->delete();
+
+        $this->delete(route('niveis-academicos.destroy', $nivel))->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertSoftDeleted('niveis_academicos', ['id' => $nivel->id]);
+    }
+
     public function test_cria_turma_via_http_e_regista_autoria(): void
     {
         $staff = $this->actingAsStaff();
