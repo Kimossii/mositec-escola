@@ -74,7 +74,7 @@ class PlanoCurricularHistoricoTest extends TestCase
         $estabelecimento = $this->criarEstabelecimento();
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT', 'nome' => 'Matemática']);
-        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
 
         $anoLectivo2026 = $this->criarAnoLectivo($estabelecimento, '2026');
         $anoLectivo2027 = $this->criarAnoLectivo($estabelecimento, '2027');
@@ -206,7 +206,7 @@ class PlanoCurricularHistoricoTest extends TestCase
         $estabelecimento = $this->criarEstabelecimento();
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT', 'nome' => 'Matemática']);
-        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
 
         $anoLectivo2026 = $this->criarAnoLectivo($estabelecimento, '2026');
         $anoLectivo2027 = $this->criarAnoLectivo($estabelecimento, '2027');

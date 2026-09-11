@@ -130,18 +130,20 @@ function confirmarEliminacao() {
                             <th class="min-w-75px">Ordem</th>
                             <th class="min-w-100px">Código</th>
                             <th class="min-w-200px">Nome</th>
+                            <th class="min-w-150px">Etapa</th>
                             <th class="min-w-125px">Estado</th>
                             <th class="text-end min-w-125px">Ações</th>
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="niveisAcademicos.length === 0">
-                            <td colspan="5" class="text-center text-muted py-6">Nenhum nível académico criado.</td>
+                            <td colspan="6" class="text-center text-muted py-6">Nenhum nível académico criado.</td>
                         </tr>
                         <tr v-for="nivel in niveisAcademicos" :key="nivel.id">
                             <td>{{ nivel.ordem }}</td>
                             <td>{{ nivel.codigo }}</td>
                             <td>{{ nivel.nome }}</td>
+                            <td>{{ nivel.etapa_ensino_descricao }}</td>
                             <td>
                                 <EstadoBadge :estado="nivel.estado" :estado-descricao="nivel.estado_descricao" />
                             </td>

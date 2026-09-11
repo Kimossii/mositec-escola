@@ -2,6 +2,7 @@
 
 namespace Modules\Turma\DTO;
 
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Turma\Http\Requests\AtualizarNivelAcademicoRequest;
 use Modules\Turma\Http\Requests\CriarNivelAcademicoRequest;
 
@@ -11,6 +12,7 @@ class NivelAcademicoDTO
         public string $codigo,
         public string $nome,
         public int $ordem,
+        public EtapaEnsinoEnum $etapa_ensino,
     ) {
     }
 
@@ -23,6 +25,7 @@ class NivelAcademicoDTO
             codigo: $dados['codigo'],
             nome: $dados['nome'],
             ordem: (int) $dados['ordem'],
+            etapa_ensino: EtapaEnsinoEnum::from((int) $dados['etapa_ensino']),
         );
     }
 
@@ -35,6 +38,7 @@ class NivelAcademicoDTO
             codigo: $dados['codigo'],
             nome: $dados['nome'],
             ordem: (int) $dados['ordem'],
+            etapa_ensino: EtapaEnsinoEnum::from((int) $dados['etapa_ensino']),
         );
     }
 }

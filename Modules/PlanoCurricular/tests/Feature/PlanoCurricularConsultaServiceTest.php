@@ -27,8 +27,8 @@ class PlanoCurricularConsultaServiceTest extends TestCase
         $disciplinaAtual = Disciplina::create(['estabelecimento_id' => $atual->id, 'codigo' => 'D1', 'nome' => 'Disciplina Actual']);
         Disciplina::create(['estabelecimento_id' => $outra->id, 'codigo' => 'D1', 'nome' => 'Disciplina Outra']);
 
-        $nivelAtual = NivelAcademico::create(['estabelecimento_id' => $atual->id, 'codigo' => 'N1', 'nome' => 'Nível Actual', 'ordem' => 1]);
-        NivelAcademico::create(['estabelecimento_id' => $outra->id, 'codigo' => 'N1', 'nome' => 'Nível Outro', 'ordem' => 1]);
+        $nivelAtual = NivelAcademico::create(['estabelecimento_id' => $atual->id, 'codigo' => 'N1', 'nome' => 'Nível Actual', 'ordem' => 1, 'etapa_ensino' => 4]);
+        NivelAcademico::create(['estabelecimento_id' => $outra->id, 'codigo' => 'N1', 'nome' => 'Nível Outro', 'ordem' => 1, 'etapa_ensino' => 4]);
 
         $anoAtual = AnoLectivo::create(['estabelecimento_id' => $atual->id, 'nome' => '2026', 'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO]);
         AnoLectivo::create(['estabelecimento_id' => $outra->id, 'nome' => '2026', 'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO]);

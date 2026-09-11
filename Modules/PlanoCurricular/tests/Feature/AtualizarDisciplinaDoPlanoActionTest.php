@@ -31,8 +31,8 @@ class AtualizarDisciplinaDoPlanoActionTest extends TestCase
         ]);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT', 'nome' => 'Matemática']);
         $outraDisciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'FIS', 'nome' => 'Física']);
-        $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1]);
-        $outroNivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N11', 'nome' => '11ª Classe', 'ordem' => 2]);
+        $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
+        $outroNivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N11', 'nome' => '11ª Classe', 'ordem' => 2, 'etapa_ensino' => 4]);
         $item = PlanoCurricularDisciplina::create([
             'plano_curricular_id' => $plano->id,
             'disciplina_id' => $disciplina->id,

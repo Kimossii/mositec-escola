@@ -29,7 +29,7 @@ class AdicionarDisciplinaAoPlanoActionTest extends TestCase
             'nome' => 'Plano 1',
         ]);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT', 'nome' => 'Matemática']);
-        $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1]);
+        $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
 
         $item = (new AdicionarDisciplinaAoPlanoAction())->executar($plano, new PlanoCurricularDisciplinaDTO(
             disciplina_id: $disciplina->id,

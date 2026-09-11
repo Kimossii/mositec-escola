@@ -145,7 +145,7 @@ function confirmarEliminacao() {
                         <tr v-for="turma in turmas" :key="turma.id">
                             <td>{{ turma.codigo }}</td>
                             <td>{{ turma.nome }}</td>
-                            <td>{{ turma.curso.nome }}</td>
+                            <td>{{ turma.curso?.nome ?? '—' }}</td>
                             <td>
                                 <EstadoBadge :estado="turma.estado" :estado-descricao="turma.estado_descricao" />
                             </td>

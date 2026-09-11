@@ -17,6 +17,7 @@ class AtualizarNivelAcademicoRequest extends BaseRequest
             'codigo' => 'required|string|max:50',
             'nome' => 'required|string|max:255',
             'ordem' => 'required|integer|min:1',
+            'etapa_ensino' => 'required|integer|in:1,2,3,4,5',
         ];
     }
 
@@ -29,6 +30,8 @@ class AtualizarNivelAcademicoRequest extends BaseRequest
             'nome.max' => 'O nome do nível académico não pode ultrapassar 255 caracteres.',
             'ordem.required' => 'A ordem do nível académico é obrigatória.',
             'ordem.min' => 'A ordem deve ser igual ou superior a 1.',
+            'etapa_ensino.required' => 'A etapa de ensino é obrigatória.',
+            'etapa_ensino.in' => 'A etapa de ensino indicada é inválida.',
         ];
     }
 }

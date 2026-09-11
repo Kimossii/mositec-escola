@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Usuario\Models\User;
 
@@ -21,6 +22,7 @@ class NivelAcademico extends Model
         'estabelecimento_id',
         'codigo',
         'nome',
+        'etapa_ensino',
         'ordem',
         'estado',
         'estado_descricao',
@@ -31,6 +33,7 @@ class NivelAcademico extends Model
     protected $casts = [
         'estado' => 'integer',
         'ordem' => 'integer',
+        'etapa_ensino' => EtapaEnsinoEnum::class,
     ];
 
     public function estabelecimento(): BelongsTo
@@ -51,5 +54,14 @@ class NivelAcademico extends Model
     public function editadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'editado_por');
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (NivelAcademico $nivelAcademico) {
+            if ($nivelAcademico->etapa_ensino !== null) {
+                $nivelAcademico->etapa_ensino_descricao = $nivelAcademico->etapa_ensino->label();
+            }
+        });
     }
 }

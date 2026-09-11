@@ -79,7 +79,7 @@ class PlanoCurricularHttpTest extends TestCase
 
     private function criarNivelAcademico(Estabelecimento $estabelecimento, string $codigo = '1C'): NivelAcademico
     {
-        return NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => $codigo, 'nome' => '1ª Classe', 'ordem' => 1]);
+        return NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => $codigo, 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
     }
 
     private function criarAnoLectivo(Estabelecimento $estabelecimento, string $nome = '2026'): AnoLectivo
