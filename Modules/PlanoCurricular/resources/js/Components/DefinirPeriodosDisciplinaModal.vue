@@ -6,10 +6,13 @@ const props = defineProps({
     show: { type: Boolean, default: false },
     disciplina: { type: Object, default: null },
     anosLectivos: { type: Array, default: () => [] },
+    aplicacaoPadraoId: { type: [Number, String], default: '' },
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
 });
 const emit = defineEmits(['submit', 'cancelar']);
+
+const jaTemAlgumPeriodoDefinido = computed(() => (props.disciplina?.periodos_por_aplicacao ?? []).length > 0);
 
 const aplicacaoId = ref('');
 const periodoIdsSelecionados = ref([]);
@@ -31,7 +34,7 @@ function periodosJaMapeados(idDaAplicacao) {
 
 watch(() => props.show, (show) => {
     if (!show) return;
-    aplicacaoId.value = props.anosLectivos[0]?.id ?? '';
+    aplicacaoId.value = props.aplicacaoPadraoId || props.anosLectivos[0]?.id || '';
     periodoIdsSelecionados.value = periodosJaMapeados(aplicacaoId.value);
 });
 
@@ -57,7 +60,7 @@ function submeter() {
     <div v-if="show" class="modal d-block" style="background: rgba(0,0,0,0.5);" @click.self="emit('cancelar')">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content p-6">
-                <h3 class="mb-1">Definir Períodos</h3>
+                <h3 class="mb-1">{{ jaTemAlgumPeriodoDefinido ? 'Editar Períodos' : 'Definir Períodos' }}</h3>
                 <div class="text-muted fs-7 mb-5">{{ disciplina?.disciplina?.nome }}</div>
 
                 <form @submit.prevent="submeter">

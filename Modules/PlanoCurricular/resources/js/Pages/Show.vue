@@ -6,6 +6,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import PlanoCurricularFormModal from '../Components/PlanoCurricularFormModal.vue';
@@ -129,6 +130,29 @@ function guardarDisciplina(payload) {
     });
 }
 
+// --- Ano Lectivo de referência para agrupar as disciplinas por período ---
+// Por defeito, o ano lectivo actualmente ativo entre as aplicações
+// confirmadas deste plano; se nenhum estiver ativo, o mais recente.
+function aplicacaoPadrao() {
+    const lista = props.planoCurricular.anos_lectivos ?? [];
+    if (!lista.length) return '';
+    const ativa = lista.find((aplicacao) => aplicacao.ano_lectivo?.estado === 1);
+    if (ativa) return ativa.id;
+    const maisRecente = [...lista].sort((a, b) => (b.ano_lectivo?.data_inicio ?? '').localeCompare(a.ano_lectivo?.data_inicio ?? ''))[0];
+    return maisRecente?.id ?? '';
+}
+
+const aplicacaoSelecionadaId = ref(aplicacaoPadrao());
+
+const opcoesAplicacoesParaAgrupar = computed(() =>
+    (props.planoCurricular.anos_lectivos ?? []).map((aplicacao) => ({ value: aplicacao.id, label: aplicacao.ano_lectivo?.nome ?? '—' })),
+);
+
+const periodosDaAplicacaoSelecionada = computed(() => {
+    const aplicacao = (props.planoCurricular.anos_lectivos ?? []).find((item) => item.id === aplicacaoSelecionadaId.value);
+    return [...(aplicacao?.ano_lectivo?.periodos ?? [])].sort((a, b) => a.numero - b.numero);
+});
+
 const gruposDisciplinas = computed(() => {
     const grupos = new Map();
 
@@ -147,12 +171,52 @@ const gruposDisciplinas = computed(() => {
         grupos.get(chave).disciplinas.push(item);
     }
 
-    return [...grupos.values()]
+    const gruposOrdenados = [...grupos.values()]
         .sort((a, b) => a.ordem - b.ordem)
         .map((grupo) => ({
             ...grupo,
             disciplinas: [...grupo.disciplinas].sort((a, b) => a.ordem - b.ordem),
         }));
+
+    // Sem nenhuma aplicação confirmada ainda não há noção de "período" —
+    // mostra as disciplinas do nível sem sub-divisão nenhuma.
+    if (!aplicacaoSelecionadaId.value) {
+        return gruposOrdenados.map((grupo) => ({
+            ...grupo,
+            subgrupos: [{ nome: null, naoDefinido: false, disciplinas: grupo.disciplinas }],
+        }));
+    }
+
+    return gruposOrdenados.map((grupo) => {
+        const porPeriodo = new Map();
+        const semPeriodo = [];
+
+        for (const disciplina of grupo.disciplinas) {
+            const mapeamentosDaAplicacao = (disciplina.periodos_por_aplicacao ?? [])
+                .filter((item) => item.plano_curricular_ano_lectivo_id === aplicacaoSelecionadaId.value);
+
+            if (!mapeamentosDaAplicacao.length) {
+                semPeriodo.push(disciplina);
+                continue;
+            }
+
+            for (const mapeamento of mapeamentosDaAplicacao) {
+                const periodo = periodosDaAplicacaoSelecionada.value.find((item) => item.id === mapeamento.periodo_id);
+                const chave = periodo?.id ?? 'periodo-desconhecido';
+                if (!porPeriodo.has(chave)) {
+                    porPeriodo.set(chave, { nome: periodo?.nome ?? '—', numero: periodo?.numero ?? Number.MAX_SAFE_INTEGER, naoDefinido: false, disciplinas: [] });
+                }
+                porPeriodo.get(chave).disciplinas.push(disciplina);
+            }
+        }
+
+        const subgrupos = [...porPeriodo.values()].sort((a, b) => a.numero - b.numero);
+        if (semPeriodo.length) {
+            subgrupos.push({ nome: 'Período não definido', naoDefinido: true, disciplinas: semPeriodo });
+        }
+
+        return { ...grupo, subgrupos };
+    });
 });
 
 const disciplinaParaRemover = ref(null);
@@ -184,6 +248,14 @@ function confirmarRemocaoDisciplina() {
 const anoLectivoModalAberto = ref(false);
 const anoLectivoProcessing = ref(false);
 const anoLectivoErrors = ref({});
+
+const anosLectivosJaConfirmadosIds = computed(() =>
+    (props.planoCurricular.anos_lectivos ?? []).map((aplicacao) => aplicacao.ano_lectivo_id),
+);
+
+const haAnosLectivosDisponiveisParaConfirmar = computed(() =>
+    (props.opcoes.anosLectivos ?? []).some((anoLectivo) => !anosLectivosJaConfirmadosIds.value.includes(anoLectivo.id)),
+);
 
 function abrirConfirmarAnoLectivo() {
     anoLectivoErrors.value = {};
@@ -299,6 +371,12 @@ function formatarDataHora(valor) {
                     </button>
                 </div>
             </div>
+            <div v-if="planoCurricular.anos_lectivos?.length" class="card-body py-4 border-bottom d-flex align-items-center gap-3">
+                <label class="fw-semibold fs-7 text-muted mb-0 text-nowrap">A mostrar períodos de:</label>
+                <div style="min-width: 220px;">
+                    <SelectSolid v-model="aplicacaoSelecionadaId" :options="opcoesAplicacoesParaAgrupar" />
+                </div>
+            </div>
             <div class="card-body p-0">
                 <table class="table align-middle table-row-dashed fs-6 gy-5 mb-0">
                     <thead>
@@ -321,46 +399,53 @@ function formatarDataHora(valor) {
                         <tr class="bg-nivel-academico">
                             <td colspan="7" class="fw-bold">{{ grupo.nome }}</td>
                         </tr>
-                        <tr v-for="disciplina in grupo.disciplinas" :key="disciplina.id">
-                            <td>{{ disciplina.disciplina?.nome }}</td>
-                            <td>{{ disciplina.carga_horaria ?? '—' }}</td>
-                            <td>{{ disciplina.creditos ?? '—' }}</td>
-                            <td>{{ disciplina.componente_descricao ?? '—' }}</td>
-                            <td>{{ disciplina.tipo_descricao ?? '—' }}</td>
-                            <td>{{ disciplina.obrigatoria ? 'Sim' : 'Não' }}</td>
-                            <td class="text-end">
-                                <a
-                                    v-if="can('plano-curricular.editar')"
-                                    href="#"
-                                    class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm"
-                                    data-kt-menu-trigger="click"
-                                    data-kt-menu-placement="bottom-end"
-                                >
-                                    Ações
-                                    <i class="ki-duotone ki-down fs-5 ms-1"></i>
-                                </a>
-                                <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4" data-kt-menu="true">
-                                    <div class="menu-item px-3">
-                                        <a href="#" class="menu-link px-3" @click.prevent="abrirEdicaoDisciplina(disciplina)">
-                                            <AcaoIcone acao="editar" class="me-2" />
-                                            Editar
-                                        </a>
+                        <template v-for="subgrupo in grupo.subgrupos" :key="subgrupo.nome ?? 'flat'">
+                            <tr v-if="subgrupo.nome" :class="subgrupo.naoDefinido ? 'bg-light' : 'bg-light-primary'">
+                                <td colspan="7" class="fw-semibold ps-8" :class="subgrupo.naoDefinido ? 'text-muted' : 'text-gray-800'">
+                                    {{ subgrupo.nome }}
+                                </td>
+                            </tr>
+                            <tr v-for="disciplina in subgrupo.disciplinas" :key="`${disciplina.id}-${subgrupo.nome ?? 'flat'}`">
+                                <td>{{ disciplina.disciplina?.nome }}</td>
+                                <td>{{ disciplina.carga_horaria ?? '—' }}</td>
+                                <td>{{ disciplina.creditos ?? '—' }}</td>
+                                <td>{{ disciplina.componente_descricao ?? '—' }}</td>
+                                <td>{{ disciplina.tipo_descricao ?? '—' }}</td>
+                                <td>{{ disciplina.obrigatoria ? 'Sim' : 'Não' }}</td>
+                                <td class="text-end">
+                                    <a
+                                        v-if="can('plano-curricular.editar')"
+                                        href="#"
+                                        class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm"
+                                        data-kt-menu-trigger="click"
+                                        data-kt-menu-placement="bottom-end"
+                                    >
+                                        Ações
+                                        <i class="ki-duotone ki-down fs-5 ms-1"></i>
+                                    </a>
+                                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4" data-kt-menu="true">
+                                        <div class="menu-item px-3">
+                                            <a href="#" class="menu-link px-3" @click.prevent="abrirEdicaoDisciplina(disciplina)">
+                                                <AcaoIcone acao="editar" class="me-2" />
+                                                Editar
+                                            </a>
+                                        </div>
+                                        <div v-if="planoCurricular.anos_lectivos?.length" class="menu-item px-3">
+                                            <a href="#" class="menu-link px-3" @click.prevent="abrirDefinirPeriodos(disciplina)">
+                                                <AcaoIcone acao="visualizar" class="me-2" />
+                                                {{ (disciplina.periodos_por_aplicacao ?? []).length ? 'Editar Períodos' : 'Definir Períodos' }}
+                                            </a>
+                                        </div>
+                                        <div class="menu-item px-3">
+                                            <a href="#" class="menu-link px-3" @click.prevent="pedirRemocaoDisciplina(disciplina)">
+                                                <AcaoIcone acao="eliminar" class="me-2" />
+                                                Remover
+                                            </a>
+                                        </div>
                                     </div>
-                                    <div v-if="planoCurricular.anos_lectivos?.length" class="menu-item px-3">
-                                        <a href="#" class="menu-link px-3" @click.prevent="abrirDefinirPeriodos(disciplina)">
-                                            <AcaoIcone acao="visualizar" class="me-2" />
-                                            Definir Períodos
-                                        </a>
-                                    </div>
-                                    <div class="menu-item px-3">
-                                        <a href="#" class="menu-link px-3" @click.prevent="pedirRemocaoDisciplina(disciplina)">
-                                            <AcaoIcone acao="eliminar" class="me-2" />
-                                            Remover
-                                        </a>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
+                                </td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>
@@ -370,7 +455,13 @@ function formatarDataHora(valor) {
             <div class="card-header">
                 <h3 class="card-title fw-bold">Anos Lectivos</h3>
                 <div class="card-toolbar">
-                    <button v-if="can('plano-curricular.editar')" class="btn btn-sm btn-primary" @click="abrirConfirmarAnoLectivo">
+                    <button
+                        v-if="can('plano-curricular.editar')"
+                        class="btn btn-sm btn-primary"
+                        :disabled="!haAnosLectivosDisponiveisParaConfirmar"
+                        :title="!haAnosLectivosDisponiveisParaConfirmar ? 'Todos os anos lectivos já foram confirmados para este plano.' : ''"
+                        @click="abrirConfirmarAnoLectivo"
+                    >
                         Confirmar para Ano Lectivo
                     </button>
                 </div>
@@ -459,6 +550,7 @@ function formatarDataHora(valor) {
             :show="periodosModalAberto"
             :disciplina="periodosDisciplinaAlvo"
             :anos-lectivos="planoCurricular.anos_lectivos ?? []"
+            :aplicacao-padrao-id="aplicacaoSelecionadaId"
             :processing="periodosProcessing"
             :errors="periodosErrors"
             @submit="guardarPeriodos"
