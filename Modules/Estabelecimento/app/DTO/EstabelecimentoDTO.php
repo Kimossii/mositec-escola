@@ -2,6 +2,7 @@
 
 namespace Modules\Estabelecimento\DTO;
 
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Http\Requests\AtualizarDadosRequest;
@@ -12,6 +13,7 @@ class EstabelecimentoDTO
         public string $nome,
         public TipoEstabelecimentoEnum $tipo,
         public TipoEnsinoEnum $tipo_ensino,
+        public array $etapas_ensino,
         public ?string $nome_abreviado = null,
         public ?string $nif = null,
         public ?string $codigo_mined = null,
@@ -34,11 +36,15 @@ class EstabelecimentoDTO
     public static function fromRequest(AtualizarDadosRequest $request): self
     {
         $dados = $request->validated();
+        $tipoEnsino = TipoEnsinoEnum::from((int) $dados['tipo_ensino']);
 
         return new self(
             nome: $dados['nome'],
             tipo: TipoEstabelecimentoEnum::from((int) $dados['tipo']),
-            tipo_ensino: TipoEnsinoEnum::from((int) $dados['tipo_ensino']),
+            tipo_ensino: $tipoEnsino,
+            etapas_ensino: $tipoEnsino === TipoEnsinoEnum::UNIVERSITARIO
+                ? [EtapaEnsinoEnum::SUPERIOR]
+                : array_map(fn ($v) => EtapaEnsinoEnum::from((int) $v), $dados['etapas_ensino'] ?? []),
             nome_abreviado: $dados['nome_abreviado'] ?? null,
             nif: $dados['nif'] ?? null,
             codigo_mined: $dados['codigo_mined'] ?? null,

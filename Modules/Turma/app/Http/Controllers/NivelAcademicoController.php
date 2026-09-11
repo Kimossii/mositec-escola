@@ -5,6 +5,7 @@ namespace Modules\Turma\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Inertia\Inertia;
 use Modules\Core\Enums\Estado;
+use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Turma\Http\Requests\AlterarEstadoNivelAcademicoRequest;
 use Modules\Turma\Http\Requests\AtualizarNivelAcademicoRequest;
 use Modules\Turma\Http\Requests\CriarNivelAcademicoRequest;
@@ -25,6 +26,8 @@ class NivelAcademicoController extends Controller
 
         return Inertia::render('Turma/NiveisAcademicos/Index', [
             'niveisAcademicos' => $this->consulta->listar(),
+            'etapasEnsino' => Estabelecimento::current()?->etapasEnsino()
+                ->get(['etapa_ensino', 'etapa_ensino_descricao']) ?? [],
         ]);
     }
 

@@ -11,6 +11,7 @@ use Modules\Core\Enums\Estado;
 use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Estabelecimento\Models\EstabelecimentoEtapaEnsino;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
@@ -59,7 +60,13 @@ class TurmaHttpTest extends TestCase
 
     private function criarEstabelecimento(): Estabelecimento
     {
-        return Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'is_active' => true]);
+        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'is_active' => true]);
+
+        foreach ([EtapaEnsinoEnum::PRIMARIO, EtapaEnsinoEnum::SECUNDARIO] as $etapa) {
+            EstabelecimentoEtapaEnsino::create(['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => $etapa]);
+        }
+
+        return $estabelecimento;
     }
 
     private function criarAnoLectivo(Estabelecimento $estabelecimento): AnoLectivo
@@ -155,6 +162,19 @@ class TurmaHttpTest extends TestCase
             'nome' => '1ª Classe',
             'ordem' => 1,
             'etapa_ensino' => 99,
+        ])->assertSessionHasErrors('etapa_ensino');
+    }
+
+    public function test_criar_nivel_academico_com_etapa_nao_configurada_falha_com_erro_de_validacao(): void
+    {
+        $this->actingAsStaff();
+        $this->criarEstabelecimento();
+
+        $this->post(route('niveis-academicos.store'), [
+            'codigo' => 'SUP1',
+            'nome' => '1º Ano Universitário',
+            'ordem' => 1,
+            'etapa_ensino' => EtapaEnsinoEnum::SUPERIOR->value,
         ])->assertSessionHasErrors('etapa_ensino');
     }
 

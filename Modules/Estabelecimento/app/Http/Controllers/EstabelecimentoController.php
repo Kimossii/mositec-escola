@@ -20,6 +20,7 @@ class EstabelecimentoController extends Controller
 
         return Inertia::render('Estabelecimento/DadosDaEscola', [
             'estabelecimento' => $this->service->obterAtual(),
+            'etapasEnsino' => $this->service->etapasEnsinoConfiguradas(),
         ]);
     }
 

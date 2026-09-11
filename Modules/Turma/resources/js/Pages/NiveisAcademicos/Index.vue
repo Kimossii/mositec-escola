@@ -13,6 +13,7 @@ import { ESTADO } from '../../Models/Estado';
 
 defineProps({
     niveisAcademicos: { type: Array, required: true },
+    etapasEnsino: { type: Array, required: true },
 });
 defineOptions({ layout: AppLayout });
 
@@ -188,6 +189,7 @@ function confirmarEliminacao() {
         <NivelAcademicoFormModal
             :show="modalAberto"
             :nivel-academico="nivelEmEdicao"
+            :etapas-ensino="etapasEnsino"
             :processing="processing"
             :errors="errors"
             @submit="guardar"

@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -12,6 +12,10 @@ const props = defineProps({
     estabelecimento: {
         type: Object,
         default: null,
+    },
+    etapasEnsino: {
+        type: Array,
+        default: () => [],
     },
 });
 defineOptions({ layout: AppLayout });
@@ -28,12 +32,23 @@ const tiposEnsino = [
     { value: 3, label: 'Ensino Universitário' },
 ];
 
+const TIPO_ENSINO_UNIVERSITARIO = 3;
+const ETAPA_SUPERIOR = 5;
+
+const etapasNaoSuperior = [
+    { value: 1, label: 'Creche' },
+    { value: 2, label: 'Pré-Escolar' },
+    { value: 3, label: 'Ensino Primário' },
+    { value: 4, label: 'Ensino Secundário' },
+];
+
 function snapshot() {
     return {
         nome: props.estabelecimento?.nome ?? '',
         nome_abreviado: props.estabelecimento?.nome_abreviado ?? '',
         tipo: props.estabelecimento?.tipo ?? 2,
         tipo_ensino: props.estabelecimento?.tipo_ensino ?? 1,
+        etapas_ensino: props.etapasEnsino ?? [],
         nif: props.estabelecimento?.nif ?? '',
         codigo_mined: props.estabelecimento?.codigo_mined ?? '',
         numero_alvara: props.estabelecimento?.numero_alvara ?? '',
@@ -53,6 +68,11 @@ function snapshot() {
 }
 
 const form = reactive(snapshot());
+
+watch(() => form.tipo_ensino, (novo) => {
+    if (novo === TIPO_ENSINO_UNIVERSITARIO) form.etapas_ensino = [ETAPA_SUPERIOR];
+});
+
 // Sem estabelecimento ainda (1º acesso) só entra logo em edição se o
 // utilizador já tiver o direito — senão fica só a ver o formulário vazio.
 const editando = ref(!props.estabelecimento && can('estabelecimento.editar'));
@@ -138,6 +158,19 @@ function submeter() {
                             <CampoFicha
                                 v-model="form.tipo_ensino" label="Tipo de Ensino" type="select" :options="tiposEnsino" required
                                 :editing="editando" :error="errors.tipo_ensino?.[0]" icon="ki-book-open" :icon-paths="2"
+                            />
+                        </div>
+                        <div class="col-md-8">
+                            <template v-if="form.tipo_ensino === TIPO_ENSINO_UNIVERSITARIO">
+                                <span class="ficha-rotulo">Etapas de Ensino</span>
+                                <div class="ficha-valor-wrap">
+                                    <span class="ficha-valor">Ensino Superior <span class="text-muted fs-8">(fixo para Ensino Universitário)</span></span>
+                                </div>
+                            </template>
+                            <CampoFicha
+                                v-else
+                                v-model="form.etapas_ensino" label="Etapas de Ensino" type="checkboxes" :options="etapasNaoSuperior"
+                                required :editing="editando" :error="errors.etapas_ensino?.[0]" icon="ki-teacher" :icon-paths="2"
                             />
                         </div>
                         <div class="col-md-4">

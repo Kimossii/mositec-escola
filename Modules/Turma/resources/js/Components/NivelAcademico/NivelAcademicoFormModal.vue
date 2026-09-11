@@ -1,12 +1,12 @@
 <script setup>
-import { reactive, watch } from 'vue';
+import { reactive, watch, computed } from 'vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import { ESTADO } from '../../Models/Estado';
-import { ETAPA_ENSINO_OPCOES } from '../../Models/EtapaEnsino';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
     nivelAcademico: { type: Object, default: null },
+    etapasEnsino: { type: Array, required: true },
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
 });
@@ -16,6 +16,8 @@ const ESTADO_OPCOES = [
     { value: ESTADO.ATIVO, label: 'Ativo' },
     { value: ESTADO.INATIVO, label: 'Inativo' },
 ];
+
+const opcoesEtapaEnsino = computed(() => props.etapasEnsino.map((e) => ({ value: e.etapa_ensino, label: e.etapa_ensino_descricao })));
 
 const form = reactive({
     codigo: '',
@@ -68,7 +70,7 @@ function submeter() {
 
                     <div class="fv-row mb-7">
                         <label class="required fw-semibold fs-6 mb-2">Etapa de Ensino</label>
-                        <SelectSolid v-model="form.etapa_ensino" :options="ETAPA_ENSINO_OPCOES" placeholder="Selecione a etapa de ensino" />
+                        <SelectSolid v-model="form.etapa_ensino" :options="opcoesEtapaEnsino" placeholder="Selecione a etapa de ensino" />
                         <div class="text-danger fs-7 mt-1" v-if="errors.etapa_ensino">{{ errors.etapa_ensino }}</div>
                     </div>
 
