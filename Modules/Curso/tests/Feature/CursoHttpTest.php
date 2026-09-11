@@ -12,6 +12,7 @@ use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
+use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -162,6 +163,20 @@ class CursoHttpTest extends TestCase
         $this->get(route('cursos.show', $curso))->assertInertia(fn (Assert $page) => $page
             ->component('Curso/Show')
             ->where('curso.codigo', 'INF')
+        );
+    }
+
+    public function test_show_expoe_os_planos_curriculares_do_curso(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'codigo' => 'PLI', 'nome' => 'Plano Informática']);
+
+        $this->get(route('cursos.show', $curso))->assertInertia(fn (Assert $page) => $page
+            ->component('Curso/Show')
+            ->has('curso.planos_curriculares', 1)
+            ->where('curso.planos_curriculares.0.codigo', 'PLI')
         );
     }
 

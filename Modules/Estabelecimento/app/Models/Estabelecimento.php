@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
+use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 
 class Estabelecimento extends Model
@@ -20,6 +21,7 @@ class Estabelecimento extends Model
         'nome',
         'nome_abreviado',
         'tipo',
+        'tipo_ensino',
         'nif',
         'codigo_mined',
         'numero_alvara',
@@ -41,6 +43,7 @@ class Estabelecimento extends Model
 
     protected $casts = [
         'tipo' => TipoEstabelecimentoEnum::class,
+        'tipo_ensino' => TipoEnsinoEnum::class,
         'ano_fundacao' => 'integer',
         'is_active' => 'boolean',
     ];
@@ -70,6 +73,15 @@ class Estabelecimento extends Model
     {
         static::saving(function (Estabelecimento $estabelecimento) {
             $estabelecimento->tipo_descricao = $estabelecimento->tipo?->label();
+
+            // Ao contrário de `tipo`, `tipo_ensino` tem default a nível de BD
+            // (coluna adicionada depois, para não quebrar registos/chamadas
+            // existentes que ainda não conhecem este campo). Só sincroniza
+            // a descrição quando o valor é explicitamente definido, para não
+            // sobrepor o default da coluna com `null`.
+            if ($estabelecimento->tipo_ensino !== null) {
+                $estabelecimento->tipo_ensino_descricao = $estabelecimento->tipo_ensino->label();
+            }
         });
     }
 }

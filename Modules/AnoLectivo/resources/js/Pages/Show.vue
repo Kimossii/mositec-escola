@@ -4,6 +4,7 @@ import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
+import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import AnoLectivoStatusBadge from '../Components/AnoLectivoStatusBadge.vue';
 import AnoLectivoFormModal from '../Components/AnoLectivoFormModal.vue';
@@ -176,6 +177,7 @@ function guardarEvento(payload) {
 
 <template>
     <div class="app-container container-xxl py-6">
+        <BotaoVoltar href="/ano-lectivos" class="mb-4" />
         <div class="card mb-6">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div>

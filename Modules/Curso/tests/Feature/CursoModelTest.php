@@ -9,6 +9,7 @@ use Modules\Core\Enums\Estado;
 use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -77,6 +78,19 @@ class CursoModelTest extends TestCase
 
         $this->expectException(QueryException::class);
         Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'OUTRO', 'nome' => 'Informática']);
+    }
+
+    public function test_curso_lista_os_seus_planos_curriculares(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $outroCurso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade']);
+
+        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'codigo' => 'PLI', 'nome' => 'Plano Informática']);
+        PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $outroCurso->id, 'codigo' => 'PLC', 'nome' => 'Plano Contabilidade']);
+
+        $this->assertCount(1, $curso->planosCurriculares);
+        $this->assertSame($plano->id, $curso->planosCurriculares->first()->id);
     }
 
     public function test_mesmo_codigo_e_nome_permitido_em_estabelecimentos_diferentes(): void

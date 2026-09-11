@@ -123,6 +123,18 @@ html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar 
     border-bottom: 1px solid #86EFAC;
 }
 
+/* Linha divisória de Nível Académico na tabela de Disciplinas do Plano
+   Curricular — azul-marinho da sidebar (#1E293B, o mesmo tom usado no hover
+   do menu, mais vivo que o #0F172A de fundo), em vez do azul claro genérico
+   do tema. */
+.bg-nivel-academico {
+    background-color: #1E293B !important;
+}
+
+.bg-nivel-academico td {
+    color: #FFFFFF !important;
+}
+
 /* Botão "Guardar rascunho" dos forms de utilizador — cor castanho, sem equivalente nativo no Bootstrap/Metronic. */
 .btn.btn-castanho {
     color: #FFFFFF;
