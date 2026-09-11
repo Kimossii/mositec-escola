@@ -6,7 +6,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
+use Modules\AnoLectivo\Enums\TipoPeriodo;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\AnoLectivo\Models\Periodo;
 use Modules\Core\Enums\Estado;
 use Modules\Curso\Models\Curso;
 use Modules\Disciplina\Models\Disciplina;
@@ -17,6 +19,7 @@ use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\PlanoCurricular\Enums\TipoDisciplinaPlano;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Usuario\Models\User;
@@ -304,6 +307,67 @@ class PlanoCurricularHttpTest extends TestCase
 
         $this->assertDatabaseHas('plano_curricular_anos_lectivos', ['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivoA->id]);
         $this->assertDatabaseHas('plano_curricular_anos_lectivos', ['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivoB->id]);
+    }
+
+    public function test_definir_periodos_disciplina_associa_varios_periodos_via_http(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $curso = $this->criarCurso($estabelecimento);
+        $plano = $this->criarPlano($estabelecimento, $curso);
+        $disciplina = $this->criarDisciplina($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $item = $plano->disciplinas()->create(['disciplina_id' => $disciplina->id, 'nivel_academico_id' => $nivel->id, 'tipo' => TipoDisciplinaPlano::NORMAL, 'obrigatoria' => true, 'ordem' => 1]);
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $periodo1 = Periodo::create(['ano_lectivo_id' => $anoLectivo->id, 'nome' => '1º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 1, 'data_inicio' => '2026-01-01', 'data_fim' => '2026-04-01']);
+        $periodo2 = Periodo::create(['ano_lectivo_id' => $anoLectivo->id, 'nome' => '2º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 2, 'data_inicio' => '2026-04-02', 'data_fim' => '2026-08-01']);
+        $aplicacao = PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivo->id]);
+
+        $this->put(route('planos-curriculares.anos-lectivos.disciplinas.periodos.update', [$plano, $aplicacao, $item]), [
+            'periodo_ids' => [$periodo1->id, $periodo2->id],
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertDatabaseHas('plano_curricular_disciplina_periodos', ['plano_curricular_ano_lectivo_id' => $aplicacao->id, 'plano_curricular_disciplina_id' => $item->id, 'periodo_id' => $periodo1->id]);
+        $this->assertDatabaseHas('plano_curricular_disciplina_periodos', ['plano_curricular_ano_lectivo_id' => $aplicacao->id, 'plano_curricular_disciplina_id' => $item->id, 'periodo_id' => $periodo2->id]);
+    }
+
+    public function test_definir_periodos_disciplina_rejeita_periodo_de_outro_ano_lectivo_via_http(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $curso = $this->criarCurso($estabelecimento);
+        $plano = $this->criarPlano($estabelecimento, $curso);
+        $disciplina = $this->criarDisciplina($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $item = $plano->disciplinas()->create(['disciplina_id' => $disciplina->id, 'nivel_academico_id' => $nivel->id, 'tipo' => TipoDisciplinaPlano::NORMAL, 'obrigatoria' => true, 'ordem' => 1]);
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento, '2026');
+        $aplicacao = PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivo->id]);
+        $outroAnoLectivo = $this->criarAnoLectivo($estabelecimento, '2027');
+        $periodoDeOutroAno = Periodo::create(['ano_lectivo_id' => $outroAnoLectivo->id, 'nome' => '1º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 1, 'data_inicio' => '2027-01-01', 'data_fim' => '2027-04-01']);
+
+        $this->put(route('planos-curriculares.anos-lectivos.disciplinas.periodos.update', [$plano, $aplicacao, $item]), [
+            'periodo_ids' => [$periodoDeOutroAno->id],
+        ])->assertSessionHasErrors('periodo_ids.0');
+
+        $this->assertDatabaseMissing('plano_curricular_disciplina_periodos', ['plano_curricular_disciplina_id' => $item->id]);
+    }
+
+    public function test_definir_periodos_disciplina_rejeita_disciplina_que_nao_pertence_ao_plano_da_aplicacao(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $curso = $this->criarCurso($estabelecimento);
+        $plano = $this->criarPlano($estabelecimento, $curso);
+        $outroPlano = $this->criarPlano($estabelecimento, $curso, 'PLO');
+        $disciplina = $this->criarDisciplina($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $itemDeOutroPlano = $outroPlano->disciplinas()->create(['disciplina_id' => $disciplina->id, 'nivel_academico_id' => $nivel->id, 'tipo' => TipoDisciplinaPlano::NORMAL, 'obrigatoria' => true, 'ordem' => 1]);
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $aplicacao = PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivo->id]);
+
+        $this->put(route('planos-curriculares.anos-lectivos.disciplinas.periodos.update', [$plano, $aplicacao, $itemDeOutroPlano]), [
+            'periodo_ids' => [],
+        ])->assertNotFound();
     }
 
     public function test_professor_recebe_403_em_todas_as_rotas_de_escrita(): void

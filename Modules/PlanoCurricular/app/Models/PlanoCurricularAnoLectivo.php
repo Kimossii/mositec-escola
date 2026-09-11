@@ -4,6 +4,7 @@ namespace Modules\PlanoCurricular\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Usuario\Models\User;
@@ -46,5 +47,10 @@ class PlanoCurricularAnoLectivo extends Model
     public function confirmadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'confirmado_por');
+    }
+
+    public function disciplinaPeriodos(): HasMany
+    {
+        return $this->hasMany(PlanoCurricularDisciplinaPeriodo::class);
     }
 }

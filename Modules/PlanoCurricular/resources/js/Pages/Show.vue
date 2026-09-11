@@ -11,6 +11,7 @@ import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import PlanoCurricularFormModal from '../Components/PlanoCurricularFormModal.vue';
 import DisciplinaPlanoFormModal from '../Components/DisciplinaPlanoFormModal.vue';
 import ConfirmarAnoLectivoModal from '../Components/ConfirmarAnoLectivoModal.vue';
+import DefinirPeriodosDisciplinaModal from '../Components/DefinirPeriodosDisciplinaModal.vue';
 import { ESTADO } from '../Models/Estado';
 
 const props = defineProps({
@@ -212,6 +213,46 @@ function guardarAnoLectivo(payload) {
     });
 }
 
+// --- Períodos de uma disciplina numa aplicação (ano lectivo) ---
+
+const periodosModalAberto = ref(false);
+const periodosDisciplinaAlvo = ref(null);
+const periodosProcessing = ref(false);
+const periodosErrors = ref({});
+
+function abrirDefinirPeriodos(disciplina) {
+    periodosDisciplinaAlvo.value = disciplina;
+    periodosErrors.value = {};
+    periodosModalAberto.value = true;
+}
+
+function fecharPeriodos() {
+    periodosModalAberto.value = false;
+}
+
+function guardarPeriodos({ aplicacaoId, periodoIds }) {
+    periodosProcessing.value = true;
+    periodosErrors.value = {};
+    router.put(
+        `/planos-curriculares/${props.planoCurricular.id}/anos-lectivos/${aplicacaoId}/disciplinas/${periodosDisciplinaAlvo.value.id}/periodos`,
+        { periodo_ids: periodoIds },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Períodos da disciplina atualizados com sucesso.');
+                fecharPeriodos();
+            },
+            onError: (erros) => {
+                periodosErrors.value = erros;
+                toast.error(Object.values(erros)[0]);
+            },
+            onFinish: () => {
+                periodosProcessing.value = false;
+            },
+        },
+    );
+}
+
 function formatarDataHora(valor) {
     if (!valor) return '—';
     return new Date(valor).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
@@ -303,6 +344,12 @@ function formatarDataHora(valor) {
                                         <a href="#" class="menu-link px-3" @click.prevent="abrirEdicaoDisciplina(disciplina)">
                                             <AcaoIcone acao="editar" class="me-2" />
                                             Editar
+                                        </a>
+                                    </div>
+                                    <div v-if="planoCurricular.anos_lectivos?.length" class="menu-item px-3">
+                                        <a href="#" class="menu-link px-3" @click.prevent="abrirDefinirPeriodos(disciplina)">
+                                            <AcaoIcone acao="visualizar" class="me-2" />
+                                            Definir Períodos
                                         </a>
                                     </div>
                                     <div class="menu-item px-3">
@@ -406,6 +453,16 @@ function formatarDataHora(valor) {
             :errors="anoLectivoErrors"
             @submit="guardarAnoLectivo"
             @cancelar="fecharAnoLectivo"
+        />
+
+        <DefinirPeriodosDisciplinaModal
+            :show="periodosModalAberto"
+            :disciplina="periodosDisciplinaAlvo"
+            :anos-lectivos="planoCurricular.anos_lectivos ?? []"
+            :processing="periodosProcessing"
+            :errors="periodosErrors"
+            @submit="guardarPeriodos"
+            @cancelar="fecharPeriodos"
         />
     </div>
 </template>

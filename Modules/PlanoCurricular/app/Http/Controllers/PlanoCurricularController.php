@@ -12,7 +12,9 @@ use Modules\PlanoCurricular\Http\Requests\AtualizarDisciplinaRequest;
 use Modules\PlanoCurricular\Http\Requests\AtualizarPlanoCurricularRequest;
 use Modules\PlanoCurricular\Http\Requests\ConfirmarAnoLectivoRequest;
 use Modules\PlanoCurricular\Http\Requests\CriarPlanoCurricularRequest;
+use Modules\PlanoCurricular\Http\Requests\DefinirPeriodosDisciplinaRequest;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
 use Modules\PlanoCurricular\Services\GestaoPlanoCurricularService;
 use Modules\PlanoCurricular\Services\PlanoCurricularConsultaService;
@@ -31,7 +33,14 @@ class PlanoCurricularController extends Controller
 
         $this->garantirMesmoEstabelecimento($planoCurricular);
 
-        $planoCurricular->load(['curso', 'disciplinas.disciplina', 'disciplinas.nivelAcademico', 'anosLectivos.anoLectivo', 'anosLectivos.confirmadoPor']);
+        $planoCurricular->load([
+            'curso',
+            'disciplinas.disciplina',
+            'disciplinas.nivelAcademico',
+            'disciplinas.periodosPorAplicacao',
+            'anosLectivos.anoLectivo.periodos',
+            'anosLectivos.confirmadoPor',
+        ]);
 
         return Inertia::render('PlanoCurricular/Show', [
             'planoCurricular' => $planoCurricular,
@@ -114,6 +123,23 @@ class PlanoCurricularController extends Controller
         $this->service->confirmarAnoLectivo($planoCurricular, $request, auth()->id());
 
         return redirect()->back()->with('success', 'Plano confirmado para o ano lectivo com sucesso.');
+    }
+
+    public function definirPeriodosDisciplina(
+        DefinirPeriodosDisciplinaRequest $request,
+        PlanoCurricular $planoCurricular,
+        PlanoCurricularAnoLectivo $planoCurricularAnoLectivo,
+        PlanoCurricularDisciplina $disciplina,
+    ) {
+        $this->authorize('plano-curricular.editar');
+
+        $this->garantirMesmoEstabelecimento($planoCurricular);
+        abort_unless($planoCurricularAnoLectivo->plano_curricular_id === $planoCurricular->id, 404);
+        abort_unless($disciplina->plano_curricular_id === $planoCurricular->id, 404);
+
+        $this->service->definirPeriodosDisciplina($planoCurricularAnoLectivo, $disciplina, $request);
+
+        return redirect()->back()->with('success', 'Períodos da disciplina atualizados com sucesso.');
     }
 
     /**

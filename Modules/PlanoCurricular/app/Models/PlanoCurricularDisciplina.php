@@ -4,6 +4,7 @@ namespace Modules\PlanoCurricular\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Disciplina\Models\Disciplina;
@@ -67,6 +68,11 @@ class PlanoCurricularDisciplina extends Model
     public function nivelAcademico(): BelongsTo
     {
         return $this->belongsTo(NivelAcademico::class);
+    }
+
+    public function periodosPorAplicacao(): HasMany
+    {
+        return $this->hasMany(PlanoCurricularDisciplinaPeriodo::class);
     }
 
     public function criadoPor(): BelongsTo

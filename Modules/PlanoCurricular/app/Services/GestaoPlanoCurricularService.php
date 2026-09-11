@@ -9,8 +9,11 @@ use Modules\PlanoCurricular\Actions\AtualizarDisciplinaDoPlanoAction;
 use Modules\PlanoCurricular\Actions\AtualizarPlanoCurricularAction;
 use Modules\PlanoCurricular\Actions\ConfirmarPlanoParaAnoLectivoAction;
 use Modules\PlanoCurricular\Actions\CriarPlanoCurricularAction;
+use Modules\PlanoCurricular\Actions\DefinirPeriodosDaDisciplinaAction;
 use Modules\PlanoCurricular\Actions\RemoverDisciplinaDoPlanoAction;
+use Illuminate\Support\Collection;
 use Modules\PlanoCurricular\DTO\ConfirmarAnoLectivoDTO;
+use Modules\PlanoCurricular\DTO\DefinirPeriodosDisciplinaDTO;
 use Modules\PlanoCurricular\DTO\PlanoCurricularDisciplinaDTO;
 use Modules\PlanoCurricular\DTO\PlanoCurricularDTO;
 use Modules\PlanoCurricular\Http\Requests\AdicionarDisciplinaRequest;
@@ -18,6 +21,7 @@ use Modules\PlanoCurricular\Http\Requests\AtualizarDisciplinaRequest;
 use Modules\PlanoCurricular\Http\Requests\AtualizarPlanoCurricularRequest;
 use Modules\PlanoCurricular\Http\Requests\ConfirmarAnoLectivoRequest;
 use Modules\PlanoCurricular\Http\Requests\CriarPlanoCurricularRequest;
+use Modules\PlanoCurricular\Http\Requests\DefinirPeriodosDisciplinaRequest;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
@@ -32,6 +36,7 @@ class GestaoPlanoCurricularService
         private AtualizarDisciplinaDoPlanoAction $atualizarDisciplina,
         private RemoverDisciplinaDoPlanoAction $removerDisciplina,
         private ConfirmarPlanoParaAnoLectivoAction $confirmarAnoLectivo,
+        private DefinirPeriodosDaDisciplinaAction $definirPeriodosDisciplina,
     ) {
     }
 
@@ -68,5 +73,10 @@ class GestaoPlanoCurricularService
     public function confirmarAnoLectivo(PlanoCurricular $plano, ConfirmarAnoLectivoRequest $request, int $confirmadoPorId): PlanoCurricularAnoLectivo
     {
         return $this->confirmarAnoLectivo->executar($plano, ConfirmarAnoLectivoDTO::fromRequest($request), $confirmadoPorId);
+    }
+
+    public function definirPeriodosDisciplina(PlanoCurricularAnoLectivo $aplicacao, PlanoCurricularDisciplina $disciplina, DefinirPeriodosDisciplinaRequest $request): Collection
+    {
+        return $this->definirPeriodosDisciplina->executar($aplicacao, $disciplina, DefinirPeriodosDisciplinaDTO::fromRequest($request));
     }
 }

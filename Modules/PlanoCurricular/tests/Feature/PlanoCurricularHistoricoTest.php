@@ -5,7 +5,9 @@ namespace Modules\PlanoCurricular\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
+use Modules\AnoLectivo\Enums\TipoPeriodo;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\AnoLectivo\Models\Periodo;
 use Modules\Curso\Models\Curso;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
@@ -15,6 +17,7 @@ use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\PlanoCurricular\Enums\TipoDisciplinaPlano;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
@@ -195,5 +198,51 @@ class PlanoCurricularHistoricoTest extends TestCase
         // Os dois planos coexistem como registos independentes.
         $this->assertNotSame($planoA->id, $planoB->id);
         $this->assertSame(2, PlanoCurricular::count());
+    }
+
+    public function test_mapeamento_de_periodos_e_independente_entre_aplicacoes_do_mesmo_plano_em_anos_diferentes(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT', 'nome' => 'Matemática']);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1]);
+
+        $anoLectivo2026 = $this->criarAnoLectivo($estabelecimento, '2026');
+        $anoLectivo2027 = $this->criarAnoLectivo($estabelecimento, '2027');
+        $periodo2026 = Periodo::create(['ano_lectivo_id' => $anoLectivo2026->id, 'nome' => '1º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 1, 'data_inicio' => '2026-01-01', 'data_fim' => '2026-04-01']);
+        $periodo2027A = Periodo::create(['ano_lectivo_id' => $anoLectivo2027->id, 'nome' => '1º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 1, 'data_inicio' => '2027-01-01', 'data_fim' => '2027-04-01']);
+        $periodo2027B = Periodo::create(['ano_lectivo_id' => $anoLectivo2027->id, 'nome' => '2º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 2, 'data_inicio' => '2027-04-02', 'data_fim' => '2027-08-01']);
+
+        $this->post(route('planos-curriculares.store'), ['curso_id' => $curso->id, 'codigo' => 'PLA', 'nome' => 'Plano Informática'])->assertSessionHasNoErrors();
+        $planoA = PlanoCurricular::firstWhere('codigo', 'PLA');
+
+        $this->post(route('planos-curriculares.disciplinas.store', $planoA), [
+            'disciplina_id' => $disciplina->id, 'nivel_academico_id' => $nivel->id, 'tipo' => TipoDisciplinaPlano::NORMAL->value, 'obrigatoria' => true, 'ordem' => 1,
+        ])->assertSessionHasNoErrors();
+        $item = $planoA->disciplinas()->first();
+
+        $this->post(route('planos-curriculares.anos-lectivos.store', $planoA), ['ano_lectivo_id' => $anoLectivo2026->id])->assertSessionHasNoErrors();
+        $this->post(route('planos-curriculares.anos-lectivos.store', $planoA), ['ano_lectivo_id' => $anoLectivo2027->id])->assertSessionHasNoErrors();
+
+        $aplicacao2026 = PlanoCurricularAnoLectivo::where('plano_curricular_id', $planoA->id)->where('ano_lectivo_id', $anoLectivo2026->id)->firstOrFail();
+        $aplicacao2027 = PlanoCurricularAnoLectivo::where('plano_curricular_id', $planoA->id)->where('ano_lectivo_id', $anoLectivo2027->id)->firstOrFail();
+
+        // Mapear a disciplina para o único período de 2026.
+        $this->put(route('planos-curriculares.anos-lectivos.disciplinas.periodos.update', [$planoA, $aplicacao2026, $item]), [
+            'periodo_ids' => [$periodo2026->id],
+        ])->assertSessionHasNoErrors();
+
+        // Mapear a MESMA disciplina para dois períodos de 2027 — deve ser
+        // completamente independente do mapeamento de 2026.
+        $this->put(route('planos-curriculares.anos-lectivos.disciplinas.periodos.update', [$planoA, $aplicacao2027, $item]), [
+            'periodo_ids' => [$periodo2027A->id, $periodo2027B->id],
+        ])->assertSessionHasNoErrors();
+
+        $mapeamento2026 = $item->periodosPorAplicacao()->where('plano_curricular_ano_lectivo_id', $aplicacao2026->id)->pluck('periodo_id')->all();
+        $mapeamento2027 = $item->periodosPorAplicacao()->where('plano_curricular_ano_lectivo_id', $aplicacao2027->id)->pluck('periodo_id')->sort()->values()->all();
+
+        $this->assertSame([$periodo2026->id], $mapeamento2026);
+        $this->assertSame([$periodo2027A->id, $periodo2027B->id], $mapeamento2027);
     }
 }

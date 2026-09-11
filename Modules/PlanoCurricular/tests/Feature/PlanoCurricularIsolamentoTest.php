@@ -5,7 +5,9 @@ namespace Modules\PlanoCurricular\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
+use Modules\AnoLectivo\Enums\TipoPeriodo;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\AnoLectivo\Models\Periodo;
 use Modules\Core\Enums\Estado;
 use Modules\Curso\Models\Curso;
 use Modules\Disciplina\Models\Disciplina;
@@ -16,6 +18,7 @@ use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\PlanoCurricular\Enums\TipoDisciplinaPlano;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
@@ -220,6 +223,29 @@ class PlanoCurricularIsolamentoTest extends TestCase
         ])->assertNotFound();
 
         $this->assertDatabaseMissing('plano_curricular_anos_lectivos', ['plano_curricular_id' => $planoB->id]);
+    }
+
+    public function test_definir_periodos_disciplina_em_plano_de_outro_estabelecimento_devolve_404(): void
+    {
+        [, $estabelecimentoB, $planoB] = $this->prepararCenarioCrossEstabelecimento();
+        $disciplinaB = $this->criarDisciplina($estabelecimentoB, 'MAT');
+        $nivelB = $this->criarNivelAcademico($estabelecimentoB);
+        $itemB = $planoB->disciplinas()->create([
+            'disciplina_id' => $disciplinaB->id,
+            'nivel_academico_id' => $nivelB->id,
+            'tipo' => TipoDisciplinaPlano::NORMAL,
+            'obrigatoria' => true,
+            'ordem' => 1,
+        ]);
+        $anoLectivoB = $this->criarAnoLectivo($estabelecimentoB);
+        $periodoB = Periodo::create(['ano_lectivo_id' => $anoLectivoB->id, 'nome' => '1º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 1, 'data_inicio' => '2026-01-01', 'data_fim' => '2026-04-01']);
+        $aplicacaoB = PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $planoB->id, 'ano_lectivo_id' => $anoLectivoB->id]);
+
+        $this->put(route('planos-curriculares.anos-lectivos.disciplinas.periodos.update', [$planoB, $aplicacaoB, $itemB]), [
+            'periodo_ids' => [$periodoB->id],
+        ])->assertNotFound();
+
+        $this->assertDatabaseMissing('plano_curricular_disciplina_periodos', ['plano_curricular_disciplina_id' => $itemB->id]);
     }
 
     public function test_store_rejeita_curso_de_outro_estabelecimento(): void

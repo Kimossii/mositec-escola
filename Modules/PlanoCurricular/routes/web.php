@@ -14,4 +14,5 @@ Route::middleware(['auth'])->prefix('planos-curriculares')->name('planos-curricu
     Route::delete('/{planoCurricular}/disciplinas/{disciplina}', [PlanoCurricularController::class, 'removerDisciplina'])->middleware('can:plano-curricular.editar')->name('disciplinas.destroy');
 
     Route::post('/{planoCurricular}/anos-lectivos', [PlanoCurricularController::class, 'confirmarAnoLectivo'])->middleware('can:plano-curricular.editar')->name('anos-lectivos.store');
+    Route::put('/{planoCurricular}/anos-lectivos/{planoCurricularAnoLectivo}/disciplinas/{disciplina}/periodos', [PlanoCurricularController::class, 'definirPeriodosDisciplina'])->middleware('can:plano-curricular.editar')->name('anos-lectivos.disciplinas.periodos.update');
 });
