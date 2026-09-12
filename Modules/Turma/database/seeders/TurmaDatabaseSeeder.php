@@ -11,6 +11,8 @@ class TurmaDatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // $this->call([]);
+         $this->call([
+            TurnoSeeder::class,
+         ]);
     }
 }

@@ -313,14 +313,14 @@ function formatarDataHora(valor) {
 
 <template>
     <div class="app-container container-xxl py-6">
-        <BotaoVoltar v-if="planoCurricular.curso_id" :href="`/cursos/${planoCurricular.curso_id}`" class="mb-4" />
+        <BotaoVoltar class="mb-4" />
 
         <div class="card mb-6">
             <div class="card-body d-flex justify-content-between align-items-start">
                 <div>
                     <h1 class="fs-2 fw-bold mb-2">{{ planoCurricular.nome }}</h1>
                     <div class="text-muted fs-6 mb-3">
-                        Código: {{ planoCurricular.codigo }} — Nível Académico: {{ planoCurricular.nivel_academico?.nome }} — Curso: {{ planoCurricular.curso?.nome ?? '—' }}
+                        Código: {{ planoCurricular.codigo }} — Nível Académico: {{ planoCurricular.nivel_academico?.nome }}<template v-if="planoCurricular.curso"> — Curso: {{ planoCurricular.curso.nome }}</template>
                     </div>
                     <EstadoBadge :estado="planoCurricular.estado" :estado-descricao="planoCurricular.estado_descricao" />
                 </div>
