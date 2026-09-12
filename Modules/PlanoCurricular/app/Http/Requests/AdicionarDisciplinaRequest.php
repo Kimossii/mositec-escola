@@ -27,12 +27,7 @@ class AdicionarDisciplinaRequest extends BaseRequest
                 'integer',
                 Rule::exists('disciplinas', 'id')->where(fn ($q) => $q->where('estabelecimento_id', $estabelecimentoId)),
                 Rule::unique('plano_curricular_disciplinas', 'disciplina_id')
-                    ->where(fn ($q) => $q->where('plano_curricular_id', $planoId)->where('nivel_academico_id', $this->input('nivel_academico_id'))),
-            ],
-            'nivel_academico_id' => [
-                'required',
-                'integer',
-                Rule::exists('niveis_academicos', 'id')->where(fn ($q) => $q->where('estabelecimento_id', $estabelecimentoId)),
+                    ->where(fn ($q) => $q->where('plano_curricular_id', $planoId)),
             ],
             'carga_horaria' => ['nullable', 'integer', 'min:1'],
             'creditos' => ['nullable', 'integer', 'min:1'],
@@ -47,8 +42,7 @@ class AdicionarDisciplinaRequest extends BaseRequest
     {
         return [
             'disciplina_id.exists' => 'A disciplina indicada não pertence a este estabelecimento.',
-            'disciplina_id.unique' => 'Esta disciplina já está associada a este nível académico neste plano.',
-            'nivel_academico_id.exists' => 'O nível académico indicado não pertence a este estabelecimento.',
+            'disciplina_id.unique' => 'Esta disciplina já está associada a este plano.',
         ];
     }
 }

@@ -8,6 +8,7 @@ use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\PlanoCurricular\Actions\AlterarEstadoPlanoCurricularAction;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\Turma\Models\NivelAcademico;
 use Tests\TestCase;
 
 class AlterarEstadoPlanoCurricularActionTest extends TestCase
@@ -18,8 +19,10 @@ class AlterarEstadoPlanoCurricularActionTest extends TestCase
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
         $plano = PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => 'PC1',
             'nome' => 'Plano 1',
@@ -35,8 +38,10 @@ class AlterarEstadoPlanoCurricularActionTest extends TestCase
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
         $plano = PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => 'PC1',
             'nome' => 'Plano 1',

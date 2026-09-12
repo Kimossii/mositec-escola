@@ -14,4 +14,9 @@ class NivelAcademicoConsultaService
             ->orderBy('ordem')
             ->get();
     }
+
+    public function comRelacoes(NivelAcademico $nivelAcademico): NivelAcademico
+    {
+        return $nivelAcademico->load(['planosCurriculares' => fn ($query) => $query->orderBy('nome')]);
+    }
 }

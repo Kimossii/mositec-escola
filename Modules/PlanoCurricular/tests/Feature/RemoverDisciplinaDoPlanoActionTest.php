@@ -27,18 +27,18 @@ class RemoverDisciplinaDoPlanoActionTest extends TestCase
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
         $plano = PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivelAcademico->id,
             'curso_id' => $curso->id,
             'codigo' => 'PC1',
             'nome' => 'Plano 1',
         ]);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT', 'nome' => 'Matemática']);
-        $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
         $item = PlanoCurricularDisciplina::create([
             'plano_curricular_id' => $plano->id,
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivelAcademico->id,
             'tipo' => TipoDisciplinaPlano::NORMAL->value,
             'obrigatoria' => true,
             'ordem' => 1,
@@ -53,13 +53,12 @@ class RemoverDisciplinaDoPlanoActionTest extends TestCase
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
-        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'codigo' => 'PC1', 'nome' => 'Plano 1']);
-        $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT', 'nome' => 'Matemática']);
         $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
+        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivelAcademico->id, 'curso_id' => $curso->id, 'codigo' => 'PC1', 'nome' => 'Plano 1']);
+        $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT', 'nome' => 'Matemática']);
         $item = PlanoCurricularDisciplina::create([
             'plano_curricular_id' => $plano->id,
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivelAcademico->id,
             'tipo' => TipoDisciplinaPlano::NORMAL->value,
             'obrigatoria' => true,
             'ordem' => 1,

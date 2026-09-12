@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\Turma\Models\NivelAcademico;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -24,9 +25,11 @@ class PlanoCurricularModelTest extends TestCase
     {
         $estabelecimento = $this->estabelecimento();
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'C1', 'nome' => 'Curso A']);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
 
         $plano = PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => 'PC-2026',
             'nome' => 'Plano 2026',
@@ -43,9 +46,11 @@ class PlanoCurricularModelTest extends TestCase
         $this->actingAs($user);
         $estabelecimento = $this->estabelecimento();
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'C1', 'nome' => 'Curso A']);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
 
         $plano = PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => 'PC-2026',
             'nome' => 'Plano 2026',
@@ -59,10 +64,11 @@ class PlanoCurricularModelTest extends TestCase
     {
         $estabelecimento = $this->estabelecimento();
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'C1', 'nome' => 'Curso A']);
-        PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'codigo' => 'PC-2026', 'nome' => 'Plano 2026']);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
+        PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'PC-2026', 'nome' => 'Plano 2026']);
 
         $this->expectException(QueryException::class);
-        PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'codigo' => 'PC-2026', 'nome' => 'Plano Duplicado']);
+        PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'PC-2026', 'nome' => 'Plano Duplicado']);
     }
 
     public function test_mesmo_codigo_em_estabelecimentos_diferentes_e_permitido(): void
@@ -72,9 +78,11 @@ class PlanoCurricularModelTest extends TestCase
         $estabelecimentoB = Estabelecimento::create(['nome' => 'Escola B', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
         $cursoA = Curso::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'C1', 'nome' => 'Curso A']);
         $cursoB = Curso::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'C1', 'nome' => 'Curso B']);
+        $nivelA = NivelAcademico::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
+        $nivelB = NivelAcademico::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
 
-        PlanoCurricular::create(['estabelecimento_id' => $estabelecimentoA->id, 'curso_id' => $cursoA->id, 'codigo' => 'PC-2026', 'nome' => 'Plano A']);
-        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimentoB->id, 'curso_id' => $cursoB->id, 'codigo' => 'PC-2026', 'nome' => 'Plano B']);
+        PlanoCurricular::create(['estabelecimento_id' => $estabelecimentoA->id, 'nivel_academico_id' => $nivelA->id, 'curso_id' => $cursoA->id, 'codigo' => 'PC-2026', 'nome' => 'Plano A']);
+        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimentoB->id, 'nivel_academico_id' => $nivelB->id, 'curso_id' => $cursoB->id, 'codigo' => 'PC-2026', 'nome' => 'Plano B']);
 
         $this->assertNotNull($plano->id);
     }
@@ -84,5 +92,21 @@ class PlanoCurricularModelTest extends TestCase
         $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('planos_curriculares', 'ano_lectivo_id'));
         $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('planos_curriculares', 'modalidade'));
         $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('planos_curriculares', 'tipo_ensino'));
+    }
+
+    public function test_pertence_a_um_nivel_academico_obrigatorio_e_curso_e_opcional(): void
+    {
+        $estabelecimento = $this->estabelecimento();
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'CR', 'nome' => 'Creche I', 'ordem' => 1, 'etapa_ensino' => 1]);
+
+        $plano = PlanoCurricular::create([
+            'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivel->id,
+            'codigo' => 'PC-CRECHE',
+            'nome' => 'Plano Creche',
+        ]);
+
+        $this->assertNull($plano->curso_id);
+        $this->assertSame($nivel->id, $plano->nivelAcademico->id);
     }
 }

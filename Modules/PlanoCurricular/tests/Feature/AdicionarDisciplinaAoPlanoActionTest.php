@@ -22,18 +22,18 @@ class AdicionarDisciplinaAoPlanoActionTest extends TestCase
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
         $plano = PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivelAcademico->id,
             'curso_id' => $curso->id,
             'codigo' => 'PC1',
             'nome' => 'Plano 1',
         ]);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT', 'nome' => 'Matemática']);
-        $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
 
         $item = (new AdicionarDisciplinaAoPlanoAction())->executar($plano, new PlanoCurricularDisciplinaDTO(
             disciplina_id: $disciplina->id,
-            nivel_academico_id: $nivelAcademico->id,
             tipo: TipoDisciplinaPlano::NORMAL,
             obrigatoria: true,
             ordem: 1,
@@ -44,7 +44,6 @@ class AdicionarDisciplinaAoPlanoActionTest extends TestCase
 
         $this->assertSame($plano->id, $item->plano_curricular_id);
         $this->assertSame($disciplina->id, $item->disciplina_id);
-        $this->assertSame($nivelAcademico->id, $item->nivel_academico_id);
         $this->assertSame(90, $item->carga_horaria);
         $this->assertSame(4, $item->creditos);
         $this->assertSame(ComponentePlanoCurricular::GERAL, $item->componente);

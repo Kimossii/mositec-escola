@@ -142,7 +142,9 @@ function confirmarEliminacao() {
                         </tr>
                         <tr v-for="nivel in niveisAcademicos" :key="nivel.id">
                             <td>{{ nivel.ordem }}</td>
-                            <td>{{ nivel.codigo }}</td>
+                            <td>
+                                <a :href="`/niveis-academicos/${nivel.id}`" class="text-gray-800 text-hover-primary">{{ nivel.codigo }}</a>
+                            </td>
                             <td>{{ nivel.nome }}</td>
                             <td>{{ nivel.etapa_ensino_descricao }}</td>
                             <td>

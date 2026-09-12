@@ -11,7 +11,6 @@ class AtualizarDisciplinaDoPlanoAction
     {
         $item->fill([
             'disciplina_id' => $dto->disciplina_id,
-            'nivel_academico_id' => $dto->nivel_academico_id,
             'carga_horaria' => $dto->carga_horaria,
             'creditos' => $dto->creditos,
             'componente' => $dto->componente?->value,

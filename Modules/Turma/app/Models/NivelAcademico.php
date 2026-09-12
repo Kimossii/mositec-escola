@@ -10,6 +10,7 @@ use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\Usuario\Models\User;
 
 class NivelAcademico extends Model
@@ -46,6 +47,11 @@ class NivelAcademico extends Model
     public function turmas(): HasMany
     {
         return $this->hasMany(Turma::class);
+    }
+
+    public function planosCurriculares(): HasMany
+    {
+        return $this->hasMany(PlanoCurricular::class);
     }
 
     public function criadoPor(): BelongsTo

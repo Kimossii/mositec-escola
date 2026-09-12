@@ -15,6 +15,7 @@ use Modules\Estabelecimento\Models\EstabelecimentoEtapaEnsino;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
+use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
 use Modules\Turma\Models\Turno;
@@ -228,6 +229,22 @@ class TurmaHttpTest extends TestCase
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $curso = $this->criarCurso($estabelecimento);
         Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+
+        $this->delete(route('niveis-academicos.destroy', $nivel))->assertSessionHasErrors('nivelAcademico');
+        $this->assertDatabaseHas('niveis_academicos', ['id' => $nivel->id]);
+    }
+
+    public function test_nao_elimina_nivel_academico_associado_a_plano_curricular(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        PlanoCurricular::create([
+            'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivel->id,
+            'codigo' => 'PLI',
+            'nome' => 'Plano Informática',
+        ]);
 
         $this->delete(route('niveis-academicos.destroy', $nivel))->assertSessionHasErrors('nivelAcademico');
         $this->assertDatabaseHas('niveis_academicos', ['id' => $nivel->id]);

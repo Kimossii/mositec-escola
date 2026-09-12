@@ -5,49 +5,14 @@ import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
-import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
-import CursoFormModal from '../Components/CursoFormModal.vue';
-import NovoPlanoCurricularModal from '../Components/PlanosCurriculares/NovoPlanoCurricularModal.vue';
+import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
+import NovoPlanoCurricularModal from '../../Components/NivelAcademico/PlanosCurriculares/NovoPlanoCurricularModal.vue';
 
 const props = defineProps({
-    curso: { type: Object, required: true },
-    niveisAcademicos: { type: Array, required: true },
+    nivelAcademico: { type: Object, required: true },
 });
 defineOptions({ layout: AppLayout });
 
-const modalAberto = ref(false);
-const processing = ref(false);
-const errors = ref({});
-
-function abrirEdicao() {
-    errors.value = {};
-    modalAberto.value = true;
-}
-
-function fecharModal() {
-    modalAberto.value = false;
-}
-
-function guardar(payload) {
-    processing.value = true;
-    errors.value = {};
-    router.put(`/cursos/${props.curso.id}`, payload, {
-        preserveScroll: true,
-        onSuccess: () => {
-            toast.success('Curso atualizado com sucesso.');
-            fecharModal();
-        },
-        onError: (erros) => {
-            errors.value = erros;
-            toast.error(Object.values(erros)[0]);
-        },
-        onFinish: () => {
-            processing.value = false;
-        },
-    });
-}
-
-// ========== Planos Curriculares ==========
 const planoModalAberto = ref(false);
 const planoProcessing = ref(false);
 const planoErrors = ref({});
@@ -64,7 +29,7 @@ function fecharPlanoModal() {
 function guardarPlano(payload) {
     planoProcessing.value = true;
     planoErrors.value = {};
-    router.post('/planos-curriculares', { ...payload, curso_id: props.curso.id }, {
+    router.post('/planos-curriculares', { ...payload, nivel_academico_id: props.nivelAcademico.id }, {
         preserveScroll: true,
         onSuccess: () => {
             toast.success('Plano curricular criado com sucesso.');
@@ -83,14 +48,13 @@ function guardarPlano(payload) {
 
 <template>
     <div class="app-container container-xxl py-6">
-        <BotaoVoltar href="/cursos" class="mb-4" />
+        <BotaoVoltar href="/niveis-academicos" class="mb-4" />
 
         <div class="d-flex justify-content-between align-items-center mb-6">
             <div>
-                <h1 class="fs-2 fw-bold mb-1">{{ curso.nome }}</h1>
-                <span class="text-muted">Código: {{ curso.codigo }}</span>
+                <h1 class="fs-2 fw-bold mb-1">{{ nivelAcademico.nome }}</h1>
+                <span class="text-muted">Código: {{ nivelAcademico.codigo }} · Etapa: {{ nivelAcademico.etapa_ensino_descricao }}</span>
             </div>
-            <button v-if="can('curso.editar')" class="btn btn-primary" @click="abrirEdicao">Editar</button>
         </div>
 
         <div class="card mb-6">
@@ -98,12 +62,8 @@ function guardarPlano(payload) {
                 <div class="row mb-4">
                     <div class="col-md-3 fw-bold text-muted">Estado</div>
                     <div class="col-md-9">
-                        <EstadoBadge :estado="curso.estado" :estado-descricao="curso.estado_descricao" />
+                        <EstadoBadge :estado="nivelAcademico.estado" :estado-descricao="nivelAcademico.estado_descricao" />
                     </div>
-                </div>
-                <div class="row mb-4">
-                    <div class="col-md-3 fw-bold text-muted">Descrição</div>
-                    <div class="col-md-9">{{ curso.descricao ?? '—' }}</div>
                 </div>
             </div>
         </div>
@@ -124,10 +84,10 @@ function guardarPlano(payload) {
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
-                        <tr v-if="curso.planos_curriculares.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhum plano curricular criado para este curso.</td>
+                        <tr v-if="nivelAcademico.planos_curriculares.length === 0">
+                            <td colspan="4" class="text-center text-muted py-6">Nenhum plano curricular criado para este nível.</td>
                         </tr>
-                        <tr v-for="plano in curso.planos_curriculares" :key="plano.id">
+                        <tr v-for="plano in nivelAcademico.planos_curriculares" :key="plano.id">
                             <td>
                                 <a :href="`/planos-curriculares/${plano.id}`" class="text-gray-800 text-hover-primary">{{ plano.codigo }}</a>
                             </td>
@@ -144,18 +104,8 @@ function guardarPlano(payload) {
             </div>
         </div>
 
-        <CursoFormModal
-            :show="modalAberto"
-            :curso="curso"
-            :processing="processing"
-            :errors="errors"
-            @submit="guardar"
-            @cancelar="fecharModal"
-        />
-
         <NovoPlanoCurricularModal
             :show="planoModalAberto"
-            :niveis-academicos="niveisAcademicos"
             :processing="planoProcessing"
             :errors="planoErrors"
             @submit="guardarPlano"

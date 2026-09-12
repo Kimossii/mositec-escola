@@ -153,70 +153,50 @@ const periodosDaAplicacaoSelecionada = computed(() => {
     return [...(aplicacao?.ano_lectivo?.periodos ?? [])].sort((a, b) => a.numero - b.numero);
 });
 
+// Um plano tem agora um único nível académico (já não vive na disciplina, ver
+// PlanoCurricular::nivelAcademico), pelo que já não faz sentido agrupar as
+// disciplinas por nível dentro do plano — há sempre, no máximo, um único grupo,
+// nomeado a partir do nível do próprio plano. O agrupamento por período mantém-se.
 const gruposDisciplinas = computed(() => {
-    const grupos = new Map();
+    const disciplinas = [...(props.planoCurricular.disciplinas ?? [])].sort((a, b) => a.ordem - b.ordem);
+    if (!disciplinas.length) return [];
 
-    for (const item of props.planoCurricular.disciplinas ?? []) {
-        const nivel = item.nivel_academico;
-        const chave = nivel?.id ?? 'sem-nivel';
-
-        if (!grupos.has(chave)) {
-            grupos.set(chave, {
-                nome: nivel?.nome ?? 'Sem nível académico',
-                ordem: nivel?.ordem ?? Number.MAX_SAFE_INTEGER,
-                disciplinas: [],
-            });
-        }
-
-        grupos.get(chave).disciplinas.push(item);
-    }
-
-    const gruposOrdenados = [...grupos.values()]
-        .sort((a, b) => a.ordem - b.ordem)
-        .map((grupo) => ({
-            ...grupo,
-            disciplinas: [...grupo.disciplinas].sort((a, b) => a.ordem - b.ordem),
-        }));
+    const grupo = { nome: props.planoCurricular.nivel_academico?.nome ?? 'Sem nível académico', disciplinas };
 
     // Sem nenhuma aplicação confirmada ainda não há noção de "período" —
-    // mostra as disciplinas do nível sem sub-divisão nenhuma.
+    // mostra as disciplinas sem sub-divisão nenhuma.
     if (!aplicacaoSelecionadaId.value) {
-        return gruposOrdenados.map((grupo) => ({
-            ...grupo,
-            subgrupos: [{ nome: null, naoDefinido: false, disciplinas: grupo.disciplinas }],
-        }));
+        return [{ ...grupo, subgrupos: [{ nome: null, naoDefinido: false, disciplinas: grupo.disciplinas }] }];
     }
 
-    return gruposOrdenados.map((grupo) => {
-        const porPeriodo = new Map();
-        const semPeriodo = [];
+    const porPeriodo = new Map();
+    const semPeriodo = [];
 
-        for (const disciplina of grupo.disciplinas) {
-            const mapeamentosDaAplicacao = (disciplina.periodos_por_aplicacao ?? [])
-                .filter((item) => item.plano_curricular_ano_lectivo_id === aplicacaoSelecionadaId.value);
+    for (const disciplina of grupo.disciplinas) {
+        const mapeamentosDaAplicacao = (disciplina.periodos_por_aplicacao ?? [])
+            .filter((item) => item.plano_curricular_ano_lectivo_id === aplicacaoSelecionadaId.value);
 
-            if (!mapeamentosDaAplicacao.length) {
-                semPeriodo.push(disciplina);
-                continue;
-            }
-
-            for (const mapeamento of mapeamentosDaAplicacao) {
-                const periodo = periodosDaAplicacaoSelecionada.value.find((item) => item.id === mapeamento.periodo_id);
-                const chave = periodo?.id ?? 'periodo-desconhecido';
-                if (!porPeriodo.has(chave)) {
-                    porPeriodo.set(chave, { nome: periodo?.nome ?? '—', numero: periodo?.numero ?? Number.MAX_SAFE_INTEGER, naoDefinido: false, disciplinas: [] });
-                }
-                porPeriodo.get(chave).disciplinas.push(disciplina);
-            }
+        if (!mapeamentosDaAplicacao.length) {
+            semPeriodo.push(disciplina);
+            continue;
         }
 
-        const subgrupos = [...porPeriodo.values()].sort((a, b) => a.numero - b.numero);
-        if (semPeriodo.length) {
-            subgrupos.push({ nome: 'Período não definido', naoDefinido: true, disciplinas: semPeriodo });
+        for (const mapeamento of mapeamentosDaAplicacao) {
+            const periodo = periodosDaAplicacaoSelecionada.value.find((item) => item.id === mapeamento.periodo_id);
+            const chave = periodo?.id ?? 'periodo-desconhecido';
+            if (!porPeriodo.has(chave)) {
+                porPeriodo.set(chave, { nome: periodo?.nome ?? '—', numero: periodo?.numero ?? Number.MAX_SAFE_INTEGER, naoDefinido: false, disciplinas: [] });
+            }
+            porPeriodo.get(chave).disciplinas.push(disciplina);
         }
+    }
 
-        return { ...grupo, subgrupos };
-    });
+    const subgrupos = [...porPeriodo.values()].sort((a, b) => a.numero - b.numero);
+    if (semPeriodo.length) {
+        subgrupos.push({ nome: 'Período não definido', naoDefinido: true, disciplinas: semPeriodo });
+    }
+
+    return [{ ...grupo, subgrupos }];
 });
 
 const disciplinaParaRemover = ref(null);
@@ -333,14 +313,14 @@ function formatarDataHora(valor) {
 
 <template>
     <div class="app-container container-xxl py-6">
-        <BotaoVoltar :href="`/cursos/${planoCurricular.curso_id}`" class="mb-4" />
+        <BotaoVoltar v-if="planoCurricular.curso_id" :href="`/cursos/${planoCurricular.curso_id}`" class="mb-4" />
 
         <div class="card mb-6">
             <div class="card-body d-flex justify-content-between align-items-start">
                 <div>
                     <h1 class="fs-2 fw-bold mb-2">{{ planoCurricular.nome }}</h1>
                     <div class="text-muted fs-6 mb-3">
-                        Código: {{ planoCurricular.codigo }} — Curso: {{ planoCurricular.curso?.nome ?? '—' }}
+                        Código: {{ planoCurricular.codigo }} — Nível Académico: {{ planoCurricular.nivel_academico?.nome }} — Curso: {{ planoCurricular.curso?.nome ?? '—' }}
                     </div>
                     <EstadoBadge :estado="planoCurricular.estado" :estado-descricao="planoCurricular.estado_descricao" />
                 </div>

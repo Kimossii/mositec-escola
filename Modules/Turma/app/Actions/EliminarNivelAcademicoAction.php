@@ -15,6 +15,12 @@ class EliminarNivelAcademicoAction
             ]);
         }
 
+        if ($nivelAcademico->planosCurriculares()->exists()) {
+            throw ValidationException::withMessages([
+                'nivelAcademico' => 'Este nível académico está associado a planos curriculares e não pode ser eliminado.',
+            ]);
+        }
+
         $nivelAcademico->delete();
     }
 }

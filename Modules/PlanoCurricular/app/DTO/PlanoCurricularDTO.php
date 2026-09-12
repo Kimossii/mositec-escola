@@ -8,9 +8,10 @@ use Modules\PlanoCurricular\Http\Requests\CriarPlanoCurricularRequest;
 class PlanoCurricularDTO
 {
     public function __construct(
-        public int $curso_id,
+        public int $nivel_academico_id,
         public string $codigo,
         public string $nome,
+        public ?int $curso_id = null,
         public ?string $descricao = null,
     ) {
     }
@@ -20,9 +21,10 @@ class PlanoCurricularDTO
         $dados = $request->validated();
 
         return new self(
-            curso_id: (int) $dados['curso_id'],
+            nivel_academico_id: (int) $dados['nivel_academico_id'],
             codigo: $dados['codigo'],
             nome: $dados['nome'],
+            curso_id: isset($dados['curso_id']) ? (int) $dados['curso_id'] : null,
             descricao: $dados['descricao'] ?? null,
         );
     }
@@ -32,9 +34,10 @@ class PlanoCurricularDTO
         $dados = $request->validated();
 
         return new self(
-            curso_id: (int) $dados['curso_id'],
+            nivel_academico_id: (int) $dados['nivel_academico_id'],
             codigo: $dados['codigo'],
             nome: $dados['nome'],
+            curso_id: isset($dados['curso_id']) ? (int) $dados['curso_id'] : null,
             descricao: $dados['descricao'] ?? null,
         );
     }

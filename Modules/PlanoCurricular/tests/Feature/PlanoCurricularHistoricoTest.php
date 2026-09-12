@@ -82,6 +82,7 @@ class PlanoCurricularHistoricoTest extends TestCase
 
         // --- Plano A: criado, com disciplina, confirmado para 2026 e 2027 ---
         $this->post(route('planos-curriculares.store'), [
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => 'PLA',
             'nome' => 'Plano Informática v1',
@@ -91,7 +92,6 @@ class PlanoCurricularHistoricoTest extends TestCase
 
         $this->post(route('planos-curriculares.disciplinas.store', $planoA), [
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivel->id,
             'tipo' => TipoDisciplinaPlano::NORMAL->value,
             'obrigatoria' => true,
             'ordem' => 1,
@@ -118,6 +118,7 @@ class PlanoCurricularHistoricoTest extends TestCase
 
         // --- Plano B: nova versão, criado e confirmado para 2028 ---
         $this->post(route('planos-curriculares.store'), [
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => 'PLB',
             'nome' => 'Plano Informática v2',
@@ -127,7 +128,6 @@ class PlanoCurricularHistoricoTest extends TestCase
 
         $this->post(route('planos-curriculares.disciplinas.store', $planoB), [
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivel->id,
             'tipo' => TipoDisciplinaPlano::NORMAL->value,
             'obrigatoria' => true,
             'ordem' => 1,
@@ -139,6 +139,7 @@ class PlanoCurricularHistoricoTest extends TestCase
 
         // Editar o Plano B (nome + disciplinas) não deve tocar no Plano A.
         $this->put(route('planos-curriculares.update', $planoB), [
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => 'PLB',
             'nome' => 'Plano Informática v2 (revisto)',
@@ -147,7 +148,6 @@ class PlanoCurricularHistoricoTest extends TestCase
         $itemB = $planoB->disciplinas()->first();
         $this->put(route('planos-curriculares.disciplinas.update', [$planoB, $itemB]), [
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivel->id,
             'tipo' => TipoDisciplinaPlano::OPTATIVA->value,
             'obrigatoria' => false,
             'ordem' => 2,
@@ -214,11 +214,11 @@ class PlanoCurricularHistoricoTest extends TestCase
         $periodo2027A = Periodo::create(['ano_lectivo_id' => $anoLectivo2027->id, 'nome' => '1º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 1, 'data_inicio' => '2027-01-01', 'data_fim' => '2027-04-01']);
         $periodo2027B = Periodo::create(['ano_lectivo_id' => $anoLectivo2027->id, 'nome' => '2º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 2, 'data_inicio' => '2027-04-02', 'data_fim' => '2027-08-01']);
 
-        $this->post(route('planos-curriculares.store'), ['curso_id' => $curso->id, 'codigo' => 'PLA', 'nome' => 'Plano Informática'])->assertSessionHasNoErrors();
+        $this->post(route('planos-curriculares.store'), ['nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'PLA', 'nome' => 'Plano Informática'])->assertSessionHasNoErrors();
         $planoA = PlanoCurricular::firstWhere('codigo', 'PLA');
 
         $this->post(route('planos-curriculares.disciplinas.store', $planoA), [
-            'disciplina_id' => $disciplina->id, 'nivel_academico_id' => $nivel->id, 'tipo' => TipoDisciplinaPlano::NORMAL->value, 'obrigatoria' => true, 'ordem' => 1,
+            'disciplina_id' => $disciplina->id, 'tipo' => TipoDisciplinaPlano::NORMAL->value, 'obrigatoria' => true, 'ordem' => 1,
         ])->assertSessionHasNoErrors();
         $item = $planoA->disciplinas()->first();
 

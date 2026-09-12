@@ -95,12 +95,26 @@ class PlanoCurricularHttpTest extends TestCase
 
     private function criarPlano(Estabelecimento $estabelecimento, Curso $curso, string $codigo = 'PLI'): PlanoCurricular
     {
+        $nivel = NivelAcademico::firstOrCreate(
+            ['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C'],
+            ['nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 4],
+        );
+
         return PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => $codigo,
             'nome' => 'Plano Informática',
         ]);
+    }
+
+    private function criarNivelAcademicoParaPlano(Estabelecimento $estabelecimento): NivelAcademico
+    {
+        return NivelAcademico::firstOrCreate(
+            ['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C'],
+            ['nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 4],
+        );
     }
 
     public function test_store_cria_plano_associado_ao_curso(): void
@@ -108,8 +122,10 @@ class PlanoCurricularHttpTest extends TestCase
         $staff = $this->actingAsStaff();
         $estabelecimento = $this->criarEstabelecimento();
         $curso = $this->criarCurso($estabelecimento);
+        $nivel = $this->criarNivelAcademicoParaPlano($estabelecimento);
 
         $this->post(route('planos-curriculares.store'), [
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => 'PLI',
             'nome' => 'Plano Informática',
@@ -118,6 +134,7 @@ class PlanoCurricularHttpTest extends TestCase
         $plano = PlanoCurricular::firstWhere('codigo', 'PLI');
         $this->assertNotNull($plano);
         $this->assertSame($curso->id, $plano->curso_id);
+        $this->assertSame($nivel->id, $plano->nivel_academico_id);
         $this->assertSame($estabelecimento->id, $plano->estabelecimento_id);
         $this->assertSame($staff->id, $plano->criado_por);
         $this->assertSame('Ativo', $plano->estado_descricao);
@@ -136,14 +153,45 @@ class PlanoCurricularHttpTest extends TestCase
         );
     }
 
+    /**
+     * Regressão: `disciplinas.nivelAcademico` era eager-load'ado no `show()` mas essa
+     * relação foi removida de `PlanoCurricularDisciplina` (o nível subiu para o Plano).
+     * `Builder::getRelation()` só rebenta quando a colecção `disciplinas` tem pelo
+     * menos 1 item — por isso `test_show_expoe_o_plano` (com um plano sem disciplinas)
+     * nunca apanhava este 500. Este teste garante que o caso real (plano com
+     * disciplinas) continua a funcionar.
+     */
+    public function test_show_expoe_o_plano_com_disciplinas(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $curso = $this->criarCurso($estabelecimento);
+        $plano = $this->criarPlano($estabelecimento, $curso);
+        $disciplina = $this->criarDisciplina($estabelecimento);
+        $plano->disciplinas()->create([
+            'disciplina_id' => $disciplina->id,
+            'tipo' => TipoDisciplinaPlano::NORMAL,
+            'obrigatoria' => true,
+            'ordem' => 1,
+        ]);
+
+        $this->get(route('planos-curriculares.show', $plano))->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('PlanoCurricular/Show')
+            ->has('planoCurricular.disciplinas', 1)
+            ->where('planoCurricular.disciplinas.0.disciplina.id', $disciplina->id)
+        );
+    }
+
     public function test_atualiza_plano_via_http(): void
     {
         $this->actingAsStaff();
         $estabelecimento = $this->criarEstabelecimento();
         $curso = $this->criarCurso($estabelecimento);
         $plano = $this->criarPlano($estabelecimento, $curso);
+        $nivel = $this->criarNivelAcademicoParaPlano($estabelecimento);
 
         $this->put(route('planos-curriculares.update', $plano), [
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => 'PLI',
             'nome' => 'Plano Informática Renovado',
@@ -175,11 +223,9 @@ class PlanoCurricularHttpTest extends TestCase
         $curso = $this->criarCurso($estabelecimento);
         $plano = $this->criarPlano($estabelecimento, $curso);
         $disciplina = $this->criarDisciplina($estabelecimento);
-        $nivel = $this->criarNivelAcademico($estabelecimento);
 
         $this->post(route('planos-curriculares.disciplinas.store', $plano), [
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivel->id,
             'tipo' => TipoDisciplinaPlano::NORMAL->value,
             'obrigatoria' => true,
             'ordem' => 1,
@@ -188,22 +234,19 @@ class PlanoCurricularHttpTest extends TestCase
         $this->assertDatabaseHas('plano_curricular_disciplinas', [
             'plano_curricular_id' => $plano->id,
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivel->id,
         ]);
     }
 
-    public function test_disciplinas_store_rejeita_duplicar_mesma_disciplina_no_mesmo_nivel(): void
+    public function test_disciplinas_store_rejeita_duplicar_mesma_disciplina(): void
     {
         $this->actingAsStaff();
         $estabelecimento = $this->criarEstabelecimento();
         $curso = $this->criarCurso($estabelecimento);
         $plano = $this->criarPlano($estabelecimento, $curso);
         $disciplina = $this->criarDisciplina($estabelecimento);
-        $nivel = $this->criarNivelAcademico($estabelecimento);
 
         $plano->disciplinas()->create([
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivel->id,
             'tipo' => TipoDisciplinaPlano::NORMAL,
             'obrigatoria' => true,
             'ordem' => 1,
@@ -211,7 +254,6 @@ class PlanoCurricularHttpTest extends TestCase
 
         $this->post(route('planos-curriculares.disciplinas.store', $plano), [
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivel->id,
             'tipo' => TipoDisciplinaPlano::NORMAL->value,
             'obrigatoria' => true,
             'ordem' => 2,
@@ -225,10 +267,8 @@ class PlanoCurricularHttpTest extends TestCase
         $curso = $this->criarCurso($estabelecimento);
         $plano = $this->criarPlano($estabelecimento, $curso);
         $disciplina = $this->criarDisciplina($estabelecimento);
-        $nivel = $this->criarNivelAcademico($estabelecimento);
         $item = $plano->disciplinas()->create([
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivel->id,
             'tipo' => TipoDisciplinaPlano::NORMAL,
             'obrigatoria' => true,
             'ordem' => 1,
@@ -236,7 +276,6 @@ class PlanoCurricularHttpTest extends TestCase
 
         $this->put(route('planos-curriculares.disciplinas.update', [$plano, $item]), [
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivel->id,
             'tipo' => TipoDisciplinaPlano::OPTATIVA->value,
             'obrigatoria' => false,
             'ordem' => 3,
@@ -255,10 +294,8 @@ class PlanoCurricularHttpTest extends TestCase
         $curso = $this->criarCurso($estabelecimento);
         $plano = $this->criarPlano($estabelecimento, $curso);
         $disciplina = $this->criarDisciplina($estabelecimento);
-        $nivel = $this->criarNivelAcademico($estabelecimento);
         $item = $plano->disciplinas()->create([
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivel->id,
             'tipo' => TipoDisciplinaPlano::NORMAL,
             'obrigatoria' => true,
             'ordem' => 1,
@@ -316,8 +353,7 @@ class PlanoCurricularHttpTest extends TestCase
         $curso = $this->criarCurso($estabelecimento);
         $plano = $this->criarPlano($estabelecimento, $curso);
         $disciplina = $this->criarDisciplina($estabelecimento);
-        $nivel = $this->criarNivelAcademico($estabelecimento);
-        $item = $plano->disciplinas()->create(['disciplina_id' => $disciplina->id, 'nivel_academico_id' => $nivel->id, 'tipo' => TipoDisciplinaPlano::NORMAL, 'obrigatoria' => true, 'ordem' => 1]);
+        $item = $plano->disciplinas()->create(['disciplina_id' => $disciplina->id, 'tipo' => TipoDisciplinaPlano::NORMAL, 'obrigatoria' => true, 'ordem' => 1]);
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
         $periodo1 = Periodo::create(['ano_lectivo_id' => $anoLectivo->id, 'nome' => '1º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 1, 'data_inicio' => '2026-01-01', 'data_fim' => '2026-04-01']);
         $periodo2 = Periodo::create(['ano_lectivo_id' => $anoLectivo->id, 'nome' => '2º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 2, 'data_inicio' => '2026-04-02', 'data_fim' => '2026-08-01']);
@@ -338,8 +374,7 @@ class PlanoCurricularHttpTest extends TestCase
         $curso = $this->criarCurso($estabelecimento);
         $plano = $this->criarPlano($estabelecimento, $curso);
         $disciplina = $this->criarDisciplina($estabelecimento);
-        $nivel = $this->criarNivelAcademico($estabelecimento);
-        $item = $plano->disciplinas()->create(['disciplina_id' => $disciplina->id, 'nivel_academico_id' => $nivel->id, 'tipo' => TipoDisciplinaPlano::NORMAL, 'obrigatoria' => true, 'ordem' => 1]);
+        $item = $plano->disciplinas()->create(['disciplina_id' => $disciplina->id, 'tipo' => TipoDisciplinaPlano::NORMAL, 'obrigatoria' => true, 'ordem' => 1]);
         $anoLectivo = $this->criarAnoLectivo($estabelecimento, '2026');
         $aplicacao = PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivo->id]);
         $outroAnoLectivo = $this->criarAnoLectivo($estabelecimento, '2027');
@@ -360,8 +395,7 @@ class PlanoCurricularHttpTest extends TestCase
         $plano = $this->criarPlano($estabelecimento, $curso);
         $outroPlano = $this->criarPlano($estabelecimento, $curso, 'PLO');
         $disciplina = $this->criarDisciplina($estabelecimento);
-        $nivel = $this->criarNivelAcademico($estabelecimento);
-        $itemDeOutroPlano = $outroPlano->disciplinas()->create(['disciplina_id' => $disciplina->id, 'nivel_academico_id' => $nivel->id, 'tipo' => TipoDisciplinaPlano::NORMAL, 'obrigatoria' => true, 'ordem' => 1]);
+        $itemDeOutroPlano = $outroPlano->disciplinas()->create(['disciplina_id' => $disciplina->id, 'tipo' => TipoDisciplinaPlano::NORMAL, 'obrigatoria' => true, 'ordem' => 1]);
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
         $aplicacao = PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivo->id]);
 
@@ -376,9 +410,10 @@ class PlanoCurricularHttpTest extends TestCase
         $estabelecimento = $this->criarEstabelecimento();
         $curso = $this->criarCurso($estabelecimento);
         $plano = $this->criarPlano($estabelecimento, $curso);
+        $nivel = $this->criarNivelAcademicoParaPlano($estabelecimento);
 
         $this->post(route('planos-curriculares.store'), ['curso_id' => $curso->id, 'codigo' => 'PLX', 'nome' => 'Outro Plano'])->assertForbidden();
-        $this->put(route('planos-curriculares.update', $plano), ['curso_id' => $curso->id, 'codigo' => 'PLI', 'nome' => 'Plano Renovado'])->assertForbidden();
+        $this->put(route('planos-curriculares.update', $plano), ['nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'PLI', 'nome' => 'Plano Renovado'])->assertForbidden();
         $this->patch(route('planos-curriculares.alterar-estado', $plano), ['estado' => Estado::INATIVO->value])->assertForbidden();
     }
 }

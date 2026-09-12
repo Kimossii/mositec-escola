@@ -31,6 +31,15 @@ class NivelAcademicoController extends Controller
         ]);
     }
 
+    public function show(NivelAcademico $nivelAcademico)
+    {
+        $this->authorize('turmas.ver');
+
+        return Inertia::render('Turma/NiveisAcademicos/Show', [
+            'nivelAcademico' => $this->consulta->comRelacoes($nivelAcademico),
+        ]);
+    }
+
     public function store(CriarNivelAcademicoRequest $request)
     {
         $this->authorize('turmas.criar');

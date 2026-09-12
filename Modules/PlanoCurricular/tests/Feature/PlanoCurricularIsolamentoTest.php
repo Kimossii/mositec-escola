@@ -86,8 +86,11 @@ class PlanoCurricularIsolamentoTest extends TestCase
 
     private function criarPlano(Estabelecimento $estabelecimento, Curso $curso, string $codigo): PlanoCurricular
     {
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+
         return PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => $codigo,
             'nome' => 'Plano do Estabelecimento B',
@@ -126,6 +129,7 @@ class PlanoCurricularIsolamentoTest extends TestCase
         $cursoA = $this->criarCurso($estabelecimentoA, 'INF');
 
         $this->put(route('planos-curriculares.update', $planoB), [
+            'nivel_academico_id' => $this->criarNivelAcademico($estabelecimentoA)->id,
             'curso_id' => $cursoA->id,
             'codigo' => 'PLC',
             'nome' => 'Tentativa de sequestro do plano',
@@ -151,11 +155,9 @@ class PlanoCurricularIsolamentoTest extends TestCase
     {
         [$estabelecimentoA, , $planoB] = $this->prepararCenarioCrossEstabelecimento();
         $disciplinaA = $this->criarDisciplina($estabelecimentoA, 'MAT');
-        $nivelA = $this->criarNivelAcademico($estabelecimentoA);
 
         $this->post(route('planos-curriculares.disciplinas.store', $planoB), [
             'disciplina_id' => $disciplinaA->id,
-            'nivel_academico_id' => $nivelA->id,
             'tipo' => TipoDisciplinaPlano::NORMAL->value,
             'obrigatoria' => true,
             'ordem' => 1,
@@ -168,10 +170,8 @@ class PlanoCurricularIsolamentoTest extends TestCase
     {
         [$estabelecimentoA, $estabelecimentoB, $planoB] = $this->prepararCenarioCrossEstabelecimento();
         $disciplinaB = $this->criarDisciplina($estabelecimentoB, 'MAT');
-        $nivelB = $this->criarNivelAcademico($estabelecimentoB);
         $itemB = $planoB->disciplinas()->create([
             'disciplina_id' => $disciplinaB->id,
-            'nivel_academico_id' => $nivelB->id,
             'tipo' => TipoDisciplinaPlano::NORMAL,
             'obrigatoria' => true,
             'ordem' => 1,
@@ -180,11 +180,9 @@ class PlanoCurricularIsolamentoTest extends TestCase
         // Payload válido para o estabelecimento actual (A), para isolar exactamente
         // a guarda do Controller — não uma rejeição da FormRequest por FK inválida.
         $disciplinaA = $this->criarDisciplina($estabelecimentoA, 'MAT-A');
-        $nivelA = $this->criarNivelAcademico($estabelecimentoA);
 
         $this->put(route('planos-curriculares.disciplinas.update', [$planoB, $itemB]), [
             'disciplina_id' => $disciplinaA->id,
-            'nivel_academico_id' => $nivelA->id,
             'tipo' => TipoDisciplinaPlano::OPTATIVA->value,
             'obrigatoria' => false,
             'ordem' => 9,
@@ -199,10 +197,8 @@ class PlanoCurricularIsolamentoTest extends TestCase
     {
         [, $estabelecimentoB, $planoB] = $this->prepararCenarioCrossEstabelecimento();
         $disciplinaB = $this->criarDisciplina($estabelecimentoB, 'MAT');
-        $nivelB = $this->criarNivelAcademico($estabelecimentoB);
         $itemB = $planoB->disciplinas()->create([
             'disciplina_id' => $disciplinaB->id,
-            'nivel_academico_id' => $nivelB->id,
             'tipo' => TipoDisciplinaPlano::NORMAL,
             'obrigatoria' => true,
             'ordem' => 1,
@@ -229,10 +225,8 @@ class PlanoCurricularIsolamentoTest extends TestCase
     {
         [, $estabelecimentoB, $planoB] = $this->prepararCenarioCrossEstabelecimento();
         $disciplinaB = $this->criarDisciplina($estabelecimentoB, 'MAT');
-        $nivelB = $this->criarNivelAcademico($estabelecimentoB);
         $itemB = $planoB->disciplinas()->create([
             'disciplina_id' => $disciplinaB->id,
-            'nivel_academico_id' => $nivelB->id,
             'tipo' => TipoDisciplinaPlano::NORMAL,
             'obrigatoria' => true,
             'ordem' => 1,
@@ -250,10 +244,12 @@ class PlanoCurricularIsolamentoTest extends TestCase
 
     public function test_store_rejeita_curso_de_outro_estabelecimento(): void
     {
-        [, $estabelecimentoB] = $this->prepararCenarioCrossEstabelecimento();
+        [$estabelecimentoA, $estabelecimentoB] = $this->prepararCenarioCrossEstabelecimento();
         $cursoB = $this->criarCurso($estabelecimentoB, 'CONT2');
+        $nivelA = $this->criarNivelAcademico($estabelecimentoA);
 
         $this->post(route('planos-curriculares.store'), [
+            'nivel_academico_id' => $nivelA->id,
             'curso_id' => $cursoB->id,
             'codigo' => 'PLX',
             'nome' => 'Plano inválido',
@@ -268,15 +264,13 @@ class PlanoCurricularIsolamentoTest extends TestCase
         $cursoA = $this->criarCurso($estabelecimentoA, 'INF');
         $planoA = $this->criarPlano($estabelecimentoA, $cursoA, 'PLI');
         $disciplinaB = $this->criarDisciplina($estabelecimentoB, 'MAT');
-        $nivelB = $this->criarNivelAcademico($estabelecimentoB);
 
         $this->post(route('planos-curriculares.disciplinas.store', $planoA), [
             'disciplina_id' => $disciplinaB->id,
-            'nivel_academico_id' => $nivelB->id,
             'tipo' => TipoDisciplinaPlano::NORMAL->value,
             'obrigatoria' => true,
             'ordem' => 1,
-        ])->assertSessionHasErrors(['disciplina_id', 'nivel_academico_id']);
+        ])->assertSessionHasErrors('disciplina_id');
     }
 
     public function test_anos_lectivos_store_rejeita_ano_lectivo_de_outro_estabelecimento(): void

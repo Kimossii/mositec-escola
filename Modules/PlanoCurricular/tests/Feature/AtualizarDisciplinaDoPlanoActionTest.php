@@ -23,20 +23,19 @@ class AtualizarDisciplinaDoPlanoActionTest extends TestCase
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
         $plano = PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivelAcademico->id,
             'curso_id' => $curso->id,
             'codigo' => 'PC1',
             'nome' => 'Plano 1',
         ]);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT', 'nome' => 'Matemática']);
         $outraDisciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'FIS', 'nome' => 'Física']);
-        $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
-        $outroNivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N11', 'nome' => '11ª Classe', 'ordem' => 2, 'etapa_ensino' => 4]);
         $item = PlanoCurricularDisciplina::create([
             'plano_curricular_id' => $plano->id,
             'disciplina_id' => $disciplina->id,
-            'nivel_academico_id' => $nivelAcademico->id,
             'carga_horaria' => 90,
             'creditos' => 4,
             'componente' => ComponentePlanoCurricular::GERAL->value,
@@ -47,7 +46,6 @@ class AtualizarDisciplinaDoPlanoActionTest extends TestCase
 
         $atualizado = (new AtualizarDisciplinaDoPlanoAction())->executar($item, new PlanoCurricularDisciplinaDTO(
             disciplina_id: $outraDisciplina->id,
-            nivel_academico_id: $outroNivelAcademico->id,
             tipo: TipoDisciplinaPlano::OPTATIVA,
             obrigatoria: false,
             ordem: 2,
@@ -57,7 +55,6 @@ class AtualizarDisciplinaDoPlanoActionTest extends TestCase
         ));
 
         $this->assertSame($outraDisciplina->id, $atualizado->disciplina_id);
-        $this->assertSame($outroNivelAcademico->id, $atualizado->nivel_academico_id);
         $this->assertSame(60, $atualizado->carga_horaria);
         $this->assertSame(3, $atualizado->creditos);
         $this->assertSame(ComponentePlanoCurricular::TECNICA, $atualizado->componente);

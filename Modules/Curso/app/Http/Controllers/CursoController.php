@@ -35,6 +35,7 @@ class CursoController extends Controller
 
         return Inertia::render('Curso/Show', [
             'curso' => $this->consulta->comRelacoes($curso),
+            'niveisAcademicos' => $this->consulta->niveisAcademicos(),
         ]);
     }
 
