@@ -532,6 +532,26 @@ class TurmaHttpTest extends TestCase
         );
     }
 
+    public function test_nao_adiciona_o_mesmo_horario_duas_vezes_ao_mesmo_turno(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $horario = \Modules\Core\Models\Horario::create(['nome' => 'Bloco 1', 'hora_inicio' => '07:00', 'hora_fim' => '07:45']);
+        $turno = Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
+
+        $this->post(route('turnos.horarios.store', $turno), [
+            'horario_id' => $horario->id,
+            'ordem' => 1,
+        ])->assertSessionHasNoErrors();
+
+        $this->post(route('turnos.horarios.store', $turno), [
+            'horario_id' => $horario->id,
+            'ordem' => 2,
+        ])->assertSessionHasErrors(['horario_id' => 'Este horário já está associado a este turno da turma.']);
+
+        $this->assertSame(1, $turno->turnoHorarios()->count());
+    }
+
     public function test_professor_recebe_403_em_todas_as_rotas_de_escrita(): void
     {
         $this->actingAsProfessor();

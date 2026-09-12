@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -7,11 +7,14 @@ import { can } from '@/Composables/usePermissoes';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
 import NovoPlanoCurricularModal from '../../Components/NivelAcademico/PlanosCurriculares/NovoPlanoCurricularModal.vue';
+import { etapaExigeCurso } from '../../Models/EtapaEnsino';
 
 const props = defineProps({
     nivelAcademico: { type: Object, required: true },
 });
 defineOptions({ layout: AppLayout });
+
+const nivelExigeCurso = computed(() => etapaExigeCurso(props.nivelAcademico.etapa_ensino));
 
 const planoModalAberto = ref(false);
 const planoProcessing = ref(false);
@@ -71,7 +74,10 @@ function guardarPlano(payload) {
         <div v-if="can('plano-curricular.ver')" class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title fw-bold">Planos Curriculares</h3>
-                <button v-if="can('plano-curricular.criar')" class="btn btn-primary btn-sm" @click="abrirCriacaoPlano">Novo Plano</button>
+                <button v-if="can('plano-curricular.criar') && !nivelExigeCurso" class="btn btn-primary btn-sm" @click="abrirCriacaoPlano">Novo Plano</button>
+            </div>
+            <div v-if="nivelExigeCurso" class="card-body py-4 border-bottom">
+                <div class="text-muted fs-7">Para este nível, os planos curriculares são criados a partir do curso.</div>
             </div>
             <div class="card-body p-0">
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
@@ -79,19 +85,21 @@ function guardarPlano(payload) {
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th class="min-w-100px">Código</th>
                             <th class="min-w-200px">Nome</th>
+                            <th class="min-w-150px">Curso</th>
                             <th class="min-w-125px">Estado</th>
                             <th class="text-end min-w-100px">Ações</th>
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="nivelAcademico.planos_curriculares.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhum plano curricular criado para este nível.</td>
+                            <td colspan="5" class="text-center text-muted py-6">Nenhum plano curricular criado para este nível.</td>
                         </tr>
                         <tr v-for="plano in nivelAcademico.planos_curriculares" :key="plano.id">
                             <td>
                                 <a :href="`/planos-curriculares/${plano.id}`" class="text-gray-800 text-hover-primary">{{ plano.codigo }}</a>
                             </td>
                             <td>{{ plano.nome }}</td>
+                            <td>{{ plano.curso?.nome ?? '—' }}</td>
                             <td>
                                 <EstadoBadge :estado="plano.estado" :estado-descricao="plano.estado_descricao" />
                             </td>

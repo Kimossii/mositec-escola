@@ -50,7 +50,7 @@ class NivelAcademicoPlanoCurricularTest extends TestCase
 
     private function criarNivelAcademico(Estabelecimento $estabelecimento): NivelAcademico
     {
-        return NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
+        return NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 3]);
     }
 
     public function test_cria_plano_curricular_a_partir_do_nivel_academico_sem_curso_e_aparece_no_nivel(): void
