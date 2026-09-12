@@ -30,6 +30,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('turnos')->name('turnos.')->group(function () {
         Route::get('/', [TurnoController::class, 'index'])->middleware('can:turmas.ver')->name('index');
+        Route::get('/{turno}', [TurnoController::class, 'show'])->middleware('can:turmas.ver')->name('show');
         Route::post('/', [TurnoController::class, 'store'])->middleware('can:turmas.criar')->name('store');
         Route::put('/{turno}', [TurnoController::class, 'update'])->middleware('can:turmas.editar')->name('update');
         Route::patch('/{turno}/estado', [TurnoController::class, 'alterarEstado'])->middleware('can:turmas.editar')->name('alterar-estado');

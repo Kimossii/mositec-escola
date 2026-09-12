@@ -30,6 +30,15 @@ class TurnoController extends Controller
         ]);
     }
 
+    public function show(Turno $turno)
+    {
+        $this->authorize('turmas.ver');
+
+        return Inertia::render('Turma/Turnos/Show', [
+            'turno' => $this->consulta->comRelacoes($turno),
+        ]);
+    }
+
     public function store(CriarTurnoRequest $request)
     {
         $this->authorize('turmas.criar');
