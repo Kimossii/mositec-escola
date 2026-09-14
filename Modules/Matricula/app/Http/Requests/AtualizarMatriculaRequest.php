@@ -22,7 +22,7 @@ class AtualizarMatriculaRequest extends BaseRequest
             'ano_lectivo_id' => [
                 'required',
                 'integer',
-                'exists:anos_lectivos,id',
+                'exists:ano_lectivos,id',
             ],
             'data_matricula' => [
                 'required',

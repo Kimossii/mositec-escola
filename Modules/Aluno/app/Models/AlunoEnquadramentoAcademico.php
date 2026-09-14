@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Aluno\Enums\EstadoEnquadramentoAcademicoEnum;
 use Modules\Curso\Models\Curso;
-use Modules\NivelAcademico\Models\NivelAcademico;
+use Modules\Turma\Models\NivelAcademico;
+use Modules\Usuario\Models\User;
 
 class AlunoEnquadramentoAcademico extends Model
 {

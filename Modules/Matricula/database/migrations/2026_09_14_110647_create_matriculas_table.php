@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('aluno_id')->constrained('alunos');
             $table->foreignId('turma_id')->constrained('turmas');
-            $table->foreignId('ano_lectivo_id')->constrained('anos_lectivos');
+            $table->foreignId('ano_lectivo_id')->constrained('ano_lectivos');
             $table->string('numero_registo_matricula')->unique();
             $table->date('data_matricula');
             $table->unsignedTinyInteger('estado');
