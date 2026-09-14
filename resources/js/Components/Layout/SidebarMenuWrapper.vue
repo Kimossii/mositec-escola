@@ -484,11 +484,11 @@ const pedagogico = {
     items: [
         { href: '/disciplinas', title: 'Disciplinas', permissao: 'disciplina.ver' },
         { href: '/horarios', title: 'Horários', permissao: 'horario.ver' },
-        { href: '#', title: 'Planos de Aula' },
-        { href: '#', title: 'Avaliações / Notas' },
-        { href: '#', title: 'Pautas' },
-        { href: '#', title: 'Conselho de Turma' },
-        { href: '#', title: 'Exames / Recuperações' },
+        // { href: '#', title: 'Planos de Aula' },
+        // { href: '#', title: 'Avaliações / Notas' },
+        // { href: '#', title: 'Pautas' },
+        // { href: '#', title: 'Conselho de Turma' },
+        // { href: '#', title: 'Exames / Recuperações' },
     ],
 }
 
@@ -573,9 +573,9 @@ const infraestrutura = {
     paths: 2,
     items: [
         { href: '/salas', title: 'Salas', permissao: 'infraestrutura.ver' },
-        { href: '#', title: 'Equipamentos' },
-        { href: '#', title: 'Inventário' },
-        { href: '#', title: 'Manutenção' },
+       // { href: '#', title: 'Equipamentos' },
+        //{ href: '#', title: 'Inventário' },
+        //{ href: '#', title: 'Manutenção' },
     ],
 }
 //

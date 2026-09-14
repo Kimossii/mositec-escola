@@ -1,7 +1,8 @@
 <script setup>
-import { reactive, watch } from 'vue';
+import { reactive, watch, computed } from 'vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import { ESTADO } from '../../Models/Estado';
+import { etapaExigeCurso } from '../../Models/EtapaEnsino';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -24,6 +25,11 @@ const opcoesAnoLectivo = () => props.anoLectivos.map((a) => ({ value: a.id, labe
 const opcoesNivelAcademico = () => props.niveisAcademicos.map((n) => ({ value: n.id, label: n.nome }));
 const opcoesCurso = () => props.cursos.map((c) => ({ value: c.id, label: c.nome }));
 const opcoesTurno = () => [{ value: '', label: 'Sem turno' }, ...props.turnos.map((t) => ({ value: t.id, label: t.nome }))];
+
+const nivelExigeCurso = computed(() => {
+    const nivel = props.niveisAcademicos.find((n) => n.id === form.nivel_academico_id);
+    return nivel ? etapaExigeCurso(nivel.etapa_ensino) : false;
+});
 
 const form = reactive({
     ano_lectivo_id: '',
@@ -49,8 +55,13 @@ watch(() => props.show, (show) => {
     form.estado = props.turma?.estado ?? ESTADO.ATIVO;
 });
 
+watch(nivelExigeCurso, (exige) => {
+    if (!exige) form.curso_id = '';
+});
+
 function submeter() {
     const payload = { ...form, turno_id: form.turno_id === '' ? null : form.turno_id };
+    if (!nivelExigeCurso.value) payload.curso_id = null;
     if (props.turma) delete payload.ano_lectivo_id;
     else delete payload.estado;
     emit('submit', payload);
@@ -70,12 +81,12 @@ function submeter() {
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 fv-row mb-7">
+                        <div class="fv-row mb-7" :class="nivelExigeCurso ? 'col-md-6' : 'col-md-12'">
                             <label class="required fw-semibold fs-6 mb-2">Nível Académico</label>
                             <SelectSolid v-model="form.nivel_academico_id" :options="opcoesNivelAcademico()" placeholder="Selecione o nível académico" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.nivel_academico_id">{{ errors.nivel_academico_id }}</div>
                         </div>
-                        <div class="col-md-6 fv-row mb-7">
+                        <div v-if="nivelExigeCurso" class="col-md-6 fv-row mb-7">
                             <label class="required fw-semibold fs-6 mb-2">Curso</label>
                             <SelectSolid v-model="form.curso_id" :options="opcoesCurso()" placeholder="Selecione o curso" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.curso_id">{{ errors.curso_id }}</div>

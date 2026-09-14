@@ -10,6 +10,7 @@ use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\Turma\Models\NivelAcademico;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -85,9 +86,10 @@ class CursoModelTest extends TestCase
         $estabelecimento = $this->criarEstabelecimento();
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
         $outroCurso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade']);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
 
-        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'codigo' => 'PLI', 'nome' => 'Plano Informática']);
-        PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $outroCurso->id, 'codigo' => 'PLC', 'nome' => 'Plano Contabilidade']);
+        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'PLI', 'nome' => 'Plano Informática']);
+        PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $outroCurso->id, 'codigo' => 'PLC', 'nome' => 'Plano Contabilidade']);
 
         $this->assertCount(1, $curso->planosCurriculares);
         $this->assertSame($plano->id, $curso->planosCurriculares->first()->id);

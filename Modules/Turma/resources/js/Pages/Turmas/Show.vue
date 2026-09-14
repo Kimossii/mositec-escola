@@ -149,7 +149,7 @@ function encerrarSala(turmaSala) {
                     </div>
                     <div class="col-md-4 mb-6">
                         <div class="text-muted fs-7 text-uppercase fw-bold mb-1">Curso</div>
-                        <div class="fs-6">{{ turma.curso.nome }}</div>
+                        <div class="fs-6">{{ turma.curso?.nome ?? '—' }}</div>
                     </div>
                     <div class="col-md-4 mb-6">
                         <div class="text-muted fs-7 text-uppercase fw-bold mb-1">Turno</div>

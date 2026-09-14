@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 
 const props = defineProps({
@@ -11,9 +11,13 @@ const props = defineProps({
 });
 const emit = defineEmits(['submit', 'cancelar']);
 
-const opcoesCurso = () => props.opcoes.cursos.map((c) => ({ value: c.id, label: c.nome }));
+const opcoesCurso = () => [{ value: '', label: 'Sem curso' }, ...props.opcoes.cursos.map((c) => ({ value: c.id, label: c.nome }))];
+const opcoesNiveisAcademicos = computed(() =>
+    [...props.opcoes.niveisAcademicos].sort((a, b) => a.ordem - b.ordem).map((n) => ({ value: n.id, label: n.nome })),
+);
 
 const form = reactive({
+    nivel_academico_id: '',
     curso_id: '',
     codigo: '',
     nome: '',
@@ -22,6 +26,7 @@ const form = reactive({
 
 watch(() => props.show, (show) => {
     if (!show) return;
+    form.nivel_academico_id = props.planoCurricular?.nivel_academico_id ?? '';
     form.curso_id = props.planoCurricular?.curso_id ?? '';
     form.codigo = props.planoCurricular?.codigo ?? '';
     form.nome = props.planoCurricular?.nome ?? '';
@@ -29,7 +34,7 @@ watch(() => props.show, (show) => {
 });
 
 function submeter() {
-    const payload = { ...form };
+    const payload = { ...form, curso_id: form.curso_id === '' ? null : form.curso_id };
     emit('submit', payload);
 }
 </script>
@@ -40,10 +45,17 @@ function submeter() {
             <div class="modal-content p-6">
                 <h3 class="mb-5">{{ planoCurricular ? 'Editar Plano Curricular' : 'Novo Plano Curricular' }}</h3>
                 <form @submit.prevent="submeter">
-                    <div class="fv-row mb-7">
-                        <label class="required fw-semibold fs-6 mb-2">Curso</label>
-                        <SelectSolid v-model="form.curso_id" :options="opcoesCurso()" placeholder="Selecione o curso" />
-                        <div class="text-danger fs-7 mt-1" v-if="errors.curso_id">{{ errors.curso_id }}</div>
+                    <div class="row">
+                        <div class="col-md-6 fv-row mb-7">
+                            <label class="required fw-semibold fs-6 mb-2">Nível Académico</label>
+                            <SelectSolid v-model="form.nivel_academico_id" :options="opcoesNiveisAcademicos" placeholder="Selecione o nível" />
+                            <div class="text-danger fs-7 mt-1" v-if="errors.nivel_academico_id">{{ errors.nivel_academico_id }}</div>
+                        </div>
+                        <div class="col-md-6 fv-row mb-7">
+                            <label class="fw-semibold fs-6 mb-2">Curso</label>
+                            <SelectSolid v-model="form.curso_id" :options="opcoesCurso()" />
+                            <div class="text-danger fs-7 mt-1" v-if="errors.curso_id">{{ errors.curso_id }}</div>
+                        </div>
                     </div>
 
                     <div class="row">

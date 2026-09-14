@@ -11,6 +11,7 @@ use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
+use Modules\Turma\Models\NivelAcademico;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -22,7 +23,8 @@ class PlanoCurricularAnoLectivoModelTest extends TestCase
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'C1', 'nome' => 'Curso A']);
-        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'codigo' => 'PC1', 'nome' => 'Plano A']);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
+        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'PC1', 'nome' => 'Plano A']);
 
         return compact('estabelecimento', 'curso', 'plano');
     }
@@ -70,7 +72,8 @@ class PlanoCurricularAnoLectivoModelTest extends TestCase
     public function test_historico_suporta_plano_diferente_em_ano_seguinte_sem_alterar_plano_anterior(): void
     {
         ['estabelecimento' => $estabelecimento, 'curso' => $curso, 'plano' => $planoA] = $this->contexto();
-        $planoB = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'codigo' => 'PC2', 'nome' => 'Plano B']);
+        $nivelB = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N11', 'nome' => '11ª Classe', 'ordem' => 2, 'etapa_ensino' => 4]);
+        $planoB = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivelB->id, 'curso_id' => $curso->id, 'codigo' => 'PC2', 'nome' => 'Plano B']);
 
         $ano2026 = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-02-01', 'data_fim' => '2026-11-30', 'estado' => EstadoAnoLectivo::ATIVO->value]);
         $ano2027 = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2027/2028', 'data_inicio' => '2027-02-01', 'data_fim' => '2027-11-30', 'estado' => EstadoAnoLectivo::ATIVO->value]);

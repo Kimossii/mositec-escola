@@ -10,7 +10,6 @@ use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\PlanoCurricular\Enums\ComponentePlanoCurricular;
 use Modules\PlanoCurricular\Enums\TipoDisciplinaPlano;
-use Modules\Turma\Models\NivelAcademico;
 use Modules\Usuario\Models\User;
 
 class PlanoCurricularDisciplina extends Model
@@ -23,7 +22,6 @@ class PlanoCurricularDisciplina extends Model
     protected $fillable = [
         'plano_curricular_id',
         'disciplina_id',
-        'nivel_academico_id',
         'carga_horaria',
         'creditos',
         'componente',
@@ -63,11 +61,6 @@ class PlanoCurricularDisciplina extends Model
     public function disciplina(): BelongsTo
     {
         return $this->belongsTo(Disciplina::class);
-    }
-
-    public function nivelAcademico(): BelongsTo
-    {
-        return $this->belongsTo(NivelAcademico::class);
     }
 
     public function periodosPorAplicacao(): HasMany

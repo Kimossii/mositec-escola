@@ -1,11 +1,12 @@
 <script setup>
-import { reactive, watch } from 'vue';
+import { reactive, watch, computed } from 'vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import { ESTADO } from '../../Models/Estado';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
     nivelAcademico: { type: Object, default: null },
+    etapasEnsino: { type: Array, required: true },
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
 });
@@ -16,10 +17,13 @@ const ESTADO_OPCOES = [
     { value: ESTADO.INATIVO, label: 'Inativo' },
 ];
 
+const opcoesEtapaEnsino = computed(() => props.etapasEnsino.map((e) => ({ value: e.etapa_ensino, label: e.etapa_ensino_descricao })));
+
 const form = reactive({
     codigo: '',
     nome: '',
     ordem: 1,
+    etapa_ensino: '',
     estado: ESTADO.ATIVO,
 });
 
@@ -28,6 +32,7 @@ watch(() => props.show, (show) => {
     form.codigo = props.nivelAcademico?.codigo ?? '';
     form.nome = props.nivelAcademico?.nome ?? '';
     form.ordem = props.nivelAcademico?.ordem ?? 1;
+    form.etapa_ensino = props.nivelAcademico?.etapa_ensino ?? '';
     form.estado = props.nivelAcademico?.estado ?? ESTADO.ATIVO;
 });
 
@@ -61,6 +66,12 @@ function submeter() {
                         <label class="required fw-semibold fs-6 mb-2">Nome</label>
                         <input v-model="form.nome" type="text" class="form-control form-control-solid" placeholder="ex: 1ª Classe" />
                         <div class="text-danger fs-7 mt-1" v-if="errors.nome">{{ errors.nome }}</div>
+                    </div>
+
+                    <div class="fv-row mb-7">
+                        <label class="required fw-semibold fs-6 mb-2">Etapa de Ensino</label>
+                        <SelectSolid v-model="form.etapa_ensino" :options="opcoesEtapaEnsino" placeholder="Selecione a etapa de ensino" />
+                        <div class="text-danger fs-7 mt-1" v-if="errors.etapa_ensino">{{ errors.etapa_ensino }}</div>
                     </div>
 
                     <div v-if="nivelAcademico" class="fv-row mb-7">

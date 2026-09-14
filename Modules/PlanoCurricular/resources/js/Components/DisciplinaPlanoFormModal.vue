@@ -28,12 +28,6 @@ const TIPO_OPCOES = [
 
 const opcoesDisciplinas = computed(() => props.opcoes.disciplinas.map((d) => ({ value: d.id, label: d.nome })));
 
-const opcoesNiveisAcademicos = computed(() =>
-    [...props.opcoes.niveisAcademicos]
-        .sort((a, b) => a.ordem - b.ordem)
-        .map((n) => ({ value: n.id, label: n.nome })),
-);
-
 // Sugestão de ordem para uma disciplina nova: a seguir à última já
 // existente no plano. O campo continua editável — é só um ponto de
 // partida, para o utilizador não ter de ir contar manualmente.
@@ -44,7 +38,6 @@ const proximaOrdemSugerida = computed(() => {
 
 const form = reactive({
     disciplina_id: '',
-    nivel_academico_id: '',
     carga_horaria: null,
     creditos: null,
     componente: null,
@@ -56,7 +49,6 @@ const form = reactive({
 watch(() => props.show, (show) => {
     if (!show) return;
     form.disciplina_id = props.disciplina?.disciplina?.id ?? '';
-    form.nivel_academico_id = props.disciplina?.nivel_academico?.id ?? '';
     form.carga_horaria = props.disciplina?.carga_horaria ?? null;
     form.creditos = props.disciplina?.creditos ?? null;
     form.componente = props.disciplina?.componente ?? null;
@@ -76,17 +68,10 @@ function submeter() {
             <div class="modal-content p-6">
                 <h3 class="mb-5">{{ disciplina ? 'Editar Disciplina do Plano' : 'Adicionar Disciplina ao Plano' }}</h3>
                 <form @submit.prevent="submeter">
-                    <div class="row">
-                        <div class="col-md-6 fv-row mb-7">
-                            <label class="required fw-semibold fs-6 mb-2">Disciplina</label>
-                            <SelectSolid v-model="form.disciplina_id" :options="opcoesDisciplinas" placeholder="Selecione a disciplina" />
-                            <div class="text-danger fs-7 mt-1" v-if="errors.disciplina_id">{{ errors.disciplina_id }}</div>
-                        </div>
-                        <div class="col-md-6 fv-row mb-7">
-                            <label class="required fw-semibold fs-6 mb-2">Nível Académico</label>
-                            <SelectSolid v-model="form.nivel_academico_id" :options="opcoesNiveisAcademicos" placeholder="Selecione o nível" />
-                            <div class="text-danger fs-7 mt-1" v-if="errors.nivel_academico_id">{{ errors.nivel_academico_id }}</div>
-                        </div>
+                    <div class="fv-row mb-7">
+                        <label class="required fw-semibold fs-6 mb-2">Disciplina</label>
+                        <SelectSolid v-model="form.disciplina_id" :options="opcoesDisciplinas" placeholder="Selecione a disciplina" />
+                        <div class="text-danger fs-7 mt-1" v-if="errors.disciplina_id">{{ errors.disciplina_id }}</div>
                     </div>
 
                     <div class="row">

@@ -13,7 +13,6 @@ class AdicionarDisciplinaAoPlanoAction
         return PlanoCurricularDisciplina::create([
             'plano_curricular_id' => $plano->id,
             'disciplina_id' => $dto->disciplina_id,
-            'nivel_academico_id' => $dto->nivel_academico_id,
             'carga_horaria' => $dto->carga_horaria,
             'creditos' => $dto->creditos,
             'componente' => $dto->componente?->value,

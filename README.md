@@ -173,3 +173,13 @@ Este projeto é **apenas para estudo e aprendizado**.
 
 > 🔐 **Acesso:** A área de **Configurações** está disponível apenas para utilizadores com permissões administrativas.
 
+# 1. Recria a BD do zero (dropa todas as tabelas e corre as migrações)
+php artisan migrate:fresh
+
+# 2. Semeia os dados (roles, permissões, utilizador admin, etc.)
+php artisan db:seed
+
+
+ #Tudo de uma vez
+ php artisan migrate:fresh --seed
+

@@ -27,13 +27,8 @@ class AtualizarDisciplinaRequest extends BaseRequest
                 'integer',
                 Rule::exists('disciplinas', 'id')->where(fn ($q) => $q->where('estabelecimento_id', $estabelecimentoId)),
                 Rule::unique('plano_curricular_disciplinas', 'disciplina_id')
-                    ->where(fn ($q) => $q->where('plano_curricular_id', $planoId)->where('nivel_academico_id', $this->input('nivel_academico_id')))
+                    ->where(fn ($q) => $q->where('plano_curricular_id', $planoId))
                     ->ignore($this->route('disciplina')),
-            ],
-            'nivel_academico_id' => [
-                'required',
-                'integer',
-                Rule::exists('niveis_academicos', 'id')->where(fn ($q) => $q->where('estabelecimento_id', $estabelecimentoId)),
             ],
             'carga_horaria' => ['nullable', 'integer', 'min:1'],
             'creditos' => ['nullable', 'integer', 'min:1'],
@@ -48,8 +43,7 @@ class AtualizarDisciplinaRequest extends BaseRequest
     {
         return [
             'disciplina_id.exists' => 'A disciplina indicada não pertence a este estabelecimento.',
-            'disciplina_id.unique' => 'Esta disciplina já está associada a este nível académico neste plano.',
-            'nivel_academico_id.exists' => 'O nível académico indicado não pertence a este estabelecimento.',
+            'disciplina_id.unique' => 'Esta disciplina já está associada a este plano.',
         ];
     }
 }

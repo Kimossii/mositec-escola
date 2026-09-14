@@ -11,6 +11,7 @@ import NovoPlanoCurricularModal from '../Components/PlanosCurriculares/NovoPlano
 
 const props = defineProps({
     curso: { type: Object, required: true },
+    niveisAcademicos: { type: Array, required: true },
 });
 defineOptions({ layout: AppLayout });
 
@@ -154,6 +155,7 @@ function guardarPlano(payload) {
 
         <NovoPlanoCurricularModal
             :show="planoModalAberto"
+            :niveis-academicos="niveisAcademicos"
             :processing="planoProcessing"
             :errors="planoErrors"
             @submit="guardarPlano"

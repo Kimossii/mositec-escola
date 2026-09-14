@@ -5,6 +5,7 @@ namespace Modules\Turma\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -12,6 +13,7 @@ use Modules\Usuario\Models\User;
 
 class Turno extends Model
 {
+    use SoftDeletes;
     use RegistaAutoria;
     use SincronizaEstadoDescricao;
 

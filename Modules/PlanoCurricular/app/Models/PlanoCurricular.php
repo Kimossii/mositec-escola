@@ -9,6 +9,7 @@ use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Turma\Models\NivelAcademico;
 use Modules\Usuario\Models\User;
 
 class PlanoCurricular extends Model
@@ -21,6 +22,7 @@ class PlanoCurricular extends Model
     protected $fillable = [
         'estabelecimento_id',
         'curso_id',
+        'nivel_academico_id',
         'codigo',
         'nome',
         'descricao',
@@ -46,6 +48,11 @@ class PlanoCurricular extends Model
     public function curso(): BelongsTo
     {
         return $this->belongsTo(Curso::class);
+    }
+
+    public function nivelAcademico(): BelongsTo
+    {
+        return $this->belongsTo(NivelAcademico::class);
     }
 
     public function disciplinas(): HasMany

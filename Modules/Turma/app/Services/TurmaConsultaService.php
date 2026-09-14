@@ -24,7 +24,7 @@ class TurmaConsultaService
 
         return [
             'anoLectivos' => AnoLectivo::where('estabelecimento_id', $estabelecimentoId)->where('estado',1)->orderByDesc('nome')->get(['id', 'nome']),
-            'niveisAcademicos' => NivelAcademico::where('estabelecimento_id', $estabelecimentoId)->where('estado',1)->orderBy('ordem')->get(['id', 'nome']),
+            'niveisAcademicos' => NivelAcademico::where('estabelecimento_id', $estabelecimentoId)->where('estado',1)->orderBy('ordem')->get(['id', 'nome', 'etapa_ensino']),
             'cursos' => Curso::where('estabelecimento_id', $estabelecimentoId)->where('estado',1)->orderBy('nome')->get(['id', 'nome']),
             'turnos' => Turno::where('estabelecimento_id', $estabelecimentoId)->where('estado',1)->orderBy('nome')->get(['id', 'nome']),
         ];
