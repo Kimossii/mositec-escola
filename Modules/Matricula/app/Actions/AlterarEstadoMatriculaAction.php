@@ -2,7 +2,7 @@
 
 namespace Modules\Matricula\Actions;
 
-use DomainException;
+use Illuminate\Validation\ValidationException;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
 
@@ -16,9 +16,9 @@ class AlterarEstadoMatriculaAction
         $estadoActual = $matricula->estado;
 
         if (! $estadoActual->podeTransitarPara($novoEstado)) {
-            throw new DomainException(
-                "Não é possível alterar o estado de {$estadoActual->label()} para {$novoEstado->label()}."
-            );
+            throw ValidationException::withMessages([
+                'estado' => "Não é possível alterar o estado de {$estadoActual->label()} para {$novoEstado->label()}.",
+            ]);
         }
 
         $matricula->estado = $novoEstado;

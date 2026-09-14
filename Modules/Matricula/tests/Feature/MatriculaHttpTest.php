@@ -133,6 +133,56 @@ class MatriculaHttpTest extends TestCase
         ]);
     }
 
+    public function test_criar_matricula_sem_enquadramento_academico_assume_o_contexto_da_turma(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        // Sem enquadramento prévio — a matrícula deve assumi-lo automaticamente.
+
+        $this->post(route('matriculas.store', $aluno), [
+            'turma_id' => $turma->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+            'data_matricula' => '2026-02-01',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertDatabaseHas('matriculas', ['aluno_id' => $aluno->id]);
+        $this->assertDatabaseHas('aluno_enquadramentos_academicos', [
+            'aluno_id' => $aluno->id,
+            'nivel_academico_id' => $nivel->id,
+        ]);
+    }
+
+    public function test_criar_matricula_com_enquadramento_incompativel_devolve_erro_de_validacao_em_vez_de_500(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $outroNivel = NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id,
+            'codigo' => '2C',
+            'nome' => '2ª Classe',
+            'ordem' => 2,
+            'etapa_ensino' => 1,
+        ]);
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $outroNivel->id);
+        // Aluno já enquadrado noutro nível — este é o caso real que rebentava em 500.
+
+        $this->post(route('matriculas.store', $aluno), [
+            'turma_id' => $turma->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+            'data_matricula' => '2026-02-01',
+        ])->assertSessionHasErrors('turma_id')->assertRedirect();
+
+        $this->assertDatabaseMissing('matriculas', ['aluno_id' => $aluno->id]);
+    }
+
     public function test_altera_estado_da_matricula_via_http(): void
     {
         $staff = $this->actingAsStaff();
@@ -191,5 +241,46 @@ class MatriculaHttpTest extends TestCase
             ->has('matriculas')
             ->has('turmasDisponiveis', 1)
         );
+    }
+
+    public function test_lista_global_de_matriculas_com_filtro_por_turma(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turmaA = $this->criarTurma($anoLectivo, $nivel);
+        $turmaB = $this->criarTurma($anoLectivo, $nivel);
+        $alunoA = $this->criarAluno($estabelecimento);
+        $alunoB = $this->criarAluno($estabelecimento);
+
+        Matricula::create([
+            'aluno_id' => $alunoA->id, 'turma_id' => $turmaA->id, 'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001', 'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
+        Matricula::create([
+            'aluno_id' => $alunoB->id, 'turma_id' => $turmaB->id, 'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0002', 'data_matricula' => '2026-02-02',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
+
+        $this->get(route('matriculas.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('Matricula/Index')
+            ->has('matriculas', 2)
+        );
+
+        $this->get(route('matriculas.index', ['turma_id' => $turmaA->id]))->assertInertia(fn (Assert $page) => $page
+            ->component('Matricula/Index')
+            ->has('matriculas', 1)
+            ->where('matriculas.0.turma_id', $turmaA->id)
+        );
+    }
+
+    public function test_professor_recebe_403_na_listagem_global(): void
+    {
+        $this->actingAsProfessor();
+
+        $this->get(route('matriculas.index'))->assertForbidden();
     }
 }

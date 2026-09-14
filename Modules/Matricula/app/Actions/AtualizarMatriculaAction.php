@@ -29,7 +29,7 @@ class AtualizarMatriculaAction
 
             $aluno = $matricula->aluno;
 
-            $this->validador->validarEnquadramentoAcademico($aluno, $turma);
+            $this->validador->garantirEnquadramentoAcademico($aluno, $turma, $utilizadorId);
             $this->validador->validarMatriculaNaoDuplicada($aluno, $turma, $matricula->id);
 
             $matricula->update([

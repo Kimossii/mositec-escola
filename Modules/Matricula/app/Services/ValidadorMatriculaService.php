@@ -2,6 +2,8 @@
 
 namespace Modules\Matricula\Services;
 
+use Illuminate\Validation\ValidationException;
+use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
 use Modules\Aluno\Enums\EstadoEnquadramentoAcademicoEnum;
 use Modules\Aluno\Models\Aluno;
 use Modules\Core\Enums\Estado;
@@ -11,37 +13,62 @@ use Modules\Turma\Models\Turma;
 
 class ValidadorMatriculaService
 {
+    public function __construct(
+        private CriarEnquadramentoAcademicoAlunoAction $criarEnquadramentoAcademico,
+    ) {
+    }
+
     public function validarTurma(Turma $turma, int $anoLectivoId): void
     {
         if ($turma->ano_lectivo_id !== $anoLectivoId) {
-            throw new \DomainException(
-                'A turma não pertence ao ano lectivo seleccionado.'
-            );
+            throw ValidationException::withMessages([
+                'turma_id' => 'A turma não pertence ao ano lectivo seleccionado.',
+            ]);
         }
 
         if ($turma->estado !== Estado::ATIVO->value) {
-            throw new \DomainException(
-                'Não é possível utilizar uma turma inactiva.'
-            );
+            throw ValidationException::withMessages([
+                'turma_id' => 'Não é possível utilizar uma turma inactiva.',
+            ]);
         }
     }
 
-    public function validarEnquadramentoAcademico(Aluno $aluno, Turma $turma): void
+    /**
+     * Confirma que o aluno tem um enquadramento académico compatível com a
+     * turma. Se ainda não tiver nenhum, assume automaticamente o Curso/Nível
+     * da própria turma (a matrícula é o que estabelece o enquadramento). Se
+     * já tiver um enquadramento activo para um Curso/Nível diferente, rejeita
+     * — evita matricular por engano num percurso académico errado.
+     */
+    public function garantirEnquadramentoAcademico(Aluno $aluno, Turma $turma, ?int $utilizadorId = null): void
     {
-        $query = $aluno->enquadramentosAcademicos()
+        $enquadramentosActivos = $aluno->enquadramentosAcademicos()
             ->where('estado', EstadoEnquadramentoAcademicoEnum::ACTIVO->value);
 
-        if ($turma->curso_id !== null) {
-            $query->where('curso_id', $turma->curso_id);
-        } else {
-            $query->where('nivel_academico_id', $turma->nivel_academico_id);
+        $compativel = (clone $enquadramentosActivos)
+            ->when(
+                $turma->curso_id !== null,
+                fn ($query) => $query->where('curso_id', $turma->curso_id),
+                fn ($query) => $query->where('nivel_academico_id', $turma->nivel_academico_id),
+            )
+            ->exists();
+
+        if ($compativel) {
+            return;
         }
 
-        if (! $query->exists()) {
-            throw new \DomainException(
-                'O enquadramento académico do aluno não é compatível com a turma.'
-            );
+        if ($enquadramentosActivos->exists()) {
+            throw ValidationException::withMessages([
+                'turma_id' => 'O enquadramento académico do aluno não é compatível com a turma.',
+            ]);
         }
+
+        $this->criarEnquadramentoAcademico->executar(
+            $aluno,
+            cursoId: $turma->curso_id,
+            nivelAcademicoId: $turma->curso_id === null ? $turma->nivel_academico_id : null,
+            utilizadorId: $utilizadorId,
+        );
     }
 
     public function validarMatriculaNaoDuplicada(
@@ -69,9 +96,9 @@ class ValidadorMatriculaService
         }
 
         if ($query->exists()) {
-            throw new \DomainException(
-                'O aluno já possui uma matrícula activa ou pendente neste contexto académico.'
-            );
+            throw ValidationException::withMessages([
+                'turma_id' => 'O aluno já possui uma matrícula activa ou pendente neste contexto académico.',
+            ]);
         }
     }
 }

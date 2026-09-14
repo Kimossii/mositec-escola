@@ -30,7 +30,7 @@ class CriarMatriculaAction
                 ->findOrFail($dto->turmaId);
 
             $this->validador->validarTurma($turma, $dto->anoLectivoId);
-            $this->validador->validarEnquadramentoAcademico($aluno, $turma);
+            $this->validador->garantirEnquadramentoAcademico($aluno, $turma, $utilizadorId);
             $this->validador->validarMatriculaNaoDuplicada($aluno, $turma);
 
             $anoLectivoId = $turma->ano_lectivo_id;

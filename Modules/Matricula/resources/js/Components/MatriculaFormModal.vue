@@ -23,6 +23,8 @@ const form = reactive({
     observacoes: '',
 });
 
+const turmaSeleccionada = computed(() => props.turmasDisponiveis.find((t) => t.id === form.turma_id) ?? null);
+
 watch(() => props.show, (show) => {
     if (!show) return;
 
@@ -60,6 +62,17 @@ function submeter() {
                         <label class="required fw-semibold fs-6 mb-2">Turma</label>
                         <SelectSolid v-model="form.turma_id" :options="opcoesTurma" placeholder="Selecione a turma" />
                         <div class="text-danger fs-7 mt-1" v-if="errors.turma_id">{{ errors.turma_id }}</div>
+                    </div>
+
+                    <div v-if="turmaSeleccionada" class="row mb-7">
+                        <div class="col-6">
+                            <label class="fw-semibold fs-7 text-muted mb-1">Curso</label>
+                            <div class="fs-6">{{ turmaSeleccionada.curso?.nome ?? '—' }}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="fw-semibold fs-7 text-muted mb-1">Nível Académico</label>
+                            <div class="fs-6">{{ turmaSeleccionada.nivel_academico?.nome ?? '—' }}</div>
+                        </div>
                     </div>
 
                     <div class="fv-row mb-7">

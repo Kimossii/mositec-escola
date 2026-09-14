@@ -3,6 +3,7 @@
 namespace Modules\Matricula\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Aluno\Models\Aluno;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
@@ -21,13 +22,14 @@ class MatriculaController extends Controller
     ) {
     }
 
-    public function index(Aluno $aluno)
+    public function index(Request $request)
     {
         $this->authorize('matricula.ver');
 
         return Inertia::render('Matricula/Index', [
-            'aluno' => $aluno->load('dadosPessoa'),
-            'matriculas' => $this->consulta->listarPorAluno($aluno),
+            'matriculas' => $this->consulta->listarTodas($request->only(['turma_id', 'ano_lectivo_id', 'estado'])),
+            'turmasDisponiveis' => $this->consulta->turmasDisponiveis(),
+            'filtros' => $request->only(['turma_id', 'ano_lectivo_id', 'estado']),
         ]);
     }
 

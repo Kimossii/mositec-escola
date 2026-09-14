@@ -157,7 +157,7 @@ class MatriculaActionTest extends TestCase
         $this->assertNull($turma->curso_id);
     }
 
-    public function test_rejeita_aluno_sem_enquadramento_academico_compativel(): void
+    public function test_rejeita_aluno_com_enquadramento_academico_diferente_do_curso_da_turma(): void
     {
         $estabelecimento = $this->criarEstabelecimento();
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
@@ -168,12 +168,58 @@ class MatriculaActionTest extends TestCase
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, cursoId: $outroCurso->id);
 
-        $this->expectException(\DomainException::class);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(CriarMatriculaAction::class)->executar(
             $aluno,
             $this->dto($turma->id, $anoLectivo->id),
         );
+    }
+
+    public function test_assume_automaticamente_o_enquadramento_academico_quando_aluno_nao_tem_nenhum(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $curso = $this->criarCurso($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel, $curso);
+        $aluno = $this->criarAluno($estabelecimento);
+        // Sem enquadramento prévio — a matrícula deve assumir o Curso da turma.
+
+        $matricula = app(CriarMatriculaAction::class)->executar(
+            $aluno,
+            $this->dto($turma->id, $anoLectivo->id),
+        );
+
+        $this->assertNotNull($matricula->id);
+        $this->assertDatabaseHas('aluno_enquadramentos_academicos', [
+            'aluno_id' => $aluno->id,
+            'curso_id' => $curso->id,
+            'nivel_academico_id' => null,
+            'estado' => \Modules\Aluno\Enums\EstadoEnquadramentoAcademicoEnum::ACTIVO->value,
+        ]);
+    }
+
+    public function test_assume_automaticamente_o_nivel_academico_quando_turma_nao_tem_curso(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+
+        $matricula = app(CriarMatriculaAction::class)->executar(
+            $aluno,
+            $this->dto($turma->id, $anoLectivo->id),
+        );
+
+        $this->assertNotNull($matricula->id);
+        $this->assertDatabaseHas('aluno_enquadramentos_academicos', [
+            'aluno_id' => $aluno->id,
+            'curso_id' => null,
+            'nivel_academico_id' => $nivel->id,
+            'estado' => \Modules\Aluno\Enums\EstadoEnquadramentoAcademicoEnum::ACTIVO->value,
+        ]);
     }
 
     public function test_rejeita_turma_inexistente(): void
@@ -199,7 +245,7 @@ class MatriculaActionTest extends TestCase
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
 
-        $this->expectException(\DomainException::class);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(CriarMatriculaAction::class)->executar(
             $aluno,
@@ -217,7 +263,7 @@ class MatriculaActionTest extends TestCase
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
 
-        $this->expectException(\DomainException::class);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(CriarMatriculaAction::class)->executar(
             $aluno,
@@ -259,7 +305,7 @@ class MatriculaActionTest extends TestCase
 
         app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaA->id, $anoLectivo->id));
 
-        $this->expectException(\DomainException::class);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaB->id, $anoLectivo->id));
     }
@@ -292,7 +338,7 @@ class MatriculaActionTest extends TestCase
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, cursoId: $cursoA->id);
 
-        $this->expectException(\DomainException::class);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
     }
@@ -321,7 +367,7 @@ class MatriculaActionTest extends TestCase
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel5a->id);
 
-        $this->expectException(\DomainException::class);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
     }
@@ -392,7 +438,7 @@ class MatriculaActionTest extends TestCase
     {
         $matricula = $this->criarMatriculaPendente();
 
-        $this->expectException(\DomainException::class);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CONCLUIDA);
     }
@@ -402,7 +448,7 @@ class MatriculaActionTest extends TestCase
         $matricula = $this->criarMatriculaPendente();
         $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CANCELADA);
 
-        $this->expectException(\DomainException::class);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
     }
@@ -445,7 +491,7 @@ class MatriculaActionTest extends TestCase
 
         $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaOriginal->id, $anoLectivo->id));
 
-        $this->expectException(\DomainException::class);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(AtualizarMatriculaAction::class)->executar(
             $matricula,
