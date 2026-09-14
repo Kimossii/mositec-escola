@@ -11,12 +11,14 @@ use Modules\Aluno\Models\Aluno;
 use Modules\Aluno\Services\AlunoConsultaService;
 use Modules\Aluno\Services\GestaoAlunoService;
 use Modules\Core\Enums\Estado;
+use Modules\Matricula\Services\MatriculaConsultaService;
 
 class AlunoController extends Controller
 {
     public function __construct(
         private GestaoAlunoService $service,
         private AlunoConsultaService $consulta,
+        private MatriculaConsultaService $matriculaConsulta,
     ) {
     }
 
@@ -35,6 +37,8 @@ class AlunoController extends Controller
 
         return Inertia::render('Aluno/Show', [
             'aluno' => $aluno->load('dadosPessoa'),
+            'matriculas' => $this->matriculaConsulta->listarPorAluno($aluno),
+            'turmasDisponiveis' => $this->matriculaConsulta->turmasDisponiveis(),
         ]);
     }
 
