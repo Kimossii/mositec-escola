@@ -8,6 +8,7 @@ use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\PlanoCurricular\Actions\AtualizarPlanoCurricularAction;
 use Modules\PlanoCurricular\DTO\PlanoCurricularDTO;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\Turma\Models\NivelAcademico;
 use Tests\TestCase;
 
 class AtualizarPlanoCurricularActionTest extends TestCase
@@ -19,14 +20,17 @@ class AtualizarPlanoCurricularActionTest extends TestCase
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
         $outroCurso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'GES', 'nome' => 'Gestão']);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
         $plano = PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => 'PC1',
             'nome' => 'Plano 1',
         ]);
 
         $atualizado = (new AtualizarPlanoCurricularAction())->executar($plano, new PlanoCurricularDTO(
+            nivel_academico_id: $nivel->id,
             curso_id: $outroCurso->id,
             codigo: 'PC2',
             nome: 'Plano 2',
@@ -44,14 +48,17 @@ class AtualizarPlanoCurricularActionTest extends TestCase
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
         $plano = PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
+            'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => 'PC1',
             'nome' => 'Plano 1',
         ]);
 
         $atualizado = (new AtualizarPlanoCurricularAction())->executar($plano, new PlanoCurricularDTO(
+            nivel_academico_id: $nivel->id,
             curso_id: $curso->id,
             codigo: 'PC1',
             nome: 'Plano 1 renomeado',

@@ -15,6 +15,7 @@ class CriarNivelAcademicoAction
             'codigo' => $dto->codigo,
             'nome' => $dto->nome,
             'ordem' => $dto->ordem,
+            'etapa_ensino' => $dto->etapa_ensino,
         ]);
     }
 }

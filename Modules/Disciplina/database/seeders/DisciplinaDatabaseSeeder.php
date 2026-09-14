@@ -2,6 +2,7 @@
 
 namespace Modules\Disciplina\Database\Seeders;
 
+use Modules\Disciplina\Database\Seeders\DisciplinaSeeder;
 use Illuminate\Database\Seeder;
 
 class DisciplinaDatabaseSeeder extends Seeder
@@ -11,6 +12,8 @@ class DisciplinaDatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // $this->call([]);
+         $this->call([
+             DisciplinaSeeder::class,
+         ]);
     }
 }

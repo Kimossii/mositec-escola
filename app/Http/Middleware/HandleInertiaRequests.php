@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use Closure;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Modules\Permissao\Services\PermissionResolver;
@@ -25,6 +26,27 @@ class HandleInertiaRequests extends Middleware
     public function version(Request $request): ?string
     {
         return parent::version($request);
+    }
+
+    /**
+     * O axios do frontend envia sempre X-Requested-With, o que faz
+     * Request::ajax() devolver true em toda navegação Inertia — inclusive
+     * visitas normais de página. Isso faz o StartSession do próprio Laravel
+     * nunca gravar `session('url.previous')` (só o faz quando `!$request->ajax()`),
+     * deixando `redirect()->back()` dependente 100% do header Referer do
+     * browser. Sem Referer (bloqueado por proteções de privacidade do
+     * browser, extensões, etc.), back() cai no fallback padrão do Laravel
+     * e manda para a home. Gravamos aqui a URL a cada navegação Inertia de
+     * página (GET, não parcial) para dar a back() um fallback de sessão
+     * fiável, independente do Referer.
+     */
+    public function handle(Request $request, Closure $next)
+    {
+        if ($request->isMethod('GET') && $request->header('X-Inertia') && ! $request->header('X-Inertia-Partial-Data')) {
+            $request->session()->setPreviousUrl($request->fullUrl());
+        }
+
+        return parent::handle($request, $next);
     }
 
     /**

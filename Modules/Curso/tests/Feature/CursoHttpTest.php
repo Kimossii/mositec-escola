@@ -13,6 +13,7 @@ use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\Turma\Models\NivelAcademico;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -171,12 +172,34 @@ class CursoHttpTest extends TestCase
         $this->actingAsStaff();
         $estabelecimento = $this->criarEstabelecimento();
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
-        PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'codigo' => 'PLI', 'nome' => 'Plano Informática']);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
+        PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'PLI', 'nome' => 'Plano Informática']);
 
         $this->get(route('cursos.show', $curso))->assertInertia(fn (Assert $page) => $page
             ->component('Curso/Show')
             ->has('curso.planos_curriculares', 1)
             ->where('curso.planos_curriculares.0.codigo', 'PLI')
+        );
+    }
+
+    /**
+     * A spec pede explicitamente que o mesmo Curso possa ter mais do que um
+     * PlanoCurricular, desde que em Níveis Académicos diferentes — não há
+     * nenhuma unicidade indevida (curso_id, nivel_academico_id) a bloquear isto.
+     */
+    public function test_permite_dois_planos_no_mesmo_curso_com_niveis_academicos_diferentes(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $nivel10 = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
+        $nivel11 = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N11', 'nome' => '11ª Classe', 'ordem' => 2, 'etapa_ensino' => 4]);
+        PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel10->id, 'curso_id' => $curso->id, 'codigo' => 'PLI-10', 'nome' => 'Plano Informática 10ª']);
+        PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel11->id, 'curso_id' => $curso->id, 'codigo' => 'PLI-11', 'nome' => 'Plano Informática 11ª']);
+
+        $this->get(route('cursos.show', $curso))->assertInertia(fn (Assert $page) => $page
+            ->component('Curso/Show')
+            ->has('curso.planos_curriculares', 2)
         );
     }
 

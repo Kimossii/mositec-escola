@@ -1,14 +1,21 @@
 <script setup>
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
+    niveisAcademicos: { type: Array, required: true },
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
 });
 const emit = defineEmits(['submit', 'cancelar']);
 
+const opcoesNiveisAcademicos = computed(() =>
+    [...props.niveisAcademicos].sort((a, b) => a.ordem - b.ordem).map((n) => ({ value: n.id, label: n.nome })),
+);
+
 const form = reactive({
+    nivel_academico_id: '',
     codigo: '',
     nome: '',
     descricao: '',
@@ -16,6 +23,7 @@ const form = reactive({
 
 watch(() => props.show, (show) => {
     if (!show) return;
+    form.nivel_academico_id = '';
     form.codigo = '';
     form.nome = '';
     form.descricao = '';
@@ -32,6 +40,11 @@ function submeter() {
             <div class="modal-content p-6">
                 <h3 class="mb-5">Novo Plano Curricular</h3>
                 <form @submit.prevent="submeter">
+                    <div class="fv-row mb-7">
+                        <label class="required fw-semibold fs-6 mb-2">Nível Académico</label>
+                        <SelectSolid v-model="form.nivel_academico_id" :options="opcoesNiveisAcademicos" placeholder="Selecione o nível" />
+                        <div class="text-danger fs-7 mt-1" v-if="errors.nivel_academico_id">{{ errors.nivel_academico_id }}</div>
+                    </div>
                     <div class="fv-row mb-7">
                         <label class="required fw-semibold fs-6 mb-2">Código</label>
                         <input v-model="form.codigo" type="text" class="form-control form-control-solid" placeholder="ex: INF-2026" />

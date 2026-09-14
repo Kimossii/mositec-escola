@@ -11,7 +11,6 @@ class PlanoCurricularDisciplinaDTO
 {
     public function __construct(
         public int $disciplina_id,
-        public int $nivel_academico_id,
         public TipoDisciplinaPlano $tipo,
         public bool $obrigatoria,
         public int $ordem,
@@ -27,7 +26,6 @@ class PlanoCurricularDisciplinaDTO
 
         return new self(
             disciplina_id: (int) $dados['disciplina_id'],
-            nivel_academico_id: (int) $dados['nivel_academico_id'],
             tipo: TipoDisciplinaPlano::from((int) $dados['tipo']),
             obrigatoria: (bool) $dados['obrigatoria'],
             ordem: (int) $dados['ordem'],
@@ -43,7 +41,6 @@ class PlanoCurricularDisciplinaDTO
 
         return new self(
             disciplina_id: (int) $dados['disciplina_id'],
-            nivel_academico_id: (int) $dados['nivel_academico_id'],
             tipo: TipoDisciplinaPlano::from((int) $dados['tipo']),
             obrigatoria: (bool) $dados['obrigatoria'],
             ordem: (int) $dados['ordem'],

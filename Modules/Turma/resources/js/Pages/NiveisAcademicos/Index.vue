@@ -13,6 +13,7 @@ import { ESTADO } from '../../Models/Estado';
 
 defineProps({
     niveisAcademicos: { type: Array, required: true },
+    etapasEnsino: { type: Array, required: true },
 });
 defineOptions({ layout: AppLayout });
 
@@ -130,18 +131,22 @@ function confirmarEliminacao() {
                             <th class="min-w-75px">Ordem</th>
                             <th class="min-w-100px">Código</th>
                             <th class="min-w-200px">Nome</th>
+                            <th class="min-w-150px">Etapa</th>
                             <th class="min-w-125px">Estado</th>
                             <th class="text-end min-w-125px">Ações</th>
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="niveisAcademicos.length === 0">
-                            <td colspan="5" class="text-center text-muted py-6">Nenhum nível académico criado.</td>
+                            <td colspan="6" class="text-center text-muted py-6">Nenhum nível académico criado.</td>
                         </tr>
                         <tr v-for="nivel in niveisAcademicos" :key="nivel.id">
                             <td>{{ nivel.ordem }}</td>
-                            <td>{{ nivel.codigo }}</td>
+                            <td>
+                                <a :href="`/niveis-academicos/${nivel.id}`" class="text-gray-800 text-hover-primary">{{ nivel.codigo }}</a>
+                            </td>
                             <td>{{ nivel.nome }}</td>
+                            <td>{{ nivel.etapa_ensino_descricao }}</td>
                             <td>
                                 <EstadoBadge :estado="nivel.estado" :estado-descricao="nivel.estado_descricao" />
                             </td>
@@ -151,6 +156,12 @@ function confirmarEliminacao() {
                                     <i class="ki-duotone ki-down fs-5 ms-1"></i>
                                 </a>
                                 <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4" data-kt-menu="true">
+                                    <div class="menu-item px-3">
+                                        <a :href="`/niveis-academicos/${nivel.id}`" class="menu-link px-3">
+                                            <AcaoIcone acao="visualizar" class="me-2" />
+                                            Ver Detalhes
+                                        </a>
+                                    </div>
                                     <div v-if="can('turmas.editar')" class="menu-item px-3">
                                         <a href="#" class="menu-link px-3" @click.prevent="abrirEdicao(nivel)">
                                             <AcaoIcone acao="editar" class="me-2" />
@@ -186,6 +197,7 @@ function confirmarEliminacao() {
         <NivelAcademicoFormModal
             :show="modalAberto"
             :nivel-academico="nivelEmEdicao"
+            :etapas-ensino="etapasEnsino"
             :processing="processing"
             :errors="errors"
             @submit="guardar"

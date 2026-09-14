@@ -3,6 +3,8 @@
 namespace Modules\Turma\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
+use Illuminate\Validation\Rule;
+use Modules\Turma\Models\NivelAcademico;
 
 class CriarTurmaRequest extends BaseRequest
 {
@@ -16,7 +18,16 @@ class CriarTurmaRequest extends BaseRequest
         return [
             'ano_lectivo_id' => 'required|integer|exists:ano_lectivos,id',
             'nivel_academico_id' => 'required|integer|exists:niveis_academicos,id',
-            'curso_id' => 'required|integer|exists:cursos,id',
+            'curso_id' => [
+                Rule::requiredIf(function () {
+                    $nivel = NivelAcademico::find($this->input('nivel_academico_id'));
+
+                    return $nivel && $nivel->etapa_ensino->exigeCurso();
+                }),
+                'nullable',
+                'integer',
+                'exists:cursos,id',
+            ],
             'codigo' => 'required|string|max:50',
             'nome' => 'required|string|max:255',
             'turno_id' => 'nullable|integer|exists:turnos,id',

@@ -21,6 +21,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('niveis-academicos')->name('niveis-academicos.')->group(function () {
         Route::get('/', [NivelAcademicoController::class, 'index'])->middleware('can:turmas.ver')->name('index');
+        Route::get('/{nivelAcademico}', [NivelAcademicoController::class, 'show'])->middleware('can:turmas.ver')->name('show');
         Route::post('/', [NivelAcademicoController::class, 'store'])->middleware('can:turmas.criar')->name('store');
         Route::put('/{nivelAcademico}', [NivelAcademicoController::class, 'update'])->middleware('can:turmas.editar')->name('update');
         Route::patch('/{nivelAcademico}/estado', [NivelAcademicoController::class, 'alterarEstado'])->middleware('can:turmas.editar')->name('alterar-estado');
@@ -29,6 +30,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('turnos')->name('turnos.')->group(function () {
         Route::get('/', [TurnoController::class, 'index'])->middleware('can:turmas.ver')->name('index');
+        Route::get('/{turno}', [TurnoController::class, 'show'])->middleware('can:turmas.ver')->name('show');
         Route::post('/', [TurnoController::class, 'store'])->middleware('can:turmas.criar')->name('store');
         Route::put('/{turno}', [TurnoController::class, 'update'])->middleware('can:turmas.editar')->name('update');
         Route::patch('/{turno}/estado', [TurnoController::class, 'alterarEstado'])->middleware('can:turmas.editar')->name('alterar-estado');

@@ -11,6 +11,7 @@ use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\PlanoCurricular\Actions\ConfirmarPlanoParaAnoLectivoAction;
 use Modules\PlanoCurricular\DTO\ConfirmarAnoLectivoDTO;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\Turma\Models\NivelAcademico;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -22,7 +23,8 @@ class ConfirmarPlanoParaAnoLectivoActionTest extends TestCase
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'C1', 'nome' => 'Curso A']);
-        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'codigo' => 'PC1', 'nome' => 'Plano A']);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
+        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'PC1', 'nome' => 'Plano A']);
         $ano = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-02-01', 'data_fim' => '2026-11-30', 'estado' => EstadoAnoLectivo::ATIVO]);
         $user = User::create(['name' => 'Test User', 'email' => 'test@example.com', 'password' => Hash::make('password')]);
 

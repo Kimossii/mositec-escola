@@ -5,6 +5,7 @@ namespace Modules\Estabelecimento\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
@@ -55,6 +56,11 @@ class Estabelecimento extends Model
         return Attribute::get(
             fn () => $this->logotipo_path ? Storage::disk('public')->url($this->logotipo_path) : null,
         );
+    }
+
+    public function etapasEnsino(): HasMany
+    {
+        return $this->hasMany(EstabelecimentoEtapaEnsino::class, 'estabelecimento_id');
     }
 
     /**

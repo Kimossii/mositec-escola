@@ -5,13 +5,17 @@ namespace Modules\Turma\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\Usuario\Models\User;
 
 class NivelAcademico extends Model
 {
+    use SoftDeletes;
     use RegistaAutoria;
     use SincronizaEstadoDescricao;
 
@@ -21,6 +25,7 @@ class NivelAcademico extends Model
         'estabelecimento_id',
         'codigo',
         'nome',
+        'etapa_ensino',
         'ordem',
         'estado',
         'estado_descricao',
@@ -31,6 +36,7 @@ class NivelAcademico extends Model
     protected $casts = [
         'estado' => 'integer',
         'ordem' => 'integer',
+        'etapa_ensino' => EtapaEnsinoEnum::class,
     ];
 
     public function estabelecimento(): BelongsTo
@@ -43,6 +49,11 @@ class NivelAcademico extends Model
         return $this->hasMany(Turma::class);
     }
 
+    public function planosCurriculares(): HasMany
+    {
+        return $this->hasMany(PlanoCurricular::class);
+    }
+
     public function criadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'criado_por');
@@ -51,5 +62,14 @@ class NivelAcademico extends Model
     public function editadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'editado_por');
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (NivelAcademico $nivelAcademico) {
+            if ($nivelAcademico->etapa_ensino !== null) {
+                $nivelAcademico->etapa_ensino_descricao = $nivelAcademico->etapa_ensino->label();
+            }
+        });
     }
 }

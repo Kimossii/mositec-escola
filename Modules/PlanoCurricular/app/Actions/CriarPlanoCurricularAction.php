@@ -12,6 +12,7 @@ class CriarPlanoCurricularAction
     {
         return PlanoCurricular::create([
             'estabelecimento_id' => Estabelecimento::current()?->id,
+            'nivel_academico_id' => $dto->nivel_academico_id,
             'curso_id' => $dto->curso_id,
             'codigo' => $dto->codigo,
             'nome' => $dto->nome,

@@ -35,8 +35,8 @@ class PlanoCurricularController extends Controller
 
         $planoCurricular->load([
             'curso',
+            'nivelAcademico',
             'disciplinas.disciplina',
-            'disciplinas.nivelAcademico',
             'disciplinas.periodosPorAplicacao',
             'anosLectivos.anoLectivo.periodos',
             'anosLectivos.confirmadoPor',

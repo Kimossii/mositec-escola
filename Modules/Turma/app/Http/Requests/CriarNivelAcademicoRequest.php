@@ -4,6 +4,7 @@ namespace Modules\Turma\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 
 class CriarNivelAcademicoRequest extends BaseRequest
@@ -25,6 +26,14 @@ class CriarNivelAcademicoRequest extends BaseRequest
             ],
             'nome' => 'required|string|max:255',
             'ordem' => 'required|integer|min:1',
+            'etapa_ensino' => [
+                'required',
+                'integer',
+                Rule::in(
+                    Estabelecimento::current()?->etapasEnsino()->pluck('etapa_ensino')
+                        ->map(fn (EtapaEnsinoEnum $e) => $e->value)->all() ?? []
+                ),
+            ],
         ];
     }
 
@@ -38,6 +47,8 @@ class CriarNivelAcademicoRequest extends BaseRequest
             'nome.max' => 'O nome do nível académico não pode ultrapassar 255 caracteres.',
             'ordem.required' => 'A ordem do nível académico é obrigatória.',
             'ordem.min' => 'A ordem deve ser igual ou superior a 1.',
+            'etapa_ensino.required' => 'A etapa de ensino é obrigatória.',
+            'etapa_ensino.in' => 'A etapa de ensino indicada não está configurada para este estabelecimento.',
         ];
     }
 }

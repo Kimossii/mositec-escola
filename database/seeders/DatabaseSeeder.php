@@ -4,8 +4,12 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Modules\Autenticacao\Database\Seeders\AdminUserSeeder;
+use Modules\Core\Database\Seeders\CoreDatabaseSeeder;
+use Modules\Curso\Database\Seeders\CursoDatabaseSeeder;
+use Modules\Infraestrutura\Database\Seeders\InfraestruturaDatabaseSeeder;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
-use Modules\Usuario\Database\Seeders\UsuarioDatabaseSeeder;
+use Modules\Disciplina\Database\Seeders\DisciplinaDatabaseSeeder;
+use Modules\Turma\Database\Seeders\TurmaDatabaseSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,7 +21,11 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PermissaoDatabaseSeeder::class,
             AdminUserSeeder::class,
-            UsuarioDatabaseSeeder::class,
+           // DisciplinaDatabaseSeeder::class,
+           //CursoDatabaseSeeder::class,
+           //CoreDatabaseSeeder::class,
+           //TurmaDatabaseSeeder::class,
+          // InfraestruturaDatabaseSeeder::class,
         ]);
     }
 }
