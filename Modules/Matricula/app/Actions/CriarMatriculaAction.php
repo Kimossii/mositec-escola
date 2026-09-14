@@ -8,12 +8,14 @@ use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\GeradorNumeroRegistoMatriculaService;
+use Modules\Matricula\Services\ValidadorMatriculaService;
 use Modules\Turma\Models\Turma;
 
 class CriarMatriculaAction
 {
     public function __construct(
         private GeradorNumeroRegistoMatriculaService $geradorNumeroRegisto,
+        private ValidadorMatriculaService $validador,
     ) {
     }
 
@@ -27,13 +29,13 @@ class CriarMatriculaAction
                 ->with('curso')
                 ->findOrFail($dto->turmaId);
 
-            $this->validarTurma($turma, $dto);
-            $this->validarEnquadramentoAcademico($aluno, $turma);
+            $this->validador->validarTurma($turma, $dto->anoLectivoId);
+            $this->validador->validarEnquadramentoAcademico($aluno, $turma);
+            $this->validador->validarMatriculaNaoDuplicada($aluno, $turma);
 
             $anoLectivoId = $turma->ano_lectivo_id;
 
-            $numeroRegisto = $this->geradorNumeroRegisto
-                ->gerar($anoLectivoId);
+            $numeroRegisto = $this->geradorNumeroRegisto->gerar();
 
             return Matricula::create([
                 'aluno_id' => $aluno->id,
@@ -46,40 +48,5 @@ class CriarMatriculaAction
                 'criado_por' => $utilizadorId,
             ]);
         });
-    }
-
-    private function validarTurma(Turma $turma, MatriculaDTO $dto): void
-    {
-        if ($turma->ano_lectivo_id !== $dto->anoLectivoId) {
-            throw new \DomainException(
-                'A turma não pertence ao ano lectivo seleccionado.'
-            );
-        }
-
-        if ($turma->estado !== 0) {
-            throw new \DomainException(
-                'Não é possível matricular um aluno numa turma inactiva.'
-            );
-        }
-    }
-
-    private function validarEnquadramentoAcademico(
-        Aluno $aluno,
-        Turma $turma
-    ): void {
-        $query = $aluno->enquadramentosAcademicos()
-            ->where('estado', 1);
-
-        if ($turma->curso_id !== null) {
-            $query->where('curso_id', $turma->curso_id);
-        } else {
-            $query->where('nivel_academico_id', $turma->nivel_academico_id);
-        }
-
-        if (! $query->exists()) {
-            throw new \DomainException(
-                'O enquadramento académico do aluno não é compatível com a turma.'
-            );
-        }
     }
 }

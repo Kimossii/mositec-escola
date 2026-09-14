@@ -2,13 +2,13 @@
 
 namespace Modules\Matricula\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\BaseRequest;
 
-class AtualizarMatriculaRequest extends FormRequest
+class AtualizarMatriculaRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('matricula.editar') ?? false;
     }
 
     public function rules(): array
@@ -28,14 +28,22 @@ class AtualizarMatriculaRequest extends FormRequest
                 'required',
                 'date',
             ],
-            'estado' => [
-                'nullable',
-                'integer',
-            ],
             'observacoes' => [
                 'nullable',
                 'string',
             ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'turma_id.required' => 'A turma é obrigatória.',
+            'turma_id.exists' => 'A turma seleccionada não existe.',
+            'ano_lectivo_id.required' => 'O ano lectivo é obrigatório.',
+            'ano_lectivo_id.exists' => 'O ano lectivo seleccionado não existe.',
+            'data_matricula.required' => 'A data de matrícula é obrigatória.',
+            'data_matricula.date' => 'A data de matrícula é inválida.',
         ];
     }
 }

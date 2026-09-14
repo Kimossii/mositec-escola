@@ -3,54 +3,61 @@
 namespace Modules\Matricula\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Modules\Aluno\Models\Aluno;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Http\Requests\AlterarEstadoMatriculaRequest;
+use Modules\Matricula\Http\Requests\AtualizarMatriculaRequest;
+use Modules\Matricula\Http\Requests\CriarMatriculaRequest;
+use Modules\Matricula\Models\Matricula;
+use Modules\Matricula\Services\GestaoMatriculaService;
+use Modules\Matricula\Services\MatriculaConsultaService;
 
 class MatriculaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        return view('matricula::index');
+    public function __construct(
+        private GestaoMatriculaService $service,
+        private MatriculaConsultaService $consulta,
+    ) {
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function index(Aluno $aluno)
     {
-        return view('matricula::create');
+        $this->authorize('matricula.ver');
+
+        return Inertia::render('Matricula/Index', [
+            'aluno' => $aluno->load('dadosPessoa'),
+            'matriculas' => $this->consulta->listarPorAluno($aluno),
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request) {}
-
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
+    public function store(CriarMatriculaRequest $request, Aluno $aluno)
     {
-        return view('matricula::show');
+        $this->authorize('matricula.criar');
+
+        $this->service->criar($aluno, $request);
+
+        return redirect()->back()->with('success', 'Matrícula criada com sucesso.');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
+    public function update(AtualizarMatriculaRequest $request, Aluno $aluno, Matricula $matricula)
     {
-        return view('matricula::edit');
+        $this->authorize('matricula.editar');
+
+        $this->service->atualizar($matricula, $request);
+
+        return redirect()->back()->with('success', 'Matrícula actualizada com sucesso.');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id) {}
+    public function alterarEstado(AlterarEstadoMatriculaRequest $request, Aluno $aluno, Matricula $matricula)
+    {
+        $this->authorize('matricula.editar');
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
+        $this->service->alterarEstado(
+            $matricula,
+            EstadoMatriculaEnum::from((int) $request->validated('estado')),
+        );
+
+        return redirect()->back()->with('success', 'Estado da matrícula actualizado com sucesso.');
+    }
 }

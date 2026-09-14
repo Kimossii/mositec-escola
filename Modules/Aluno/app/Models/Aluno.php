@@ -4,11 +4,13 @@ namespace Modules\Aluno\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Usuario\Models\DadosPessoal;
 use Modules\Usuario\Models\User;
+use Modules\Aluno\Models\AlunoEnquadramentoAcademico;
 
 class Aluno extends Model
 {
@@ -53,5 +55,10 @@ class Aluno extends Model
     public function editadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'editado_por');
+    }
+
+    public function enquadramentosAcademicos(): HasMany
+    {
+        return $this->hasMany(AlunoEnquadramentoAcademico::class);
     }
 }
