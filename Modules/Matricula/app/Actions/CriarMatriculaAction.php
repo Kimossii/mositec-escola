@@ -27,7 +27,7 @@ class CriarMatriculaAction
     ): Matricula {
         return DB::transaction(function () use ($aluno, $dto, $utilizadorId) {
             $turma = Turma::query()
-                ->with('curso')
+                ->with(['curso', 'anoLectivo'])
                 ->findOrFail($dto->turmaId);
 
             $this->validador->validarTurma($turma, $dto->anoLectivoId);

@@ -290,6 +290,46 @@ class MatriculaActionTest extends TestCase
         );
     }
 
+    public function test_rejeita_matricula_em_ano_lectivo_planeado(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivoPlaneado = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id, 'nome' => '2027',
+            'data_inicio' => '2027-01-01', 'data_fim' => '2027-12-31', 'estado' => EstadoAnoLectivo::PLANEADO,
+        ]);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivoPlaneado, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        app(CriarMatriculaAction::class)->executar(
+            $aluno,
+            $this->dto($turma->id, $anoLectivoPlaneado->id),
+        );
+    }
+
+    public function test_rejeita_matricula_em_ano_lectivo_encerrado(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivoEncerrado = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id, 'nome' => '2025',
+            'data_inicio' => '2025-01-01', 'data_fim' => '2025-12-31', 'estado' => EstadoAnoLectivo::ENCERRADO,
+        ]);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivoEncerrado, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        app(CriarMatriculaAction::class)->executar(
+            $aluno,
+            $this->dto($turma->id, $anoLectivoEncerrado->id),
+        );
+    }
+
     public function test_rejeita_ano_lectivo_incompativel_com_a_turma(): void
     {
         $estabelecimento = $this->criarEstabelecimento();

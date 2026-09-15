@@ -29,7 +29,7 @@ class AtualizarMatriculaAction
             }
 
             $turma = Turma::query()
-                ->with('curso')
+                ->with(['curso', 'anoLectivo'])
                 ->findOrFail($dto->turmaId);
 
             $this->validador->validarTurma($turma, $dto->anoLectivoId);

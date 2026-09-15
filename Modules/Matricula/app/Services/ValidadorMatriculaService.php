@@ -6,6 +6,7 @@ use Illuminate\Validation\ValidationException;
 use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
 use Modules\Aluno\Enums\EstadoEnquadramentoAcademicoEnum;
 use Modules\Aluno\Models\Aluno;
+use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\Core\Enums\Estado;
 use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -31,6 +32,12 @@ class ValidadorMatriculaService
         if ($turma->estado !== Estado::ATIVO->value) {
             throw ValidationException::withMessages([
                 'turma_id' => 'Não é possível utilizar uma turma inactiva.',
+            ]);
+        }
+
+        if ($turma->anoLectivo?->estado !== EstadoAnoLectivo::ATIVO) {
+            throw ValidationException::withMessages([
+                'turma_id' => 'Só é possível matricular num Ano Lectivo activo.',
             ]);
         }
     }
