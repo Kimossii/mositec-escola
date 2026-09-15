@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 
 const props = defineProps({
@@ -37,8 +37,12 @@ const form = reactive({
 
 const turmaSeleccionada = computed(() => props.turmasDisponiveis.find((t) => t.id === form.turma_id) ?? null);
 
+const erroTurmaLocal = ref('');
+
 watch(() => props.show, (show) => {
     if (!show) return;
+
+    erroTurmaLocal.value = '';
 
     if (props.matricula) {
         form.turma_id = props.matricula.turma_id;
@@ -57,9 +61,19 @@ watch(() => props.show, (show) => {
 watch(() => form.turma_id, (turmaId) => {
     const turma = props.turmasDisponiveis.find((t) => t.id === turmaId);
     form.ano_lectivo_id = turma?.ano_lectivo_id ?? '';
+
+    if (turmaId) {
+        erroTurmaLocal.value = '';
+    }
 });
 
 function submeter() {
+    if (!form.turma_id) {
+        erroTurmaLocal.value = 'Selecione uma turma.';
+        return;
+    }
+
+    erroTurmaLocal.value = '';
     emit('submit', { ...form });
 }
 </script>
@@ -76,7 +90,8 @@ function submeter() {
                     <div class="fv-row mb-7">
                         <label class="required fw-semibold fs-6 mb-2">Turma</label>
                         <SelectSolid v-model="form.turma_id" :options="opcoesTurma" searchable placeholder="Selecione a turma" />
-                        <div class="text-danger fs-7 mt-1" v-if="errors.turma_id">{{ errors.turma_id }}</div>
+                        <div class="text-danger fs-7 mt-1" v-if="erroTurmaLocal">{{ erroTurmaLocal }}</div>
+                        <div class="text-danger fs-7 mt-1" v-else-if="errors.turma_id">{{ errors.turma_id }}</div>
                     </div>
 
                     <div v-if="turmaSeleccionada" class="row mb-7">
