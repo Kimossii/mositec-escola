@@ -11,11 +11,11 @@ const seccoesPedagogico = [
         links: [
             { href: '/disciplinas', label: 'Disciplinas', permissao: 'disciplina.ver' },
             { href: '/horarios', label: 'Horários', permissao: 'horario.ver' },
-            { href: '#', label: 'Planos de Aula' },
-            { href: '#', label: 'Avaliações / Notas' },
-            { href: '#', label: 'Pautas' },
-            { href: '#', label: 'Conselho de Turma' },
-            { href: '#', label: 'Exames / Recuperações' },
+            // { href: '#', label: 'Planos de Aula' },
+            // { href: '#', label: 'Avaliações / Notas' },
+            // { href: '#', label: 'Pautas' },
+            // { href: '#', label: 'Conselho de Turma' },
+            // { href: '#', label: 'Exames / Recuperações' },
         ],
     },
 ];
