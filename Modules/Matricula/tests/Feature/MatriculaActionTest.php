@@ -14,6 +14,7 @@ use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
 use Modules\Matricula\Actions\AtualizarMatriculaAction;
 use Modules\Matricula\Actions\CriarMatriculaAction;
+use Modules\Matricula\Actions\EliminarMatriculaAction;
 use Modules\Matricula\Actions\RenovarMatriculaAction;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
@@ -770,5 +771,42 @@ class MatriculaActionTest extends TestCase
         $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(RenovarMatriculaAction::class)->executar($matricula);
+    }
+
+    // ---------- Editar em estado terminal ----------
+
+    public function test_rejeita_editar_matricula_concluida(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+        $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
+        $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CONCLUIDA);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        app(AtualizarMatriculaAction::class)->executar(
+            $matricula,
+            $this->dto($matricula->turma_id, $matricula->ano_lectivo_id, dataMatricula: '2026-03-01'),
+        );
+    }
+
+    // ---------- Eliminar ----------
+
+    public function test_elimina_matricula_pendente(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+
+        app(EliminarMatriculaAction::class)->executar($matricula);
+
+        $this->assertSoftDeleted('matriculas', ['id' => $matricula->id]);
+    }
+
+    public function test_rejeita_eliminar_matricula_activa(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+        $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        app(EliminarMatriculaAction::class)->executar($matricula);
     }
 }

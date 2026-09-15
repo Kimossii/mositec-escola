@@ -6,6 +6,7 @@ use Modules\Aluno\Models\Aluno;
 use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
 use Modules\Matricula\Actions\AtualizarMatriculaAction;
 use Modules\Matricula\Actions\CriarMatriculaAction;
+use Modules\Matricula\Actions\EliminarMatriculaAction;
 use Modules\Matricula\Actions\RenovarMatriculaAction;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
@@ -20,6 +21,7 @@ class GestaoMatriculaService
         private AtualizarMatriculaAction $atualizarMatricula,
         private AlterarEstadoMatriculaAction $alterarEstadoMatricula,
         private RenovarMatriculaAction $renovarMatricula,
+        private EliminarMatriculaAction $eliminarMatricula,
     ) {
     }
 
@@ -61,5 +63,10 @@ class GestaoMatriculaService
             $turmaId,
             auth()->id(),
         );
+    }
+
+    public function eliminar(Matricula $matricula): void
+    {
+        $this->eliminarMatricula->executar($matricula);
     }
 }

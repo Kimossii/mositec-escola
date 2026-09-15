@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -9,14 +9,17 @@ import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import AlunoFormModal from '../Components/AlunoFormModal.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import Pagination from '@/Components/Shared/Pagination.vue';
 import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/Shared/EstadoBadge.vue';
 import MatriculaFormModal from '../../../../Matricula/resources/js/Components/MatriculaFormModal.vue';
 import { ESTADO_MATRICULA, estadoMatriculaLabel, transicoesDisponiveis } from '../../../../Matricula/resources/js/Models/Estado';
 
 const props = defineProps({
     aluno: { type: Object, required: true },
-    matriculas: { type: Array, default: () => [] },
+    matriculas: { type: Object, default: () => ({ data: [], links: [] }) }, // paginator
     turmasDisponiveis: { type: Array, default: () => [] },
+    anosLectivosComMatricula: { type: Array, default: () => [] },
+    filtrosMatricula: { type: Object, default: () => ({}) },
 });
 defineOptions({ layout: AppLayout });
 
@@ -58,51 +61,30 @@ function guardar(payload) {
     });
 }
 
-// Por omissão, mostra só o ano lectivo activo (estado 1) — se o aluno tiver
-// matrículas nele; caso contrário mostra todas.
-const anoLectivoAtivoInicial = props.matriculas.find((m) => m.ano_lectivo?.estado === 1)?.ano_lectivo_id ?? '';
-
-const pesquisaMatriculas = ref('');
-const anoLectivoFiltro = ref(anoLectivoAtivoInicial);
-
-const opcoesAnoLectivo = computed(() => {
-    const unicos = new Map();
-    props.matriculas.forEach((m) => {
-        if (m.ano_lectivo && !unicos.has(m.ano_lectivo_id)) {
-            unicos.set(m.ano_lectivo_id, m.ano_lectivo.nome);
-        }
-    });
-
-    return [
-        { value: '', label: 'Todos os anos lectivos' },
-        ...Array.from(unicos, ([value, label]) => ({ value, label })),
-    ];
+// O filtro por omissão (ano lectivo activo) já vem calculado do backend em
+// filtrosMatricula — aqui só reflectimos o que o servidor devolveu.
+const filtros = reactive({
+    ano_lectivo_id: props.filtrosMatricula.ano_lectivo_id ?? '',
+    pesquisa: props.filtrosMatricula.pesquisa ?? '',
 });
 
-const normalizarTexto = (texto) => (texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const opcoesAnoLectivo = computed(() => [
+    { value: '', label: 'Todos os anos lectivos' },
+    ...props.anosLectivosComMatricula.map((anoLectivo) => ({ value: anoLectivo.id, label: anoLectivo.nome })),
+]);
 
-// A ordem já vem do backend por data_matricula descendente (mais recente
-// primeiro) — filtrar aqui não altera essa ordem.
-const matriculasFiltradas = computed(() => props.matriculas.filter((matricula) => {
-    if (anoLectivoFiltro.value && matricula.ano_lectivo_id !== anoLectivoFiltro.value) {
-        return false;
-    }
+let debounceMatriculasId = null;
 
-    if (!pesquisaMatriculas.value.trim()) {
-        return true;
-    }
-
-    const alvo = normalizarTexto(pesquisaMatriculas.value);
-    const texto = normalizarTexto([
-        matricula.numero_registo_matricula,
-        matricula.turma?.codigo,
-        matricula.turma?.nome,
-        matricula.ano_lectivo?.nome,
-        estadoMatriculaLabel(matricula.estado),
-    ].filter(Boolean).join(' '));
-
-    return texto.includes(alvo);
-}));
+watch(filtros, (valor) => {
+    clearTimeout(debounceMatriculasId);
+    debounceMatriculasId = setTimeout(() => {
+        router.get(`/alunos/${props.aluno.id}`, valor, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    }, 300);
+});
 
 const matriculaModalAberto = ref(false);
 const matriculaProcessing = ref(false);
@@ -248,6 +230,31 @@ function confirmarRenovacao() {
         },
     });
 }
+
+const matriculaParaEliminar = ref(null);
+const eliminando = ref(false);
+
+function pedirEliminacao(matricula) {
+    matriculaParaEliminar.value = matricula;
+}
+
+function cancelarEliminacao() {
+    matriculaParaEliminar.value = null;
+}
+
+function confirmarEliminacao() {
+    eliminando.value = true;
+    const matricula = matriculaParaEliminar.value;
+    router.delete(`/alunos/${props.aluno.id}/matriculas/${matricula.id}`, {
+        preserveScroll: true,
+        onSuccess: () => toast.success('Matrícula eliminada com sucesso.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
+        onFinish: () => {
+            eliminando.value = false;
+            matriculaParaEliminar.value = null;
+        },
+    });
+}
 </script>
 
 <template>
@@ -298,15 +305,15 @@ function confirmarRenovacao() {
                     </button>
                 </div>
             </div>
-            <div v-if="matriculas.length" class="card-body pt-0 pb-4 d-flex flex-wrap gap-4">
+            <div class="card-body pt-0 pb-4 d-flex flex-wrap gap-4">
                 <input
-                    v-model="pesquisaMatriculas"
+                    v-model="filtros.pesquisa"
                     type="text"
                     class="form-control form-control-solid w-md-250px"
-                    placeholder="Pesquisar por nº, turma, ano lectivo, estado..."
+                    placeholder="Pesquisar por nº de registo ou turma..."
                 />
                 <div style="min-width: 220px;">
-                    <SelectSolid v-model="anoLectivoFiltro" :options="opcoesAnoLectivo" />
+                    <SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAnoLectivo" />
                 </div>
             </div>
             <div class="card-body p-0">
@@ -322,13 +329,10 @@ function confirmarRenovacao() {
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
-                        <tr v-if="!matriculas.length">
-                            <td colspan="6" class="text-center text-muted py-6">Nenhuma matrícula registada.</td>
+                        <tr v-if="!matriculas.data.length">
+                            <td colspan="6" class="text-center text-muted py-6">Nenhuma matrícula encontrada.</td>
                         </tr>
-                        <tr v-else-if="!matriculasFiltradas.length">
-                            <td colspan="6" class="text-center text-muted py-6">Nenhuma matrícula encontrada para os filtros aplicados.</td>
-                        </tr>
-                        <tr v-for="matricula in matriculasFiltradas" :key="matricula.id">
+                        <tr v-for="matricula in matriculas.data" :key="matricula.id">
                             <td>{{ matricula.numero_registo_matricula }}</td>
                             <td>{{ matricula.turma?.codigo }} — {{ matricula.turma?.nome }}</td>
                             <td>{{ matricula.ano_lectivo?.nome ?? '—' }}</td>
@@ -346,7 +350,10 @@ function confirmarRenovacao() {
                                     <i class="ki-duotone ki-down fs-5 ms-1"></i>
                                 </a>
                                 <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4" data-kt-menu="true">
-                                    <div class="menu-item px-3">
+                                    <div
+                                        v-if="[ESTADO_MATRICULA.PENDENTE, ESTADO_MATRICULA.ACTIVA].includes(matricula.estado)"
+                                        class="menu-item px-3"
+                                    >
                                         <a href="#" class="menu-link px-3" @click.prevent="abrirEdicaoMatricula(matricula)">
                                             Editar
                                         </a>
@@ -376,11 +383,26 @@ function confirmarRenovacao() {
                                             Renovar Matrícula
                                         </a>
                                     </div>
+                                    <div
+                                        v-if="matricula.estado === ESTADO_MATRICULA.PENDENTE && can('matricula.eliminar')"
+                                        class="menu-item px-3"
+                                    >
+                                        <a
+                                            href="#"
+                                            class="menu-link px-3 text-danger"
+                                            @click.prevent="pedirEliminacao(matricula)"
+                                        >
+                                            Eliminar
+                                        </a>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <div v-if="matriculas.data.length" class="card-footer d-flex justify-content-end">
+                <Pagination :links="matriculas.links" />
             </div>
         </div>
 
@@ -422,6 +444,16 @@ function confirmarRenovacao() {
             :processando="confirmandoRenovacao"
             @confirmar="confirmarRenovacao"
             @cancelar="cancelarRenovacao"
+        />
+
+        <ConfirmModal
+            :show="!!matriculaParaEliminar"
+            titulo="Eliminar Matrícula"
+            :mensagem="`Tem a certeza que deseja eliminar a matrícula ${matriculaParaEliminar?.numero_registo_matricula}? Esta acção não pode ser desfeita pela interface.`"
+            texto-confirmar="Eliminar"
+            :processando="eliminando"
+            @confirmar="confirmarEliminacao"
+            @cancelar="cancelarEliminacao"
         />
     </div>
 </template>

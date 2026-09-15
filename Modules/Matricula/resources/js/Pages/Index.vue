@@ -37,14 +37,20 @@ const opcoesEstado = computed(() => [
 const filtros = reactive({
     turma_id: props.filtros.turma_id ?? '',
     estado: props.filtros.estado ?? '',
+    pesquisa: props.filtros.pesquisa ?? '',
 });
 
+let debounceId = null;
+
 watch(filtros, (valor) => {
-    router.get('/matriculas', valor, {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-    });
+    clearTimeout(debounceId);
+    debounceId = setTimeout(() => {
+        router.get('/matriculas', valor, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    }, 300);
 });
 
 function formatarData(data) {
@@ -62,6 +68,15 @@ function formatarData(data) {
 
         <div class="card mb-6">
             <div class="card-body d-flex flex-wrap gap-4">
+                <div style="min-width: 280px;">
+                    <label class="fw-semibold fs-7 text-muted mb-1">Aluno</label>
+                    <input
+                        v-model="filtros.pesquisa"
+                        type="text"
+                        class="form-control form-control-solid"
+                        placeholder="Nº de matrícula, nome ou nº de identificação"
+                    />
+                </div>
                 <div style="min-width: 260px;">
                     <label class="fw-semibold fs-7 text-muted mb-1">Turma</label>
                     <SelectSolid v-model="filtros.turma_id" :options="opcoesTurma" searchable />

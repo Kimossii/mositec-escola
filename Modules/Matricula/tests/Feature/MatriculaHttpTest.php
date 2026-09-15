@@ -211,6 +211,50 @@ class MatriculaHttpTest extends TestCase
         $this->assertSame($staff->id, $matricula->editado_por);
     }
 
+    public function test_elimina_matricula_pendente_via_http(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001', 'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
+
+        $this->delete(route('matriculas.destroy', [$aluno, $matricula]))
+            ->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSoftDeleted('matriculas', ['id' => $matricula->id]);
+    }
+
+    public function test_rejeita_eliminar_matricula_activa_via_http(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001', 'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::ACTIVA->value,
+        ]);
+
+        $this->delete(route('matriculas.destroy', [$aluno, $matricula]))
+            ->assertSessionHasErrors('matricula')->assertRedirect();
+
+        $this->assertDatabaseHas('matriculas', ['id' => $matricula->id, 'deleted_at' => null]);
+    }
+
     public function test_professor_recebe_403_ao_criar_matricula(): void
     {
         $this->actingAsProfessor();
@@ -238,8 +282,47 @@ class MatriculaHttpTest extends TestCase
 
         $this->get(route('alunos.show', $aluno))->assertInertia(fn (Assert $page) => $page
             ->component('Aluno/Show')
-            ->has('matriculas')
+            ->has('matriculas.data')
             ->has('turmasDisponiveis', 1)
+            ->has('anosLectivosComMatricula')
+        );
+    }
+
+    public function test_aluno_show_pagina_e_filtra_matriculas_por_ano_lectivo_activo_por_omissao(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivoAtivo = $this->criarAnoLectivo($estabelecimento, '2026');
+        $anoLectivoEncerrado = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id, 'nome' => '2025',
+            'data_inicio' => '2025-01-01', 'data_fim' => '2025-12-31', 'estado' => \Modules\AnoLectivo\Enums\EstadoAnoLectivo::ENCERRADO,
+        ]);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turmaAtiva = $this->criarTurma($anoLectivoAtivo, $nivel);
+        $turmaEncerrada = $this->criarTurma($anoLectivoEncerrado, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+
+        Matricula::create([
+            'aluno_id' => $aluno->id, 'turma_id' => $turmaAtiva->id, 'ano_lectivo_id' => $anoLectivoAtivo->id,
+            'numero_registo_matricula' => '2026-0001', 'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
+        Matricula::create([
+            'aluno_id' => $aluno->id, 'turma_id' => $turmaEncerrada->id, 'ano_lectivo_id' => $anoLectivoEncerrado->id,
+            'numero_registo_matricula' => '2025-0001', 'data_matricula' => '2025-02-01',
+            'estado' => EstadoMatriculaEnum::CONCLUIDA->value,
+        ]);
+
+        // Sem filtro explícito — só mostra o ano lectivo activo.
+        $this->get(route('alunos.show', $aluno))->assertInertia(fn (Assert $page) => $page
+            ->has('matriculas.data', 1)
+            ->where('matriculas.data.0.ano_lectivo_id', $anoLectivoAtivo->id)
+            ->has('anosLectivosComMatricula', 2)
+        );
+
+        // Explicitamente "todos".
+        $this->get(route('alunos.show', ['aluno' => $aluno, 'ano_lectivo_id' => '']))->assertInertia(fn (Assert $page) => $page
+            ->has('matriculas.data', 2)
         );
     }
 
@@ -313,15 +396,63 @@ class MatriculaHttpTest extends TestCase
 
         $this->get(route('matriculas.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Matricula/Index')
-            ->has('matriculas.data', 20)
+            ->has('matriculas.data', 10)
             ->where('matriculas.current_page', 1)
-            ->where('matriculas.last_page', 2)
+            ->where('matriculas.last_page', 3)
             ->where('matriculas.total', 25)
         );
 
-        $this->get(route('matriculas.index', ['page' => 2]))->assertInertia(fn (Assert $page) => $page
+        $this->get(route('matriculas.index', ['page' => 3]))->assertInertia(fn (Assert $page) => $page
             ->has('matriculas.data', 5)
-            ->where('matriculas.current_page', 2)
+            ->where('matriculas.current_page', 3)
+        );
+    }
+
+    public function test_listagem_global_pesquisa_por_numero_matricula_nome_e_numero_identificacao(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+
+        $pessoaA = DadosPessoal::create([
+            'nome_completo' => 'Ana Maria Silva', 'numero_identificacao' => 'BI12345', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO,
+        ]);
+        $alunoA = Aluno::create([
+            'estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoaA->id, 'numero_matricula' => '2026-AAAA',
+        ]);
+        $pessoaB = DadosPessoal::create([
+            'nome_completo' => 'Bruno Costa', 'numero_identificacao' => 'BI99999', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO,
+        ]);
+        $alunoB = Aluno::create([
+            'estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoaB->id, 'numero_matricula' => '2026-BBBB',
+        ]);
+
+        Matricula::create([
+            'aluno_id' => $alunoA->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001', 'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
+        Matricula::create([
+            'aluno_id' => $alunoB->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0002', 'data_matricula' => '2026-02-02',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
+
+        $this->get(route('matriculas.index', ['pesquisa' => 'Ana Maria']))->assertInertia(fn (Assert $page) => $page
+            ->has('matriculas.data', 1)
+            ->where('matriculas.data.0.aluno_id', $alunoA->id)
+        );
+
+        $this->get(route('matriculas.index', ['pesquisa' => 'BI99999']))->assertInertia(fn (Assert $page) => $page
+            ->has('matriculas.data', 1)
+            ->where('matriculas.data.0.aluno_id', $alunoB->id)
+        );
+
+        $this->get(route('matriculas.index', ['pesquisa' => '2026-AAAA']))->assertInertia(fn (Assert $page) => $page
+            ->has('matriculas.data', 1)
+            ->where('matriculas.data.0.aluno_id', $alunoA->id)
         );
     }
 

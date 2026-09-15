@@ -3,6 +3,7 @@
 namespace Modules\Matricula\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\ValidadorMatriculaService;
@@ -21,6 +22,12 @@ class AtualizarMatriculaAction
         ?int $utilizadorId = null,
     ): Matricula {
         return DB::transaction(function () use ($matricula, $dto, $utilizadorId) {
+            if ($matricula->estado->eTerminal()) {
+                throw ValidationException::withMessages([
+                    'estado' => 'Não é possível editar uma matrícula já concluída, cancelada ou transferida.',
+                ]);
+            }
+
             $turma = Turma::query()
                 ->with('curso')
                 ->findOrFail($dto->turmaId);

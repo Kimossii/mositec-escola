@@ -27,10 +27,12 @@ class MatriculaController extends Controller
     {
         $this->authorize('matricula.ver');
 
+        $filtros = $request->only(['turma_id', 'ano_lectivo_id', 'estado', 'pesquisa']);
+
         return Inertia::render('Matricula/Index', [
-            'matriculas' => $this->consulta->listarTodas($request->only(['turma_id', 'ano_lectivo_id', 'estado'])),
+            'matriculas' => $this->consulta->listarTodas($filtros),
             'turmasDisponiveis' => $this->consulta->turmasDisponiveis(),
-            'filtros' => $request->only(['turma_id', 'ano_lectivo_id', 'estado']),
+            'filtros' => $filtros,
         ]);
     }
 
@@ -72,5 +74,14 @@ class MatriculaController extends Controller
         $this->service->renovar($matricula, $request->validated('turma_id'));
 
         return redirect()->back()->with('success', 'Matrícula renovada com sucesso.');
+    }
+
+    public function destroy(Aluno $aluno, Matricula $matricula)
+    {
+        $this->authorize('matricula.eliminar');
+
+        $this->service->eliminar($matricula);
+
+        return redirect()->back()->with('success', 'Matrícula eliminada com sucesso.');
     }
 }
