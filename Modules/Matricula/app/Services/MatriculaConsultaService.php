@@ -13,7 +13,7 @@ use Modules\Turma\Models\Turma;
 
 class MatriculaConsultaService
 {
-    public function listarPorAluno(Aluno $aluno, array $filtros = [], int $porPagina = 1): LengthAwarePaginator
+    public function listarPorAluno(Aluno $aluno, array $filtros = [], int $porPagina = 10): LengthAwarePaginator
     {
         return Matricula::with(['turma.curso', 'turma.nivelAcademico', 'anoLectivo'])
             ->where('aluno_id', $aluno->id)

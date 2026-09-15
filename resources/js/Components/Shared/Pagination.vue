@@ -8,6 +8,18 @@ const props = defineProps({
     links: { type: Array, required: true },
 });
 
+// O Laravel devolve "Previous"/"Next" em inglês por defeito — traduzido aqui
+// em vez de mudar o locale da app inteira (que afectaria mensagens de
+// validação, etc.).
+const TRADUCOES = {
+    '&laquo; Previous': '‹ Anterior',
+    'Next &raquo;': 'Seguinte ›',
+};
+
+function traduzir(label) {
+    return TRADUCOES[label] ?? label;
+}
+
 function ir(url) {
     if (!url) return;
     router.get(url, {}, { preserveState: true, preserveScroll: true });
@@ -22,7 +34,7 @@ function ir(url) {
             class="page-item"
             :class="{ active: link.active, disabled: !link.url }"
         >
-            <a href="#" class="page-link" v-html="link.label" @click.prevent="ir(link.url)"></a>
+            <a href="#" class="page-link" v-html="traduzir(link.label)" @click.prevent="ir(link.url)"></a>
         </li>
     </ul>
 </template>
