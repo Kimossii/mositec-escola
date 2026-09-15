@@ -51,9 +51,17 @@ class GestaoAnoLectivoService
         return $this->atualizarAnoLectivo->atualizar($anoLectivo, AnoLectivoDTO::fromRequest($request));
     }
 
-    public function alterarEstado(AnoLectivo $anoLectivo, EstadoAnoLectivo $novoEstado): AnoLectivo
-    {
-        return $this->alterarEstadoAnoLectivo->alterar($anoLectivo, $novoEstado);
+    public function alterarEstado(
+        AnoLectivo $anoLectivo,
+        EstadoAnoLectivo $novoEstado,
+        bool $confirmarEncerramentoMatriculas = false,
+    ): AnoLectivo {
+        return $this->alterarEstadoAnoLectivo->alterar(
+            $anoLectivo,
+            $novoEstado,
+            $confirmarEncerramentoMatriculas,
+            auth()->id(),
+        );
     }
 
     public function eliminar(AnoLectivo $anoLectivo): void
