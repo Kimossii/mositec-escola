@@ -8,6 +8,11 @@ use Modules\Matricula\Models\Matricula;
 
 class AlterarEstadoMatriculaAction
 {
+    public function __construct(
+        private RegistarHistoricoMatriculaAction $registarHistorico,
+    ) {
+    }
+
     public function executar(
         Matricula $matricula,
         EstadoMatriculaEnum $novoEstado,
@@ -30,6 +35,8 @@ class AlterarEstadoMatriculaAction
         }
 
         $matricula->save();
+
+        $this->registarHistorico->executar($matricula, $estadoActual, $novoEstado, $utilizadorId);
 
         return $matricula->fresh();
     }

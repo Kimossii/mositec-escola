@@ -51,6 +51,15 @@ class MatriculaConsultaService
             ->values();
     }
 
+    public function historicoDaMatricula(Matricula $matricula): Collection
+    {
+        return $matricula->historico()
+            ->with('utilizador')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get();
+    }
+
     public function turmasDisponiveis(): Collection
     {
         return Turma::with(['anoLectivo', 'curso', 'nivelAcademico', 'turno'])

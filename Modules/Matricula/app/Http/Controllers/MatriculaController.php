@@ -11,6 +11,7 @@ use Modules\Matricula\Http\Requests\AlterarEstadoMatriculaRequest;
 use Modules\Matricula\Http\Requests\AtualizarMatriculaRequest;
 use Modules\Matricula\Http\Requests\CriarMatriculaRequest;
 use Modules\Matricula\Http\Requests\RenovarMatriculaRequest;
+use Modules\Matricula\Http\Requests\RenovarMatriculasEmMassaRequest;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\GestaoMatriculaService;
 use Modules\Matricula\Services\MatriculaConsultaService;
@@ -83,5 +84,19 @@ class MatriculaController extends Controller
         $this->service->eliminar($matricula);
 
         return redirect()->back()->with('success', 'Matrícula eliminada com sucesso.');
+    }
+
+    public function renovarEmMassa(RenovarMatriculasEmMassaRequest $request)
+    {
+        $this->authorize('matricula.criar');
+
+        $resultado = $this->service->renovarEmMassa($request->validated('matricula_ids'));
+
+        $mensagem = "{$resultado['sucesso']} matrícula(s) renovada(s) com sucesso.";
+        if (count($resultado['falhas']) > 0) {
+            $mensagem .= ' ' . count($resultado['falhas']) . ' não puderam ser renovadas (turma seguinte não encontrada ou estado inválido).';
+        }
+
+        return redirect()->back()->with('success', $mensagem);
     }
 }

@@ -16,6 +16,7 @@ use Modules\Matricula\Actions\AtualizarMatriculaAction;
 use Modules\Matricula\Actions\CriarMatriculaAction;
 use Modules\Matricula\Actions\EliminarMatriculaAction;
 use Modules\Matricula\Actions\RenovarMatriculaAction;
+use Modules\Matricula\Actions\RenovarMatriculasEmMassaAction;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
@@ -327,6 +328,32 @@ class MatriculaActionTest extends TestCase
         $ano = now()->year;
         $this->assertSame("{$ano}-0001", $matriculaA->numero_registo_matricula);
         $this->assertSame("{$ano}-0002", $matriculaB->numero_registo_matricula);
+    }
+
+    /**
+     * Não é um teste de concorrência real — os testes correm em SQLite em
+     * memória (uma única ligação), onde não é possível ter duas transacções
+     * verdadeiramente em paralelo a disputar o `lockForUpdate()`. Isto só
+     * garante a integridade da sequência sob chamadas repetidas (sem
+     * duplicados, sem saltos); a segurança contra concorrência real depende
+     * do `lockForUpdate()` + `upsert()` já implementados, que só um teste
+     * multi-processo contra Postgres poderia validar de facto.
+     */
+    public function test_gerador_numero_registo_produz_sequencia_integra_sob_chamadas_repetidas(): void
+    {
+        $gerador = app(\Modules\Matricula\Services\GeradorNumeroRegistoMatriculaService::class);
+
+        $numeros = [];
+        for ($i = 0; $i < 30; $i++) {
+            $numeros[] = $gerador->gerar();
+        }
+
+        $this->assertCount(30, array_unique($numeros));
+
+        $ano = now()->year;
+        for ($i = 1; $i <= 30; $i++) {
+            $this->assertSame(sprintf('%d-%04d', $ano, $i), $numeros[$i - 1]);
+        }
     }
 
     public function test_rejeita_matricula_duplicada_no_mesmo_contexto_academico(): void
@@ -808,5 +835,91 @@ class MatriculaActionTest extends TestCase
         $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(EliminarMatriculaAction::class)->executar($matricula);
+    }
+
+    // ---------- Histórico ----------
+
+    public function test_regista_historico_na_criacao_e_em_cada_alteracao_de_estado(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+
+        $this->assertDatabaseHas('matricula_historicos', [
+            'matricula_id' => $matricula->id,
+            'estado_anterior' => null,
+            'estado_novo' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
+
+        $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
+
+        $this->assertDatabaseHas('matricula_historicos', [
+            'matricula_id' => $matricula->id,
+            'estado_anterior' => EstadoMatriculaEnum::PENDENTE->value,
+            'estado_novo' => EstadoMatriculaEnum::ACTIVA->value,
+        ]);
+
+        app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CANCELADA);
+
+        $this->assertDatabaseHas('matricula_historicos', [
+            'matricula_id' => $matricula->id,
+            'estado_anterior' => EstadoMatriculaEnum::ACTIVA->value,
+            'estado_novo' => EstadoMatriculaEnum::CANCELADA->value,
+        ]);
+
+        $historico = app(\Modules\Matricula\Services\MatriculaConsultaService::class)->historicoDaMatricula($matricula->fresh());
+        $this->assertCount(3, $historico);
+    }
+
+    // ---------- Renovação em massa ----------
+
+    public function test_renova_em_massa_processa_cada_matricula_independentemente(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivoAtual = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id, 'nome' => '2026',
+            'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO,
+        ]);
+        $anoLectivoSeguinte = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id, 'nome' => '2027',
+            'data_inicio' => '2027-01-01', 'data_fim' => '2027-12-31', 'estado' => EstadoAnoLectivo::ATIVO,
+        ]);
+        $nivel5 = NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id, 'codigo' => '5C', 'nome' => '5ª Classe', 'ordem' => 5, 'etapa_ensino' => 3,
+        ]);
+        $nivel6 = NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id, 'codigo' => '6C', 'nome' => '6ª Classe', 'ordem' => 6, 'etapa_ensino' => 3,
+        ]);
+        $turmaAtual = $this->criarTurma($anoLectivoAtual, $nivel5);
+        $this->criarTurma($anoLectivoSeguinte, $nivel6); // turma seguinte só para o aluno A
+
+        // Aluno A — pode renovar (turma seguinte existe para o seu nível).
+        $alunoA = $this->criarAluno($estabelecimento, 'BI0001');
+        $this->enquadrar($alunoA, nivelAcademicoId: $nivel5->id);
+        $matriculaA = app(CriarMatriculaAction::class)->executar($alunoA, $this->dto($turmaAtual->id, $anoLectivoAtual->id));
+        app(AlterarEstadoMatriculaAction::class)->executar($matriculaA, EstadoMatriculaEnum::ACTIVA);
+        $matriculaA = app(AlterarEstadoMatriculaAction::class)->executar($matriculaA, EstadoMatriculaEnum::CONCLUIDA);
+
+        // Aluno B — ainda Pendente, RenovarMatriculaAction rejeita este estado.
+        $alunoB = $this->criarAluno($estabelecimento, 'BI0002');
+        $this->enquadrar($alunoB, nivelAcademicoId: $nivel5->id);
+        $matriculaBOutraTurma = $this->criarTurma($anoLectivoAtual, $nivel5);
+        $matriculaB = app(CriarMatriculaAction::class)->executar($alunoB, $this->dto($matriculaBOutraTurma->id, $anoLectivoAtual->id));
+
+        $resultado = app(RenovarMatriculasEmMassaAction::class)->executar([$matriculaA->id, $matriculaB->id]);
+
+        $this->assertSame(1, $resultado['sucesso']);
+        $this->assertCount(1, $resultado['falhas']);
+        $this->assertArrayHasKey($matriculaB->id, $resultado['falhas']);
+        $this->assertDatabaseHas('matriculas', [
+            'aluno_id' => $alunoA->id,
+            'ano_lectivo_id' => $anoLectivoSeguinte->id,
+        ]);
+    }
+
+    public function test_renova_em_massa_regista_falha_para_matricula_inexistente(): void
+    {
+        $resultado = app(RenovarMatriculasEmMassaAction::class)->executar([999999]);
+
+        $this->assertSame(0, $resultado['sucesso']);
+        $this->assertArrayHasKey(999999, $resultado['falhas']);
     }
 }

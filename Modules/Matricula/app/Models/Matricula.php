@@ -4,6 +4,7 @@ namespace Modules\Matricula\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Models\AnoLectivo;
@@ -60,5 +61,10 @@ class Matricula extends Model
     public function editadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'editado_por');
+    }
+
+    public function historico(): HasMany
+    {
+        return $this->hasMany(MatriculaHistorico::class);
     }
 }

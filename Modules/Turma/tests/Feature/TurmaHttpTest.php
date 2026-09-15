@@ -12,6 +12,9 @@ use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Estabelecimento\Models\EstabelecimentoEtapaEnsino;
+use Modules\Aluno\Models\Aluno;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Models\Matricula;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
@@ -19,6 +22,7 @@ use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
 use Modules\Turma\Models\Turno;
+use Modules\Usuario\Models\DadosPessoal;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -399,6 +403,68 @@ class TurmaHttpTest extends TestCase
         $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
 
         $this->delete(route('turmas.destroy', $turma))->assertRedirect();
+
+        $this->assertSoftDeleted('turmas', ['id' => $turma->id]);
+    }
+
+    private function criarMatriculaNaTurma(Estabelecimento $estabelecimento, AnoLectivo $anoLectivo, Turma $turma, EstadoMatriculaEnum $estado): Matricula
+    {
+        $pessoa = DadosPessoal::create([
+            'nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI' . random_int(10000, 99999), 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO,
+        ]);
+        $aluno = Aluno::create([
+            'estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-' . random_int(10000, 99999),
+        ]);
+
+        return Matricula::create([
+            'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-' . random_int(10000, 99999), 'data_matricula' => '2026-02-01',
+            'estado' => $estado->value,
+        ]);
+    }
+
+    public function test_nao_desactiva_turma_com_matricula_activa(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $this->criarMatriculaNaTurma($estabelecimento, $anoLectivo, $turma, EstadoMatriculaEnum::ACTIVA);
+
+        $this->patch(route('turmas.alterar-estado', $turma), [
+            'estado' => Estado::INATIVO->value,
+        ])->assertSessionHasErrors('turma');
+
+        $this->assertSame(Estado::ATIVO->value, $turma->fresh()->estado);
+    }
+
+    public function test_nao_elimina_turma_com_matricula_pendente(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $this->criarMatriculaNaTurma($estabelecimento, $anoLectivo, $turma, EstadoMatriculaEnum::PENDENTE);
+
+        $this->delete(route('turmas.destroy', $turma))->assertSessionHasErrors('turma');
+
+        $this->assertDatabaseHas('turmas', ['id' => $turma->id, 'deleted_at' => null]);
+    }
+
+    public function test_elimina_turma_com_matricula_concluida(): void
+    {
+        // Histórico (Concluída/Cancelada/Transferida) não bloqueia — só
+        // Pendente/Activa contam como "em uso".
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $this->criarMatriculaNaTurma($estabelecimento, $anoLectivo, $turma, EstadoMatriculaEnum::CONCLUIDA);
+
+        $this->delete(route('turmas.destroy', $turma))->assertSessionHasNoErrors()->assertRedirect();
 
         $this->assertSoftDeleted('turmas', ['id' => $turma->id]);
     }

@@ -8,6 +8,7 @@ use Modules\Matricula\Actions\AtualizarMatriculaAction;
 use Modules\Matricula\Actions\CriarMatriculaAction;
 use Modules\Matricula\Actions\EliminarMatriculaAction;
 use Modules\Matricula\Actions\RenovarMatriculaAction;
+use Modules\Matricula\Actions\RenovarMatriculasEmMassaAction;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Http\Requests\AtualizarMatriculaRequest;
@@ -22,6 +23,7 @@ class GestaoMatriculaService
         private AlterarEstadoMatriculaAction $alterarEstadoMatricula,
         private RenovarMatriculaAction $renovarMatricula,
         private EliminarMatriculaAction $eliminarMatricula,
+        private RenovarMatriculasEmMassaAction $renovarMatriculasEmMassa,
     ) {
     }
 
@@ -68,5 +70,14 @@ class GestaoMatriculaService
     public function eliminar(Matricula $matricula): void
     {
         $this->eliminarMatricula->executar($matricula);
+    }
+
+    /**
+     * @param  int[]  $matriculaIds
+     * @return array{sucesso: int, falhas: array<int, string>}
+     */
+    public function renovarEmMassa(array $matriculaIds): array
+    {
+        return $this->renovarMatriculasEmMassa->executar($matriculaIds, auth()->id());
     }
 }

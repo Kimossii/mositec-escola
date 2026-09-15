@@ -66,6 +66,13 @@ class HandleInertiaRequests extends Middleware
             'permissoes' => $request->user()
                 ? app(PermissionResolver::class)->conjuntoConcedido($request->user())
                 : [],
+            // A maioria das acções usa toast.success() com texto fixo no
+            // frontend, sem olhar para isto — mas quando o resultado varia
+            // por pedido (ex.: renovação em massa, com contagens), o backend
+            // precisa de poder mandar a mensagem exacta.
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+            ],
         ];
     }
 }

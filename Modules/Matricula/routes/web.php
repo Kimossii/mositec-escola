@@ -5,6 +5,7 @@ use Modules\Matricula\Http\Controllers\MatriculaController;
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/matriculas', [MatriculaController::class, 'index'])->middleware('can:matricula.ver')->name('matriculas.index');
+    Route::post('/matriculas/renovar-em-massa', [MatriculaController::class, 'renovarEmMassa'])->middleware('can:matricula.criar')->name('matriculas.renovar-em-massa');
 
     Route::prefix('alunos/{aluno}/matriculas')->name('matriculas.')->group(function () {
         Route::post('/', [MatriculaController::class, 'store'])->middleware('can:matricula.criar')->name('store');

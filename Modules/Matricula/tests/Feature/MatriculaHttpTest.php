@@ -516,4 +516,52 @@ class MatriculaHttpTest extends TestCase
             'ano_lectivo_id' => $anoLectivoSeguinte->id,
         ]);
     }
+
+    public function test_renova_em_massa_via_http(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivoAtual = $this->criarAnoLectivo($estabelecimento, '2026');
+        $anoLectivoSeguinte = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id, 'nome' => '2027',
+            'data_inicio' => '2027-01-01', 'data_fim' => '2027-12-31', 'estado' => EstadoAnoLectivo::ATIVO,
+        ]);
+        $nivel5 = $this->criarNivelAcademico($estabelecimento);
+        $nivel6 = NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id, 'codigo' => '6C', 'nome' => '6ª Classe',
+            'ordem' => $nivel5->ordem + 1, 'etapa_ensino' => 1,
+        ]);
+        $turmaAtual = $this->criarTurma($anoLectivoAtual, $nivel5);
+        $this->criarTurma($anoLectivoSeguinte, $nivel6);
+
+        $alunoA = $this->criarAluno($estabelecimento);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($alunoA, nivelAcademicoId: $nivel5->id);
+        $matriculaA = Matricula::create([
+            'aluno_id' => $alunoA->id, 'turma_id' => $turmaAtual->id, 'ano_lectivo_id' => $anoLectivoAtual->id,
+            'numero_registo_matricula' => '2025-8001', 'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::CONCLUIDA->value,
+        ]);
+
+        $alunoB = $this->criarAluno($estabelecimento);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($alunoB, nivelAcademicoId: $nivel5->id);
+        $matriculaB = Matricula::create([
+            'aluno_id' => $alunoB->id, 'turma_id' => $turmaAtual->id, 'ano_lectivo_id' => $anoLectivoAtual->id,
+            'numero_registo_matricula' => '2025-8002', 'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
+
+        $this->post(route('matriculas.renovar-em-massa'), [
+            'matricula_ids' => [$matriculaA->id, $matriculaB->id],
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertDatabaseHas('matriculas', ['aluno_id' => $alunoA->id, 'ano_lectivo_id' => $anoLectivoSeguinte->id]);
+        $this->assertDatabaseMissing('matriculas', ['aluno_id' => $alunoB->id, 'ano_lectivo_id' => $anoLectivoSeguinte->id]);
+    }
+
+    public function test_professor_recebe_403_ao_renovar_em_massa(): void
+    {
+        $this->actingAsProfessor();
+
+        $this->post(route('matriculas.renovar-em-massa'), ['matricula_ids' => [1]])->assertForbidden();
+    }
 }

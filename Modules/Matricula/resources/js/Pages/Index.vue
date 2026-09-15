@@ -1,11 +1,13 @@
 <script setup>
-import { computed, reactive, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { computed, reactive, ref, watch } from 'vue';
+import { router, usePage } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
-import { ESTADO_MATRICULA_LABEL } from '../Models/Estado';
+import { ESTADO_MATRICULA, ESTADO_MATRICULA_LABEL } from '../Models/Estado';
 
 const props = defineProps({
     matriculas: { type: Object, required: true }, // paginator: { data, links, ... }
@@ -58,6 +60,57 @@ function formatarData(data) {
     const [ano, mes, dia] = data.slice(0, 10).split('-');
     return `${dia}/${mes}/${ano}`;
 }
+
+// Renovação em massa — só faz sentido para matrículas Concluídas, tal como
+// a ação individual na página do aluno.
+const matriculasConcluidasDaPagina = computed(() => props.matriculas.data.filter((m) => m.estado === ESTADO_MATRICULA.CONCLUIDA));
+
+const seleccionadas = ref([]);
+
+watch(() => props.matriculas, () => {
+    seleccionadas.value = [];
+});
+
+const todasSeleccionadas = computed(() =>
+    matriculasConcluidasDaPagina.value.length > 0
+    && matriculasConcluidasDaPagina.value.every((m) => seleccionadas.value.includes(m.id))
+);
+
+function alternarTodas() {
+    seleccionadas.value = todasSeleccionadas.value
+        ? []
+        : matriculasConcluidasDaPagina.value.map((m) => m.id);
+}
+
+const confirmandoRenovacaoEmMassa = ref(false);
+const mostrarConfirmRenovacaoEmMassa = ref(false);
+
+function pedirRenovacaoEmMassa() {
+    mostrarConfirmRenovacaoEmMassa.value = true;
+}
+
+function cancelarRenovacaoEmMassa() {
+    mostrarConfirmRenovacaoEmMassa.value = false;
+}
+
+function confirmarRenovacaoEmMassa() {
+    confirmandoRenovacaoEmMassa.value = true;
+    router.post('/matriculas/renovar-em-massa', {
+        matricula_ids: seleccionadas.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            const mensagem = usePage().props.flash?.success;
+            toast.success(mensagem ?? 'Renovação em massa concluída.');
+            seleccionadas.value = [];
+        },
+        onError: (erros) => toast.error(Object.values(erros)[0]),
+        onFinish: () => {
+            confirmandoRenovacaoEmMassa.value = false;
+            mostrarConfirmRenovacaoEmMassa.value = false;
+        },
+    });
+}
 </script>
 
 <template>
@@ -89,10 +142,33 @@ function formatarData(data) {
         </div>
 
         <div class="card">
+            <div class="card-header" :class="{ 'd-none': !matriculasConcluidasDaPagina.length }">
+                <h3 class="card-title fw-bold">
+                    {{ seleccionadas.length }} seleccionada(s)
+                </h3>
+                <div class="card-toolbar">
+                    <button
+                        class="btn btn-sm btn-primary"
+                        :disabled="!seleccionadas.length"
+                        @click="pedirRenovacaoEmMassa"
+                    >
+                        Renovar Seleccionadas
+                    </button>
+                </div>
+            </div>
             <div class="card-body p-0">
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                            <th class="w-25px">
+                                <input
+                                    v-if="matriculasConcluidasDaPagina.length"
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    :checked="todasSeleccionadas"
+                                    @change="alternarTodas"
+                                />
+                            </th>
                             <th class="min-w-125px">Nº Registo</th>
                             <th class="min-w-200px">Aluno</th>
                             <th class="min-w-150px">Turma</th>
@@ -104,9 +180,18 @@ function formatarData(data) {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="matriculas.data.length === 0">
-                            <td colspan="7" class="text-center text-muted py-6">Nenhuma matrícula encontrada.</td>
+                            <td colspan="8" class="text-center text-muted py-6">Nenhuma matrícula encontrada.</td>
                         </tr>
                         <tr v-for="matricula in matriculas.data" :key="matricula.id">
+                            <td>
+                                <input
+                                    v-if="matricula.estado === ESTADO_MATRICULA.CONCLUIDA"
+                                    v-model="seleccionadas"
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    :value="matricula.id"
+                                />
+                            </td>
                             <td>{{ matricula.numero_registo_matricula }}</td>
                             <td>{{ matricula.aluno?.dados_pessoa?.nome_completo ?? '—' }}</td>
                             <td>{{ matricula.turma?.codigo }} — {{ matricula.turma?.nome }}</td>
@@ -126,5 +211,15 @@ function formatarData(data) {
                 <Pagination :links="matriculas.links" />
             </div>
         </div>
+
+        <ConfirmModal
+            :show="mostrarConfirmRenovacaoEmMassa"
+            titulo="Renovar Matrículas em Massa"
+            :mensagem="`Renovar ${seleccionadas.length} matrícula(s) seleccionada(s)? O sistema vai tentar sugerir automaticamente a turma seguinte para cada uma; as que falharem ficam por renovar manualmente.`"
+            texto-confirmar="Renovar"
+            :processando="confirmandoRenovacaoEmMassa"
+            @confirmar="confirmarRenovacaoEmMassa"
+            @cancelar="cancelarRenovacaoEmMassa"
+        />
     </div>
 </template>

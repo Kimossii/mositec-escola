@@ -16,6 +16,7 @@ class CriarMatriculaAction
     public function __construct(
         private GeradorNumeroRegistoMatriculaService $geradorNumeroRegisto,
         private ValidadorMatriculaService $validador,
+        private RegistarHistoricoMatriculaAction $registarHistorico,
     ) {
     }
 
@@ -37,7 +38,7 @@ class CriarMatriculaAction
 
             $numeroRegisto = $this->geradorNumeroRegisto->gerar();
 
-            return Matricula::create([
+            $matricula = Matricula::create([
                 'aluno_id' => $aluno->id,
                 'turma_id' => $turma->id,
                 'ano_lectivo_id' => $anoLectivoId,
@@ -47,6 +48,10 @@ class CriarMatriculaAction
                 'observacoes' => $dto->observacoes,
                 'criado_por' => $utilizadorId,
             ]);
+
+            $this->registarHistorico->executar($matricula, null, $matricula->estado, $utilizadorId);
+
+            return $matricula;
         });
     }
 }
