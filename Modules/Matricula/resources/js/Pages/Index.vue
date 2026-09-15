@@ -3,11 +3,12 @@ import { computed, reactive, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import Pagination from '@/Components/Shared/Pagination.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import { ESTADO_MATRICULA_LABEL } from '../Models/Estado';
 
 const props = defineProps({
-    matriculas: { type: Array, required: true },
+    matriculas: { type: Object, required: true }, // paginator: { data, links, ... }
     turmasDisponiveis: { type: Array, required: true },
     filtros: { type: Object, default: () => ({}) },
 });
@@ -15,10 +16,17 @@ defineOptions({ layout: AppLayout });
 
 const opcoesTurma = computed(() => [
     { value: '', label: 'Todas as turmas' },
-    ...props.turmasDisponiveis.map((turma) => ({
-        value: turma.id,
-        label: `${turma.codigo} — ${turma.nome} · ${turma.ano_lectivo?.nome ?? '—'}`,
-    })),
+    ...props.turmasDisponiveis.map((turma) => {
+        const partes = [
+            `${turma.codigo} — ${turma.nome}`,
+            turma.ano_lectivo?.nome,
+            turma.turno?.nome,
+            turma.curso?.nome,
+            turma.nivel_academico?.nome,
+        ].filter(Boolean);
+
+        return { value: turma.id, label: partes.join(' · ') };
+    }),
 ]);
 
 const opcoesEstado = computed(() => [
@@ -56,7 +64,7 @@ function formatarData(data) {
             <div class="card-body d-flex flex-wrap gap-4">
                 <div style="min-width: 260px;">
                     <label class="fw-semibold fs-7 text-muted mb-1">Turma</label>
-                    <SelectSolid v-model="filtros.turma_id" :options="opcoesTurma" />
+                    <SelectSolid v-model="filtros.turma_id" :options="opcoesTurma" searchable />
                 </div>
                 <div style="min-width: 200px;">
                     <label class="fw-semibold fs-7 text-muted mb-1">Estado</label>
@@ -80,10 +88,10 @@ function formatarData(data) {
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
-                        <tr v-if="matriculas.length === 0">
+                        <tr v-if="matriculas.data.length === 0">
                             <td colspan="7" class="text-center text-muted py-6">Nenhuma matrícula encontrada.</td>
                         </tr>
-                        <tr v-for="matricula in matriculas" :key="matricula.id">
+                        <tr v-for="matricula in matriculas.data" :key="matricula.id">
                             <td>{{ matricula.numero_registo_matricula }}</td>
                             <td>{{ matricula.aluno?.dados_pessoa?.nome_completo ?? '—' }}</td>
                             <td>{{ matricula.turma?.codigo }} — {{ matricula.turma?.nome }}</td>
@@ -98,6 +106,9 @@ function formatarData(data) {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <div v-if="matriculas.data.length" class="card-footer d-flex justify-content-end">
+                <Pagination :links="matriculas.links" />
             </div>
         </div>
     </div>

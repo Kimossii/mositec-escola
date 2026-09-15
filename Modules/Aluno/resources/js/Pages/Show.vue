@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -8,6 +8,7 @@ import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import AlunoFormModal from '../Components/AlunoFormModal.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/Shared/EstadoBadge.vue';
 import MatriculaFormModal from '../../../../Matricula/resources/js/Components/MatriculaFormModal.vue';
 import { ESTADO_MATRICULA, estadoMatriculaLabel, transicoesDisponiveis } from '../../../../Matricula/resources/js/Models/Estado';
@@ -56,6 +57,52 @@ function guardar(payload) {
         },
     });
 }
+
+// Por omissão, mostra só o ano lectivo activo (estado 1) — se o aluno tiver
+// matrículas nele; caso contrário mostra todas.
+const anoLectivoAtivoInicial = props.matriculas.find((m) => m.ano_lectivo?.estado === 1)?.ano_lectivo_id ?? '';
+
+const pesquisaMatriculas = ref('');
+const anoLectivoFiltro = ref(anoLectivoAtivoInicial);
+
+const opcoesAnoLectivo = computed(() => {
+    const unicos = new Map();
+    props.matriculas.forEach((m) => {
+        if (m.ano_lectivo && !unicos.has(m.ano_lectivo_id)) {
+            unicos.set(m.ano_lectivo_id, m.ano_lectivo.nome);
+        }
+    });
+
+    return [
+        { value: '', label: 'Todos os anos lectivos' },
+        ...Array.from(unicos, ([value, label]) => ({ value, label })),
+    ];
+});
+
+const normalizarTexto = (texto) => (texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+// A ordem já vem do backend por data_matricula descendente (mais recente
+// primeiro) — filtrar aqui não altera essa ordem.
+const matriculasFiltradas = computed(() => props.matriculas.filter((matricula) => {
+    if (anoLectivoFiltro.value && matricula.ano_lectivo_id !== anoLectivoFiltro.value) {
+        return false;
+    }
+
+    if (!pesquisaMatriculas.value.trim()) {
+        return true;
+    }
+
+    const alvo = normalizarTexto(pesquisaMatriculas.value);
+    const texto = normalizarTexto([
+        matricula.numero_registo_matricula,
+        matricula.turma?.codigo,
+        matricula.turma?.nome,
+        matricula.ano_lectivo?.nome,
+        estadoMatriculaLabel(matricula.estado),
+    ].filter(Boolean).join(' '));
+
+    return texto.includes(alvo);
+}));
 
 const matriculaModalAberto = ref(false);
 const matriculaProcessing = ref(false);
@@ -251,6 +298,17 @@ function confirmarRenovacao() {
                     </button>
                 </div>
             </div>
+            <div v-if="matriculas.length" class="card-body pt-0 pb-4 d-flex flex-wrap gap-4">
+                <input
+                    v-model="pesquisaMatriculas"
+                    type="text"
+                    class="form-control form-control-solid w-md-250px"
+                    placeholder="Pesquisar por nº, turma, ano lectivo, estado..."
+                />
+                <div style="min-width: 220px;">
+                    <SelectSolid v-model="anoLectivoFiltro" :options="opcoesAnoLectivo" />
+                </div>
+            </div>
             <div class="card-body p-0">
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
                     <thead>
@@ -267,7 +325,10 @@ function confirmarRenovacao() {
                         <tr v-if="!matriculas.length">
                             <td colspan="6" class="text-center text-muted py-6">Nenhuma matrícula registada.</td>
                         </tr>
-                        <tr v-for="matricula in matriculas" :key="matricula.id">
+                        <tr v-else-if="!matriculasFiltradas.length">
+                            <td colspan="6" class="text-center text-muted py-6">Nenhuma matrícula encontrada para os filtros aplicados.</td>
+                        </tr>
+                        <tr v-for="matricula in matriculasFiltradas" :key="matricula.id">
                             <td>{{ matricula.numero_registo_matricula }}</td>
                             <td>{{ matricula.turma?.codigo }} — {{ matricula.turma?.nome }}</td>
                             <td>{{ matricula.ano_lectivo?.nome ?? '—' }}</td>

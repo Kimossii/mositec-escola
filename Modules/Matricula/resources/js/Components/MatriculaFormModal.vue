@@ -12,10 +12,21 @@ const props = defineProps({
 });
 const emit = defineEmits(['submit', 'cancelar']);
 
-const opcoesTurma = computed(() => props.turmasDisponiveis.map((turma) => ({
-    value: turma.id,
-    label: `${turma.codigo} — ${turma.nome} · ${turma.ano_lectivo?.nome ?? '—'} · ${turma.curso?.nome ?? turma.nivel_academico?.nome ?? '—'}`,
-})));
+// O Nível Académico está sempre presente; o Curso só aparece quando a turma
+// tem um (Ensino Secundário/Superior — turmas de Creche/Pré-Escolar/Primário
+// nunca têm). Mostramos os dois quando existirem, para a pesquisa encontrar
+// tanto pelo Curso como pelo Nível.
+const opcoesTurma = computed(() => props.turmasDisponiveis.map((turma) => {
+    const partes = [
+        `${turma.codigo} — ${turma.nome}`,
+        turma.ano_lectivo?.nome,
+        turma.turno?.nome,
+        turma.curso?.nome,
+        turma.nivel_academico?.nome,
+    ].filter(Boolean);
+
+    return { value: turma.id, label: partes.join(' · ') };
+}));
 
 const form = reactive({
     turma_id: '',
@@ -64,7 +75,7 @@ function submeter() {
                 <form @submit.prevent="submeter">
                     <div class="fv-row mb-7">
                         <label class="required fw-semibold fs-6 mb-2">Turma</label>
-                        <SelectSolid v-model="form.turma_id" :options="opcoesTurma" placeholder="Selecione a turma" />
+                        <SelectSolid v-model="form.turma_id" :options="opcoesTurma" searchable placeholder="Selecione a turma" />
                         <div class="text-danger fs-7 mt-1" v-if="errors.turma_id">{{ errors.turma_id }}</div>
                     </div>
 

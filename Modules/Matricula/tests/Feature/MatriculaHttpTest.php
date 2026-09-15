@@ -267,13 +267,13 @@ class MatriculaHttpTest extends TestCase
 
         $this->get(route('matriculas.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Matricula/Index')
-            ->has('matriculas', 2)
+            ->has('matriculas.data', 2)
         );
 
         $this->get(route('matriculas.index', ['turma_id' => $turmaA->id]))->assertInertia(fn (Assert $page) => $page
             ->component('Matricula/Index')
-            ->has('matriculas', 1)
-            ->where('matriculas.0.turma_id', $turmaA->id)
+            ->has('matriculas.data', 1)
+            ->where('matriculas.data.0.turma_id', $turmaA->id)
         );
     }
 
@@ -282,6 +282,47 @@ class MatriculaHttpTest extends TestCase
         $this->actingAsProfessor();
 
         $this->get(route('matriculas.index'))->assertForbidden();
+    }
+
+    public function test_listagem_global_pagina_os_resultados(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+
+        for ($i = 1; $i <= 25; $i++) {
+            $pessoa = DadosPessoal::create([
+                'nome_completo' => "Aluno {$i}",
+                'numero_identificacao' => "BI-PAG-{$i}",
+                'tipo_pessoa' => DadosPessoal::TIPO_ALUNO,
+            ]);
+            $aluno = Aluno::create([
+                'estabelecimento_id' => $estabelecimento->id,
+                'dados_pessoa_id' => $pessoa->id,
+                'numero_matricula' => "2026-PAG-{$i}",
+            ]);
+            Matricula::create([
+                'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
+                'numero_registo_matricula' => "2026-" . str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                'data_matricula' => '2026-02-01',
+                'estado' => EstadoMatriculaEnum::PENDENTE->value,
+            ]);
+        }
+
+        $this->get(route('matriculas.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('Matricula/Index')
+            ->has('matriculas.data', 20)
+            ->where('matriculas.current_page', 1)
+            ->where('matriculas.last_page', 2)
+            ->where('matriculas.total', 25)
+        );
+
+        $this->get(route('matriculas.index', ['page' => 2]))->assertInertia(fn (Assert $page) => $page
+            ->has('matriculas.data', 5)
+            ->where('matriculas.current_page', 2)
+        );
     }
 
     public function test_alterar_estado_via_http_preenche_data_fim(): void

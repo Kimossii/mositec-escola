@@ -2,6 +2,7 @@
 
 namespace Modules\Matricula\Services;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Aluno\Models\Aluno;
 use Modules\Core\Enums\Estado;
@@ -16,12 +17,13 @@ class MatriculaConsultaService
         return Matricula::with(['turma.curso', 'turma.nivelAcademico', 'anoLectivo'])
             ->where('aluno_id', $aluno->id)
             ->orderByDesc('data_matricula')
+            ->orderByDesc('id')
             ->get();
     }
 
     public function turmasDisponiveis(): Collection
     {
-        return Turma::with(['anoLectivo', 'curso', 'nivelAcademico'])
+        return Turma::with(['anoLectivo', 'curso', 'nivelAcademico', 'turno'])
             ->where('estado', Estado::ATIVO->value)
             ->whereHas('anoLectivo', fn ($query) => $query->where('estabelecimento_id', Estabelecimento::current()?->id))
             ->orderByDesc('ano_lectivo_id')
@@ -29,7 +31,7 @@ class MatriculaConsultaService
             ->get();
     }
 
-    public function listarTodas(array $filtros = []): Collection
+    public function listarTodas(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
     {
         $estabelecimentoId = Estabelecimento::current()?->id;
 
@@ -40,6 +42,8 @@ class MatriculaConsultaService
             ->when($filtros['ano_lectivo_id'] ?? null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))
             ->when($filtros['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
             ->orderByDesc('data_matricula')
-            ->get();
+            ->orderByDesc('id')
+            ->paginate($porPagina)
+            ->withQueryString();
     }
 }
