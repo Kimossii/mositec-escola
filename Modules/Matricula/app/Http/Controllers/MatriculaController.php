@@ -10,6 +10,7 @@ use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Http\Requests\AlterarEstadoMatriculaRequest;
 use Modules\Matricula\Http\Requests\AtualizarMatriculaRequest;
 use Modules\Matricula\Http\Requests\CriarMatriculaRequest;
+use Modules\Matricula\Http\Requests\RenovarMatriculaRequest;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\GestaoMatriculaService;
 use Modules\Matricula\Services\MatriculaConsultaService;
@@ -58,8 +59,18 @@ class MatriculaController extends Controller
         $this->service->alterarEstado(
             $matricula,
             EstadoMatriculaEnum::from((int) $request->validated('estado')),
+            $request->validated('data_fim'),
         );
 
         return redirect()->back()->with('success', 'Estado da matrícula actualizado com sucesso.');
+    }
+
+    public function renovar(RenovarMatriculaRequest $request, Aluno $aluno, Matricula $matricula)
+    {
+        $this->authorize('matricula.criar');
+
+        $this->service->renovar($matricula, $request->validated('turma_id'));
+
+        return redirect()->back()->with('success', 'Matrícula renovada com sucesso.');
     }
 }

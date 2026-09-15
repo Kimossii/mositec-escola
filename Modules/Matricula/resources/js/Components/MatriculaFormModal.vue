@@ -8,6 +8,7 @@ const props = defineProps({
     turmasDisponiveis: { type: Array, required: true },
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
+    renovacao: { type: Boolean, default: false },
 });
 const emit = defineEmits(['submit', 'cancelar']);
 
@@ -56,7 +57,10 @@ function submeter() {
     <div v-if="show" class="modal d-block" style="background: rgba(0,0,0,0.5);" @click.self="emit('cancelar')">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content p-6">
-                <h3 class="mb-5">{{ matricula ? 'Editar Matrícula' : 'Nova Matrícula' }}</h3>
+                <h3 class="mb-5">{{ renovacao ? 'Renovar Matrícula' : (matricula ? 'Editar Matrícula' : 'Nova Matrícula') }}</h3>
+                <p v-if="renovacao" class="text-muted fs-7 mb-5">
+                    Não foi possível sugerir automaticamente a turma seguinte. Escolha-a manualmente.
+                </p>
                 <form @submit.prevent="submeter">
                     <div class="fv-row mb-7">
                         <label class="required fw-semibold fs-6 mb-2">Turma</label>
@@ -75,23 +79,27 @@ function submeter() {
                         </div>
                     </div>
 
-                    <div class="fv-row mb-7">
-                        <label class="required fw-semibold fs-6 mb-2">Data da Matrícula</label>
-                        <input v-model="form.data_matricula" type="date" class="form-control form-control-solid" />
-                        <div class="text-danger fs-7 mt-1" v-if="errors.data_matricula">{{ errors.data_matricula }}</div>
-                    </div>
+                    <template v-if="!renovacao">
+                        <div class="fv-row mb-7">
+                            <label class="required fw-semibold fs-6 mb-2">Data da Matrícula</label>
+                            <input v-model="form.data_matricula" type="date" class="form-control form-control-solid" />
+                            <div class="text-danger fs-7 mt-1" v-if="errors.data_matricula">{{ errors.data_matricula }}</div>
+                        </div>
 
-                    <div class="fv-row mb-7">
-                        <label class="fw-semibold fs-6 mb-2">Observações</label>
-                        <textarea v-model="form.observacoes" class="form-control form-control-solid" rows="3"></textarea>
-                        <div class="text-danger fs-7 mt-1" v-if="errors.observacoes">{{ errors.observacoes }}</div>
-                    </div>
+                        <div class="fv-row mb-7">
+                            <label class="fw-semibold fs-6 mb-2">Observações</label>
+                            <textarea v-model="form.observacoes" class="form-control form-control-solid" rows="3"></textarea>
+                            <div class="text-danger fs-7 mt-1" v-if="errors.observacoes">{{ errors.observacoes }}</div>
+                        </div>
+                    </template>
 
                     <div class="text-end">
                         <button type="button" class="btn btn-light-danger me-2" :disabled="processing" @click="emit('cancelar')">
                             Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary" :disabled="processing">{{ matricula ? 'Guardar' : 'Matricular' }}</button>
+                        <button type="submit" class="btn btn-primary" :disabled="processing">
+                            {{ renovacao ? 'Renovar' : (matricula ? 'Guardar' : 'Matricular') }}
+                        </button>
                     </div>
                 </form>
             </div>

@@ -12,6 +12,7 @@ class AlterarEstadoMatriculaAction
         Matricula $matricula,
         EstadoMatriculaEnum $novoEstado,
         ?int $utilizadorId = null,
+        ?string $dataFim = null,
     ): Matricula {
         $estadoActual = $matricula->estado;
 
@@ -23,6 +24,11 @@ class AlterarEstadoMatriculaAction
 
         $matricula->estado = $novoEstado;
         $matricula->editado_por = $utilizadorId;
+
+        if ($novoEstado->eTerminal()) {
+            $matricula->data_fim = $dataFim ?? now()->toDateString();
+        }
+
         $matricula->save();
 
         return $matricula->fresh();

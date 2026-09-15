@@ -14,6 +14,7 @@ use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
 use Modules\Matricula\Actions\AtualizarMatriculaAction;
 use Modules\Matricula\Actions\CriarMatriculaAction;
+use Modules\Matricula\Actions\RenovarMatriculaAction;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
@@ -26,13 +27,19 @@ class MatriculaActionTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function criarEstabelecimento(): Estabelecimento
+    private function criarEstabelecimento(?\Modules\Estabelecimento\Enums\TipoEnsinoEnum $tipoEnsino = null): Estabelecimento
     {
-        return Estabelecimento::create([
+        $estabelecimento = Estabelecimento::create([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
             'is_active' => true,
         ]);
+
+        if ($tipoEnsino !== null) {
+            $estabelecimento->update(['tipo_ensino' => $tipoEnsino->value]);
+        }
+
+        return $estabelecimento;
     }
 
     private function criarAnoLectivo(Estabelecimento $estabelecimento, string $nome = '2026'): AnoLectivo
@@ -157,9 +164,10 @@ class MatriculaActionTest extends TestCase
         $this->assertNull($turma->curso_id);
     }
 
-    public function test_rejeita_aluno_com_enquadramento_academico_diferente_do_curso_da_turma(): void
+    public function test_permite_aluno_com_enquadramento_noutro_curso_matricular_se_em_segundo_curso(): void
     {
-        $estabelecimento = $this->criarEstabelecimento();
+        // Ensino Superior: dupla licenciatura — cursos em paralelo são legítimos.
+        $estabelecimento = $this->criarEstabelecimento(\Modules\Estabelecimento\Enums\TipoEnsinoEnum::UNIVERSITARIO);
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
         $curso = $this->criarCurso($estabelecimento);
         $outroCurso = $this->criarCurso($estabelecimento, 'GES');
@@ -167,6 +175,33 @@ class MatriculaActionTest extends TestCase
         $turma = $this->criarTurma($anoLectivo, $nivel, $curso);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, cursoId: $outroCurso->id);
+
+        $matricula = app(CriarMatriculaAction::class)->executar(
+            $aluno,
+            $this->dto($turma->id, $anoLectivo->id),
+        );
+
+        $this->assertNotNull($matricula->id);
+        $this->assertDatabaseHas('aluno_enquadramentos_academicos', [
+            'aluno_id' => $aluno->id,
+            'curso_id' => $curso->id,
+        ]);
+        $this->assertDatabaseHas('aluno_enquadramentos_academicos', [
+            'aluno_id' => $aluno->id,
+            'curso_id' => $outroCurso->id,
+        ]);
+    }
+
+    public function test_rejeita_aluno_com_enquadramento_noutro_nivel_sem_curso(): void
+    {
+        // Ensino Geral/Técnico: exclusivo — só um Nível/classe de cada vez.
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento, '5C');
+        $outroNivel = $this->criarNivelAcademico($estabelecimento, '6C');
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, nivelAcademicoId: $outroNivel->id);
 
         $this->expectException(\Illuminate\Validation\ValidationException::class);
 
@@ -184,7 +219,7 @@ class MatriculaActionTest extends TestCase
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $turma = $this->criarTurma($anoLectivo, $nivel, $curso);
         $aluno = $this->criarAluno($estabelecimento);
-        // Sem enquadramento prévio — a matrícula deve assumir o Curso da turma.
+        // Sem enquadramento prévio — a matrícula deve assumir o Curso e o Nível da turma.
 
         $matricula = app(CriarMatriculaAction::class)->executar(
             $aluno,
@@ -195,7 +230,7 @@ class MatriculaActionTest extends TestCase
         $this->assertDatabaseHas('aluno_enquadramentos_academicos', [
             'aluno_id' => $aluno->id,
             'curso_id' => $curso->id,
-            'nivel_academico_id' => null,
+            'nivel_academico_id' => $nivel->id,
             'estado' => \Modules\Aluno\Enums\EstadoEnquadramentoAcademicoEnum::ACTIVO->value,
         ]);
     }
@@ -310,6 +345,47 @@ class MatriculaActionTest extends TestCase
         app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaB->id, $anoLectivo->id));
     }
 
+    public function test_rejeita_matricula_duplicada_no_ensino_superior_mesmo_curso_e_mesmo_ano(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $curso = $this->criarCurso($estabelecimento);
+        $nivel2Ano = $this->criarNivelAcademico($estabelecimento, '2ANO');
+        $turmaA = $this->criarTurma($anoLectivo, $nivel2Ano, $curso);
+        $turmaB = $this->criarTurma($anoLectivo, $nivel2Ano, $curso);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, cursoId: $curso->id);
+
+        app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaA->id, $anoLectivo->id));
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaB->id, $anoLectivo->id));
+    }
+
+    public function test_permite_segunda_matricula_no_ensino_superior_mesmo_curso_ano_diferente(): void
+    {
+        // Aluno do 2º ano com uma cadeira em atraso do 1º ano — mesmo curso,
+        // turmas de anos diferentes. A Matrícula não gere disciplinas, só o
+        // vínculo à Turma, por isso ambas devem ser permitidas.
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $curso = $this->criarCurso($estabelecimento);
+        $nivel1Ano = $this->criarNivelAcademico($estabelecimento, '1ANO');
+        $nivel2Ano = $this->criarNivelAcademico($estabelecimento, '2ANO');
+        $turma1Ano = $this->criarTurma($anoLectivo, $nivel1Ano, $curso);
+        $turma2Ano = $this->criarTurma($anoLectivo, $nivel2Ano, $curso);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, cursoId: $curso->id);
+
+        $matricula2Ano = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma2Ano->id, $anoLectivo->id));
+        $matricula1Ano = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma1Ano->id, $anoLectivo->id));
+
+        $this->assertNotNull($matricula2Ano->id);
+        $this->assertNotNull($matricula1Ano->id);
+        $this->assertNotSame($matricula2Ano->id, $matricula1Ano->id);
+    }
+
     // ---------- Regras académicas ----------
 
     public function test_aluno_com_curso_a_em_turma_curso_a_e_permitido(): void
@@ -327,9 +403,26 @@ class MatriculaActionTest extends TestCase
         $this->assertNotNull($matricula->id);
     }
 
-    public function test_aluno_com_curso_a_em_turma_curso_b_e_rejeitado(): void
+    public function test_aluno_com_curso_a_em_turma_curso_b_e_permitido_como_segunda_licenciatura(): void
     {
-        $estabelecimento = $this->criarEstabelecimento();
+        $estabelecimento = $this->criarEstabelecimento(\Modules\Estabelecimento\Enums\TipoEnsinoEnum::UNIVERSITARIO);
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $cursoA = $this->criarCurso($estabelecimento, 'A');
+        $cursoB = $this->criarCurso($estabelecimento, 'B');
+        $turma = $this->criarTurma($anoLectivo, $nivel, $cursoB);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, cursoId: $cursoA->id);
+
+        $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
+
+        $this->assertNotNull($matricula->id);
+    }
+
+    public function test_aluno_com_curso_a_em_turma_curso_b_e_rejeitado_no_ensino_tecnico(): void
+    {
+        // Fora do Universitário (ex.: Técnico), um Curso continua exclusivo.
+        $estabelecimento = $this->criarEstabelecimento(\Modules\Estabelecimento\Enums\TipoEnsinoEnum::TECNICO);
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $cursoA = $this->criarCurso($estabelecimento, 'A');
@@ -479,15 +572,15 @@ class MatriculaActionTest extends TestCase
 
     public function test_rejeita_turma_incompativel_com_o_enquadramento_na_actualizacao(): void
     {
+        // Ensino Geral/Técnico (sem curso): o Nível continua exclusivo.
         $estabelecimento = $this->criarEstabelecimento();
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
-        $nivel = $this->criarNivelAcademico($estabelecimento);
-        $cursoA = $this->criarCurso($estabelecimento, 'A');
-        $cursoB = $this->criarCurso($estabelecimento, 'B');
-        $turmaOriginal = $this->criarTurma($anoLectivo, $nivel, $cursoA);
-        $turmaIncompativel = $this->criarTurma($anoLectivo, $nivel, $cursoB);
+        $nivel = $this->criarNivelAcademico($estabelecimento, '5C');
+        $outroNivel = $this->criarNivelAcademico($estabelecimento, '6C');
+        $turmaOriginal = $this->criarTurma($anoLectivo, $nivel);
+        $turmaIncompativel = $this->criarTurma($anoLectivo, $outroNivel);
         $aluno = $this->criarAluno($estabelecimento);
-        $this->enquadrar($aluno, cursoId: $cursoA->id);
+        $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
 
         $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaOriginal->id, $anoLectivo->id));
 
@@ -497,5 +590,185 @@ class MatriculaActionTest extends TestCase
             $matricula,
             $this->dto($turmaIncompativel->id, $anoLectivo->id, dataMatricula: '2026-02-01'),
         );
+    }
+
+    public function test_permite_actualizar_matricula_para_turma_de_outro_curso_no_ensino_superior(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento(\Modules\Estabelecimento\Enums\TipoEnsinoEnum::UNIVERSITARIO);
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $cursoA = $this->criarCurso($estabelecimento, 'A');
+        $cursoB = $this->criarCurso($estabelecimento, 'B');
+        $turmaOriginal = $this->criarTurma($anoLectivo, $nivel, $cursoA);
+        $turmaOutroCurso = $this->criarTurma($anoLectivo, $nivel, $cursoB);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, cursoId: $cursoA->id);
+
+        $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaOriginal->id, $anoLectivo->id));
+
+        $actualizada = app(AtualizarMatriculaAction::class)->executar(
+            $matricula,
+            $this->dto($turmaOutroCurso->id, $anoLectivo->id, dataMatricula: '2026-02-01'),
+        );
+
+        $this->assertSame($turmaOutroCurso->id, $actualizada->turma_id);
+    }
+
+    // ---------- data_fim ----------
+
+    public function test_preenche_data_fim_ao_cancelar_matricula_activa(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+        $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
+
+        $actualizada = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CANCELADA);
+
+        $this->assertNotNull($actualizada->data_fim);
+        $this->assertSame(now()->toDateString(), $actualizada->data_fim->toDateString());
+    }
+
+    public function test_permite_indicar_data_fim_explicita_ao_alterar_estado(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+        $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
+
+        $actualizada = app(AlterarEstadoMatriculaAction::class)->executar(
+            $matricula,
+            EstadoMatriculaEnum::CANCELADA,
+            dataFim: '2026-03-15',
+        );
+
+        $this->assertSame('2026-03-15', $actualizada->data_fim->toDateString());
+    }
+
+    public function test_nao_preenche_data_fim_ao_activar_matricula_pendente(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+
+        $actualizada = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
+
+        $this->assertNull($actualizada->data_fim);
+    }
+
+    // ---------- Renovação ----------
+
+    public function test_renova_matricula_concluida_sugerindo_turma_seguinte_automaticamente(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivoAtual = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id,
+            'nome' => '2026',
+            'data_inicio' => '2026-01-01',
+            'data_fim' => '2026-12-31',
+            'estado' => EstadoAnoLectivo::ATIVO,
+        ]);
+        $anoLectivoSeguinte = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id,
+            'nome' => '2027',
+            'data_inicio' => '2027-01-01',
+            'data_fim' => '2027-12-31',
+            'estado' => EstadoAnoLectivo::ATIVO,
+        ]);
+        $nivel5 = NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id, 'codigo' => '5C', 'nome' => '5ª Classe',
+            'ordem' => 5, 'etapa_ensino' => 3,
+        ]);
+        $nivel6 = NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id, 'codigo' => '6C', 'nome' => '6ª Classe',
+            'ordem' => 6, 'etapa_ensino' => 3,
+        ]);
+        $turmaAtual = $this->criarTurma($anoLectivoAtual, $nivel5);
+        $turmaSeguinte = $this->criarTurma($anoLectivoSeguinte, $nivel6);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, nivelAcademicoId: $nivel5->id);
+
+        $matriculaAtual = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaAtual->id, $anoLectivoAtual->id));
+        app(AlterarEstadoMatriculaAction::class)->executar($matriculaAtual, EstadoMatriculaEnum::ACTIVA);
+        $matriculaAtual = app(AlterarEstadoMatriculaAction::class)->executar($matriculaAtual, EstadoMatriculaEnum::CONCLUIDA);
+
+        $novaMatricula = app(RenovarMatriculaAction::class)->executar($matriculaAtual);
+
+        $this->assertSame($turmaSeguinte->id, $novaMatricula->turma_id);
+        $this->assertSame($anoLectivoSeguinte->id, $novaMatricula->ano_lectivo_id);
+        $this->assertSame(EstadoMatriculaEnum::PENDENTE, $novaMatricula->estado);
+    }
+
+    public function test_renovar_matricula_activa_conclui_automaticamente_antes_de_renovar(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivoAtual = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id, 'nome' => '2026',
+            'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO,
+        ]);
+        $anoLectivoSeguinte = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id, 'nome' => '2027',
+            'data_inicio' => '2027-01-01', 'data_fim' => '2027-12-31', 'estado' => EstadoAnoLectivo::ATIVO,
+        ]);
+        $nivel5 = NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id, 'codigo' => '5C', 'nome' => '5ª Classe',
+            'ordem' => 5, 'etapa_ensino' => 3,
+        ]);
+        $nivel6 = NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id, 'codigo' => '6C', 'nome' => '6ª Classe',
+            'ordem' => 6, 'etapa_ensino' => 3,
+        ]);
+        $turmaAtual = $this->criarTurma($anoLectivoAtual, $nivel5);
+        $this->criarTurma($anoLectivoSeguinte, $nivel6);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, nivelAcademicoId: $nivel5->id);
+
+        $matriculaAtual = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaAtual->id, $anoLectivoAtual->id));
+        $matriculaAtual = app(AlterarEstadoMatriculaAction::class)->executar($matriculaAtual, EstadoMatriculaEnum::ACTIVA);
+
+        app(RenovarMatriculaAction::class)->executar($matriculaAtual);
+
+        $this->assertSame(EstadoMatriculaEnum::CONCLUIDA, $matriculaAtual->fresh()->estado);
+    }
+
+    public function test_renovar_com_turma_id_explicito_ignora_sugestao_automatica(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turmaAtual = $this->criarTurma($anoLectivo, $nivel);
+        $turmaEscolhida = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+
+        $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaAtual->id, $anoLectivo->id));
+        $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
+        $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CONCLUIDA);
+
+        $novaMatricula = app(RenovarMatriculaAction::class)->executar($matricula, turmaId: $turmaEscolhida->id);
+
+        $this->assertSame($turmaEscolhida->id, $novaMatricula->turma_id);
+    }
+
+    public function test_renovar_sem_turma_seguinte_disponivel_pede_indicacao_manual(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turmaAtual = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+
+        $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaAtual->id, $anoLectivo->id));
+        $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
+        $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CONCLUIDA);
+        // Sem ano lectivo seguinte nem nível seguinte criados.
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        app(RenovarMatriculaAction::class)->executar($matricula);
+    }
+
+    public function test_rejeita_renovar_matricula_pendente(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        app(RenovarMatriculaAction::class)->executar($matricula);
     }
 }

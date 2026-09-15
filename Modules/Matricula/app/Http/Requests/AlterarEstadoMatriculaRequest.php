@@ -17,6 +17,7 @@ class AlterarEstadoMatriculaRequest extends BaseRequest
     {
         return [
             'estado' => ['required', new Enum(EstadoMatriculaEnum::class)],
+            'data_fim' => ['nullable', 'date'],
         ];
     }
 
@@ -24,6 +25,7 @@ class AlterarEstadoMatriculaRequest extends BaseRequest
     {
         return [
             'estado.required' => 'O novo estado é obrigatório.',
+            'data_fim.date' => 'A data de fim é inválida.',
         ];
     }
 }

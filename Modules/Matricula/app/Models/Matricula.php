@@ -24,6 +24,7 @@ class Matricula extends Model
         'ano_lectivo_id',
         'numero_registo_matricula',
         'data_matricula',
+        'data_fim',
         'estado',
         'observacoes',
         'criado_por',
@@ -32,6 +33,7 @@ class Matricula extends Model
 
     protected $casts = [
         'data_matricula' => 'date',
+        'data_fim' => 'date',
         'estado' => EstadoMatriculaEnum::class,
     ];
 

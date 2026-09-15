@@ -283,4 +283,65 @@ class MatriculaHttpTest extends TestCase
 
         $this->get(route('matriculas.index'))->assertForbidden();
     }
+
+    public function test_alterar_estado_via_http_preenche_data_fim(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001', 'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::ACTIVA->value,
+        ]);
+
+        $this->patch(route('matriculas.alterar-estado', [$aluno, $matricula]), [
+            'estado' => EstadoMatriculaEnum::CANCELADA->value,
+            'data_fim' => '2026-05-10',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame('2026-05-10', $matricula->fresh()->data_fim->toDateString());
+    }
+
+    public function test_renova_matricula_via_http(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivoAtual = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id, 'nome' => '2026',
+            'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO,
+        ]);
+        $anoLectivoSeguinte = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id, 'nome' => '2027',
+            'data_inicio' => '2027-01-01', 'data_fim' => '2027-12-31', 'estado' => EstadoAnoLectivo::ATIVO,
+        ]);
+        $nivel5 = $this->criarNivelAcademico($estabelecimento);
+        $nivel6 = NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id, 'codigo' => '6C', 'nome' => '6ª Classe',
+            'ordem' => $nivel5->ordem + 1, 'etapa_ensino' => 1,
+        ]);
+        $turmaAtual = $this->criarTurma($anoLectivoAtual, $nivel5);
+        $this->criarTurma($anoLectivoSeguinte, $nivel6);
+        $aluno = $this->criarAluno($estabelecimento);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel5->id);
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id, 'turma_id' => $turmaAtual->id, 'ano_lectivo_id' => $anoLectivoAtual->id,
+            'numero_registo_matricula' => '2025-9999', 'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::CONCLUIDA->value,
+        ]);
+
+        $this->post(route('matriculas.renovar', [$aluno, $matricula]))
+            ->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertDatabaseHas('matriculas', [
+            'aluno_id' => $aluno->id,
+            'ano_lectivo_id' => $anoLectivoSeguinte->id,
+        ]);
+    }
 }

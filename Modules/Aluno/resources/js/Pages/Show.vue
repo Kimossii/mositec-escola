@@ -7,9 +7,10 @@ import { can } from '@/Composables/usePermissoes';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import AlunoFormModal from '../Components/AlunoFormModal.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/Shared/EstadoBadge.vue';
 import MatriculaFormModal from '../../../../Matricula/resources/js/Components/MatriculaFormModal.vue';
-import { estadoMatriculaLabel, transicoesDisponiveis } from '../../../../Matricula/resources/js/Models/Estado';
+import { ESTADO_MATRICULA, estadoMatriculaLabel, transicoesDisponiveis } from '../../../../Matricula/resources/js/Models/Estado';
 
 const props = defineProps({
     aluno: { type: Object, required: true },
@@ -60,15 +61,27 @@ const matriculaModalAberto = ref(false);
 const matriculaProcessing = ref(false);
 const matriculaErrors = ref({});
 const matriculaEmEdicao = ref(null);
+const matriculaModoRenovacao = ref(false);
+const matriculaParaRenovarManualmente = ref(null);
 
 function abrirNovaMatricula() {
     matriculaEmEdicao.value = null;
+    matriculaModoRenovacao.value = false;
     matriculaErrors.value = {};
     matriculaModalAberto.value = true;
 }
 
 function abrirEdicaoMatricula(matricula) {
     matriculaEmEdicao.value = matricula;
+    matriculaModoRenovacao.value = false;
+    matriculaErrors.value = {};
+    matriculaModalAberto.value = true;
+}
+
+function abrirRenovacaoManual(matricula) {
+    matriculaEmEdicao.value = null;
+    matriculaModoRenovacao.value = true;
+    matriculaParaRenovarManualmente.value = matricula;
     matriculaErrors.value = {};
     matriculaModalAberto.value = true;
 }
@@ -76,11 +89,34 @@ function abrirEdicaoMatricula(matricula) {
 function fecharMatriculaModal() {
     matriculaModalAberto.value = false;
     matriculaEmEdicao.value = null;
+    matriculaModoRenovacao.value = false;
+    matriculaParaRenovarManualmente.value = null;
 }
 
 function guardarMatricula(payload) {
     matriculaProcessing.value = true;
     matriculaErrors.value = {};
+
+    if (matriculaModoRenovacao.value) {
+        const matricula = matriculaParaRenovarManualmente.value;
+        router.post(`/alunos/${props.aluno.id}/matriculas/${matricula.id}/renovar`, {
+            turma_id: payload.turma_id,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Matrícula renovada com sucesso.');
+                fecharMatriculaModal();
+            },
+            onError: (erros) => {
+                matriculaErrors.value = erros;
+                toast.error(Object.values(erros)[0]);
+            },
+            onFinish: () => {
+                matriculaProcessing.value = false;
+            },
+        });
+        return;
+    }
 
     const emEdicao = matriculaEmEdicao.value;
     const url = emEdicao
@@ -104,18 +140,64 @@ function guardarMatricula(payload) {
     });
 }
 
-const alterandoEstado = ref(null);
+const matriculaParaAlterarEstado = ref(null);
+const estadoAlvo = ref(null);
+const confirmandoEstado = ref(false);
 
-function alterarEstadoMatricula(matricula, novoEstado) {
-    alterandoEstado.value = matricula.id;
+function pedirAlteracaoEstado(matricula, novoEstado) {
+    matriculaParaAlterarEstado.value = matricula;
+    estadoAlvo.value = novoEstado;
+}
+
+function cancelarAlteracaoEstado() {
+    matriculaParaAlterarEstado.value = null;
+    estadoAlvo.value = null;
+}
+
+function confirmarAlteracaoEstado() {
+    confirmandoEstado.value = true;
+    const matricula = matriculaParaAlterarEstado.value;
     router.patch(`/alunos/${props.aluno.id}/matriculas/${matricula.id}/estado`, {
-        estado: novoEstado,
+        estado: estadoAlvo.value,
     }, {
         preserveScroll: true,
         onSuccess: () => toast.success('Estado da matrícula atualizado com sucesso.'),
         onError: (erros) => toast.error(Object.values(erros)[0]),
         onFinish: () => {
-            alterandoEstado.value = null;
+            confirmandoEstado.value = false;
+            matriculaParaAlterarEstado.value = null;
+            estadoAlvo.value = null;
+        },
+    });
+}
+
+const matriculaParaRenovar = ref(null);
+const confirmandoRenovacao = ref(false);
+
+function pedirRenovacao(matricula) {
+    matriculaParaRenovar.value = matricula;
+}
+
+function cancelarRenovacao() {
+    matriculaParaRenovar.value = null;
+}
+
+function confirmarRenovacao() {
+    confirmandoRenovacao.value = true;
+    const matricula = matriculaParaRenovar.value;
+    router.post(`/alunos/${props.aluno.id}/matriculas/${matricula.id}/renovar`, {}, {
+        preserveScroll: true,
+        onSuccess: () => toast.success('Matrícula renovada com sucesso.'),
+        onError: (erros) => {
+            if (erros.turma_id) {
+                abrirRenovacaoManual(matricula);
+                return;
+            }
+            toast.error(Object.values(erros)[0]);
+        },
+        onFinish: () => {
+            confirmandoRenovacao.value = false;
+            matriculaParaRenovar.value = null;
         },
     });
 }
@@ -216,10 +298,21 @@ function alterarEstadoMatricula(matricula, novoEstado) {
                                         <a
                                             href="#"
                                             class="menu-link px-3"
-                                            :class="{ 'pe-none opacity-50': alterandoEstado === matricula.id }"
-                                            @click.prevent="alterarEstadoMatricula(matricula, proximoEstado)"
+                                            @click.prevent="pedirAlteracaoEstado(matricula, proximoEstado)"
                                         >
                                             Marcar como {{ estadoMatriculaLabel(proximoEstado) }}
+                                        </a>
+                                    </div>
+                                    <div
+                                        v-if="matricula.estado === ESTADO_MATRICULA.CONCLUIDA"
+                                        class="menu-item px-3"
+                                    >
+                                        <a
+                                            href="#"
+                                            class="menu-link px-3"
+                                            @click.prevent="pedirRenovacao(matricula)"
+                                        >
+                                            Renovar Matrícula
                                         </a>
                                     </div>
                                 </div>
@@ -242,11 +335,32 @@ function alterarEstadoMatricula(matricula, novoEstado) {
         <MatriculaFormModal
             :show="matriculaModalAberto"
             :matricula="matriculaEmEdicao"
+            :renovacao="matriculaModoRenovacao"
             :turmas-disponiveis="turmasDisponiveis"
             :processing="matriculaProcessing"
             :errors="matriculaErrors"
             @submit="guardarMatricula"
             @cancelar="fecharMatriculaModal"
+        />
+
+        <ConfirmModal
+            :show="!!matriculaParaAlterarEstado"
+            titulo="Alterar Estado da Matrícula"
+            :mensagem="`Alterar o estado da matrícula ${matriculaParaAlterarEstado?.numero_registo_matricula} para '${estadoMatriculaLabel(estadoAlvo)}'?`"
+            texto-confirmar="Confirmar"
+            :processando="confirmandoEstado"
+            @confirmar="confirmarAlteracaoEstado"
+            @cancelar="cancelarAlteracaoEstado"
+        />
+
+        <ConfirmModal
+            :show="!!matriculaParaRenovar"
+            titulo="Renovar Matrícula"
+            :mensagem="`Renovar a matrícula ${matriculaParaRenovar?.numero_registo_matricula}? O sistema vai tentar sugerir automaticamente a turma seguinte.`"
+            texto-confirmar="Renovar"
+            :processando="confirmandoRenovacao"
+            @confirmar="confirmarRenovacao"
+            @cancelar="cancelarRenovacao"
         />
     </div>
 </template>

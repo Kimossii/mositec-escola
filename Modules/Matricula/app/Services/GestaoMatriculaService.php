@@ -6,6 +6,7 @@ use Modules\Aluno\Models\Aluno;
 use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
 use Modules\Matricula\Actions\AtualizarMatriculaAction;
 use Modules\Matricula\Actions\CriarMatriculaAction;
+use Modules\Matricula\Actions\RenovarMatriculaAction;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Http\Requests\AtualizarMatriculaRequest;
@@ -18,6 +19,7 @@ class GestaoMatriculaService
         private CriarMatriculaAction $criarMatricula,
         private AtualizarMatriculaAction $atualizarMatricula,
         private AlterarEstadoMatriculaAction $alterarEstadoMatricula,
+        private RenovarMatriculaAction $renovarMatricula,
     ) {
     }
 
@@ -41,11 +43,22 @@ class GestaoMatriculaService
 
     public function alterarEstado(
         Matricula $matricula,
-        EstadoMatriculaEnum $novoEstado
+        EstadoMatriculaEnum $novoEstado,
+        ?string $dataFim = null,
     ): Matricula {
         return $this->alterarEstadoMatricula->executar(
             $matricula,
             $novoEstado,
+            auth()->id(),
+            $dataFim,
+        );
+    }
+
+    public function renovar(Matricula $matricula, ?int $turmaId = null): Matricula
+    {
+        return $this->renovarMatricula->executar(
+            $matricula,
+            $turmaId,
             auth()->id(),
         );
     }

@@ -40,4 +40,12 @@ enum EstadoMatriculaEnum: int
             self::TRANSFERIDA => false,
         };
     }
+
+    public function eTerminal(): bool
+    {
+        return match ($this) {
+            self::CANCELADA, self::CONCLUIDA, self::TRANSFERIDA => true,
+            self::PENDENTE, self::ACTIVA => false,
+        };
+    }
 }

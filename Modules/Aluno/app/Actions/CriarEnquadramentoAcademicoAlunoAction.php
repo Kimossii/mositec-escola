@@ -14,7 +14,7 @@ class CriarEnquadramentoAcademicoAlunoAction
         ?int $nivelAcademicoId = null,
         ?int $utilizadorId = null,
     ): AlunoEnquadramentoAcademico {
-        if (($cursoId === null) === ($nivelAcademicoId === null)) {
+        if ($cursoId === null && $nivelAcademicoId === null) {
             throw new \InvalidArgumentException(
                 'O aluno deve ser enquadrado por um curso ou por um nível académico.'
             );
