@@ -177,4 +177,69 @@ class DocumentoPessoaHttpTest extends TestCase
         $response->assertRedirect();
         $this->assertSame(0, $documento->fresh()->estado);
     }
+
+    public function test_visualizar_devolve_o_ficheiro_inline_para_quem_tem_permissao(): void
+    {
+        Storage::fake('documentos');
+        $this->actingAsAdmin();
+        $pessoa = $this->criarPessoa();
+        $tipo = TipoDocumento::where('slug', 'bi')->firstOrFail();
+        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store('documentos-pessoas/' . $pessoa->id, 'documentos');
+        $documento = DocumentoPessoa::create([
+            'dados_pessoa_id' => $pessoa->id,
+            'tipo_documento_id' => $tipo->id,
+            'nome_original' => 'bi.pdf',
+            'caminho' => $caminho,
+            'mime_type' => 'application/pdf',
+            'tamanho' => 10,
+        ]);
+
+        $response = $this->get("/documentos-pessoa/{$documento->id}/visualizar");
+
+        $response->assertOk();
+        $this->assertStringStartsWith('inline', $response->headers->get('Content-Disposition'));
+        $this->assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
+    }
+
+    public function test_visualizar_e_recusado_sem_permissao(): void
+    {
+        Storage::fake('documentos');
+        $semPermissao = User::create(['name' => 'Sem Permissao', 'email' => 'sem.permissao3@example.com', 'password' => Hash::make('segredo123')]);
+        $pessoa = $this->criarPessoa();
+        $tipo = TipoDocumento::where('slug', 'bi')->firstOrFail();
+        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store('documentos-pessoas/' . $pessoa->id, 'documentos');
+        $documento = DocumentoPessoa::create([
+            'dados_pessoa_id' => $pessoa->id,
+            'tipo_documento_id' => $tipo->id,
+            'nome_original' => 'bi.pdf',
+            'caminho' => $caminho,
+            'mime_type' => 'application/pdf',
+            'tamanho' => 10,
+        ]);
+        $this->actingAs($semPermissao);
+
+        $response = $this->get("/documentos-pessoa/{$documento->id}/visualizar");
+
+        $response->assertForbidden();
+    }
+
+    public function test_lista_tipos_de_documento_disponiveis(): void
+    {
+        $this->actingAsAdmin();
+
+        $response = $this->get('/tipos-documentos');
+
+        $response->assertOk();
+        $response->assertJsonCount(6, 'tipos');
+    }
+
+    public function test_utilizador_sem_permissao_nao_ve_tipos_de_documento(): void
+    {
+        $semPermissao = User::create(['name' => 'Sem Permissao', 'email' => 'sem.permissao2@example.com', 'password' => Hash::make('segredo123')]);
+        $this->actingAs($semPermissao);
+
+        $response = $this->get('/tipos-documentos');
+
+        $response->assertForbidden();
+    }
 }

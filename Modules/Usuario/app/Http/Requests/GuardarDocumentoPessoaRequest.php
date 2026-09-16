@@ -4,6 +4,7 @@ namespace Modules\Usuario\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
+use Modules\Core\Enums\Estado;
 
 class GuardarDocumentoPessoaRequest extends BaseRequest
 {
@@ -15,7 +16,7 @@ class GuardarDocumentoPessoaRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'tipo_documento_id' => ['required', 'integer', Rule::exists('tipos_documentos', 'id')],
+            'tipo_documento_id' => ['required', 'integer', Rule::exists('tipos_documentos', 'id')->where('estado', Estado::ATIVO->value)],
             'numero_documento' => ['nullable', 'string', 'max:100'],
             'data_emissao' => ['nullable', 'date'],
             'data_validade' => ['nullable', 'date', 'after_or_equal:data_emissao'],

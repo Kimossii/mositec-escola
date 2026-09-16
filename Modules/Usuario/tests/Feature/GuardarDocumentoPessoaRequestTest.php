@@ -63,4 +63,19 @@ class GuardarDocumentoPessoaRequestTest extends TestCase
 
         $this->assertFalse($validator->fails());
     }
+
+    public function test_falha_com_tipo_documento_inactivo(): void
+    {
+        $this->seed(TipoDocumentoSeeder::class);
+        $tipo = TipoDocumento::where('slug', 'bi')->firstOrFail();
+        $tipo->update(['estado' => 0]);
+
+        $validator = Validator::make([
+            'tipo_documento_id' => $tipo->id,
+            'ficheiro' => UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf'),
+        ], (new GuardarDocumentoPessoaRequest())->rules());
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('tipo_documento_id', $validator->errors()->toArray());
+    }
 }

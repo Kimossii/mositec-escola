@@ -54,4 +54,8 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('can:documento-pessoa.editar')->name('documentos-pessoa.alternarEstado');
     Route::get('/documentos-pessoa/{documento}/download', [DocumentoPessoaController::class, 'download'])
         ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.download');
+    Route::get('/documentos-pessoa/{documento}/visualizar', [DocumentoPessoaController::class, 'visualizar'])
+        ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.visualizar');
+    Route::get('/tipos-documentos', [DocumentoPessoaController::class, 'tipos'])
+        ->middleware('can:documento-pessoa.criar')->name('documentos-pessoa.tipos');
 });

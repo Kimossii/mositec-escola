@@ -59,4 +59,20 @@ class DocumentoPessoaController extends Controller
 
         return $this->service->download($documento);
     }
+
+    public function visualizar(DocumentoPessoa $documento)
+    {
+        $this->authorize('documento-pessoa.ver');
+
+        return $this->service->visualizar($documento);
+    }
+
+    public function tipos()
+    {
+        $this->authorize('documento-pessoa.criar');
+
+        return response()->json([
+            'tipos' => $this->service->tiposDisponiveis(),
+        ]);
+    }
 }

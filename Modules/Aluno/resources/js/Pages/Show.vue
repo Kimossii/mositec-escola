@@ -13,6 +13,7 @@ import Pagination from '@/Components/Shared/Pagination.vue';
 import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/Shared/EstadoBadge.vue';
 import MatriculaFormModal from '../../../../Matricula/resources/js/Components/MatriculaFormModal.vue';
 import InscricaoDisciplinaModal from '../../../../Matricula/resources/js/Components/InscricaoDisciplinaModal.vue';
+import DocumentoPessoaModal from '../../../../Usuario/resources/js/Components/DocumentoPessoaModal.vue';
 import { ESTADO_MATRICULA, estadoMatriculaLabel, transicoesDisponiveis } from '../../../../Matricula/resources/js/Models/Estado';
 
 const props = defineProps({
@@ -242,6 +243,16 @@ function fecharDisciplinas() {
     matriculaParaVerDisciplinas.value = null;
 }
 
+const documentosAbertos = ref(false);
+
+function abrirDocumentos() {
+    documentosAbertos.value = true;
+}
+
+function fecharDocumentos() {
+    documentosAbertos.value = false;
+}
+
 const matriculaParaEliminar = ref(null);
 const eliminando = ref(false);
 
@@ -277,7 +288,10 @@ function confirmarEliminacao() {
                 <h1 class="fs-2 fw-bold mb-1">{{ aluno.dados_pessoa?.nome_completo }}</h1>
                 <span class="text-muted">Matrícula: {{ aluno.numero_matricula }}</span>
             </div>
-            <button v-if="can('aluno.editar')" class="btn btn-primary" @click="abrirEdicao">Editar</button>
+            <div class="d-flex gap-2">
+                <button v-if="can('documento-pessoa.ver')" class="btn btn-light-primary" @click="abrirDocumentos">Documentos</button>
+                <button v-if="can('aluno.editar')" class="btn btn-primary" @click="abrirEdicao">Editar</button>
+            </div>
         </div>
 
         <div class="card">
@@ -471,6 +485,13 @@ function confirmarEliminacao() {
             :aluno-id="aluno.id"
             :matricula="matriculaParaVerDisciplinas"
             @fechar="fecharDisciplinas"
+        />
+
+        <DocumentoPessoaModal
+            :show="documentosAbertos"
+            :dados-pessoa-id="aluno.dados_pessoa?.id"
+            :nome-pessoa="aluno.dados_pessoa?.nome_completo"
+            @fechar="fecharDocumentos"
         />
 
         <ConfirmModal
