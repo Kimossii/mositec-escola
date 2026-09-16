@@ -24,12 +24,19 @@ class AlunoController extends Controller
     ) {
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('aluno.ver');
 
+        $filtros = $request->only(['pesquisa', 'ano_lectivo_id', 'curso_id', 'turma_id', 'nivel_academico_id']);
+
         return Inertia::render('Aluno/Index', [
-            'alunos' => $this->consulta->listar(),
+            'alunos' => $this->consulta->listar($filtros),
+            'filtros' => $filtros,
+            'anosLectivosDisponiveis' => $this->consulta->anosLectivosDisponiveis(),
+            'turmasDisponiveis' => $this->consulta->turmasDisponiveis(),
+            'cursosDisponiveis' => $this->consulta->cursosDisponiveis(),
+            'niveisAcademicosDisponiveis' => $this->consulta->niveisAcademicosDisponiveis(),
         ]);
     }
 

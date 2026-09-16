@@ -182,8 +182,29 @@ class AlunoHttpTest extends TestCase
 
         $this->get(route('alunos.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Aluno/Index')
-            ->has('alunos', 1)
-            ->where('alunos.0.numero_matricula', '2026-0001')
+            ->has('alunos.data', 1)
+            ->where('alunos.data.0.numero_matricula', '2026-0001')
+        );
+    }
+
+    public function test_index_filtra_por_pesquisa_e_devolve_listas_de_apoio(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $pessoa1 = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa1->id, 'numero_matricula' => '2026-0001']);
+        $pessoa2 = DadosPessoa::create(['nome_completo' => 'Bruno Costa', 'numero_identificacao' => 'BI0002', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa2->id, 'numero_matricula' => '2026-0002']);
+
+        $this->get(route('alunos.index', ['pesquisa' => 'Ana Silva']))->assertInertia(fn (Assert $page) => $page
+            ->component('Aluno/Index')
+            ->has('alunos.data', 1)
+            ->where('alunos.data.0.numero_matricula', '2026-0001')
+            ->where('filtros.pesquisa', 'Ana Silva')
+            ->has('anosLectivosDisponiveis')
+            ->has('turmasDisponiveis')
+            ->has('cursosDisponiveis')
+            ->has('niveisAcademicosDisponiveis')
         );
     }
 

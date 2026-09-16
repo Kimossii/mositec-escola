@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Matricula\Models\Matricula;
 use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Modules\Aluno\Models\AlunoEnquadramentoAcademico;
@@ -72,5 +73,10 @@ class Aluno extends Model
     public function enquadramentosAcademicos(): HasMany
     {
         return $this->hasMany(AlunoEnquadramentoAcademico::class);
+    }
+
+    public function matriculas(): HasMany
+    {
+        return $this->hasMany(Matricula::class);
     }
 }
