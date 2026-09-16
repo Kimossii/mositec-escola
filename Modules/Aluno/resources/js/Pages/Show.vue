@@ -12,6 +12,7 @@ import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/Shared/EstadoBadge.vue';
 import MatriculaFormModal from '../../../../Matricula/resources/js/Components/MatriculaFormModal.vue';
+import InscricaoDisciplinaModal from '../../../../Matricula/resources/js/Components/InscricaoDisciplinaModal.vue';
 import { ESTADO_MATRICULA, estadoMatriculaLabel, transicoesDisponiveis } from '../../../../Matricula/resources/js/Models/Estado';
 
 const props = defineProps({
@@ -231,6 +232,16 @@ function confirmarRenovacao() {
     });
 }
 
+const matriculaParaVerDisciplinas = ref(null);
+
+function abrirDisciplinas(matricula) {
+    matriculaParaVerDisciplinas.value = matricula;
+}
+
+function fecharDisciplinas() {
+    matriculaParaVerDisciplinas.value = null;
+}
+
 const matriculaParaEliminar = ref(null);
 const eliminando = ref(false);
 
@@ -383,6 +394,15 @@ function confirmarEliminacao() {
                                             Renovar Matrícula
                                         </a>
                                     </div>
+                                    <div v-if="can('matricula.ver')" class="menu-item px-3">
+                                        <a
+                                            href="#"
+                                            class="menu-link px-3"
+                                            @click.prevent="abrirDisciplinas(matricula)"
+                                        >
+                                            Disciplinas
+                                        </a>
+                                    </div>
                                     <div
                                         v-if="matricula.estado === ESTADO_MATRICULA.PENDENTE && can('matricula.eliminar')"
                                         class="menu-item px-3"
@@ -444,6 +464,13 @@ function confirmarEliminacao() {
             :processando="confirmandoRenovacao"
             @confirmar="confirmarRenovacao"
             @cancelar="cancelarRenovacao"
+        />
+
+        <InscricaoDisciplinaModal
+            :show="!!matriculaParaVerDisciplinas"
+            :aluno-id="aluno.id"
+            :matricula="matriculaParaVerDisciplinas"
+            @fechar="fecharDisciplinas"
         />
 
         <ConfirmModal

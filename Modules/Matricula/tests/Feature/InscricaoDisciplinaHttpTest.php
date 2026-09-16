@@ -16,6 +16,7 @@ use Modules\Matricula\Models\InscricaoDisciplina;
 use Modules\Matricula\Models\Matricula;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
@@ -87,6 +88,72 @@ class InscricaoDisciplinaHttpTest extends TestCase
         $this->delete(route('matriculas.disciplinas.destroy', [$aluno, $matricula, $inscricao]))
             ->assertSessionHasErrors('inscricao');
         $this->assertDatabaseHas('inscricoes_disciplinas', ['id' => $inscricao->id, 'deleted_at' => null]);
+    }
+
+    public function test_lista_disciplinas_e_disponiveis_via_http(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $anoLectivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026', 'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 1]);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $pessoa = DadosPessoal::create(['nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI0003', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
+        $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0003']);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0003',
+            'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
+
+        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
+        PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivo->id]);
+        $matematica = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
+        $portugues = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'POR1', 'nome' => 'Português I']);
+        $planoMatematica = PlanoCurricularDisciplina::create(['plano_curricular_id' => $plano->id, 'disciplina_id' => $matematica->id]);
+        PlanoCurricularDisciplina::create(['plano_curricular_id' => $plano->id, 'disciplina_id' => $portugues->id]);
+
+        $this->post(route('matriculas.disciplinas.store', [$aluno, $matricula]), [
+            'plano_curricular_disciplina_id' => $planoMatematica->id,
+        ])->assertSessionHasNoErrors();
+
+        $this->getJson(route('matriculas.disciplinas.index', [$aluno, $matricula]))
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonFragment(['nome' => 'Matemática I']);
+
+        $this->getJson(route('matriculas.disciplinas.disponiveis', [$aluno, $matricula]))
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonFragment(['nome' => 'Português I']);
+    }
+
+    public function test_consulta_plano_curricular_da_turma_via_http(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $anoLectivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026', 'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 1]);
+        $nivelSemPlano = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '2C', 'nome' => '2ª Classe', 'ordem' => 2, 'etapa_ensino' => 1]);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $turmaSemPlano = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivelSemPlano->id, 'codigo' => 'T2', 'nome' => 'Turma 2']);
+
+        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
+        PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivo->id]);
+        $matematica = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
+        PlanoCurricularDisciplina::create(['plano_curricular_id' => $plano->id, 'disciplina_id' => $matematica->id]);
+
+        $this->getJson(route('turmas.plano-curricular', $turma))
+            ->assertOk()
+            ->assertJsonFragment(['nome' => 'Matemática I']);
+
+        $this->getJson(route('turmas.plano-curricular', $turmaSemPlano))
+            ->assertOk()
+            ->assertExactJson(['plano' => null]);
     }
 
     public function test_professor_recebe_403_ao_criar_inscricao(): void

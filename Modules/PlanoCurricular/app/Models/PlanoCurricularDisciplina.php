@@ -29,6 +29,7 @@ class PlanoCurricularDisciplina extends Model
         'tipo',
         'tipo_descricao',
         'obrigatoria',
+        'inscricao_automatica',
         'ordem',
         'estado',
         'estado_descricao',
@@ -40,6 +41,7 @@ class PlanoCurricularDisciplina extends Model
         'estado' => 1,
         'tipo' => 0,
         'obrigatoria' => true,
+        'inscricao_automatica' => true,
         'ordem' => 0,
     ];
 
@@ -48,6 +50,7 @@ class PlanoCurricularDisciplina extends Model
         'componente' => ComponentePlanoCurricular::class,
         'tipo' => TipoDisciplinaPlano::class,
         'obrigatoria' => 'boolean',
+        'inscricao_automatica' => 'boolean',
         'ordem' => 'integer',
         'carga_horaria' => 'integer',
         'creditos' => 'integer',

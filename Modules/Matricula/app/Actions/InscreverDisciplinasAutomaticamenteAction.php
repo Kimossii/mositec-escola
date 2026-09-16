@@ -3,8 +3,6 @@
 namespace Modules\Matricula\Actions;
 
 use Illuminate\Validation\ValidationException;
-use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
-use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Models\Matricula;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\Turma\Models\Turma;
@@ -36,20 +34,16 @@ class InscreverDisciplinasAutomaticamenteAction
     }
 
     /**
-     * Fora do Ensino Superior, uma Matrícula sem Plano Curricular confirmado
-     * deixaria o aluno numa turma sem estrutura curricular — por isso esta
-     * exigência bloqueia a criação da Matrícula (`CriarMatriculaAction`,
-     * Task 4, chama isto antes de persistir). No Ensino Superior a
-     * inscrição é sempre manual, logo não há exigência: é a MESMA decisão
-     * de `tipo_ensino` da Decisão 9, aplicada aqui à pré-condição em vez de
-     * à execução (Decisão 10).
+     * Uma Matrícula sem Plano Curricular confirmado deixaria o aluno numa
+     * turma sem estrutura curricular — por isso esta exigência bloqueia a
+     * criação da Matrícula (`CriarMatriculaAction`, Task 4, chama isto antes
+     * de persistir), SEMPRE, em qualquer contexto: quais disciplinas do
+     * plano entram automaticamente é decidido disciplina a disciplina (ver
+     * `executar()`), não por tipo de ensino — mas o plano em si continua a
+     * ser sempre necessário.
      */
     public function garantirPlanoCurricularConfirmado(Turma $turma): void
     {
-        if (Estabelecimento::current()?->tipo_ensino === TipoEnsinoEnum::UNIVERSITARIO) {
-            return;
-        }
-
         if ($this->resolverPlanoCurricular($turma) === null) {
             throw ValidationException::withMessages([
                 'turma_id' => 'Não existe um Plano Curricular confirmado para esta turma. Contacte a coordenação pedagógica antes de matricular alunos.',
@@ -58,21 +52,17 @@ class InscreverDisciplinasAutomaticamenteAction
     }
 
     /**
-     * Só inscreve automaticamente fora do Ensino Superior — no Superior a
-     * escolha de disciplinas é sempre manual (electivas, cadeiras em
-     * atraso). Esta é a ÚNICA decisão sobre "quando automatizar" em todo o
-     * fluxo: quem chama esta Action (`CriarMatriculaAction`, Task 4) chama-a
-     * sempre, sem saber desta regra. O `null` de `resolverPlanoCurricular()`
-     * aqui dentro é só defensivo — fora do Superior,
-     * `garantirPlanoCurricularConfirmado()` já garantiu que existe plano
-     * antes de a Matrícula sequer existir.
+     * Inscreve automaticamente só as disciplinas do plano marcadas
+     * `inscricao_automatica = true` — a regra é transversal (o mesmo plano
+     * pode ter, lado a lado, disciplinas obrigatórias automáticas e
+     * optativas/manuais, em qualquer tipo de ensino, incluindo o Superior).
+     * Esta Action nunca consulta `tipo_ensino`: quem chama
+     * (`CriarMatriculaAction`, Task 4) chama-a sempre, incondicionalmente —
+     * a decisão de "o quê" automatizar vive inteiramente no Plano
+     * Curricular, disciplina a disciplina, não no chamador.
      */
     public function executar(Matricula $matricula, ?int $utilizadorId = null): int
     {
-        if (Estabelecimento::current()?->tipo_ensino === TipoEnsinoEnum::UNIVERSITARIO) {
-            return 0;
-        }
-
         // Uma matrícula terminal nunca deveria chegar aqui — esta guard evita
         // que falhas na tentativa de inscrever caiam no catch de duplicatas abaixo,
         // mantendo esse catch restrito ao seu caso documentado (reinscrição).
@@ -89,6 +79,10 @@ class InscreverDisciplinasAutomaticamenteAction
         $total = 0;
 
         foreach ($plano->disciplinas as $planoCurricularDisciplina) {
+            if (! $planoCurricularDisciplina->inscricao_automatica) {
+                continue;
+            }
+
             try {
                 $this->criarInscricao->executar($matricula, $planoCurricularDisciplina, $utilizadorId);
                 $total++;

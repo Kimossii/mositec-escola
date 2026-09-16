@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
+import axios from 'axios';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 
 const props = defineProps({
@@ -43,6 +44,9 @@ watch(() => props.show, (show) => {
     if (!show) return;
 
     erroTurmaLocal.value = '';
+    planoCurricular.value = null;
+    planoConsultado.value = false;
+    planoExpandido.value = false;
 
     if (props.matricula) {
         form.turma_id = props.matricula.turma_id;
@@ -58,6 +62,39 @@ watch(() => props.show, (show) => {
     form.observacoes = '';
 });
 
+// O plano curricular só é consultado/exigido ao criar uma matrícula nova
+// (inclui a renovação manual, que também passa por CriarMatriculaAction) —
+// ao editar uma matrícula existente, AtualizarMatriculaAction não impõe
+// esta regra, por isso não faz sentido bloquear aqui.
+const exigePlanoCurricular = computed(() => !props.matricula);
+
+const planoCurricular = ref(null);
+const planoConsultado = ref(false);
+const carregandoPlano = ref(false);
+const planoExpandido = ref(false);
+
+async function consultarPlanoCurricular(turmaId) {
+    planoCurricular.value = null;
+    planoConsultado.value = false;
+    planoExpandido.value = false;
+
+    if (!turmaId || !exigePlanoCurricular.value) return;
+
+    carregandoPlano.value = true;
+    try {
+        const { data } = await axios.get(`/turmas/${turmaId}/plano-curricular`);
+        planoCurricular.value = data.plano;
+    } finally {
+        carregandoPlano.value = false;
+        planoConsultado.value = true;
+    }
+}
+
+const bloqueadoSemPlano = computed(() => exigePlanoCurricular.value
+    && !!form.turma_id
+    && planoConsultado.value
+    && planoCurricular.value === null);
+
 watch(() => form.turma_id, (turmaId) => {
     const turma = props.turmasDisponiveis.find((t) => t.id === turmaId);
     form.ano_lectivo_id = turma?.ano_lectivo_id ?? '';
@@ -65,6 +102,8 @@ watch(() => form.turma_id, (turmaId) => {
     if (turmaId) {
         erroTurmaLocal.value = '';
     }
+
+    consultarPlanoCurricular(turmaId);
 });
 
 function submeter() {
@@ -105,6 +144,41 @@ function submeter() {
                         </div>
                     </div>
 
+                    <div v-if="exigePlanoCurricular && form.turma_id" class="fv-row mb-7">
+                        <div v-if="carregandoPlano" class="text-muted fs-7">A consultar Plano Curricular...</div>
+                        <template v-else-if="planoConsultado">
+                            <div v-if="planoCurricular" class="bg-light rounded p-3">
+                                <a href="#" class="fw-semibold fs-6" @click.prevent="planoExpandido = !planoExpandido">
+                                    Plano Curricular: {{ planoCurricular.nome }} ({{ planoCurricular.codigo }})
+                                    <i class="ki-duotone ms-1" :class="planoExpandido ? 'ki-up' : 'ki-down'"></i>
+                                </a>
+                                <ul v-if="planoExpandido" class="mt-3 mb-0 ps-4">
+                                    <li v-for="item in planoCurricular.disciplinas" :key="item.id" class="fs-7 d-flex align-items-center gap-2">
+                                        {{ item.disciplina?.nome }}
+                                        <span
+                                            class="badge fs-9"
+                                            :class="item.inscricao_automatica ? 'badge-light-success' : 'badge-light-secondary'"
+                                        >
+                                            {{ item.inscricao_automatica ? 'Automática' : 'Manual' }}
+                                        </span>
+                                    </li>
+                                    <li v-if="!planoCurricular.disciplinas.length" class="fs-7 text-muted">
+                                        Este plano ainda não tem disciplinas associadas.
+                                    </li>
+                                </ul>
+                                <div v-if="planoExpandido && planoCurricular.disciplinas.length" class="text-muted fs-8 mt-2">
+                                    As disciplinas "Automática" são inscritas ao confirmar a matrícula; as "Manual"
+                                    ficam disponíveis para inscrição posterior no modal Disciplinas.
+                                </div>
+                            </div>
+                            <div v-else class="alert alert-danger d-flex align-items-center fs-7 mb-0">
+                                <i class="ki-duotone ki-shield-cross fs-2 me-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                                Não existe um Plano Curricular confirmado para esta turma. Configure o Plano Curricular
+                                (Académico → Cursos → Plano Curricular) antes de matricular alunos aqui.
+                            </div>
+                        </template>
+                    </div>
+
                     <template v-if="!renovacao">
                         <div class="fv-row mb-7">
                             <label class="required fw-semibold fs-6 mb-2">Data da Matrícula</label>
@@ -123,7 +197,7 @@ function submeter() {
                         <button type="button" class="btn btn-light-danger me-2" :disabled="processing" @click="emit('cancelar')">
                             Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary" :disabled="processing">
+                        <button type="submit" class="btn btn-primary" :disabled="processing || bloqueadoSemPlano">
                             {{ renovacao ? 'Renovar' : (matricula ? 'Guardar' : 'Matricular') }}
                         </button>
                     </div>

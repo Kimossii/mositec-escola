@@ -90,8 +90,12 @@ class InscreverDisciplinasAutomaticamenteActionTest extends TestCase
         $this->assertSame(0, $total);
     }
 
-    public function test_nao_inscreve_automaticamente_no_ensino_superior(): void
+    public function test_inscreve_apenas_disciplinas_com_inscricao_automatica_true_no_mesmo_plano(): void
     {
+        // A regra é transversal: nada aqui depende de tipo_ensino. Um plano
+        // pode ter, lado a lado, disciplinas obrigatórias (automáticas) e
+        // optativas/manuais (inscricao_automatica = false) — mesmo no Ensino
+        // Superior, como no exemplo dado pelo utilizador.
         $estabelecimento = Estabelecimento::create(['nome' => 'Universidade Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true, 'tipo_ensino' => TipoEnsinoEnum::UNIVERSITARIO->value]);
         $anoLectivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026', 'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
@@ -103,14 +107,19 @@ class InscreverDisciplinasAutomaticamenteActionTest extends TestCase
 
         $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
         PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivo->id]);
-        $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
-        PlanoCurricularDisciplina::create(['plano_curricular_id' => $plano->id, 'disciplina_id' => $disciplina->id]);
+        $obrigatoria = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
+        $optativa = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'ELE1', 'nome' => 'Electiva I']);
+        PlanoCurricularDisciplina::create(['plano_curricular_id' => $plano->id, 'disciplina_id' => $obrigatoria->id, 'inscricao_automatica' => true]);
+        PlanoCurricularDisciplina::create(['plano_curricular_id' => $plano->id, 'disciplina_id' => $optativa->id, 'inscricao_automatica' => false]);
 
         $matricula = $this->criarMatricula($anoLectivo, $turma, $aluno);
 
         $total = app(InscreverDisciplinasAutomaticamenteAction::class)->executar($matricula);
 
-        $this->assertSame(0, $total);
+        $this->assertSame(1, $total);
+        $this->assertSame(1, $matricula->inscricoesDisciplinas()->count());
+        $this->assertTrue($matricula->inscricoesDisciplinas()->whereHas('planoCurricularDisciplina', fn ($q) => $q->where('disciplina_id', $obrigatoria->id))->exists());
+        $this->assertFalse($matricula->inscricoesDisciplinas()->whereHas('planoCurricularDisciplina', fn ($q) => $q->where('disciplina_id', $optativa->id))->exists());
     }
 
     public function test_garantir_plano_curricular_confirmado_lanca_excecao_sem_plano_fora_do_superior(): void
@@ -140,18 +149,21 @@ class InscreverDisciplinasAutomaticamenteActionTest extends TestCase
         $this->assertTrue(true); // não lançou excepção
     }
 
-    public function test_garantir_plano_curricular_confirmado_nao_lanca_excecao_no_ensino_superior_mesmo_sem_plano(): void
+    public function test_garantir_plano_curricular_confirmado_lanca_excecao_no_ensino_superior_sem_plano(): void
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Universidade Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true, 'tipo_ensino' => TipoEnsinoEnum::UNIVERSITARIO->value]);
         $anoLectivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026', 'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1A', 'nome' => '1º Ano', 'ordem' => 1, 'etapa_ensino' => 5]);
         $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
-        // Sem PlanoCurricular — continua sem lançar, porque no Superior não é exigido.
+        // Sem PlanoCurricular — o plano confirmado é obrigatório em todas as
+        // matrículas, incluindo no Ensino Superior (quais disciplinas do
+        // plano entram automaticamente é decidido por disciplina, via
+        // inscricao_automatica, não por tipo de ensino).
+
+        $this->expectException(ValidationException::class);
 
         app(InscreverDisciplinasAutomaticamenteAction::class)->garantirPlanoCurricularConfirmado($turma);
-
-        $this->assertTrue(true);
     }
 
     public function test_garantir_plano_curricular_confirmado_lanca_excecao_quando_plano_esta_desactivado(): void

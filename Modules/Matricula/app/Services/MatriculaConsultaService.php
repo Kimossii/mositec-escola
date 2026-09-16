@@ -8,12 +8,20 @@ use Illuminate\Support\Collection as SupportCollection;
 use Modules\Aluno\Models\Aluno;
 use Modules\Core\Enums\Estado;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Matricula\Actions\InscreverDisciplinasAutomaticamenteAction;
+use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\InscricaoDisciplina;
 use Modules\Matricula\Models\Matricula;
 use Modules\Turma\Models\Turma;
 
 class MatriculaConsultaService
 {
+    public function __construct(
+        private InscreverDisciplinasAutomaticamenteAction $inscreverDisciplinas,
+    ) {
+    }
+
     public function listarPorAluno(Aluno $aluno, array $filtros = [], int $porPagina = 10): LengthAwarePaginator
     {
         return Matricula::with(['turma.curso', 'turma.nivelAcademico', 'anoLectivo'])
@@ -67,6 +75,39 @@ class MatriculaConsultaService
             ->where('matricula_id', $matricula->id)
             ->orderBy('data_inscricao')
             ->get();
+    }
+
+    /**
+     * Disciplinas do Plano Curricular aplicável a ESTA matrícula (via
+     * InscreverDisciplinasAutomaticamenteAction::resolverPlanoCurricular —
+     * mesma resolução usada na inscrição automática), excluindo as que o
+     * aluno já tem Inscrita numa matrícula aberta (mesma regra da Fix 2 em
+     * CriarInscricaoDisciplinaAction). Serve só para alimentar o seletor da
+     * UI — o backend continua a validar tudo no momento de inscrever.
+     */
+    public function disciplinasDisponiveisParaInscricao(Matricula $matricula): SupportCollection
+    {
+        $plano = $this->inscreverDisciplinas->resolverPlanoCurricular($matricula->turma);
+
+        if ($plano === null) {
+            return collect();
+        }
+
+        $plano->loadMissing('disciplinas.disciplina');
+
+        $disciplinasJaInscritas = InscricaoDisciplina::query()
+            ->where('estado', EstadoInscricaoDisciplinaEnum::INSCRITA->value)
+            ->whereHas('matricula', function ($query) use ($matricula) {
+                $query->where('aluno_id', $matricula->aluno_id)
+                    ->whereIn('estado', [EstadoMatriculaEnum::PENDENTE->value, EstadoMatriculaEnum::ACTIVA->value]);
+            })
+            ->with('planoCurricularDisciplina:id,disciplina_id')
+            ->get()
+            ->pluck('planoCurricularDisciplina.disciplina_id');
+
+        return $plano->disciplinas
+            ->reject(fn ($planoCurricularDisciplina) => $disciplinasJaInscritas->contains($planoCurricularDisciplina->disciplina_id))
+            ->values();
     }
 
     public function turmasDisponiveis(): Collection

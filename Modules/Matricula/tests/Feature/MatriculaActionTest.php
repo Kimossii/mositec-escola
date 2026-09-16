@@ -213,6 +213,7 @@ class MatriculaActionTest extends TestCase
         $turma = $this->criarTurma($anoLectivo, $nivel, $curso);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, cursoId: $outroCurso->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel, $curso);
 
         $matricula = app(CriarMatriculaAction::class)->executar(
             $aluno,
@@ -525,6 +526,7 @@ class MatriculaActionTest extends TestCase
         $turma = $this->criarTurma($anoLectivo, $nivel, $cursoB);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, cursoId: $cursoA->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel, $cursoB);
 
         $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
 
@@ -719,6 +721,7 @@ class MatriculaActionTest extends TestCase
         $turmaOutroCurso = $this->criarTurma($anoLectivo, $nivel, $cursoB);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, cursoId: $cursoA->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel, $cursoA);
 
         $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaOriginal->id, $anoLectivo->id));
 
@@ -1040,8 +1043,11 @@ class MatriculaActionTest extends TestCase
         $this->assertSame(1, $matricula->inscricoesDisciplinas()->count());
     }
 
-    public function test_criar_matricula_no_superior_nao_inscreve_automaticamente(): void
+    public function test_criar_matricula_no_superior_inscreve_automaticamente_disciplina_obrigatoria(): void
     {
+        // A regra deixou de depender de tipo_ensino: uma disciplina com
+        // inscricao_automatica = true (omissão) é inscrita automaticamente
+        // em qualquer contexto, incluindo o Ensino Superior.
         $estabelecimento = $this->criarEstabelecimento(TipoEnsinoEnum::UNIVERSITARIO);
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
         $curso = $this->criarCurso($estabelecimento);
@@ -1057,7 +1063,7 @@ class MatriculaActionTest extends TestCase
 
         $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
 
-        $this->assertSame(0, $matricula->inscricoesDisciplinas()->count());
+        $this->assertSame(1, $matricula->inscricoesDisciplinas()->count());
     }
 
     public function test_bloqueia_criar_matricula_fora_do_superior_sem_plano_curricular_confirmado(): void
@@ -1080,7 +1086,7 @@ class MatriculaActionTest extends TestCase
         $this->assertSame(0, Matricula::where('aluno_id', $aluno->id)->count());
     }
 
-    public function test_permite_criar_matricula_no_superior_sem_plano_curricular(): void
+    public function test_bloqueia_criar_matricula_no_superior_sem_plano_curricular_confirmado(): void
     {
         $estabelecimento = $this->criarEstabelecimento(TipoEnsinoEnum::UNIVERSITARIO);
         $anoLectivo = $this->criarAnoLectivo($estabelecimento);
@@ -1089,12 +1095,44 @@ class MatriculaActionTest extends TestCase
         $turma = $this->criarTurma($anoLectivo, $nivel, $curso);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, cursoId: $curso->id);
-        // Sem PlanoCurricular — e mesmo assim a matrícula é criada, porque no Superior a
-        // inscrição em disciplinas é sempre manual e não exige currículo confirmado.
+        // Sem PlanoCurricular — o plano confirmado passa a ser obrigatório também
+        // no Ensino Superior (só a inscrição automática continua a não se aplicar
+        // aí; a escolha de disciplinas continua manual, via o modal Disciplinas).
+
+        try {
+            app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
+            $this->fail('Esperava ValidationException por falta de Plano Curricular confirmado.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('turma_id', $e->errors());
+        }
+
+        $this->assertSame(0, Matricula::where('aluno_id', $aluno->id)->count());
+    }
+
+    public function test_criar_matricula_com_plano_mistura_disciplinas_automaticas_e_manuais(): void
+    {
+        // Mesmo cenário do exemplo dado pelo utilizador: um plano com
+        // disciplinas obrigatórias automáticas e optativas/manuais lado a
+        // lado, testado agora ao nível de integração completo
+        // (CriarMatriculaAction), não só ao nível da Action isolada.
+        $estabelecimento = $this->criarEstabelecimento(TipoEnsinoEnum::UNIVERSITARIO);
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $curso = $this->criarCurso($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel, $curso);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, cursoId: $curso->id);
+
+        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
+        PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivo->id]);
+        $obrigatoria = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
+        $optativa = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'ELE1', 'nome' => 'Electiva I']);
+        PlanoCurricularDisciplina::create(['plano_curricular_id' => $plano->id, 'disciplina_id' => $obrigatoria->id, 'inscricao_automatica' => true]);
+        PlanoCurricularDisciplina::create(['plano_curricular_id' => $plano->id, 'disciplina_id' => $optativa->id, 'inscricao_automatica' => false]);
 
         $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
 
         $this->assertNotNull($matricula->id);
-        $this->assertSame(0, $matricula->inscricoesDisciplinas()->count());
+        $this->assertSame(1, $matricula->inscricoesDisciplinas()->count());
     }
 }
