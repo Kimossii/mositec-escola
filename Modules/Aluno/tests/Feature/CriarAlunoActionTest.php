@@ -46,6 +46,26 @@ class CriarAlunoActionTest extends TestCase
         $this->assertSame(DadosPessoa::TIPO_ALUNO, $pessoa->tipo_pessoa);
     }
 
+    public function test_cria_aluno_guarda_telefone_alternativo(): void
+    {
+        $this->criarEstabelecimento();
+
+        $dto = new AlunoDTO(
+            dadosPessoaId: null,
+            nomeCompleto: 'Ana Silva',
+            email: 'ana@example.com',
+            telefone: '923000000',
+            dataNascimento: '2010-05-01',
+            sexo: DadosPessoa::SEXO_FEMININO,
+            numeroIdentificacao: 'BI0001',
+            telefoneAlternativo: '924000000',
+        );
+
+        $aluno = app(CriarAlunoAction::class)->executar($dto);
+
+        $this->assertSame('924000000', $aluno->dadosPessoa->telefone_alternativo);
+    }
+
     public function test_cria_aluno_reutilizando_dados_pessoa_existente(): void
     {
         $this->criarEstabelecimento();

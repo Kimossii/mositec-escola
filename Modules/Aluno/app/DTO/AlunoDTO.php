@@ -15,6 +15,7 @@ class AlunoDTO
         public ?string $dataNascimento,
         public int $sexo,
         public ?string $numeroIdentificacao,
+        public ?string $telefoneAlternativo = null,
     ) {
     }
 
@@ -30,6 +31,7 @@ class AlunoDTO
             dataNascimento: $dados['data_nascimento'] ?? null,
             sexo: $dados['sexo'] ?? 0,
             numeroIdentificacao: $dados['numero_identificacao'] ?? null,
+            telefoneAlternativo: $dados['telefone_alternativo'] ?? null,
         );
     }
 
@@ -45,6 +47,7 @@ class AlunoDTO
             dataNascimento: $dados['data_nascimento'] ?? null,
             sexo: $dados['sexo'] ?? 0,
             numeroIdentificacao: null,
+            telefoneAlternativo: $dados['telefone_alternativo'] ?? null,
         );
     }
 }

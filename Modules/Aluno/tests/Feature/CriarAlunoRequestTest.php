@@ -21,6 +21,28 @@ class CriarAlunoRequestTest extends TestCase
         $this->assertArrayHasKey('numero_identificacao', $validator->errors()->toArray());
     }
 
+    public function test_falha_sem_data_nascimento_ao_criar_pessoa_nova(): void
+    {
+        $validator = Validator::make([
+            'nome_completo' => 'Ana Silva',
+            'numero_identificacao' => 'BI0001',
+        ], (new CriarAlunoRequest())->rules());
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('data_nascimento', $validator->errors()->toArray());
+    }
+
+    public function test_passa_com_data_nascimento_preenchida(): void
+    {
+        $validator = Validator::make([
+            'nome_completo' => 'Ana Silva',
+            'numero_identificacao' => 'BI0001',
+            'data_nascimento' => '2010-05-01',
+        ], (new CriarAlunoRequest())->rules());
+
+        $this->assertFalse($validator->fails());
+    }
+
     public function test_nao_aceita_numero_matricula_como_input(): void
     {
         $this->assertArrayNotHasKey('numero_matricula', (new CriarAlunoRequest())->rules());

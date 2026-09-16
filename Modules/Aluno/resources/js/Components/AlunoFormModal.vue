@@ -26,6 +26,7 @@ const form = reactive({
     nome_completo: '',
     email: '',
     telefone: '',
+    telefone_alternativo: '',
     data_nascimento: '',
     sexo: 0,
     numero_identificacao: '',
@@ -38,6 +39,7 @@ watch(() => props.show, (show) => {
     form.nome_completo = pessoa.nome_completo ?? '';
     form.email = pessoa.email ?? '';
     form.telefone = pessoa.telefone ?? '';
+    form.telefone_alternativo = pessoa.telefone_alternativo ?? '';
     form.data_nascimento = pessoa.data_nascimento?.slice(0, 10) ?? '';
     form.sexo = pessoa.sexo ?? 0;
     form.numero_identificacao = pessoa.numero_identificacao ?? '';
@@ -61,34 +63,39 @@ function submeter() {
             <div class="modal-content p-6">
                 <h3 class="mb-5">{{ aluno ? 'Editar Aluno' : 'Novo Aluno' }}</h3>
                 <form @submit.prevent="submeter">
-                    <div class="row">
-                        <div class="col-md-8 fv-row mb-7">
-                            <label class="required fw-semibold fs-6 mb-2">Nome completo</label>
-                            <input v-model="form.nome_completo" type="text" class="form-control form-control-solid" />
-                            <div class="text-danger fs-7 mt-1" v-if="errors.nome_completo">{{ errors.nome_completo }}</div>
-                        </div>
-                        <div class="col-md-4 fv-row mb-7">
-                            <label class="fw-semibold fs-6 mb-2">Sexo</label>
-                            <SelectSolid v-model="form.sexo" :options="SEXO_OPCOES" />
-                        </div>
+                    <div class="fv-row mb-7">
+                        <label class="required fw-semibold fs-6 mb-2">Nome completo</label>
+                        <input v-model="form.nome_completo" type="text" class="form-control form-control-solid" />
+                        <div class="text-danger fs-7 mt-1" v-if="errors.nome_completo">{{ errors.nome_completo }}</div>
+                    </div>
+
+                    <div class="fv-row mb-7">
+                        <label class="fw-semibold fs-6 mb-2">Sexo</label>
+                        <SelectSolid v-model="form.sexo" :options="SEXO_OPCOES" />
+                    </div>
+
+                    <div class="fv-row mb-7">
+                        <label class="fw-semibold fs-6 mb-2">Email</label>
+                        <input v-model="form.email" type="email" class="form-control form-control-solid" />
+                        <div class="text-danger fs-7 mt-1" v-if="errors.email">{{ errors.email }}</div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 fv-row mb-7">
-                            <label class="fw-semibold fs-6 mb-2">Email</label>
-                            <input v-model="form.email" type="email" class="form-control form-control-solid" />
-                            <div class="text-danger fs-7 mt-1" v-if="errors.email">{{ errors.email }}</div>
-                        </div>
-                        <div class="col-md-6 fv-row mb-7">
-                            <label class="fw-semibold fs-6 mb-2">Telefone</label>
+                            <label class="fw-semibold fs-6 mb-2">Telefone Principal</label>
                             <input v-model="form.telefone" type="text" class="form-control form-control-solid" />
                         </div>
+                        <div class="col-md-6 fv-row mb-7">
+                            <label class="fw-semibold fs-6 mb-2">Telefone Alternativo</label>
+                            <input v-model="form.telefone_alternativo" type="text" class="form-control form-control-solid" />
+                        </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 fv-row mb-7">
-                            <label class="fw-semibold fs-6 mb-2">Data de nascimento</label>
-                            <input v-model="form.data_nascimento" type="date" class="form-control form-control-solid" />
+                            <label class="required fw-semibold fs-6 mb-2">Data de nascimento</label>
+                            <input v-model="form.data_nascimento" type="date" class="form-control form-control-solid" required />
+                            <div class="text-danger fs-7 mt-1" v-if="errors.data_nascimento">{{ errors.data_nascimento }}</div>
                         </div>
                         <div v-if="!aluno" class="col-md-6 fv-row mb-7">
                             <label class="required fw-semibold fs-6 mb-2">Número de identificação</label>

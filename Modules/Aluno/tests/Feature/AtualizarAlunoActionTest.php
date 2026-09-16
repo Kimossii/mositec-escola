@@ -37,4 +37,26 @@ class AtualizarAlunoActionTest extends TestCase
         $this->assertSame('Ana Silva Santos', $actualizado->dadosPessoa->fresh()->nome_completo);
         $this->assertSame('ana.santos@example.com', $actualizado->dadosPessoa->fresh()->email);
     }
+
+    public function test_actualiza_telefone_alternativo(): void
+    {
+        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
+
+        $dto = new AlunoDTO(
+            dadosPessoaId: null,
+            nomeCompleto: 'Ana Silva',
+            email: null,
+            telefone: null,
+            dataNascimento: null,
+            sexo: 0,
+            numeroIdentificacao: null,
+            telefoneAlternativo: '924000000',
+        );
+
+        $actualizado = (new AtualizarAlunoAction())->executar($aluno, $dto);
+
+        $this->assertSame('924000000', $actualizado->dadosPessoa->fresh()->telefone_alternativo);
+    }
 }

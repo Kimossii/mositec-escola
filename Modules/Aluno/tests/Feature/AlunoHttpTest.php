@@ -63,6 +63,7 @@ class AlunoHttpTest extends TestCase
         $this->post(route('alunos.store'), [
             'nome_completo' => 'Ana Silva',
             'numero_identificacao' => 'BI0001',
+            'data_nascimento' => '2010-05-01',
         ])->assertSessionHasNoErrors()->assertRedirect();
 
         $aluno = Aluno::firstWhere('dados_pessoa_id', DadosPessoa::firstWhere('numero_identificacao', 'BI0001')?->id);
@@ -82,10 +83,23 @@ class AlunoHttpTest extends TestCase
 
         $this->put(route('alunos.update', $aluno), [
             'nome_completo' => 'Ana Silva Santos',
+            'data_nascimento' => '2010-05-01',
         ])->assertSessionHasNoErrors()->assertRedirect();
 
         $this->assertSame('Ana Silva Santos', $aluno->dadosPessoa->fresh()->nome_completo);
         $this->assertSame('2026-0001', $aluno->fresh()->numero_matricula);
+    }
+
+    public function test_actualiza_aluno_falha_sem_data_nascimento(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
+
+        $this->put(route('alunos.update', $aluno), [
+            'nome_completo' => 'Ana Silva Santos',
+        ])->assertSessionHasErrors('data_nascimento');
     }
 
     public function test_altera_estado_via_http(): void

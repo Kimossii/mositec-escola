@@ -20,6 +20,7 @@ class DadosPessoa extends Model
         'nome_completo',
         'email',
         'telefone',
+        'telefone_alternativo',
         'data_nascimento',
         'sexo',
         'numero_identificacao',

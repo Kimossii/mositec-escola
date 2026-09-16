@@ -307,8 +307,12 @@ function confirmarEliminacao() {
                     <div class="col-md-9">{{ aluno.dados_pessoa?.email ?? '—' }}</div>
                 </div>
                 <div class="row mb-4">
-                    <div class="col-md-3 fw-bold text-muted">Telefone</div>
+                    <div class="col-md-3 fw-bold text-muted">Telefone Principal</div>
                     <div class="col-md-9">{{ aluno.dados_pessoa?.telefone ?? '—' }}</div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-3 fw-bold text-muted">Telefone Alternativo</div>
+                    <div class="col-md-9">{{ aluno.dados_pessoa?.telefone_alternativo ?? '—' }}</div>
                 </div>
                 <div class="row mb-4">
                     <div class="col-md-3 fw-bold text-muted">Data de nascimento</div>

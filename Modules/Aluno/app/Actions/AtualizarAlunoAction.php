@@ -15,6 +15,7 @@ class AtualizarAlunoAction
                 'nome_completo' => $dto->nomeCompleto,
                 'email' => $dto->email,
                 'telefone' => $dto->telefone,
+                'telefone_alternativo' => $dto->telefoneAlternativo,
                 'data_nascimento' => $dto->dataNascimento,
                 'sexo' => $dto->sexo,
             ])->save();

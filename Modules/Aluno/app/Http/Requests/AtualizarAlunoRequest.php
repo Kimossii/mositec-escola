@@ -18,7 +18,8 @@ class AtualizarAlunoRequest extends BaseRequest
             'nome_completo' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'telefone' => ['nullable', 'string', 'max:50'],
-            'data_nascimento' => ['nullable', 'date'],
+            'telefone_alternativo' => ['nullable', 'string', 'max:50'],
+            'data_nascimento' => ['required', 'date'],
             'sexo' => ['nullable', 'integer', Rule::in([0, 1, 2])],
         ];
     }
@@ -27,6 +28,7 @@ class AtualizarAlunoRequest extends BaseRequest
     {
         return [
             'nome_completo.required' => 'O nome completo é obrigatório.',
+            'data_nascimento.required' => 'A data de nascimento é obrigatória.',
         ];
     }
 }
