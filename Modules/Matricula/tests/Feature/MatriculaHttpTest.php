@@ -21,7 +21,7 @@ use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
-use Modules\Usuario\Models\DadosPessoal;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -101,10 +101,10 @@ class MatriculaHttpTest extends TestCase
 
     private function criarAluno(Estabelecimento $estabelecimento): Aluno
     {
-        $pessoa = DadosPessoal::create([
+        $pessoa = DadosPessoa::create([
             'nome_completo' => 'Aluno Teste',
             'numero_identificacao' => 'BI' . random_int(1000, 9999),
-            'tipo_pessoa' => DadosPessoal::TIPO_ALUNO,
+            'tipo_pessoa' => DadosPessoa::TIPO_ALUNO,
         ]);
 
         return Aluno::create([
@@ -408,10 +408,10 @@ class MatriculaHttpTest extends TestCase
         $turma = $this->criarTurma($anoLectivo, $nivel);
 
         for ($i = 1; $i <= 25; $i++) {
-            $pessoa = DadosPessoal::create([
+            $pessoa = DadosPessoa::create([
                 'nome_completo' => "Aluno {$i}",
                 'numero_identificacao' => "BI-PAG-{$i}",
-                'tipo_pessoa' => DadosPessoal::TIPO_ALUNO,
+                'tipo_pessoa' => DadosPessoa::TIPO_ALUNO,
             ]);
             $aluno = Aluno::create([
                 'estabelecimento_id' => $estabelecimento->id,
@@ -448,14 +448,14 @@ class MatriculaHttpTest extends TestCase
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $turma = $this->criarTurma($anoLectivo, $nivel);
 
-        $pessoaA = DadosPessoal::create([
-            'nome_completo' => 'Ana Maria Silva', 'numero_identificacao' => 'BI12345', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO,
+        $pessoaA = DadosPessoa::create([
+            'nome_completo' => 'Ana Maria Silva', 'numero_identificacao' => 'BI12345', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO,
         ]);
         $alunoA = Aluno::create([
             'estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoaA->id, 'numero_matricula' => '2026-AAAA',
         ]);
-        $pessoaB = DadosPessoal::create([
-            'nome_completo' => 'Bruno Costa', 'numero_identificacao' => 'BI99999', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO,
+        $pessoaB = DadosPessoa::create([
+            'nome_completo' => 'Bruno Costa', 'numero_identificacao' => 'BI99999', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO,
         ]);
         $alunoB = Aluno::create([
             'estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoaB->id, 'numero_matricula' => '2026-BBBB',

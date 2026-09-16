@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Estabelecimento\Models\Estabelecimento;
-use Modules\Usuario\Models\DadosPessoal;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Modules\Aluno\Models\AlunoEnquadramentoAcademico;
 
@@ -44,7 +44,7 @@ class Aluno extends Model
 
     public function dadosPessoa(): BelongsTo
     {
-        return $this->belongsTo(DadosPessoal::class, 'dados_pessoa_id');
+        return $this->belongsTo(DadosPessoa::class, 'dados_pessoa_id');
     }
 
     public function criadoPor(): BelongsTo

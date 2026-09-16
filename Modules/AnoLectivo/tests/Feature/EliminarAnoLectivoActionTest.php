@@ -20,7 +20,7 @@ use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
-use Modules\Usuario\Models\DadosPessoal;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Modules\Aluno\Models\Aluno;
 use Tests\TestCase;
@@ -111,7 +111,7 @@ class EliminarAnoLectivoActionTest extends TestCase
             'estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 1,
         ]);
         $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
-        $pessoa = DadosPessoal::create(['nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
         Matricula::create([
             'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,

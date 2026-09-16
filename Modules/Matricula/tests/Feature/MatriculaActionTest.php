@@ -28,7 +28,7 @@ use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
-use Modules\Usuario\Models\DadosPessoal;
+use Modules\Usuario\Models\DadosPessoa;
 use Tests\TestCase;
 
 class MatriculaActionTest extends TestCase
@@ -95,10 +95,10 @@ class MatriculaActionTest extends TestCase
 
     private function criarAluno(Estabelecimento $estabelecimento, string $numeroIdentificacao = 'BI0001'): Aluno
     {
-        $pessoa = DadosPessoal::create([
+        $pessoa = DadosPessoa::create([
             'nome_completo' => 'Aluno Teste',
             'numero_identificacao' => $numeroIdentificacao,
-            'tipo_pessoa' => DadosPessoal::TIPO_ALUNO,
+            'tipo_pessoa' => DadosPessoa::TIPO_ALUNO,
         ]);
 
         return Aluno::create([

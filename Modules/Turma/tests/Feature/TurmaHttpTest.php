@@ -22,7 +22,7 @@ use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
 use Modules\Turma\Models\Turno;
-use Modules\Usuario\Models\DadosPessoal;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -409,8 +409,8 @@ class TurmaHttpTest extends TestCase
 
     private function criarMatriculaNaTurma(Estabelecimento $estabelecimento, AnoLectivo $anoLectivo, Turma $turma, EstadoMatriculaEnum $estado): Matricula
     {
-        $pessoa = DadosPessoal::create([
-            'nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI' . random_int(10000, 99999), 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO,
+        $pessoa = DadosPessoa::create([
+            'nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI' . random_int(10000, 99999), 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO,
         ]);
         $aluno = Aluno::create([
             'estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-' . random_int(10000, 99999),

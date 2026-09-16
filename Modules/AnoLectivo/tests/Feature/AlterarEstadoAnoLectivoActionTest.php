@@ -20,7 +20,7 @@ use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
-use Modules\Usuario\Models\DadosPessoal;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -112,7 +112,7 @@ class AlterarEstadoAnoLectivoActionTest extends TestCase
             ['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1'],
             ['nome' => 'Turma 1'],
         );
-        $pessoa = DadosPessoal::create(['nome_completo' => "Aluno {$sufixo}", 'numero_identificacao' => "BI{$sufixo}", 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
+        $pessoa = DadosPessoa::create(['nome_completo' => "Aluno {$sufixo}", 'numero_identificacao' => "BI{$sufixo}", 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => "2026-{$sufixo}"]);
 
         return Matricula::create([

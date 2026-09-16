@@ -5,7 +5,7 @@ namespace Modules\Aluno\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use Modules\Aluno\Http\Requests\CriarAlunoRequest;
-use Modules\Usuario\Models\DadosPessoal;
+use Modules\Usuario\Models\DadosPessoa;
 use Tests\TestCase;
 
 class CriarAlunoRequestTest extends TestCase
@@ -28,7 +28,7 @@ class CriarAlunoRequestTest extends TestCase
 
     public function test_passa_com_dados_pessoa_id_existente(): void
     {
-        $pessoa = DadosPessoal::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
 
         $validator = Validator::make([
             'dados_pessoa_id' => $pessoa->id,

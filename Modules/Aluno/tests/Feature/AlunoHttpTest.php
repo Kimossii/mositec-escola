@@ -12,7 +12,7 @@ use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
-use Modules\Usuario\Models\DadosPessoal;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -65,7 +65,7 @@ class AlunoHttpTest extends TestCase
             'numero_identificacao' => 'BI0001',
         ])->assertSessionHasNoErrors()->assertRedirect();
 
-        $aluno = Aluno::firstWhere('dados_pessoa_id', DadosPessoal::firstWhere('numero_identificacao', 'BI0001')?->id);
+        $aluno = Aluno::firstWhere('dados_pessoa_id', DadosPessoa::firstWhere('numero_identificacao', 'BI0001')?->id);
         $this->assertNotNull($aluno);
         $this->assertMatchesRegularExpression('/^\d{4}-\d{4}$/', $aluno->numero_matricula);
         $this->assertSame($staff->id, $aluno->criado_por);
@@ -77,7 +77,7 @@ class AlunoHttpTest extends TestCase
     {
         $this->actingAsStaff();
         $estabelecimento = $this->criarEstabelecimento();
-        $pessoa = DadosPessoal::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
 
         $this->put(route('alunos.update', $aluno), [
@@ -92,7 +92,7 @@ class AlunoHttpTest extends TestCase
     {
         $this->actingAsStaff();
         $estabelecimento = $this->criarEstabelecimento();
-        $pessoa = DadosPessoal::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
 
         $this->patch(route('alunos.alterar-estado', $aluno), ['estado' => Estado::INATIVO->value])
@@ -105,11 +105,11 @@ class AlunoHttpTest extends TestCase
     {
         $this->actingAsStaff();
         $actual = $this->criarEstabelecimento();
-        $pessoa1 = DadosPessoal::create(['nome_completo' => 'Ana', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
+        $pessoa1 = DadosPessoa::create(['nome_completo' => 'Ana', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
         Aluno::create(['estabelecimento_id' => $actual->id, 'dados_pessoa_id' => $pessoa1->id, 'numero_matricula' => '2026-0001']);
 
         $outra = $this->criarEstabelecimento(false);
-        $pessoa2 = DadosPessoal::create(['nome_completo' => 'Bruno', 'numero_identificacao' => 'BI0002', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
+        $pessoa2 = DadosPessoa::create(['nome_completo' => 'Bruno', 'numero_identificacao' => 'BI0002', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
         Aluno::create(['estabelecimento_id' => $outra->id, 'dados_pessoa_id' => $pessoa2->id, 'numero_matricula' => '2026-0002']);
 
         $this->get(route('alunos.index'))->assertInertia(fn (Assert $page) => $page
@@ -123,7 +123,7 @@ class AlunoHttpTest extends TestCase
     {
         $this->actingAsStaff();
         $estabelecimento = $this->criarEstabelecimento();
-        $pessoa = DadosPessoal::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
 
         $this->get(route('alunos.show', $aluno))->assertInertia(fn (Assert $page) => $page
@@ -136,7 +136,7 @@ class AlunoHttpTest extends TestCase
     {
         $this->actingAsProfessor();
         $estabelecimento = $this->criarEstabelecimento();
-        $pessoa = DadosPessoal::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
 
         $this->post(route('alunos.store'), ['nome_completo' => 'X', 'numero_identificacao' => 'BI9999'])->assertForbidden();

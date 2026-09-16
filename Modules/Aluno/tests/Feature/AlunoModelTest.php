@@ -10,7 +10,7 @@ use Modules\Aluno\Models\Aluno;
 use Modules\Core\Enums\Estado;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
-use Modules\Usuario\Models\DadosPessoal;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -23,12 +23,12 @@ class AlunoModelTest extends TestCase
         return Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
     }
 
-    private function criarDadosPessoa(string $numeroIdentificacao = 'BI0001'): DadosPessoal
+    private function criarDadosPessoa(string $numeroIdentificacao = 'BI0001'): DadosPessoa
     {
-        return DadosPessoal::create([
+        return DadosPessoa::create([
             'nome_completo' => 'Ana Silva',
             'numero_identificacao' => $numeroIdentificacao,
-            'tipo_pessoa' => DadosPessoal::TIPO_ALUNO,
+            'tipo_pessoa' => DadosPessoa::TIPO_ALUNO,
         ]);
     }
 
