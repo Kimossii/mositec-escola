@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import { ESTADO } from '../Models/Estado';
 
@@ -31,7 +31,11 @@ const form = reactive({
     sexo: 0,
     numero_identificacao: '',
     estado: ESTADO.ATIVO,
+    foto: null,
 });
+
+const previewFoto = ref(null);
+const previewSrc = computed(() => previewFoto.value ?? props.aluno?.foto_url ?? null);
 
 watch(() => props.show, (show) => {
     if (!show) return;
@@ -44,14 +48,23 @@ watch(() => props.show, (show) => {
     form.sexo = pessoa.sexo ?? 0;
     form.numero_identificacao = pessoa.numero_identificacao ?? '';
     form.estado = props.aluno?.estado ?? ESTADO.ATIVO;
+    form.foto = null;
+    previewFoto.value = null;
 });
+
+function onFotoChange(event) {
+    const ficheiro = event.target.files?.[0] ?? null;
+    form.foto = ficheiro;
+    previewFoto.value = ficheiro ? URL.createObjectURL(ficheiro) : null;
+}
 
 function submeter() {
     const payload = { ...form };
-    if (props.aluno) {
-        delete payload.numero_identificacao;
-    } else {
+    if (!props.aluno) {
         delete payload.estado;
+    }
+    if (!payload.foto) {
+        delete payload.foto;
     }
     emit('submit', payload);
 }
@@ -63,6 +76,26 @@ function submeter() {
             <div class="modal-content p-6">
                 <h3 class="mb-5">{{ aluno ? 'Editar Aluno' : 'Novo Aluno' }}</h3>
                 <form @submit.prevent="submeter">
+                    <div class="fv-row mb-7 d-flex align-items-center gap-4">
+                        <div class="symbol symbol-circle symbol-75px overflow-hidden">
+                            <div class="symbol-label bg-light-primary">
+                                <img v-if="previewSrc" :src="previewSrc" alt="Foto do aluno" class="w-100 h-100 object-fit-cover" />
+                                <i v-else class="ki-duotone ki-picture fs-2x text-primary"><span class="path1"></span><span class="path2"></span></i>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="fw-semibold fs-6 mb-2">Foto</label>
+                            <input
+                                type="file"
+                                class="form-control form-control-solid"
+                                accept="image/png,image/jpeg,image/webp"
+                                @change="onFotoChange"
+                            />
+                            <div class="text-muted fs-8 mt-1">PNG, JPG ou WEBP, até 2MB.</div>
+                            <div class="text-danger fs-7 mt-1" v-if="errors.foto">{{ errors.foto }}</div>
+                        </div>
+                    </div>
+
                     <div class="fv-row mb-7">
                         <label class="required fw-semibold fs-6 mb-2">Nome completo</label>
                         <input v-model="form.nome_completo" type="text" class="form-control form-control-solid" />
@@ -70,14 +103,27 @@ function submeter() {
                     </div>
 
                     <div class="fv-row mb-7">
+                        <label class="fw-semibold fs-6 mb-2">Email</label>
+                        <input v-model="form.email" type="email" class="form-control form-control-solid" />
+                        <div class="text-danger fs-7 mt-1" v-if="errors.email">{{ errors.email }}</div>
+                    </div>
+
+                    <div class="fv-row mb-7">
                         <label class="fw-semibold fs-6 mb-2">Sexo</label>
                         <SelectSolid v-model="form.sexo" :options="SEXO_OPCOES" />
                     </div>
 
-                    <div class="fv-row mb-7">
-                        <label class="fw-semibold fs-6 mb-2">Email</label>
-                        <input v-model="form.email" type="email" class="form-control form-control-solid" />
-                        <div class="text-danger fs-7 mt-1" v-if="errors.email">{{ errors.email }}</div>
+                     <div class="row">
+                        <div class="col-md-6 fv-row mb-7">
+                            <label class="required fw-semibold fs-6 mb-2">Data de nascimento</label>
+                            <input v-model="form.data_nascimento" type="date" class="form-control form-control-solid" required />
+                            <div class="text-danger fs-7 mt-1" v-if="errors.data_nascimento">{{ errors.data_nascimento }}</div>
+                        </div>
+                        <div class="col-md-6 fv-row mb-7">
+                            <label class="required fw-semibold fs-6 mb-2">Número de identificação</label>
+                            <input v-model="form.numero_identificacao" type="text" class="form-control form-control-solid" />
+                            <div class="text-danger fs-7 mt-1" v-if="errors.numero_identificacao">{{ errors.numero_identificacao }}</div>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -91,18 +137,7 @@ function submeter() {
                         </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6 fv-row mb-7">
-                            <label class="required fw-semibold fs-6 mb-2">Data de nascimento</label>
-                            <input v-model="form.data_nascimento" type="date" class="form-control form-control-solid" required />
-                            <div class="text-danger fs-7 mt-1" v-if="errors.data_nascimento">{{ errors.data_nascimento }}</div>
-                        </div>
-                        <div v-if="!aluno" class="col-md-6 fv-row mb-7">
-                            <label class="required fw-semibold fs-6 mb-2">Número de identificação</label>
-                            <input v-model="form.numero_identificacao" type="text" class="form-control form-control-solid" />
-                            <div class="text-danger fs-7 mt-1" v-if="errors.numero_identificacao">{{ errors.numero_identificacao }}</div>
-                        </div>
-                    </div>
+
 
                     <div v-if="aluno" class="fv-row mb-7">
                         <label class="required fw-semibold fs-6 mb-2">Estado</label>

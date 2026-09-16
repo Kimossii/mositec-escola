@@ -3,7 +3,9 @@
 namespace Modules\Aluno\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Aluno\Models\Aluno;
 use Modules\Core\Enums\Estado;
@@ -74,6 +76,24 @@ class AlunoHttpTest extends TestCase
         $this->assertSame('Ana Silva', $aluno->dadosPessoa->nome_completo);
     }
 
+    public function test_cria_aluno_via_http_com_foto(): void
+    {
+        Storage::fake('public');
+        $this->actingAsStaff();
+        $this->criarEstabelecimento();
+
+        $this->post(route('alunos.store'), [
+            'nome_completo' => 'Ana Silva',
+            'numero_identificacao' => 'BI0001',
+            'data_nascimento' => '2010-05-01',
+            'foto' => UploadedFile::fake()->image('foto.jpg'),
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $aluno = Aluno::firstWhere('dados_pessoa_id', DadosPessoa::firstWhere('numero_identificacao', 'BI0001')?->id);
+        $this->assertNotNull($aluno->foto_path);
+        Storage::disk('public')->assertExists($aluno->foto_path);
+    }
+
     public function test_actualiza_aluno_via_http(): void
     {
         $this->actingAsStaff();
@@ -84,10 +104,44 @@ class AlunoHttpTest extends TestCase
         $this->put(route('alunos.update', $aluno), [
             'nome_completo' => 'Ana Silva Santos',
             'data_nascimento' => '2010-05-01',
+            'numero_identificacao' => 'BI0001',
         ])->assertSessionHasNoErrors()->assertRedirect();
 
         $this->assertSame('Ana Silva Santos', $aluno->dadosPessoa->fresh()->nome_completo);
         $this->assertSame('2026-0001', $aluno->fresh()->numero_matricula);
+    }
+
+    public function test_actualiza_numero_identificacao_via_http(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
+
+        $this->put(route('alunos.update', $aluno), [
+            'nome_completo' => 'Ana Silva',
+            'data_nascimento' => '2010-05-01',
+            'numero_identificacao' => 'BI9999',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame('BI9999', $pessoa->fresh()->numero_identificacao);
+    }
+
+    public function test_actualiza_aluno_falha_com_numero_identificacao_ja_usado_por_outra_pessoa(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        DadosPessoa::create(['nome_completo' => 'Bruno Costa', 'numero_identificacao' => 'BI0002', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
+
+        $this->put(route('alunos.update', $aluno), [
+            'nome_completo' => 'Ana Silva',
+            'data_nascimento' => '2010-05-01',
+            'numero_identificacao' => 'BI0002',
+        ])->assertSessionHasErrors('numero_identificacao');
+
+        $this->assertSame('BI0001', $pessoa->fresh()->numero_identificacao);
     }
 
     public function test_actualiza_aluno_falha_sem_data_nascimento(): void

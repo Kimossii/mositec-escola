@@ -33,6 +33,7 @@ class CriarAlunoRequest extends BaseRequest
                 'max:100',
                 Rule::unique('dados_pessoas', 'numero_identificacao'),
             ],
+            'foto' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
         ];
     }
 
@@ -45,6 +46,9 @@ class CriarAlunoRequest extends BaseRequest
             'data_nascimento.required_without' => 'A data de nascimento é obrigatória.',
             'numero_identificacao.required_without' => 'O número de identificação é obrigatório.',
             'numero_identificacao.unique' => 'Já existe uma pessoa com este número de identificação.',
+            'foto.image' => 'A foto deve ser uma imagem válida.',
+            'foto.mimes' => 'A foto deve ser um ficheiro PNG, JPG, JPEG ou WEBP.',
+            'foto.max' => 'A foto não pode exceder 2MB.',
         ];
     }
 }

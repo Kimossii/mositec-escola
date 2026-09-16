@@ -46,7 +46,7 @@ class AlunoDTO
             telefone: $dados['telefone'] ?? null,
             dataNascimento: $dados['data_nascimento'] ?? null,
             sexo: $dados['sexo'] ?? 0,
-            numeroIdentificacao: null,
+            numeroIdentificacao: $dados['numero_identificacao'] ?? null,
             telefoneAlternativo: $dados['telefone_alternativo'] ?? null,
         );
     }

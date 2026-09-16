@@ -2,6 +2,7 @@
 
 namespace Modules\Aluno\Actions;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Modules\Aluno\DTO\AlunoDTO;
 use Modules\Aluno\Models\Aluno;
@@ -16,9 +17,9 @@ class CriarAlunoAction
     ) {
     }
 
-    public function executar(AlunoDTO $dto): Aluno
+    public function executar(AlunoDTO $dto, ?UploadedFile $foto = null): Aluno
     {
-        return DB::transaction(function () use ($dto) {
+        return DB::transaction(function () use ($dto, $foto) {
             $dadosPessoa = $dto->dadosPessoaId
                 ? DadosPessoa::findOrFail($dto->dadosPessoaId)
                 : DadosPessoa::create([
@@ -32,11 +33,17 @@ class CriarAlunoAction
                     'tipo_pessoa' => DadosPessoa::TIPO_ALUNO,
                 ]);
 
-            return Aluno::create([
+            $aluno = Aluno::create([
                 'estabelecimento_id' => Estabelecimento::current()?->id,
                 'dados_pessoa_id' => $dadosPessoa->id,
                 'numero_matricula' => $this->geradorMatricula->gerar(),
             ]);
+
+            if ($foto) {
+                $aluno->update(['foto_path' => $foto->store('alunos/fotos', 'public')]);
+            }
+
+            return $aluno;
         });
     }
 }

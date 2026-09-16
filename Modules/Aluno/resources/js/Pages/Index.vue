@@ -41,9 +41,13 @@ function guardar(payload) {
     errors.value = {};
 
     const url = alunoEmEdicao.value ? `/alunos/${alunoEmEdicao.value.id}` : '/alunos';
-    const metodo = alunoEmEdicao.value ? 'put' : 'post';
+    // PHP não faz parsing do corpo multipart/form-data em pedidos PUT
+    // nativos (só em POST) — por isso, com upload de ficheiro, submete-se
+    // sempre via POST com spoofing de método (_method) quando é edição.
+    const dados = alunoEmEdicao.value ? { ...payload, _method: 'put' } : payload;
 
-    router[metodo](url, payload, {
+    router.post(url, dados, {
+        forceFormData: true,
         preserveScroll: true,
         onSuccess: () => {
             toast.success(alunoEmEdicao.value ? 'Aluno atualizado com sucesso.' : 'Aluno criado com sucesso.');

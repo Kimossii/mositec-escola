@@ -2,9 +2,11 @@
 
 namespace Modules\Aluno\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -23,6 +25,7 @@ class Aluno extends Model
         'estabelecimento_id',
         'dados_pessoa_id',
         'numero_matricula',
+        'foto_path',
         'estado',
         'estado_descricao',
         'criado_por',
@@ -36,6 +39,15 @@ class Aluno extends Model
     protected $casts = [
         'estado' => 'integer',
     ];
+
+    protected $appends = ['foto_url'];
+
+    protected function fotoUrl(): Attribute
+    {
+        return Attribute::get(
+            fn () => $this->foto_path ? Storage::disk('public')->url($this->foto_path) : null,
+        );
+    }
 
     public function estabelecimento(): BelongsTo
     {

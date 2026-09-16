@@ -47,7 +47,12 @@ function formatarData(data) {
 function guardar(payload) {
     processing.value = true;
     errors.value = {};
-    router.put(`/alunos/${props.aluno.id}`, payload, {
+    // PHP não faz parsing do corpo multipart/form-data em pedidos PUT
+    // nativos (só em POST) — por isso, com upload de ficheiro, submete-se
+    // sempre via POST com spoofing de método (_method), nunca router.put
+    // directo.
+    router.post(`/alunos/${props.aluno.id}`, { ...payload, _method: 'put' }, {
+        forceFormData: true,
         preserveScroll: true,
         onSuccess: () => {
             toast.success('Aluno atualizado com sucesso.');
@@ -284,9 +289,17 @@ function confirmarEliminacao() {
         <BotaoVoltar href="/alunos" class="mb-4" />
 
         <div class="d-flex justify-content-between align-items-center mb-6">
-            <div>
-                <h1 class="fs-2 fw-bold mb-1">{{ aluno.dados_pessoa?.nome_completo }}</h1>
-                <span class="text-muted">Matrícula: {{ aluno.numero_matricula }}</span>
+            <div class="d-flex align-items-center gap-4">
+                <div class="symbol symbol-circle symbol-75px overflow-hidden">
+                    <div class="symbol-label bg-light-primary">
+                        <img v-if="aluno.foto_url" :src="aluno.foto_url" :alt="aluno.dados_pessoa?.nome_completo" class="w-100 h-100 object-fit-cover" />
+                        <i v-else class="ki-duotone ki-picture fs-2x text-primary"><span class="path1"></span><span class="path2"></span></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="fs-2 fw-bold mb-1">{{ aluno.dados_pessoa?.nome_completo }}</h1>
+                    <span class="text-muted">Matrícula: {{ aluno.numero_matricula }}</span>
+                </div>
             </div>
             <div class="d-flex gap-2">
                 <button v-if="can('documento-pessoa.ver')" class="btn btn-light-primary" @click="abrirDocumentos">Documentos</button>

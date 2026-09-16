@@ -25,12 +25,12 @@ class GestaoAlunoService
 
     public function criar(CriarAlunoRequest $request): Aluno
     {
-        return $this->criarAluno->executar(AlunoDTO::fromCriarRequest($request));
+        return $this->criarAluno->executar(AlunoDTO::fromCriarRequest($request), $request->file('foto'));
     }
 
     public function atualizar(Aluno $aluno, AtualizarAlunoRequest $request): Aluno
     {
-        return $this->atualizarAluno->executar($aluno, AlunoDTO::fromAtualizarRequest($request));
+        return $this->atualizarAluno->executar($aluno, AlunoDTO::fromAtualizarRequest($request), $request->file('foto'));
     }
 
     public function alterarEstado(Aluno $aluno, Estado $novoEstado): Aluno

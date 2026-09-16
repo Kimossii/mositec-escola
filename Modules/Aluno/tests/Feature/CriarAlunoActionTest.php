@@ -3,6 +3,8 @@
 namespace Modules\Aluno\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Modules\Aluno\Actions\CriarAlunoAction;
 use Modules\Aluno\DTO\AlunoDTO;
 use Modules\Aluno\Models\Aluno;
@@ -64,6 +66,49 @@ class CriarAlunoActionTest extends TestCase
         $aluno = app(CriarAlunoAction::class)->executar($dto);
 
         $this->assertSame('924000000', $aluno->dadosPessoa->telefone_alternativo);
+    }
+
+    public function test_cria_aluno_guarda_foto_no_disco_publico(): void
+    {
+        Storage::fake('public');
+        $this->criarEstabelecimento();
+
+        $dto = new AlunoDTO(
+            dadosPessoaId: null,
+            nomeCompleto: 'Ana Silva',
+            email: null,
+            telefone: null,
+            dataNascimento: '2010-05-01',
+            sexo: 0,
+            numeroIdentificacao: 'BI0001',
+        );
+        $foto = UploadedFile::fake()->image('foto.jpg');
+
+        $aluno = app(CriarAlunoAction::class)->executar($dto, $foto);
+
+        $this->assertNotNull($aluno->foto_path);
+        Storage::disk('public')->assertExists($aluno->foto_path);
+        $this->assertNotNull($aluno->foto_url);
+    }
+
+    public function test_cria_aluno_sem_foto_deixa_foto_path_nulo(): void
+    {
+        $this->criarEstabelecimento();
+
+        $dto = new AlunoDTO(
+            dadosPessoaId: null,
+            nomeCompleto: 'Ana Silva',
+            email: null,
+            telefone: null,
+            dataNascimento: '2010-05-01',
+            sexo: 0,
+            numeroIdentificacao: 'BI0001',
+        );
+
+        $aluno = app(CriarAlunoAction::class)->executar($dto);
+
+        $this->assertNull($aluno->foto_path);
+        $this->assertNull($aluno->foto_url);
     }
 
     public function test_cria_aluno_reutilizando_dados_pessoa_existente(): void
