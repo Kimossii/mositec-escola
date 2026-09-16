@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Matricula\Http\Controllers\InscricaoDisciplinaController;
 use Modules\Matricula\Http\Controllers\MatriculaController;
 
 Route::middleware(['auth'])->group(function () {
@@ -13,5 +14,9 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/{matricula}/estado', [MatriculaController::class, 'alterarEstado'])->middleware('can:matricula.editar')->name('alterar-estado');
         Route::post('/{matricula}/renovar', [MatriculaController::class, 'renovar'])->middleware('can:matricula.criar')->name('renovar');
         Route::delete('/{matricula}', [MatriculaController::class, 'destroy'])->middleware('can:matricula.eliminar')->name('destroy');
+
+        Route::post('/{matricula}/disciplinas', [InscricaoDisciplinaController::class, 'store'])->middleware('can:matricula.criar')->name('disciplinas.store');
+        Route::patch('/{matricula}/disciplinas/{inscricao}/estado', [InscricaoDisciplinaController::class, 'alterarEstado'])->middleware('can:matricula.editar')->name('disciplinas.alterar-estado');
+        Route::delete('/{matricula}/disciplinas/{inscricao}', [InscricaoDisciplinaController::class, 'destroy'])->middleware('can:matricula.eliminar')->name('disciplinas.destroy');
     });
 });

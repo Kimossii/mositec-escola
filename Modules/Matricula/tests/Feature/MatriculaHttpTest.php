@@ -9,10 +9,13 @@ use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
+use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
@@ -111,6 +114,33 @@ class MatriculaHttpTest extends TestCase
         ]);
     }
 
+    /**
+     * Fora do Ensino Superior, `CriarMatriculaAction` exige um Plano
+     * Curricular confirmado para a combinação curso/nível/ano lectivo antes
+     * de criar (ou renovar) uma Matrícula (Task 4). Os testes HTTP desta
+     * suite que não são sobre essa regra em si precisam de um plano
+     * confirmado só para não colidir com essa pré-condição.
+     */
+    private function confirmarPlanoCurricular(
+        Estabelecimento $estabelecimento,
+        AnoLectivo $anoLectivo,
+        NivelAcademico $nivel,
+        ?Curso $curso = null,
+    ): void {
+        $plano = PlanoCurricular::create([
+            'estabelecimento_id' => $estabelecimento->id,
+            'curso_id' => $curso?->id,
+            'nivel_academico_id' => $nivel->id,
+            'codigo' => 'PL' . random_int(100000, 999999),
+            'nome' => 'Plano Curricular Teste',
+        ]);
+
+        PlanoCurricularAnoLectivo::create([
+            'plano_curricular_id' => $plano->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+        ]);
+    }
+
     public function test_cria_matricula_via_http(): void
     {
         $this->actingAsStaff();
@@ -120,6 +150,7 @@ class MatriculaHttpTest extends TestCase
         $turma = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
         (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
 
         $this->post(route('matriculas.store', $aluno), [
             'turma_id' => $turma->id,
@@ -141,6 +172,7 @@ class MatriculaHttpTest extends TestCase
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $turma = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
         // Sem enquadramento prévio — a matrícula deve assumi-lo automaticamente.
 
         $this->post(route('matriculas.store', $aluno), [
@@ -501,6 +533,9 @@ class MatriculaHttpTest extends TestCase
         $this->criarTurma($anoLectivoSeguinte, $nivel6);
         $aluno = $this->criarAluno($estabelecimento);
         (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel5->id);
+        // A renovação cria a nova Matrícula na turma SEGUINTE — é essa combinação
+        // curso/nível/ano-lectivo que precisa do Plano Curricular confirmado.
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivoSeguinte, $nivel6);
 
         $matricula = Matricula::create([
             'aluno_id' => $aluno->id, 'turma_id' => $turmaAtual->id, 'ano_lectivo_id' => $anoLectivoAtual->id,
@@ -533,6 +568,10 @@ class MatriculaHttpTest extends TestCase
         ]);
         $turmaAtual = $this->criarTurma($anoLectivoAtual, $nivel5);
         $this->criarTurma($anoLectivoSeguinte, $nivel6);
+        // A renovação (aluno A) cria a nova Matrícula na turma SEGUINTE — é essa
+        // combinação curso/nível/ano-lectivo que precisa do Plano Curricular
+        // confirmado. Aluno B nunca chega lá (fica Pendente, é rejeitado antes).
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivoSeguinte, $nivel6);
 
         $alunoA = $this->criarAluno($estabelecimento);
         (new CriarEnquadramentoAcademicoAlunoAction())->executar($alunoA, nivelAcademicoId: $nivel5->id);

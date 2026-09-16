@@ -16,7 +16,7 @@
 - **Só backend nesta fase.** Frontend (páginas Vue, listagem de disciplinas na página do Aluno/Matrícula) fica para um plano seguinte — não incluído aqui.
 - **Sem notas/avaliação/frequência nesta fase.** `InscricaoDisciplina` só regista o vínculo e o seu estado (Inscrita/Concluída/Reprovada/Desistida), não `nota_final` nem faltas.
 - Não criar `Modulo`/`Acao` novos em `Modules\Permissao` — reaproveitar `matricula.ver/criar/editar/eliminar`, já concedidas ao `ADMIN_ESCOLA`.
-- Não alterar `Matricula`, `ValidadorMatriculaService`, nem qualquer teste já existente do módulo Matrícula — excepto duas chamadas aditivas em `CriarMatriculaAction` (Task 4): uma validação antes de criar a Matrícula (`garantirPlanoCurricularConfirmado`) e um hook depois (`executar`), ambas em `InscreverDisciplinasAutomaticamenteAction`.
+- Não alterar `Matricula`, `ValidadorMatriculaService` — excepto duas chamadas aditivas em `CriarMatriculaAction` (Task 4): uma validação antes de criar a Matrícula (`garantirPlanoCurricularConfirmado`) e um hook depois (`executar`), ambas em `InscreverDisciplinasAutomaticamenteAction`. **Excepção descoberta durante a execução (Task 4):** o precondicionamento da Decisão 10 quebra qualquer teste já existente que crie uma Matrícula fora do Ensino Superior sem currículo confirmado — na prática isto atingiu `MatriculaActionTest.php` (~17 testes) e `MatriculaHttpTest.php` (4 testes), ambos corrigidos apenas com fixtures aditivas (currículo confirmado antes da criação), sem alterar nenhuma asserção existente. Nenhum outro ficheiro do projecto foi afectado (verificado pelo grafo real de chamadas a `CriarMatriculaAction`, não só pelo nome).
 - Não implementar edição/eliminação em cascata quando uma Matrícula é eliminada/editada — está fora de escopo, documentado como risco conhecido na Task 1.
 - **Sem best-effort.** Fora do Ensino Superior, criar uma Matrícula exige um `PlanoCurricular` confirmado (via `PlanoCurricularAnoLectivo`) para o Curso/Nível/Ano Lectivo da turma — sem isso, a criação é recusada com `ValidationException` em `turma_id` (Task 3/4). No Ensino Superior não há esta exigência, porque a inscrição em disciplinas aí é sempre manual (electivas, cadeiras em atraso).
 - Não criar commits automaticamente.
@@ -27,9 +27,9 @@
 
 1. **`InscricaoDisciplina` pertence a `Matricula`, não a `Aluno` directamente.** Um aluno pode ter duas matrículas em simultâneo (ex.: duas licenciaturas no Superior, ou "cadeira em atraso" — matrícula do ano anterior ainda Activa/Pendente); cada inscrição em disciplina tem de saber *sob qual matrícula* está a ser feita, para relatórios e para a UI futura conseguir agrupar "disciplinas deste ano" vs "disciplinas em atraso".
 2. **`plano_curricular_disciplina_id` é obrigatório, nunca `disciplina_id` directo.** `PlanoCurricularDisciplina` já carrega `carga_horaria`/`creditos`/`componente`/`tipo`/`obrigatoria` — apontar para lá em vez de para `Disciplina` evita duplicar esses dados e mantém a inscrição ligada a *qual versão do currículo* o aluno seguiu (importante se o plano curricular for revisto no futuro).
-3. **Duplicado é validado pelo aluno, não pela matrícula.** Um aluno não pode ter duas `InscricaoDisciplina` em estado `Inscrita` para a mesma `Disciplina` (via `plano_curricular_disciplina.disciplina_id`) em simultâneo — mesmo que uma seja da matrícula deste ano e outra de uma matrícula antiga ainda aberta. Resolver via `whereHas('matricula', fn ($q) => $q->where('aluno_id', ...))`.
+3. **Duplicado é validado pelo aluno, não pela matrícula — mas só entre matrículas ABERTAS.** Um aluno não pode ter duas `InscricaoDisciplina` em estado `Inscrita` para a mesma `Disciplina` (via `plano_curricular_disciplina.disciplina_id`) em simultâneo — mesmo que uma seja da matrícula deste ano e outra de uma matrícula antiga ainda aberta (Pendente/Activa). A palavra "aberta" é literal: a verificação tem de excluir matrículas terminais (Concluída/Cancelada/Transferida), senão um aluno repetente herda para sempre inscrições "fantasma" da matrícula antiga já encerrada e a inscrição automática da matrícula nova falha silenciosamente disciplina a disciplina (o erro é engolido por `InscreverDisciplinasAutomaticamenteAction`). Resolver via `whereHas('matricula', fn ($q) => $q->where('aluno_id', ...)->whereIn('estado', [EstadoMatriculaEnum::PENDENTE->value, EstadoMatriculaEnum::ACTIVA->value]))`.
 4. **Inscrição automática só fora do Ensino Superior.** Reaproveita `Estabelecimento::current()?->tipo_ensino` (já usado em `ValidadorMatriculaService::garantirEnquadramentoAcademico`) — exactamente a mesma distinção já decidida para o enquadramento académico: no Superior a escolha é sempre manual (electivas, cadeiras específicas); fora dele, a turma inteira segue o mesmo currículo, logo a inscrição é automática ao criar a matrícula — e, fora dele, essa mesma turma tem de ter currículo confirmado para poder receber matrículas (Decisão 10).
-5. **Resolução do `PlanoCurricular` da Turma:** `PlanoCurricular::where('curso_id', $turma->curso_id)->where('nivel_academico_id', $turma->nivel_academico_id)->whereHas('anosLectivos', fn ($q) => $q->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('estado', 1))->first()` — método único (`resolverPlanoCurricular()`, Task 3), reaproveitado tanto pela validação (`garantirPlanoCurricularConfirmado()`) como pela inscrição (`executar()`). Dentro de `executar()`, um `null` continua a devolver `0` sem excepção — é só defensivo, porque fora do Superior a validação já bloqueou esse estado antes de a Matrícula existir (Decisão 10).
+5. **Resolução do `PlanoCurricular` da Turma:** `PlanoCurricular::where('curso_id', $turma->curso_id)->where('nivel_academico_id', $turma->nivel_academico_id)->where('estado', 1)->whereHas('anosLectivos', fn ($q) => $q->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('estado', 1))->first()` — método único (`resolverPlanoCurricular()`, Task 3), reaproveitado tanto pela validação (`garantirPlanoCurricularConfirmado()`) como pela inscrição (`executar()`). Filtra o `estado` do PRÓPRIO `PlanoCurricular`, não só da sua confirmação (`PlanoCurricularAnoLectivo.estado`) — um currículo desactivado via `AlterarEstadoPlanoCurricularAction` não pode continuar a satisfazer a pré-condição obrigatória da Decisão 10 nem a dirigir inscrição automática, mesmo que a confirmação do ano lectivo continue lá. Dentro de `executar()`, um `null` continua a devolver `0` sem excepção — é só defensivo, porque fora do Superior a validação já bloqueou esse estado antes de a Matrícula existir (Decisão 10).
 6. **FK deletes:** `matricula_id` e `plano_curricular_disciplina_id` usam `restrictOnDelete()` — replica a decisão já tomada para `plano_curricular_anos_lectivos` (registo histórico, não deve desaparecer por cascata). `InscricaoDisciplina` usa `SoftDeletes`, tal como `Matricula`.
 7. **Sem `Modulo`/`Acao` novos.** `matricula.criar` cobre criar inscrição (manual ou automática), `matricula.editar` cobre alterar estado, `matricula.eliminar` cobre eliminar — mesma filosofia "uma permissão por módulo inteiro" já usada em `PlanoCurricular`/`Infraestrutura`.
 8. **Estado machine idêntica à de `Matricula`:** `INSCRITA=1, CONCLUIDA=2, REPROVADA=3, DESISTIDA=4`; `INSCRITA` transita para qualquer um dos três terminais; terminais não transitam. `REPROVADA` não cria automaticamente uma nova inscrição no ano seguinte — isso fica para quando existir "renovação de inscrição em disciplina", fora de escopo aqui.
@@ -265,10 +265,10 @@ use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
-use Modules\Matricula\Actions\CriarMatriculaAction;
-use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\InscricaoDisciplina;
+use Modules\Matricula\Models\Matricula;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
 use Modules\Disciplina\Models\Disciplina;
@@ -281,6 +281,10 @@ class InscricaoDisciplinaModelTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Constrói a Matrícula directamente no modelo, sem passar por
+    // CriarMatriculaAction — este teste verifica só o Model/relações,
+    // sem depender de currículo confirmado nem do hook de inscrição
+    // automática que CriarMatriculaAction ganha na Task 4.
     public function test_cria_inscricao_e_carrega_relacoes(): void
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
@@ -290,7 +294,15 @@ class InscricaoDisciplinaModelTest extends TestCase
         $pessoa = DadosPessoal::create(['nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
         (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
-        $matricula = app(CriarMatriculaAction::class)->executar($aluno, new MatriculaDTO(turmaId: $turma->id, anoLectivoId: $anoLectivo->id, dataMatricula: null, estado: null, observacoes: null));
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001',
+            'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
 
         $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
@@ -350,10 +362,11 @@ use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
 use Modules\Matricula\Actions\CriarInscricaoDisciplinaAction;
-use Modules\Matricula\Actions\CriarMatriculaAction;
-use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Models\Matricula;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
@@ -366,6 +379,10 @@ class CriarInscricaoDisciplinaActionTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Constrói a Matrícula directamente no modelo, sem passar por
+    // CriarMatriculaAction — este teste verifica CriarInscricaoDisciplinaAction
+    // em isolamento, sem depender de currículo confirmado nem do hook de
+    // inscrição automática que CriarMatriculaAction ganha na Task 4.
     private function criarCenario(): array
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
@@ -375,7 +392,15 @@ class CriarInscricaoDisciplinaActionTest extends TestCase
         $pessoa = DadosPessoal::create(['nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
         (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
-        $matricula = app(CriarMatriculaAction::class)->executar($aluno, new MatriculaDTO(turmaId: $turma->id, anoLectivoId: $anoLectivo->id, dataMatricula: null, estado: null, observacoes: null));
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001',
+            'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
 
         $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
@@ -407,8 +432,8 @@ class CriarInscricaoDisciplinaActionTest extends TestCase
     public function test_rejeita_inscricao_em_matricula_concluida(): void
     {
         [$matricula, $planoDisciplina] = $this->criarCenario();
-        app(\Modules\Matricula\Actions\AlterarEstadoMatriculaAction::class)->executar($matricula, \Modules\Matricula\Enums\EstadoMatriculaEnum::ACTIVA);
-        $matricula = app(\Modules\Matricula\Actions\AlterarEstadoMatriculaAction::class)->executar($matricula, \Modules\Matricula\Enums\EstadoMatriculaEnum::CONCLUIDA);
+        app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
+        $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CONCLUIDA);
 
         $this->expectException(ValidationException::class);
 
@@ -431,6 +456,7 @@ namespace Modules\Matricula\Actions;
 
 use Illuminate\Validation\ValidationException;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\InscricaoDisciplina;
 use Modules\Matricula\Models\Matricula;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
@@ -451,7 +477,10 @@ class CriarInscricaoDisciplinaAction
         $jaInscrito = InscricaoDisciplina::query()
             ->where('estado', EstadoInscricaoDisciplinaEnum::INSCRITA->value)
             ->whereHas('planoCurricularDisciplina', fn ($query) => $query->where('disciplina_id', $planoCurricularDisciplina->disciplina_id))
-            ->whereHas('matricula', fn ($query) => $query->where('aluno_id', $matricula->aluno_id))
+            ->whereHas('matricula', function ($query) use ($matricula) {
+                $query->where('aluno_id', $matricula->aluno_id)
+                    ->whereIn('estado', [EstadoMatriculaEnum::PENDENTE->value, EstadoMatriculaEnum::ACTIVA->value]);
+            })
             ->exists();
 
         if ($jaInscrito) {
@@ -696,6 +725,7 @@ class InscreverDisciplinasAutomaticamenteAction
         return PlanoCurricular::query()
             ->where('curso_id', $turma->curso_id)
             ->where('nivel_academico_id', $turma->nivel_academico_id)
+            ->where('estado', 1)
             ->whereHas('anosLectivos', function ($query) use ($turma) {
                 $query->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('estado', 1);
             })
@@ -738,6 +768,16 @@ class InscreverDisciplinasAutomaticamenteAction
     public function executar(Matricula $matricula, ?int $utilizadorId = null): int
     {
         if (Estabelecimento::current()?->tipo_ensino === TipoEnsinoEnum::UNIVERSITARIO) {
+            return 0;
+        }
+
+        // Guarda explícita: uma matrícula terminal nunca deveria chegar aqui
+        // no fluxo normal (a Task 4 chama isto logo a seguir a criar a
+        // matrícula, que nunca nasce terminal), mas sem esta guarda esse
+        // caso cairia silenciosamente no catch abaixo, indistinguível de
+        // "já todas inscritas". Sair cedo aqui mantém o catch com o âmbito
+        // que o seu comentário já descreve — só duplicados.
+        if ($matricula->estado->eTerminal()) {
             return 0;
         }
 
@@ -955,9 +995,10 @@ use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Actions\AlterarEstadoInscricaoDisciplinaAction;
 use Modules\Matricula\Actions\CriarInscricaoDisciplinaAction;
-use Modules\Matricula\Actions\CriarMatriculaAction;
-use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Models\InscricaoDisciplina;
+use Modules\Matricula\Models\Matricula;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
@@ -970,7 +1011,9 @@ class AlterarEstadoInscricaoDisciplinaActionTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function criarInscricao(): \Modules\Matricula\Models\InscricaoDisciplina
+    // Constrói a Matrícula directamente no modelo (ver Task 2) — este teste
+    // verifica AlterarEstadoInscricaoDisciplinaAction em isolamento.
+    private function criarInscricao(): InscricaoDisciplina
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
         $anoLectivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026', 'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO]);
@@ -979,7 +1022,15 @@ class AlterarEstadoInscricaoDisciplinaActionTest extends TestCase
         $pessoa = DadosPessoal::create(['nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
         (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
-        $matricula = app(CriarMatriculaAction::class)->executar($aluno, new MatriculaDTO(turmaId: $turma->id, anoLectivoId: $anoLectivo->id, dataMatricula: null, estado: null, observacoes: null));
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001',
+            'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
 
         $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
@@ -1096,11 +1147,11 @@ use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Actions\AlterarEstadoInscricaoDisciplinaAction;
 use Modules\Matricula\Actions\CriarInscricaoDisciplinaAction;
-use Modules\Matricula\Actions\CriarMatriculaAction;
 use Modules\Matricula\Actions\EliminarInscricaoDisciplinaAction;
-use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\InscricaoDisciplina;
+use Modules\Matricula\Models\Matricula;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
@@ -1113,6 +1164,8 @@ class EliminarInscricaoDisciplinaActionTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Constrói a Matrícula directamente no modelo (ver Task 2) — este teste
+    // verifica EliminarInscricaoDisciplinaAction em isolamento.
     private function criarInscricao(): InscricaoDisciplina
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
@@ -1122,7 +1175,15 @@ class EliminarInscricaoDisciplinaActionTest extends TestCase
         $pessoa = DadosPessoal::create(['nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
         (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
-        $matricula = app(CriarMatriculaAction::class)->executar($aluno, new MatriculaDTO(turmaId: $turma->id, anoLectivoId: $anoLectivo->id, dataMatricula: null, estado: null, observacoes: null));
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001',
+            'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
 
         $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
@@ -1293,11 +1354,11 @@ use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
-use Modules\Matricula\Actions\CriarMatriculaAction;
-use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Http\Requests\AlterarEstadoInscricaoDisciplinaRequest;
 use Modules\Matricula\Http\Requests\CriarInscricaoDisciplinaRequest;
+use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\GestaoInscricaoDisciplinaService;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
@@ -1315,6 +1376,8 @@ class GestaoInscricaoDisciplinaServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Constrói a Matrícula directamente no modelo (ver Task 2) — este teste
+    // verifica GestaoInscricaoDisciplinaService em isolamento.
     public function test_criar_e_alterar_estado_via_service(): void
     {
         $this->seed(PermissaoDatabaseSeeder::class);
@@ -1329,7 +1392,15 @@ class GestaoInscricaoDisciplinaServiceTest extends TestCase
         $pessoa = DadosPessoal::create(['nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
         (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
-        $matricula = app(CriarMatriculaAction::class)->executar($aluno, new MatriculaDTO(turmaId: $turma->id, anoLectivoId: $anoLectivo->id, dataMatricula: null, estado: null, observacoes: null));
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001',
+            'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
 
         $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
@@ -1506,9 +1577,9 @@ use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
-use Modules\Matricula\Actions\CriarMatriculaAction;
-use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Models\Matricula;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
@@ -1540,6 +1611,9 @@ class InscricaoDisciplinaHttpTest extends TestCase
         return $staff;
     }
 
+    // Constrói a Matrícula directamente no modelo (ver Task 2) — este teste
+    // verifica as rotas HTTP em isolamento, sem depender de currículo
+    // confirmado.
     public function test_cria_altera_estado_e_elimina_inscricao_via_http(): void
     {
         $this->actingAsStaff();
@@ -1550,7 +1624,15 @@ class InscricaoDisciplinaHttpTest extends TestCase
         $pessoa = DadosPessoal::create(['nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
         (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
-        $matricula = app(CriarMatriculaAction::class)->executar($aluno, new MatriculaDTO(turmaId: $turma->id, anoLectivoId: $anoLectivo->id, dataMatricula: null, estado: null, observacoes: null));
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001',
+            'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
 
         $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
@@ -1579,7 +1661,23 @@ class InscricaoDisciplinaHttpTest extends TestCase
         $professor->roles()->syncWithoutDetaching([Role::where('nome', Perfil::PROFESSOR->value)->first()->id]);
         $this->actingAs($professor);
 
-        $this->post(route('matriculas.disciplinas.store', [1, 1]), ['plano_curricular_disciplina_id' => 1])->assertForbidden();
+        // IDs literais (1, 1) 404iam via route-model-binding antes de a
+        // middleware `can:` sequer correr, numa BD RefreshDatabase vazia —
+        // isso testaria "não existe", não "sem permissão". Aluno/Matrícula
+        // reais garantem que o pedido chega mesmo à verificação de
+        // autorização.
+        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $anoLectivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026', 'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 1]);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $pessoa = DadosPessoal::create(['nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
+        $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001', 'data_matricula' => '2026-02-01', 'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
+
+        $this->post(route('matriculas.disciplinas.store', [$aluno, $matricula]), ['plano_curricular_disciplina_id' => 1])->assertForbidden();
     }
 }
 ```
@@ -1637,8 +1735,8 @@ use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Actions\CriarInscricaoDisciplinaAction;
-use Modules\Matricula\Actions\CriarMatriculaAction;
-use Modules\Matricula\DTO\MatriculaDTO;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\MatriculaConsultaService;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
@@ -1652,6 +1750,8 @@ class MatriculaConsultaServiceInscricoesTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Constrói a Matrícula directamente no modelo (ver Task 2) — este teste
+    // verifica só a consulta, sem depender de currículo confirmado.
     public function test_lista_disciplinas_da_matricula_com_nome_da_disciplina_carregado(): void
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
@@ -1661,7 +1761,15 @@ class MatriculaConsultaServiceInscricoesTest extends TestCase
         $pessoa = DadosPessoal::create(['nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
         (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
-        $matricula = app(CriarMatriculaAction::class)->executar($aluno, new MatriculaDTO(turmaId: $turma->id, anoLectivoId: $anoLectivo->id, dataMatricula: null, estado: null, observacoes: null));
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001',
+            'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
 
         $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
         $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);

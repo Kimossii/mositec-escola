@@ -17,6 +17,7 @@ class CriarMatriculaAction
         private GeradorNumeroRegistoMatriculaService $geradorNumeroRegisto,
         private ValidadorMatriculaService $validador,
         private RegistarHistoricoMatriculaAction $registarHistorico,
+        private InscreverDisciplinasAutomaticamenteAction $inscreverDisciplinas,
     ) {
     }
 
@@ -33,6 +34,7 @@ class CriarMatriculaAction
             $this->validador->validarTurma($turma, $dto->anoLectivoId);
             $this->validador->garantirEnquadramentoAcademico($aluno, $turma, $utilizadorId);
             $this->validador->validarMatriculaNaoDuplicada($aluno, $turma);
+            $this->inscreverDisciplinas->garantirPlanoCurricularConfirmado($turma);
 
             $anoLectivoId = $turma->ano_lectivo_id;
 
@@ -50,6 +52,8 @@ class CriarMatriculaAction
             ]);
 
             $this->registarHistorico->executar($matricula, null, $matricula->estado, $utilizadorId);
+
+            $this->inscreverDisciplinas->executar($matricula, $utilizadorId);
 
             return $matricula;
         });

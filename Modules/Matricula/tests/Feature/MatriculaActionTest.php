@@ -3,12 +3,15 @@
 namespace Modules\Matricula\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Enums\Estado;
 use Modules\Curso\Models\Curso;
+use Modules\Disciplina\Models\Disciplina;
+use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
@@ -20,6 +23,9 @@ use Modules\Matricula\Actions\RenovarMatriculasEmMassaAction;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
+use Modules\PlanoCurricular\Models\PlanoCurricular;
+use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
+use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
 use Modules\Usuario\Models\DadosPessoal;
@@ -123,6 +129,34 @@ class MatriculaActionTest extends TestCase
         );
     }
 
+    /**
+     * Fora do Ensino Superior, `CriarMatriculaAction` agora exige um Plano
+     * Curricular confirmado para a combinação curso/nível/ano lectivo da
+     * turma (Task 4 — hook de `InscreverDisciplinasAutomaticamenteAction`).
+     * Os testes desta suite que não são sobre essa regra em si continuam a
+     * precisar de um plano confirmado só para não colidir com a nova
+     * pré-condição.
+     */
+    private function confirmarPlanoCurricular(
+        Estabelecimento $estabelecimento,
+        AnoLectivo $anoLectivo,
+        NivelAcademico $nivel,
+        ?Curso $curso = null,
+    ): void {
+        $plano = PlanoCurricular::create([
+            'estabelecimento_id' => $estabelecimento->id,
+            'curso_id' => $curso?->id,
+            'nivel_academico_id' => $nivel->id,
+            'codigo' => 'PL' . random_int(100000, 999999),
+            'nome' => 'Plano Curricular Teste',
+        ]);
+
+        PlanoCurricularAnoLectivo::create([
+            'plano_curricular_id' => $plano->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+        ]);
+    }
+
     // ---------- Criação ----------
 
     public function test_cria_matricula_valida_com_curso(): void
@@ -134,6 +168,7 @@ class MatriculaActionTest extends TestCase
         $turma = $this->criarTurma($anoLectivo, $nivel, $curso);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, cursoId: $curso->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel, $curso);
 
         $matricula = app(CriarMatriculaAction::class)->executar(
             $aluno,
@@ -156,6 +191,7 @@ class MatriculaActionTest extends TestCase
         $turma = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
 
         $matricula = app(CriarMatriculaAction::class)->executar(
             $aluno,
@@ -221,6 +257,7 @@ class MatriculaActionTest extends TestCase
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $turma = $this->criarTurma($anoLectivo, $nivel, $curso);
         $aluno = $this->criarAluno($estabelecimento);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel, $curso);
         // Sem enquadramento prévio — a matrícula deve assumir o Curso e o Nível da turma.
 
         $matricula = app(CriarMatriculaAction::class)->executar(
@@ -244,6 +281,7 @@ class MatriculaActionTest extends TestCase
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $turma = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
 
         $matricula = app(CriarMatriculaAction::class)->executar(
             $aluno,
@@ -359,6 +397,7 @@ class MatriculaActionTest extends TestCase
         $alunoB = $this->criarAluno($estabelecimento, 'BI0002');
         $this->enquadrar($alunoA, nivelAcademicoId: $nivel->id);
         $this->enquadrar($alunoB, nivelAcademicoId: $nivel->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
 
         $matriculaA = app(CriarMatriculaAction::class)->executar($alunoA, $this->dto($turmaA->id, $anoLectivo->id));
         $matriculaB = app(CriarMatriculaAction::class)->executar($alunoB, $this->dto($turmaB->id, $anoLectivo->id));
@@ -405,6 +444,7 @@ class MatriculaActionTest extends TestCase
         $turmaB = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
 
         app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaA->id, $anoLectivo->id));
 
@@ -423,6 +463,7 @@ class MatriculaActionTest extends TestCase
         $turmaB = $this->criarTurma($anoLectivo, $nivel2Ano, $curso);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, cursoId: $curso->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel2Ano, $curso);
 
         app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaA->id, $anoLectivo->id));
 
@@ -445,6 +486,8 @@ class MatriculaActionTest extends TestCase
         $turma2Ano = $this->criarTurma($anoLectivo, $nivel2Ano, $curso);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, cursoId: $curso->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel1Ano, $curso);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel2Ano, $curso);
 
         $matricula2Ano = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma2Ano->id, $anoLectivo->id));
         $matricula1Ano = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma1Ano->id, $anoLectivo->id));
@@ -465,6 +508,7 @@ class MatriculaActionTest extends TestCase
         $turma = $this->criarTurma($anoLectivo, $nivel, $cursoA);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, cursoId: $cursoA->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel, $cursoA);
 
         $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
 
@@ -512,6 +556,7 @@ class MatriculaActionTest extends TestCase
         $turma = $this->criarTurma($anoLectivo, $nivel5a);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel5a->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel5a);
 
         $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
 
@@ -543,6 +588,7 @@ class MatriculaActionTest extends TestCase
         $turma = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
 
         return app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
     }
@@ -625,6 +671,7 @@ class MatriculaActionTest extends TestCase
         $turmaNova = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
 
         $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaOriginal->id, $anoLectivo->id));
         $numeroOriginal = $matricula->numero_registo_matricula;
@@ -649,6 +696,7 @@ class MatriculaActionTest extends TestCase
         $turmaIncompativel = $this->criarTurma($anoLectivo, $outroNivel);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
 
         $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaOriginal->id, $anoLectivo->id));
 
@@ -749,6 +797,8 @@ class MatriculaActionTest extends TestCase
         $turmaSeguinte = $this->criarTurma($anoLectivoSeguinte, $nivel6);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel5->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivoAtual, $nivel5);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivoSeguinte, $nivel6);
 
         $matriculaAtual = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaAtual->id, $anoLectivoAtual->id));
         app(AlterarEstadoMatriculaAction::class)->executar($matriculaAtual, EstadoMatriculaEnum::ACTIVA);
@@ -784,6 +834,8 @@ class MatriculaActionTest extends TestCase
         $this->criarTurma($anoLectivoSeguinte, $nivel6);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel5->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivoAtual, $nivel5);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivoSeguinte, $nivel6);
 
         $matriculaAtual = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaAtual->id, $anoLectivoAtual->id));
         $matriculaAtual = app(AlterarEstadoMatriculaAction::class)->executar($matriculaAtual, EstadoMatriculaEnum::ACTIVA);
@@ -802,6 +854,7 @@ class MatriculaActionTest extends TestCase
         $turmaEscolhida = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
 
         $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaAtual->id, $anoLectivo->id));
         $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
@@ -820,6 +873,7 @@ class MatriculaActionTest extends TestCase
         $turmaAtual = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
         $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
 
         $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaAtual->id, $anoLectivo->id));
         $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
@@ -930,6 +984,8 @@ class MatriculaActionTest extends TestCase
         ]);
         $turmaAtual = $this->criarTurma($anoLectivoAtual, $nivel5);
         $this->criarTurma($anoLectivoSeguinte, $nivel6); // turma seguinte só para o aluno A
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivoAtual, $nivel5);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivoSeguinte, $nivel6);
 
         // Aluno A — pode renovar (turma seguinte existe para o seu nível).
         $alunoA = $this->criarAluno($estabelecimento, 'BI0001');
@@ -961,5 +1017,84 @@ class MatriculaActionTest extends TestCase
 
         $this->assertSame(0, $resultado['sucesso']);
         $this->assertArrayHasKey(999999, $resultado['falhas']);
+    }
+
+    // ---------- Inscrição automática em disciplinas ----------
+
+    public function test_criar_matricula_fora_do_superior_inscreve_automaticamente_nas_disciplinas(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento(); // GERAL por omissão
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+
+        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
+        PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivo->id]);
+        $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
+        PlanoCurricularDisciplina::create(['plano_curricular_id' => $plano->id, 'disciplina_id' => $disciplina->id]);
+
+        $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
+
+        $this->assertSame(1, $matricula->inscricoesDisciplinas()->count());
+    }
+
+    public function test_criar_matricula_no_superior_nao_inscreve_automaticamente(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento(TipoEnsinoEnum::UNIVERSITARIO);
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $curso = $this->criarCurso($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel, $curso);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, cursoId: $curso->id);
+
+        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'curso_id' => $curso->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'PL1', 'nome' => 'Plano 1']);
+        PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $anoLectivo->id]);
+        $disciplina = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'MAT1', 'nome' => 'Matemática I']);
+        PlanoCurricularDisciplina::create(['plano_curricular_id' => $plano->id, 'disciplina_id' => $disciplina->id]);
+
+        $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
+
+        $this->assertSame(0, $matricula->inscricoesDisciplinas()->count());
+    }
+
+    public function test_bloqueia_criar_matricula_fora_do_superior_sem_plano_curricular_confirmado(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento(); // GERAL por omissão
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+        // Sem PlanoCurricular/PlanoCurricularAnoLectivo criado.
+
+        try {
+            app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
+            $this->fail('Esperava ValidationException por falta de Plano Curricular confirmado.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('turma_id', $e->errors());
+        }
+
+        $this->assertSame(0, Matricula::where('aluno_id', $aluno->id)->count());
+    }
+
+    public function test_permite_criar_matricula_no_superior_sem_plano_curricular(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento(TipoEnsinoEnum::UNIVERSITARIO);
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $curso = $this->criarCurso($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel, $curso);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, cursoId: $curso->id);
+        // Sem PlanoCurricular — e mesmo assim a matrícula é criada, porque no Superior a
+        // inscrição em disciplinas é sempre manual e não exige currículo confirmado.
+
+        $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id));
+
+        $this->assertNotNull($matricula->id);
+        $this->assertSame(0, $matricula->inscricoesDisciplinas()->count());
     }
 }

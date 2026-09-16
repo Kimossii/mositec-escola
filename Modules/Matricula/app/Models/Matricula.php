@@ -67,4 +67,9 @@ class Matricula extends Model
     {
         return $this->hasMany(MatriculaHistorico::class);
     }
+
+    public function inscricoesDisciplinas(): HasMany
+    {
+        return $this->hasMany(InscricaoDisciplina::class);
+    }
 }

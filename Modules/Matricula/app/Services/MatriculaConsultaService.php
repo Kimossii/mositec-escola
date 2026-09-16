@@ -8,6 +8,7 @@ use Illuminate\Support\Collection as SupportCollection;
 use Modules\Aluno\Models\Aluno;
 use Modules\Core\Enums\Estado;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Matricula\Models\InscricaoDisciplina;
 use Modules\Matricula\Models\Matricula;
 use Modules\Turma\Models\Turma;
 
@@ -57,6 +58,14 @@ class MatriculaConsultaService
             ->with('utilizador')
             ->orderByDesc('created_at')
             ->orderByDesc('id')
+            ->get();
+    }
+
+    public function listarDisciplinasDaMatricula(Matricula $matricula): Collection
+    {
+        return InscricaoDisciplina::with('planoCurricularDisciplina.disciplina')
+            ->where('matricula_id', $matricula->id)
+            ->orderBy('data_inscricao')
             ->get();
     }
 
