@@ -25,7 +25,7 @@ class MatriculaConsultaService
 
     public function listarPorAluno(Aluno $aluno, array $filtros = [], int $porPagina = 10): LengthAwarePaginator
     {
-        return Matricula::with(['turma.curso', 'turma.nivelAcademico', 'anoLectivo'])
+        return Matricula::with(['turma.curso', 'turma.nivelAcademico', 'turma.turno', 'turma.turmaSalas.sala', 'anoLectivo'])
             ->where('aluno_id', $aluno->id)
             ->when($filtros['ano_lectivo_id'] ?? null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))
             ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {

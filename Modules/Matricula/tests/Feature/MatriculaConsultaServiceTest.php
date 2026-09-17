@@ -165,4 +165,25 @@ class MatriculaConsultaServiceTest extends TestCase
 
         $this->assertNull($resultado);
     }
+
+    public function test_listar_por_aluno_carrega_turno_e_sala_mesmo_em_matricula_terminal(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $turno = Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
+        $sala = Sala::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'S1', 'nome' => 'Sala 1', 'tipo' => TipoSala::SALA_AULA->value]);
+        $aluno = $this->criarAluno($estabelecimento);
+        $turma = $this->criarTurma($estabelecimento, $anoActivo);
+        $turma->update(['turno_id' => $turno->id]);
+        $turma->turmaSalas()->create(['sala_id' => $sala->id, 'inicio' => '2026-09-01']);
+        $this->matricular($aluno, $turma, $anoActivo, '2026-09-05', EstadoMatriculaEnum::CANCELADA);
+
+        $resultado = app(MatriculaConsultaService::class)->listarPorAluno($aluno);
+
+        $matricula = $resultado->items()[0];
+        $this->assertTrue($matricula->turma->relationLoaded('turno'));
+        $this->assertSame('Manhã', $matricula->turma->turno->nome);
+        $this->assertTrue($matricula->turma->relationLoaded('turmaSalas'));
+        $this->assertSame('Sala 1', $matricula->turma->turmaSalas->first()->sala->nome);
+    }
 }

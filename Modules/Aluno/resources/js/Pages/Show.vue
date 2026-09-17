@@ -13,7 +13,7 @@ import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/
 import MatriculaFormModal from '../../../../Matricula/resources/js/Components/MatriculaFormModal.vue';
 import InscricaoDisciplinaModal from '../../../../Matricula/resources/js/Components/InscricaoDisciplinaModal.vue';
 import DocumentoPessoaModal from '../../../../Usuario/resources/js/Components/DocumentoPessoaModal.vue';
-import { ESTADO_MATRICULA, estadoMatriculaBadgeClass, estadoMatriculaLabel, transicoesDisponiveis } from '../../../../Matricula/resources/js/Models/Estado';
+import { ESTADO_MATRICULA, estadoMatriculaBadgeClass, estadoMatriculaLabel, estadoMatriculaTerminal, transicoesDisponiveis } from '../../../../Matricula/resources/js/Models/Estado';
 
 const props = defineProps({
     aluno: { type: Object, required: true },
@@ -55,33 +55,60 @@ const iniciaisAluno = computed(() => {
 
 // No Ensino Superior um aluno pode ter mais de uma matrícula activa em
 // simultâneo (ex.: cursos diferentes) — por omissão mostra-se a mais
-// recente (matriculaActual), mas clicar numa das "outras" no dropdown
-// espelha a secção "Situação Académica Actual" para a matrícula escolhida.
+// recente (matriculaActual), mas clicar numa das "outras" no dropdown, ou
+// em "Ver Situação Académica" na tabela de Matrículas mais abaixo (mesmo em
+// registos terminais/históricos), espelha a secção para a matrícula
+// escolhida. matriculaSelecionadaManual guarda o registo completo (não só
+// um id) porque uma matrícula terminal não está em todasMatriculasActivas.
 const todasMatriculasActivas = computed(() => [props.matriculaActual, ...props.outrasMatriculasActivas].filter(Boolean));
 
-const matriculaSelecionadaId = ref(props.matriculaActual?.id ?? null);
+const matriculaSelecionadaManual = ref(null);
 
-const matriculaExibida = computed(() => {
-    return todasMatriculasActivas.value.find((matricula) => matricula.id === matriculaSelecionadaId.value) ?? props.matriculaActual;
+const matriculaExibida = computed(() => matriculaSelecionadaManual.value ?? props.matriculaActual);
+
+// A ver a matrícula "actual" de facto (ou nenhuma selecção manual) — usado
+// para decidir o título da secção e se o badge do cabeçalho acompanha.
+const aVerMatriculaActual = computed(() => {
+    return !matriculaSelecionadaManual.value || matriculaSelecionadaManual.value.id === props.matriculaActual?.id;
 });
 
+// O badge do cabeçalho ("Matrícula Activa/Pendente") só acompanha a
+// selecção quando esta continua a ser uma matrícula não-terminal — mostrar
+// aí uma Cancelada/Concluída só porque se está a inspeccionar o histórico
+// dava a entender, erradamente, que é esse o estado actual do aluno.
+const matriculaParaCabecalho = computed(() => {
+    if (matriculaExibida.value && !estadoMatriculaTerminal(matriculaExibida.value.estado)) {
+        return matriculaExibida.value;
+    }
+    return props.matriculaActual;
+});
+
+// O dropdown "+N" dentro da secção só lista outras matrículas ACTIVAS (faz
+// sentido independentemente de se estar a ver uma delas ou uma terminal).
 const outrasMatriculasParaMostrar = computed(() => {
     return todasMatriculasActivas.value.filter((matricula) => matricula.id !== matriculaExibida.value?.id);
 });
 
+const situacaoAcademicaEl = ref(null);
+
 function selecionarMatricula(matricula) {
-    matriculaSelecionadaId.value = matricula.id;
+    matriculaSelecionadaManual.value = matricula;
+    situacaoAcademicaEl.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     // Troca a matrícula exibida recria o badge "+N" da Sala (Vue re-renderiza
     // esse bloco) — sem isto o KTMenu global não liga o clique ao novo
     // elemento e o browser segue o href="#" literal, saltando para a home.
     nextTick(() => window.KTMenu?.init());
 }
 
+function voltarAMatriculaActual() {
+    matriculaSelecionadaManual.value = null;
+}
+
 // Depois de qualquer reload do Inertia (nova matrícula, mudança de estado,
-// etc.) a selecção volta a acompanhar a matrícula mais recente em vez de
-// ficar presa a um id que pode já não fazer sentido.
-watch(() => props.matriculaActual?.id, (id) => {
-    matriculaSelecionadaId.value = id ?? null;
+// etc.) a selecção volta a acompanhar a matrícula actual em vez de ficar
+// presa a um registo que pode já não fazer sentido.
+watch(() => props.matriculaActual?.id, () => {
+    matriculaSelecionadaManual.value = null;
 });
 
 // Nada no módulo Turma impede duas associações activas (fim nulo) em
@@ -354,8 +381,8 @@ function confirmarEliminacao() {
                     <h1 class="fs-2 fw-bold mb-1">{{ aluno.dados_pessoa?.nome_completo }}</h1>
                     <div class="d-flex align-items-center gap-3">
                         <span class="text-muted">Matrícula: {{ aluno.numero_matricula }}</span>
-                        <span v-if="matriculaExibida" class="badge fw-bold" :class="estadoMatriculaBadgeClass(matriculaExibida.estado)">
-                            Matrícula {{ estadoMatriculaLabel(matriculaExibida.estado) }}
+                        <span v-if="matriculaParaCabecalho" class="badge fw-bold" :class="estadoMatriculaBadgeClass(matriculaParaCabecalho.estado)">
+                            Matrícula {{ estadoMatriculaLabel(matriculaParaCabecalho.estado) }}
                         </span>
                     </div>
                 </div>
@@ -366,9 +393,16 @@ function confirmarEliminacao() {
             </div>
         </div>
 
-        <div class="card">
+        <div class="card" ref="situacaoAcademicaEl">
             <div class="card-body">
-                <h4 class="fw-bold mb-4">Situação Académica Actual</h4>
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h4 class="fw-bold mb-0">
+                        {{ aVerMatriculaActual ? 'Situação Académica Actual' : `Situação Académica — Matrícula ${matriculaExibida?.numero_registo_matricula ?? ''}` }}
+                    </h4>
+                    <a v-if="!aVerMatriculaActual" href="#" class="fs-7 fw-semibold" @click.prevent="voltarAMatriculaActual">
+                        ← Voltar à situação actual
+                    </a>
+                </div>
                 <template v-if="matriculaExibida">
                     <div class="row">
                         <div class="col-md-6">
@@ -567,6 +601,11 @@ function confirmarEliminacao() {
                                     <i class="ki-duotone ki-down fs-5 ms-1"></i>
                                 </a>
                                 <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4" data-kt-menu="true">
+                                    <div class="menu-item px-3">
+                                        <a href="#" class="menu-link px-3" data-kt-menu-dismiss="true" @click.prevent="selecionarMatricula(matricula)">
+                                            Ver Situação Académica
+                                        </a>
+                                    </div>
                                     <div
                                         v-if="[ESTADO_MATRICULA.PENDENTE, ESTADO_MATRICULA.ACTIVA].includes(matricula.estado)"
                                         class="menu-item px-3"

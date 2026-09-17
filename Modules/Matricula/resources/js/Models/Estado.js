@@ -42,3 +42,9 @@ export const estadoMatriculaBadgeClass = (estado) => {
 };
 
 export const transicoesDisponiveis = (estado) => TRANSICOES_MATRICULA[estado] ?? [];
+
+export const estadoMatriculaTerminal = (estado) => [
+    ESTADO_MATRICULA.CANCELADA,
+    ESTADO_MATRICULA.CONCLUIDA,
+    ESTADO_MATRICULA.TRANSFERIDA,
+].includes(estado);
