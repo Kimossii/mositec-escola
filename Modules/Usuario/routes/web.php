@@ -46,6 +46,8 @@ Route::middleware(['auth'])->prefix('usuarios')->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/dados-pessoais/{dadosPessoa}/documentos', [DocumentoPessoaController::class, 'index'])
         ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.index');
+    Route::get('/dados-pessoais/{dadosPessoa}/documentos-inativos', [DocumentoPessoaController::class, 'inativos'])
+        ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.inativos');
     Route::post('/dados-pessoais/{dadosPessoa}/documentos', [DocumentoPessoaController::class, 'store'])
         ->middleware('can:documento-pessoa.criar')->name('documentos-pessoa.store');
     Route::delete('/documentos-pessoa/{documento}', [DocumentoPessoaController::class, 'destroy'])

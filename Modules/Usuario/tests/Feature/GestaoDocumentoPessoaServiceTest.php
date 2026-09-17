@@ -5,6 +5,7 @@ namespace Modules\Usuario\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Modules\Core\Enums\Estado;
 use Modules\Usuario\Database\Seeders\TipoDocumentoSeeder;
 use Modules\Usuario\DTO\DocumentoPessoaDTO;
 use Modules\Usuario\Models\DadosPessoa;
@@ -40,6 +41,67 @@ class GestaoDocumentoPessoaServiceTest extends TestCase
         $documentos = app(GestaoDocumentoPessoaService::class)->listar($pessoa);
 
         $this->assertCount(1, $documentos);
+        $this->assertTrue($documentos->first()->relationLoaded('tipoDocumento'));
+    }
+
+    public function test_listar_devolve_apenas_documentos_activos(): void
+    {
+        $this->seed(TipoDocumentoSeeder::class);
+        $pessoa = $this->criarPessoa();
+        $tipo = TipoDocumento::where('slug', 'bi')->firstOrFail();
+        DocumentoPessoa::create([
+            'dados_pessoa_id' => $pessoa->id,
+            'tipo_documento_id' => $tipo->id,
+            'nome_original' => 'activo.pdf',
+            'caminho' => 'x',
+            'mime_type' => 'application/pdf',
+            'tamanho' => 10,
+            'estado' => Estado::ATIVO->value,
+        ]);
+        DocumentoPessoa::create([
+            'dados_pessoa_id' => $pessoa->id,
+            'tipo_documento_id' => $tipo->id,
+            'nome_original' => 'inactivo.pdf',
+            'caminho' => 'x',
+            'mime_type' => 'application/pdf',
+            'tamanho' => 10,
+            'estado' => Estado::INATIVO->value,
+        ]);
+
+        $documentos = app(GestaoDocumentoPessoaService::class)->listar($pessoa);
+
+        $this->assertCount(1, $documentos);
+        $this->assertSame('activo.pdf', $documentos->first()->nome_original);
+    }
+
+    public function test_listar_inativos_devolve_apenas_documentos_inativos(): void
+    {
+        $this->seed(TipoDocumentoSeeder::class);
+        $pessoa = $this->criarPessoa();
+        $tipo = TipoDocumento::where('slug', 'bi')->firstOrFail();
+        DocumentoPessoa::create([
+            'dados_pessoa_id' => $pessoa->id,
+            'tipo_documento_id' => $tipo->id,
+            'nome_original' => 'activo.pdf',
+            'caminho' => 'x',
+            'mime_type' => 'application/pdf',
+            'tamanho' => 10,
+            'estado' => Estado::ATIVO->value,
+        ]);
+        DocumentoPessoa::create([
+            'dados_pessoa_id' => $pessoa->id,
+            'tipo_documento_id' => $tipo->id,
+            'nome_original' => 'inactivo.pdf',
+            'caminho' => 'x',
+            'mime_type' => 'application/pdf',
+            'tamanho' => 10,
+            'estado' => Estado::INATIVO->value,
+        ]);
+
+        $documentos = app(GestaoDocumentoPessoaService::class)->listarInativos($pessoa);
+
+        $this->assertCount(1, $documentos);
+        $this->assertSame('inactivo.pdf', $documentos->first()->nome_original);
         $this->assertTrue($documentos->first()->relationLoaded('tipoDocumento'));
     }
 

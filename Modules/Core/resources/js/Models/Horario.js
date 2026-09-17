@@ -9,7 +9,7 @@ export const ESTADO_OPCOES = [
 ];
 
 export function estadoBadgeClass(estado) {
-    return estado === ESTADO.ATIVO ? 'badge-light-success' : 'badge-light-secondary';
+    return estado === ESTADO.ATIVO ? 'badge-light-success' : 'badge-inativo';
 }
 
 export const TIPO = {

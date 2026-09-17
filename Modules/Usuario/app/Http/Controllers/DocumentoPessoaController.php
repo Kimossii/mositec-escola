@@ -25,6 +25,15 @@ class DocumentoPessoaController extends Controller
         ]);
     }
 
+    public function inativos(DadosPessoa $dadosPessoa)
+    {
+        $this->authorize('documento-pessoa.ver');
+
+        return response()->json([
+            'documentos' => $this->service->listarInativos($dadosPessoa),
+        ]);
+    }
+
     public function store(GuardarDocumentoPessoaRequest $request, DadosPessoa $dadosPessoa)
     {
         $this->authorize('documento-pessoa.criar');

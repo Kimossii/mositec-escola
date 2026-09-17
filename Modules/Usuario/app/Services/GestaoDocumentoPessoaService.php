@@ -36,7 +36,12 @@ class GestaoDocumentoPessoaService
 
     public function listar(DadosPessoa $pessoa): Collection
     {
-        return $pessoa->documentos()->with('tipoDocumento')->latest()->get();
+        return $pessoa->documentos()->where('estado', Estado::ATIVO->value)->with('tipoDocumento')->latest()->get();
+    }
+
+    public function listarInativos(DadosPessoa $pessoa): Collection
+    {
+        return $pessoa->documentos()->where('estado', Estado::INATIVO->value)->with('tipoDocumento')->latest()->get();
     }
 
     public function adicionar(DadosPessoa $pessoa, DocumentoPessoaDTO $dto, UploadedFile $ficheiro): DocumentoPessoa

@@ -21,12 +21,14 @@ function baseUrl() {
 const carregando = ref(false);
 const documentos = ref([]);
 const tipos = ref([]);
+const mostrarInativos = ref(false);
 
 async function carregar() {
     carregando.value = true;
     try {
+        const url = mostrarInativos.value ? `${baseUrl()}-inativos` : baseUrl();
         const [listaResp, tiposResp] = await Promise.all([
-            axios.get(baseUrl()),
+            axios.get(url),
             axios.get('/tipos-documentos'),
         ]);
         documentos.value = listaResp.data.documentos;
@@ -42,9 +44,16 @@ async function carregar() {
     }
 }
 
+function alternarVistaInativos() {
+    mostrarInativos.value = !mostrarInativos.value;
+    formAberto.value = false;
+    carregar();
+}
+
 watch(() => props.show, (show) => {
     if (!show) return;
     formAberto.value = false;
+    mostrarInativos.value = false;
     resetForm();
     carregar();
 });
@@ -172,7 +181,10 @@ function confirmarEliminacao() {
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content p-6">
                 <div class="d-flex justify-content-between align-items-center mb-5">
-                    <h3 class="mb-0">Documentos{{ nomePessoa ? ` — ${nomePessoa}` : '' }}</h3>
+                    <h3 class="mb-0">
+                        Documentos{{ nomePessoa ? ` — ${nomePessoa}` : '' }}
+                        <span v-if="mostrarInativos" class="badge badge-inativo ms-2">Inactivos</span>
+                    </h3>
                     <button type="button" class="btn-close" @click="emit('fechar')"></button>
                 </div>
 
@@ -193,7 +205,9 @@ function confirmarEliminacao() {
                             </thead>
                             <tbody class="text-gray-600 fw-semibold">
                                 <tr v-if="!documentos.length">
-                                    <td colspan="6" class="text-center text-muted py-6">Nenhum documento adicionado.</td>
+                                    <td colspan="6" class="text-center text-muted py-6">
+                                        {{ mostrarInativos ? 'Nenhum documento inactivo.' : 'Nenhum documento adicionado.' }}
+                                    </td>
                                 </tr>
                                 <tr v-for="documento in documentos" :key="documento.id">
                                     <td>{{ documento.nome_original }}</td>
@@ -243,9 +257,13 @@ function confirmarEliminacao() {
                         </table>
                     </div>
 
-                    <div v-if="!formAberto">
-                        <button type="button" class="btn btn-sm btn-light-primary" @click="abrirForm">
+                    <div v-if="!formAberto" class="d-flex justify-content-between align-items-center">
+                        <button v-if="!mostrarInativos" type="button" class="btn btn-sm btn-light-primary" @click="abrirForm">
                             + Adicionar Documento
+                        </button>
+                        <span v-else></span>
+                        <button type="button" class="btn btn-sm btn-light" @click="alternarVistaInativos">
+                            {{ mostrarInativos ? 'Ver Documentos Activos' : 'Documentos Inactivos' }}
                         </button>
                     </div>
                     <div v-else class="border rounded p-4">

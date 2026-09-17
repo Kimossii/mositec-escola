@@ -95,6 +95,47 @@ class DocumentoPessoaHttpTest extends TestCase
         $response->assertJsonCount(1, 'documentos');
     }
 
+    public function test_lista_apenas_documentos_inativos_no_endpoint_de_inativos(): void
+    {
+        $this->actingAsAdmin();
+        $pessoa = $this->criarPessoa();
+        $tipo = TipoDocumento::where('slug', 'bi')->firstOrFail();
+        DocumentoPessoa::create([
+            'dados_pessoa_id' => $pessoa->id,
+            'tipo_documento_id' => $tipo->id,
+            'nome_original' => 'activo.pdf',
+            'caminho' => 'x',
+            'mime_type' => 'application/pdf',
+            'tamanho' => 10,
+        ]);
+        DocumentoPessoa::create([
+            'dados_pessoa_id' => $pessoa->id,
+            'tipo_documento_id' => $tipo->id,
+            'nome_original' => 'inactivo.pdf',
+            'caminho' => 'x',
+            'mime_type' => 'application/pdf',
+            'tamanho' => 10,
+            'estado' => 0,
+        ]);
+
+        $response = $this->get("/dados-pessoais/{$pessoa->id}/documentos-inativos");
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'documentos');
+        $response->assertJsonPath('documentos.0.nome_original', 'inactivo.pdf');
+    }
+
+    public function test_utilizador_sem_permissao_nao_ve_documentos_inativos(): void
+    {
+        $semPermissao = User::create(['name' => 'Sem Permissao', 'email' => 'sem.permissao4@example.com', 'password' => Hash::make('segredo123')]);
+        $this->actingAs($semPermissao);
+        $pessoa = $this->criarPessoa();
+
+        $response = $this->get("/dados-pessoais/{$pessoa->id}/documentos-inativos");
+
+        $response->assertForbidden();
+    }
+
     public function test_download_devolve_o_ficheiro_para_quem_tem_permissao(): void
     {
         Storage::fake('documentos');
