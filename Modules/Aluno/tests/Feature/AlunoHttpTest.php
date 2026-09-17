@@ -300,6 +300,29 @@ class AlunoHttpTest extends TestCase
         );
     }
 
+    public function test_resumo_academico_expoe_matricula_actual_e_ultimas_matriculas(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N1', 'nome' => 'Nível 1', 'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO, 'ordem' => 1]);
+        $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $turma = Turma::create(['ano_lectivo_id' => $anoActivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'T1', 'nome' => 'Turma A']);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
+        Matricula::create([
+            'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoActivo->id,
+            'numero_registo_matricula' => 'M0001', 'data_matricula' => now(), 'estado' => EstadoMatriculaEnum::ACTIVA->value,
+        ]);
+
+        $resposta = $this->get(route('alunos.resumo-academico', $aluno));
+
+        $resposta->assertOk();
+        $resposta->assertJsonPath('matriculaActual.turma.curso.nome', 'Informática');
+        $resposta->assertJsonCount(1, 'ultimasMatriculas');
+        $resposta->assertJsonPath('ultimasMatriculas.0.numero_registo_matricula', 'M0001');
+    }
+
     public function test_show_expoe_as_outras_matriculas_activas_quando_o_aluno_tem_mais_de_uma(): void
     {
         $this->actingAsStaff();

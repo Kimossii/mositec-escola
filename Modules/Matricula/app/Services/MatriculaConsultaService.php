@@ -79,6 +79,21 @@ class MatriculaConsultaService
     }
 
     /**
+     * As matrículas mais recentes do aluno, em qualquer ano lectivo e
+     * qualquer estado (histórico completo, não só as activas) — usado no
+     * colapso "Situação Académica" da listagem de Alunos.
+     */
+    public function ultimasMatriculas(Aluno $aluno, int $limite = 5): Collection
+    {
+        return Matricula::with(['turma.curso', 'turma.nivelAcademico', 'anoLectivo'])
+            ->where('aluno_id', $aluno->id)
+            ->orderByDesc('data_matricula')
+            ->orderByDesc('id')
+            ->limit($limite)
+            ->get();
+    }
+
+    /**
      * Anos lectivos distintos em que o aluno já teve matrícula — usado para
      * as opções do filtro por ano lectivo na página do aluno (não pode vir
      * da página paginada, que só tem uma fatia dos registos).

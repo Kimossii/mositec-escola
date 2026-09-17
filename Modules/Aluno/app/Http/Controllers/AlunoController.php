@@ -76,6 +76,16 @@ class AlunoController extends Controller
         ]);
     }
 
+    public function resumoAcademico(Aluno $aluno)
+    {
+        $this->authorize('aluno.ver');
+
+        return response()->json([
+            'matriculaActual' => $this->matriculaConsulta->matriculaActual($aluno),
+            'ultimasMatriculas' => $this->matriculaConsulta->ultimasMatriculas($aluno),
+        ]);
+    }
+
     public function store(CriarAlunoRequest $request)
     {
         $this->authorize('aluno.criar');

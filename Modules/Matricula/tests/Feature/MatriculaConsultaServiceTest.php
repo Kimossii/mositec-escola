@@ -187,6 +187,28 @@ class MatriculaConsultaServiceTest extends TestCase
         $this->assertSame('Sala 1', $matricula->turma->turmaSalas->first()->sala->nome);
     }
 
+    public function test_ultimas_matriculas_devolve_as_mais_recentes_do_aluno_limitadas(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $aluno = $this->criarAluno($estabelecimento);
+        $turmaA = $this->criarTurma($estabelecimento, $anoActivo);
+        $turmaB = $this->criarTurma($estabelecimento, $anoActivo);
+        $turmaC = $this->criarTurma($estabelecimento, $anoActivo);
+        $this->matricular($aluno, $turmaA, $anoActivo, '2026-09-01');
+        $maisRecente = $this->matricular($aluno, $turmaB, $anoActivo, '2026-09-10');
+        $this->matricular($aluno, $turmaC, $anoActivo, '2026-09-05');
+
+        $resultado = app(MatriculaConsultaService::class)->ultimasMatriculas($aluno, 2);
+
+        $this->assertCount(2, $resultado);
+        $this->assertSame($maisRecente->id, $resultado->first()->id);
+        $this->assertTrue($resultado->first()->relationLoaded('turma'));
+        $this->assertTrue($resultado->first()->relationLoaded('anoLectivo'));
+        $this->assertTrue($resultado->first()->turma->relationLoaded('curso'));
+        $this->assertTrue($resultado->first()->turma->relationLoaded('nivelAcademico'));
+    }
+
     public function test_listar_por_aluno_carrega_o_aluno_e_os_seus_dados_pessoais(): void
     {
         $estabelecimento = $this->criarEstabelecimento();

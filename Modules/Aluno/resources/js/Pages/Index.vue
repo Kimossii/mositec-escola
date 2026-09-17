@@ -1,6 +1,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
+import axios from 'axios';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
@@ -10,6 +11,8 @@ import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import AlunoFormModal from '../Components/AlunoFormModal.vue';
+import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/Shared/EstadoBadge.vue';
+import { estadoMatriculaLabel } from '../../../../Matricula/resources/js/Models/Estado';
 import { ESTADO } from '../Models/Estado';
 
 const props = defineProps({
@@ -180,6 +183,47 @@ function confirmarAlteracaoEstado() {
         },
     });
 }
+
+// --- Colapso "Situação Académica" por linha ---
+// Dados Pessoais/Contactos já vêm na própria listagem (aluno.dados_pessoa);
+// só a Situação Académica e as Últimas Matrículas são pedidas ao expandir,
+// para não sobrecarregar a página com dados que a maioria das linhas nunca
+// vai mostrar.
+const linhasExpandidas = ref(new Set());
+const resumosAcademicos = reactive({});
+const aCarregarResumo = ref(new Set());
+
+function formatarData(data) {
+    if (!data) return '—';
+    const [ano, mes, dia] = data.slice(0, 10).split('-');
+    return `${dia}/${mes}/${ano}`;
+}
+
+async function alternarLinha(aluno) {
+    if (linhasExpandidas.value.has(aluno.id)) {
+        linhasExpandidas.value.delete(aluno.id);
+        linhasExpandidas.value = new Set(linhasExpandidas.value);
+        return;
+    }
+
+    linhasExpandidas.value = new Set(linhasExpandidas.value).add(aluno.id);
+
+    if (resumosAcademicos[aluno.id]) return;
+
+    aCarregarResumo.value = new Set(aCarregarResumo.value).add(aluno.id);
+    try {
+        const { data } = await axios.get(`/alunos/${aluno.id}/resumo-academico`);
+        resumosAcademicos[aluno.id] = data;
+    } catch {
+        toast.error('Não foi possível carregar a situação académica deste aluno.');
+        linhasExpandidas.value.delete(aluno.id);
+        linhasExpandidas.value = new Set(linhasExpandidas.value);
+    } finally {
+        const restantes = new Set(aCarregarResumo.value);
+        restantes.delete(aluno.id);
+        aCarregarResumo.value = restantes;
+    }
+}
 </script>
 
 <template>
@@ -220,6 +264,7 @@ function confirmarAlteracaoEstado() {
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                            <th class="w-25px"></th>
                             <th class="min-w-125px">Matrícula</th>
                             <th class="min-w-200px">Nome</th>
                             <th class="min-w-125px">Estado</th>
@@ -228,49 +273,128 @@ function confirmarAlteracaoEstado() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="alunos.data.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhum aluno encontrado.</td>
+                            <td colspan="5" class="text-center text-muted py-6">Nenhum aluno encontrado.</td>
                         </tr>
-                        <tr v-for="aluno in alunos.data" :key="aluno.id">
-                            <td>
-                                <a :href="`/alunos/${aluno.id}`" class="text-gray-800 text-hover-primary">{{ aluno.numero_matricula }}</a>
-                            </td>
-                            <td>{{ aluno.dados_pessoa?.nome_completo }}</td>
-                            <td>
-                                <EstadoBadge :estado="aluno.estado" :estado-descricao="aluno.estado_descricao" />
-                            </td>
-                            <td class="text-end">
-                                <a href="#" class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
-                                    Ações
-                                    <i class="ki-duotone ki-down fs-5 ms-1"></i>
-                                </a>
-                                <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4" data-kt-menu="true">
-                                     <div class="menu-item px-3">
-                                        <a :href="`/alunos/${aluno.id}`" class="menu-link px-3">
-                                            <AcaoIcone acao="visualizar" class="me-2" />
-                                            Ver detalhes
-                                        </a>
+                        <template v-for="aluno in alunos.data" :key="aluno.id">
+                            <tr>
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="btn btn-icon btn-sm btn-light"
+                                        :title="linhasExpandidas.has(aluno.id) ? 'Ocultar situação académica' : 'Ver situação académica'"
+                                        @click="alternarLinha(aluno)"
+                                    >
+                                        <i class="ki-duotone fs-3" :class="linhasExpandidas.has(aluno.id) ? 'ki-up' : 'ki-down'"></i>
+                                    </button>
+                                </td>
+                                <td>
+                                    <a :href="`/alunos/${aluno.id}`" class="text-gray-800 text-hover-primary">{{ aluno.numero_matricula }}</a>
+                                </td>
+                                <td>{{ aluno.dados_pessoa?.nome_completo }}</td>
+                                <td>
+                                    <EstadoBadge :estado="aluno.estado" :estado-descricao="aluno.estado_descricao" />
+                                </td>
+                                <td class="text-end">
+                                    <a href="#" class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
+                                        Ações
+                                        <i class="ki-duotone ki-down fs-5 ms-1"></i>
+                                    </a>
+                                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4" data-kt-menu="true">
+                                         <div class="menu-item px-3">
+                                            <a :href="`/alunos/${aluno.id}`" class="menu-link px-3">
+                                                <AcaoIcone acao="visualizar" class="me-2" />
+                                                Ver detalhes
+                                            </a>
+                                        </div>
+                                        <div v-if="can('aluno.editar')" class="menu-item px-3">
+                                            <a href="#" class="menu-link px-3" @click.prevent="abrirEdicao(aluno)">
+                                                <AcaoIcone acao="editar" class="me-2" />
+                                                Editar
+                                            </a>
+                                        </div>
+                                        <div v-if="can('aluno.editar') && aluno.estado !== ESTADO.ATIVO" class="menu-item px-3">
+                                            <a href="#" class="menu-link px-3" @click.prevent="pedirAlteracaoEstado(aluno, ESTADO.ATIVO)">
+                                                <AcaoIcone acao="ativar" class="me-2" />
+                                                Ativar
+                                            </a>
+                                        </div>
+                                        <div v-if="can('aluno.editar') && aluno.estado === ESTADO.ATIVO" class="menu-item px-3">
+                                            <a href="#" class="menu-link px-3" @click.prevent="pedirAlteracaoEstado(aluno, ESTADO.INATIVO)">
+                                                <AcaoIcone acao="desativar" class="me-2" />
+                                                Desativar
+                                            </a>
+                                        </div>
                                     </div>
-                                    <div v-if="can('aluno.editar')" class="menu-item px-3">
-                                        <a href="#" class="menu-link px-3" @click.prevent="abrirEdicao(aluno)">
-                                            <AcaoIcone acao="editar" class="me-2" />
-                                            Editar
-                                        </a>
+                                </td>
+                            </tr>
+                            <tr v-if="linhasExpandidas.has(aluno.id)">
+                                <td colspan="5" class="bg-light-primary bg-opacity-25 p-6">
+                                    <div v-if="aCarregarResumo.has(aluno.id)" class="text-muted fs-7">A carregar…</div>
+                                    <div v-else>
+                                        <div class="row g-6">
+                                            <div class="col-md-6">
+                                                <h6 class="fw-bold text-uppercase fs-8 text-muted mb-3">Situação Académica Actual</h6>
+                                                <template v-if="resumosAcademicos[aluno.id]?.matriculaActual">
+                                                    <div class="mb-2 d-flex align-items-center gap-2">
+                                                        <MatriculaEstadoBadge :estado="resumosAcademicos[aluno.id].matriculaActual.estado" />
+                                                    </div>
+                                                    <div class="fs-7 mb-1"><span class="text-muted">Ano Lectivo:</span> {{ resumosAcademicos[aluno.id].matriculaActual.ano_lectivo?.nome ?? '—' }}</div>
+                                                    <div class="fs-7 mb-1"><span class="text-muted">Curso:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma?.curso?.nome ?? '—' }}</div>
+                                                    <div class="fs-7 mb-1"><span class="text-muted">Nível Académico:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma?.nivel_academico?.nome ?? '—' }}</div>
+                                                    <div class="fs-7 mb-1"><span class="text-muted">Turma:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma?.codigo ?? '—' }}</div>
+                                                    <div class="fs-7"><span class="text-muted">Turno:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma?.turno?.nome ?? '—' }}</div>
+                                                </template>
+                                                <div v-else class="text-muted fs-7">Sem matrícula no ano lectivo actual.</div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <h6 class="fw-bold text-uppercase fs-8 text-muted mb-3">Dados Pessoais</h6>
+                                                <div class="fs-7 mb-1"><span class="text-muted">Data de nascimento:</span> {{ formatarData(aluno.dados_pessoa?.data_nascimento) }}</div>
+                                                <div class="fs-7 mb-1"><span class="text-muted">Nº de identificação:</span> {{ aluno.dados_pessoa?.numero_identificacao ?? '—' }}</div>
+                                                <div class="fs-7 mb-1"><span class="text-muted">Email:</span> {{ aluno.dados_pessoa?.email ?? '—' }}</div>
+                                                <div class="fs-7 mb-1"><span class="text-muted">Telefone Principal:</span> {{ aluno.dados_pessoa?.telefone ?? '—' }}</div>
+                                                <div class="fs-7"><span class="text-muted">Telefone Alternativo:</span> {{ aluno.dados_pessoa?.telefone_alternativo ?? '—' }}</div>
+
+                                                <div class="border border-dashed rounded p-3 mt-4">
+                                                    <div class="d-flex align-items-center gap-2 text-muted">
+                                                        <i class="ki-duotone ki-dollar fs-3"><span class="path1"></span><span class="path2"></span></i>
+                                                        <span class="fs-7 fw-bold">Situação de Propinas</span>
+                                                        <span class="badge badge-light fs-9 ms-auto">Brevemente</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-6">
+                                            <h6 class="fw-bold text-uppercase fs-8 text-muted mb-3">Últimas Matrículas</h6>
+                                            <table v-if="resumosAcademicos[aluno.id]?.ultimasMatriculas?.length" class="table table-sm fs-7 mb-0">
+                                                <thead>
+                                                    <tr class="text-muted text-uppercase fs-9">
+                                                        <th>Turma</th>
+                                                        <th>Curso</th>
+                                                        <th>Nível Académico</th>
+                                                        <th>Ano Lectivo</th>
+                                                        <th>Estado</th>
+                                                        <th>Data</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr v-for="matricula in resumosAcademicos[aluno.id].ultimasMatriculas" :key="matricula.id">
+                                                        <td>{{ matricula.turma?.codigo ?? '—' }}</td>
+                                                        <td>{{ matricula.turma?.curso?.nome ?? '—' }}</td>
+                                                        <td>{{ matricula.turma?.nivel_academico?.nome ?? '—' }}</td>
+                                                        <td>{{ matricula.ano_lectivo?.nome ?? '—' }}</td>
+                                                        <td>{{ estadoMatriculaLabel(matricula.estado) }}</td>
+                                                        <td>{{ formatarData(matricula.data_matricula) }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            <div v-else class="text-muted fs-7">Sem matrículas registadas.</div>
+                                        </div>
                                     </div>
-                                    <div v-if="can('aluno.editar') && aluno.estado !== ESTADO.ATIVO" class="menu-item px-3">
-                                        <a href="#" class="menu-link px-3" @click.prevent="pedirAlteracaoEstado(aluno, ESTADO.ATIVO)">
-                                            <AcaoIcone acao="ativar" class="me-2" />
-                                            Ativar
-                                        </a>
-                                    </div>
-                                    <div v-if="can('aluno.editar') && aluno.estado === ESTADO.ATIVO" class="menu-item px-3">
-                                        <a href="#" class="menu-link px-3" @click.prevent="pedirAlteracaoEstado(aluno, ESTADO.INATIVO)">
-                                            <AcaoIcone acao="desativar" class="me-2" />
-                                            Desativar
-                                        </a>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
+                                </td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>
