@@ -13,6 +13,7 @@ use Modules\Aluno\Services\AlunoConsultaService;
 use Modules\Aluno\Services\GestaoAlunoService;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Enums\Estado;
+use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Services\MatriculaConsultaService;
 
 class AlunoController extends Controller
@@ -29,6 +30,13 @@ class AlunoController extends Controller
         $this->authorize('aluno.ver');
 
         $filtros = $request->only(['pesquisa', 'ano_lectivo_id', 'curso_id', 'turma_id', 'nivel_academico_id']);
+        // Por omissão mostra só o ano lectivo activo — mas só quando o
+        // pedido não indicou nenhum (incluindo "todos", que chega como
+        // ano_lectivo_id vazio); assim escolher "Todos" fica sempre
+        // possível e não é substituído de volta pelo ano activo.
+        if (! $request->has('ano_lectivo_id')) {
+            $filtros['ano_lectivo_id'] = AnoLectivo::current(Estabelecimento::current()?->id)?->id;
+        }
 
         return Inertia::render('Aluno/Index', [
             'alunos' => $this->consulta->listar($filtros),

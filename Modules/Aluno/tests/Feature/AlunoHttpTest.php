@@ -217,6 +217,47 @@ class AlunoHttpTest extends TestCase
         );
     }
 
+    public function test_index_ano_lectivo_por_omissao_e_o_activo(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $anoAnterior = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2025/2026', 'data_inicio' => '2025-09-01', 'data_fim' => '2026-07-31', 'estado' => EstadoAnoLectivo::ENCERRADO]);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N1', 'nome' => 'Nível 1', 'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO, 'ordem' => 1]);
+        $turmaActual = Turma::create(['ano_lectivo_id' => $anoActivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma A']);
+        $turmaAnterior = Turma::create(['ano_lectivo_id' => $anoAnterior->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T2', 'nome' => 'Turma B']);
+
+        $pessoa1 = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $alunoActual = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa1->id, 'numero_matricula' => '2026-0001']);
+        Matricula::create(['aluno_id' => $alunoActual->id, 'turma_id' => $turmaActual->id, 'ano_lectivo_id' => $anoActivo->id, 'numero_registo_matricula' => 'M0001', 'data_matricula' => now(), 'estado' => EstadoMatriculaEnum::ACTIVA->value]);
+
+        $pessoa2 = DadosPessoa::create(['nome_completo' => 'Bruno Costa', 'numero_identificacao' => 'BI0002', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $alunoAnterior = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa2->id, 'numero_matricula' => '2026-0002']);
+        Matricula::create(['aluno_id' => $alunoAnterior->id, 'turma_id' => $turmaAnterior->id, 'ano_lectivo_id' => $anoAnterior->id, 'numero_registo_matricula' => 'M0002', 'data_matricula' => now(), 'estado' => EstadoMatriculaEnum::ACTIVA->value]);
+
+        $this->get(route('alunos.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('Aluno/Index')
+            ->where('filtros.ano_lectivo_id', $anoActivo->id)
+            ->has('alunos.data', 1)
+            ->where('alunos.data.0.numero_matricula', '2026-0001')
+        );
+    }
+
+    public function test_index_ano_lectivo_vazio_explicito_mostra_todos(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $pessoa1 = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa1->id, 'numero_matricula' => '2026-0001']);
+
+        $this->get(route('alunos.index', ['ano_lectivo_id' => '']))->assertInertia(fn (Assert $page) => $page
+            ->component('Aluno/Index')
+            ->where('filtros.ano_lectivo_id', null)
+            ->has('alunos.data', 1)
+        );
+    }
+
     public function test_show_expoe_o_aluno(): void
     {
         $this->actingAsStaff();
