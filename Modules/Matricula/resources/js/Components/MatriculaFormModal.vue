@@ -121,7 +121,16 @@ function submeter() {
     <div v-if="show" class="modal d-block" style="background: rgba(0,0,0,0.5);" @click.self="emit('cancelar')">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content p-6">
-                <h3 class="mb-5">{{ renovacao ? 'Renovar Matrícula' : (matricula ? 'Editar Matrícula' : 'Nova Matrícula') }}</h3>
+                <div class="mb-5">
+                    <template v-if="matricula?.aluno">
+                        <span class="text-muted fs-7 fw-semibold text-uppercase">Editar Matrícula</span>
+                        <h3 class="mb-0 mt-1">
+                            {{ matricula.aluno.dados_pessoa?.nome_completo }}
+                            <span class="fs-6 fw-semibold text-muted">· Matrícula {{ matricula.aluno.numero_matricula }}</span>
+                        </h3>
+                    </template>
+                    <h3 v-else class="mb-0">{{ renovacao ? 'Renovar Matrícula' : 'Nova Matrícula' }}</h3>
+                </div>
                 <p v-if="renovacao" class="text-muted fs-7 mb-5">
                     Não foi possível sugerir automaticamente a turma seguinte. Escolha-a manualmente.
                 </p>

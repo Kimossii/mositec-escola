@@ -25,7 +25,7 @@ class MatriculaConsultaService
 
     public function listarPorAluno(Aluno $aluno, array $filtros = [], int $porPagina = 10): LengthAwarePaginator
     {
-        return Matricula::with(['turma.curso', 'turma.nivelAcademico', 'turma.turno', 'turma.turmaSalas.sala', 'anoLectivo'])
+        return Matricula::with(['aluno.dadosPessoa', 'turma.curso', 'turma.nivelAcademico', 'turma.turno', 'turma.turmaSalas.sala', 'anoLectivo'])
             ->where('aluno_id', $aluno->id)
             ->when($filtros['ano_lectivo_id'] ?? null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))
             ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
@@ -144,6 +144,13 @@ class MatriculaConsultaService
         return $plano->disciplinas
             ->reject(fn ($planoCurricularDisciplina) => $disciplinasJaInscritas->contains($planoCurricularDisciplina->disciplina_id))
             ->values();
+    }
+
+    public function anosLectivosDisponiveis(): SupportCollection
+    {
+        return AnoLectivo::where('estabelecimento_id', Estabelecimento::current()?->id)
+            ->orderByDesc('data_inicio')
+            ->get(['id', 'nome']);
     }
 
     public function turmasDisponiveis(): Collection

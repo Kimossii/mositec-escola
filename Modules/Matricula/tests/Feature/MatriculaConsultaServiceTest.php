@@ -186,4 +186,21 @@ class MatriculaConsultaServiceTest extends TestCase
         $this->assertTrue($matricula->turma->relationLoaded('turmaSalas'));
         $this->assertSame('Sala 1', $matricula->turma->turmaSalas->first()->sala->nome);
     }
+
+    public function test_listar_por_aluno_carrega_o_aluno_e_os_seus_dados_pessoais(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $aluno = $this->criarAluno($estabelecimento);
+        $turma = $this->criarTurma($estabelecimento, $anoActivo);
+        $this->matricular($aluno, $turma, $anoActivo, '2026-09-05');
+
+        $resultado = app(MatriculaConsultaService::class)->listarPorAluno($aluno);
+
+        $matricula = $resultado->items()[0];
+        $this->assertTrue($matricula->relationLoaded('aluno'));
+        $this->assertTrue($matricula->aluno->relationLoaded('dadosPessoa'));
+        $this->assertSame('Ana Silva', $matricula->aluno->dadosPessoa->nome_completo);
+        $this->assertSame('2026-0001', $matricula->aluno->numero_matricula);
+    }
 }

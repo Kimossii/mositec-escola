@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Aluno\Models\Aluno;
+use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Http\Requests\AlterarEstadoMatriculaRequest;
 use Modules\Matricula\Http\Requests\AtualizarMatriculaRequest;
@@ -29,10 +31,18 @@ class MatriculaController extends Controller
         $this->authorize('matricula.ver');
 
         $filtros = $request->only(['turma_id', 'ano_lectivo_id', 'estado', 'pesquisa']);
+        // Por omissão mostra só o ano lectivo activo — mas só quando o
+        // pedido não indicou nenhum (incluindo "todos", que chega como
+        // ano_lectivo_id vazio); assim escolher "Todos" fica sempre
+        // possível e não é substituído de volta pelo ano activo.
+        if (! $request->has('ano_lectivo_id')) {
+            $filtros['ano_lectivo_id'] = AnoLectivo::current(Estabelecimento::current()?->id)?->id;
+        }
 
         return Inertia::render('Matricula/Index', [
             'matriculas' => $this->consulta->listarTodas($filtros),
             'turmasDisponiveis' => $this->consulta->turmasDisponiveis(),
+            'anosLectivosDisponiveis' => $this->consulta->anosLectivosDisponiveis(),
             'filtros' => $filtros,
         ]);
     }

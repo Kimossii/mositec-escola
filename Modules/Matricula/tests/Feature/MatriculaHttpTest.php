@@ -424,6 +424,54 @@ class MatriculaHttpTest extends TestCase
         );
     }
 
+    public function test_lista_global_de_matriculas_com_filtro_por_ano_lectivo(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivoA = $this->criarAnoLectivo($estabelecimento);
+        $anoLectivoB = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id, 'nome' => '2025',
+            'data_inicio' => '2025-01-01', 'data_fim' => '2025-12-31', 'estado' => EstadoAnoLectivo::ENCERRADO,
+        ]);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turmaA = $this->criarTurma($anoLectivoA, $nivel);
+        $turmaB = $this->criarTurma($anoLectivoB, $nivel);
+        $alunoA = $this->criarAluno($estabelecimento);
+        $alunoB = $this->criarAluno($estabelecimento);
+
+        Matricula::create([
+            'aluno_id' => $alunoA->id, 'turma_id' => $turmaA->id, 'ano_lectivo_id' => $anoLectivoA->id,
+            'numero_registo_matricula' => '2026-0001', 'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
+        Matricula::create([
+            'aluno_id' => $alunoB->id, 'turma_id' => $turmaB->id, 'ano_lectivo_id' => $anoLectivoB->id,
+            'numero_registo_matricula' => '2025-0001', 'data_matricula' => '2025-02-01',
+            'estado' => EstadoMatriculaEnum::CONCLUIDA->value,
+        ]);
+
+        // Sem filtro explícito — mostra só o ano lectivo activo, tal como a
+        // listagem de Alunos.
+        $this->get(route('matriculas.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('Matricula/Index')
+            ->has('matriculas.data', 1)
+            ->where('matriculas.data.0.ano_lectivo_id', $anoLectivoA->id)
+            ->has('anosLectivosDisponiveis', 2)
+        );
+
+        $this->get(route('matriculas.index', ['ano_lectivo_id' => $anoLectivoA->id]))->assertInertia(fn (Assert $page) => $page
+            ->component('Matricula/Index')
+            ->has('matriculas.data', 1)
+            ->where('matriculas.data.0.ano_lectivo_id', $anoLectivoA->id)
+        );
+
+        // Explicitamente "todos" — mostra as duas, mesmo a do ano encerrado.
+        $this->get(route('matriculas.index', ['ano_lectivo_id' => '']))->assertInertia(fn (Assert $page) => $page
+            ->component('Matricula/Index')
+            ->has('matriculas.data', 2)
+        );
+    }
+
     public function test_professor_recebe_403_na_listagem_global(): void
     {
         $this->actingAsProfessor();
