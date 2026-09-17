@@ -63,10 +63,13 @@ class AlunoController extends Controller
             'pesquisa' => $request->input('pesquisa'),
         ];
 
+        $matriculasActivas = $this->matriculaConsulta->matriculasActivasNoAnoLectivo($aluno);
+
         return Inertia::render('Aluno/Show', [
             'aluno' => $aluno->load('dadosPessoa'),
             'matriculas' => $this->matriculaConsulta->listarPorAluno($aluno, $filtrosMatricula),
-            'matriculaActual' => $this->matriculaConsulta->matriculaActual($aluno),
+            'matriculaActual' => $matriculasActivas->first(),
+            'outrasMatriculasActivas' => $matriculasActivas->slice(1)->values(),
             'turmasDisponiveis' => $this->matriculaConsulta->turmasDisponiveis(),
             'anosLectivosComMatricula' => $this->matriculaConsulta->anosLectivosComMatricula($aluno),
             'filtrosMatricula' => $filtrosMatricula,

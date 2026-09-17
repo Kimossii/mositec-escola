@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -19,6 +19,7 @@ const props = defineProps({
     aluno: { type: Object, required: true },
     matriculas: { type: Object, default: () => ({ data: [], links: [] }) }, // paginator
     matriculaActual: { type: Object, default: null },
+    outrasMatriculasActivas: { type: Array, default: () => [] },
     turmasDisponiveis: { type: Array, default: () => [] },
     anosLectivosComMatricula: { type: Array, default: () => [] },
     filtrosMatricula: { type: Object, default: () => ({}) },
@@ -52,11 +53,42 @@ const iniciaisAluno = computed(() => {
     return (primeira + ultima).toUpperCase();
 });
 
+// No Ensino Superior um aluno pode ter mais de uma matrícula activa em
+// simultâneo (ex.: cursos diferentes) — por omissão mostra-se a mais
+// recente (matriculaActual), mas clicar numa das "outras" no dropdown
+// espelha a secção "Situação Académica Actual" para a matrícula escolhida.
+const todasMatriculasActivas = computed(() => [props.matriculaActual, ...props.outrasMatriculasActivas].filter(Boolean));
+
+const matriculaSelecionadaId = ref(props.matriculaActual?.id ?? null);
+
+const matriculaExibida = computed(() => {
+    return todasMatriculasActivas.value.find((matricula) => matricula.id === matriculaSelecionadaId.value) ?? props.matriculaActual;
+});
+
+const outrasMatriculasParaMostrar = computed(() => {
+    return todasMatriculasActivas.value.filter((matricula) => matricula.id !== matriculaExibida.value?.id);
+});
+
+function selecionarMatricula(matricula) {
+    matriculaSelecionadaId.value = matricula.id;
+    // Troca a matrícula exibida recria o badge "+N" da Sala (Vue re-renderiza
+    // esse bloco) — sem isto o KTMenu global não liga o clique ao novo
+    // elemento e o browser segue o href="#" literal, saltando para a home.
+    nextTick(() => window.KTMenu?.init());
+}
+
+// Depois de qualquer reload do Inertia (nova matrícula, mudança de estado,
+// etc.) a selecção volta a acompanhar a matrícula mais recente em vez de
+// ficar presa a um id que pode já não fazer sentido.
+watch(() => props.matriculaActual?.id, (id) => {
+    matriculaSelecionadaId.value = id ?? null;
+});
+
 // Nada no módulo Turma impede duas associações activas (fim nulo) em
 // simultâneo — quando acontece, mostramos a mais recente como "a" sala e
 // as restantes ficam acessíveis no dropdown "+N" ao lado.
 const salasActivasDaTurma = computed(() => {
-    const turmaSalas = props.matriculaActual?.turma?.turma_salas ?? [];
+    const turmaSalas = matriculaExibida.value?.turma?.turma_salas ?? [];
     return turmaSalas
         .filter((turmaSala) => !turmaSala.fim && turmaSala.sala)
         .sort((a, b) => (a.inicio < b.inicio ? 1 : -1));
@@ -322,8 +354,8 @@ function confirmarEliminacao() {
                     <h1 class="fs-2 fw-bold mb-1">{{ aluno.dados_pessoa?.nome_completo }}</h1>
                     <div class="d-flex align-items-center gap-3">
                         <span class="text-muted">Matrícula: {{ aluno.numero_matricula }}</span>
-                        <span v-if="matriculaActual" class="badge fw-bold" :class="estadoMatriculaBadgeClass(matriculaActual.estado)">
-                            Matrícula {{ estadoMatriculaLabel(matriculaActual.estado) }}
+                        <span v-if="matriculaExibida" class="badge fw-bold" :class="estadoMatriculaBadgeClass(matriculaExibida.estado)">
+                            Matrícula {{ estadoMatriculaLabel(matriculaExibida.estado) }}
                         </span>
                     </div>
                 </div>
@@ -337,34 +369,66 @@ function confirmarEliminacao() {
         <div class="card">
             <div class="card-body">
                 <h4 class="fw-bold mb-4">Situação Académica Actual</h4>
-                <template v-if="matriculaActual">
+                <template v-if="matriculaExibida">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="row mb-4">
                                 <div class="col-md-4 fw-bold text-muted">Estado da matrícula</div>
-                                <div class="col-md-8"><MatriculaEstadoBadge :estado="matriculaActual.estado" /></div>
+                                <div class="col-md-8 d-flex align-items-center gap-2">
+                                    <MatriculaEstadoBadge :estado="matriculaExibida.estado" />
+                                    <a
+                                        v-if="outrasMatriculasParaMostrar.length"
+                                        href="#"
+                                        class="badge badge-light-primary"
+                                        data-kt-menu-trigger="click"
+                                        data-kt-menu-placement="bottom-start"
+                                        title="Ver outras matrículas activas deste aluno neste ano lectivo"
+                                    >
+                                        +{{ outrasMatriculasParaMostrar.length }}
+                                    </a>
+                                    <div
+                                        v-if="outrasMatriculasParaMostrar.length"
+                                        class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 fw-semibold fs-7 w-300px py-3"
+                                        data-kt-menu="true"
+                                    >
+                                        <div class="menu-item px-3 pb-2">
+                                            <span class="text-muted text-uppercase fs-8">Outras matrículas activas — clique para ver</span>
+                                        </div>
+                                        <div v-for="matricula in outrasMatriculasParaMostrar" :key="matricula.id" class="menu-item px-3">
+                                            <a
+                                                href="#"
+                                                class="menu-link px-3 d-flex flex-column align-items-start py-2"
+                                                data-kt-menu-dismiss="true"
+                                                @click.prevent="selecionarMatricula(matricula)"
+                                            >
+                                                <span class="fw-bold">{{ matricula.turma?.curso?.nome ?? matricula.turma?.codigo }}</span>
+                                                <span class="text-muted fs-8">{{ matricula.turma?.codigo }} — {{ matricula.turma?.nome }}</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div v-if="matriculaActual.ano_lectivo" class="row mb-4">
+                            <div v-if="matriculaExibida.ano_lectivo" class="row mb-4">
                                 <div class="col-md-4 fw-bold text-muted">Ano Lectivo</div>
-                                <div class="col-md-8">{{ matriculaActual.ano_lectivo.nome }}</div>
+                                <div class="col-md-8">{{ matriculaExibida.ano_lectivo.nome }}</div>
                             </div>
-                            <div v-if="matriculaActual.turma?.curso" class="row mb-4">
+                            <div v-if="matriculaExibida.turma?.curso" class="row mb-4">
                                 <div class="col-md-4 fw-bold text-muted">Curso</div>
-                                <div class="col-md-8">{{ matriculaActual.turma.curso.nome }}</div>
+                                <div class="col-md-8">{{ matriculaExibida.turma.curso.nome }}</div>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div v-if="matriculaActual.turma?.nivel_academico" class="row mb-4">
+                            <div v-if="matriculaExibida.turma?.nivel_academico" class="row mb-4">
                                 <div class="col-md-4 fw-bold text-muted">Nível Académico</div>
-                                <div class="col-md-8">{{ matriculaActual.turma.nivel_academico.nome }}</div>
+                                <div class="col-md-8">{{ matriculaExibida.turma.nivel_academico.nome }}</div>
                             </div>
-                            <div v-if="matriculaActual.turma" class="row mb-4">
+                            <div v-if="matriculaExibida.turma" class="row mb-4">
                                 <div class="col-md-4 fw-bold text-muted">Turma</div>
-                                <div class="col-md-8">{{ matriculaActual.turma.codigo }} — {{ matriculaActual.turma.nome }}</div>
+                                <div class="col-md-8">{{ matriculaExibida.turma.codigo }} — {{ matriculaExibida.turma.nome }}</div>
                             </div>
-                            <div v-if="matriculaActual.turma?.turno" class="row mb-4">
+                            <div v-if="matriculaExibida.turma?.turno" class="row mb-4">
                                 <div class="col-md-4 fw-bold text-muted">Turno</div>
-                                <div class="col-md-8">{{ matriculaActual.turma.turno.nome }}</div>
+                                <div class="col-md-8">{{ matriculaExibida.turma.turno.nome }}</div>
                             </div>
                             <div v-if="salaActual" class="row mb-4">
                                 <div class="col-md-4 fw-bold text-muted">Sala</div>

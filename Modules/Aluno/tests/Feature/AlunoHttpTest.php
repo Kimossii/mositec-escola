@@ -300,6 +300,28 @@ class AlunoHttpTest extends TestCase
         );
     }
 
+    public function test_show_expoe_as_outras_matriculas_activas_quando_o_aluno_tem_mais_de_uma(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N1', 'nome' => 'Nível 1', 'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO, 'ordem' => 1]);
+        $cursoA = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $cursoB = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'GES', 'nome' => 'Gestão']);
+        $turmaA = Turma::create(['ano_lectivo_id' => $anoActivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $cursoA->id, 'codigo' => 'T1', 'nome' => 'Turma A']);
+        $turmaB = Turma::create(['ano_lectivo_id' => $anoActivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $cursoB->id, 'codigo' => 'T2', 'nome' => 'Turma B']);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
+        Matricula::create(['aluno_id' => $aluno->id, 'turma_id' => $turmaA->id, 'ano_lectivo_id' => $anoActivo->id, 'numero_registo_matricula' => 'M0001', 'data_matricula' => '2026-09-01', 'estado' => EstadoMatriculaEnum::ACTIVA->value]);
+        Matricula::create(['aluno_id' => $aluno->id, 'turma_id' => $turmaB->id, 'ano_lectivo_id' => $anoActivo->id, 'numero_registo_matricula' => 'M0002', 'data_matricula' => '2026-09-05', 'estado' => EstadoMatriculaEnum::ACTIVA->value]);
+
+        $this->get(route('alunos.show', $aluno))->assertInertia(fn (Assert $page) => $page
+            ->component('Aluno/Show')
+            ->where('matriculaActual.turma.curso.nome', 'Gestão')
+            ->where('outrasMatriculasActivas.0.turma.curso.nome', 'Informática')
+        );
+    }
+
     public function test_professor_recebe_403_em_todas_as_rotas_de_escrita(): void
     {
         $this->actingAsProfessor();

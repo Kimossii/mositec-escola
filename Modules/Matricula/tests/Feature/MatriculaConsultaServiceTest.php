@@ -55,7 +55,7 @@ class MatriculaConsultaServiceTest extends TestCase
         ]);
     }
 
-    private function matricular(Aluno $aluno, Turma $turma, AnoLectivo $anoLectivo, string $dataMatricula): Matricula
+    private function matricular(Aluno $aluno, Turma $turma, AnoLectivo $anoLectivo, string $dataMatricula, EstadoMatriculaEnum $estado = EstadoMatriculaEnum::ACTIVA): Matricula
     {
         return Matricula::create([
             'aluno_id' => $aluno->id,
@@ -63,7 +63,7 @@ class MatriculaConsultaServiceTest extends TestCase
             'ano_lectivo_id' => $anoLectivo->id,
             'numero_registo_matricula' => 'M' . uniqid(),
             'data_matricula' => $dataMatricula,
-            'estado' => EstadoMatriculaEnum::ACTIVA->value,
+            'estado' => $estado->value,
         ]);
     }
 
@@ -116,6 +116,40 @@ class MatriculaConsultaServiceTest extends TestCase
 
         $this->assertTrue($resultado->turma->relationLoaded('turmaSalas'));
         $this->assertSame('Sala 1', $resultado->turma->turmaSalas->first()->sala->nome);
+    }
+
+    public function test_matriculas_activas_no_ano_lectivo_devolve_todas_as_nao_terminais_do_ano_activo(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $aluno = $this->criarAluno($estabelecimento);
+        $turmaA = $this->criarTurma($estabelecimento, $anoActivo);
+        $turmaB = $this->criarTurma($estabelecimento, $anoActivo);
+        $turmaC = $this->criarTurma($estabelecimento, $anoActivo);
+        $matriculaAntiga = $this->matricular($aluno, $turmaA, $anoActivo, '2026-09-01', EstadoMatriculaEnum::ACTIVA);
+        $matriculaRecente = $this->matricular($aluno, $turmaB, $anoActivo, '2026-09-10', EstadoMatriculaEnum::PENDENTE);
+        $this->matricular($aluno, $turmaC, $anoActivo, '2026-09-15', EstadoMatriculaEnum::CANCELADA);
+
+        $resultado = app(MatriculaConsultaService::class)->matriculasActivasNoAnoLectivo($aluno);
+
+        $this->assertCount(2, $resultado);
+        $this->assertSame($matriculaRecente->id, $resultado->first()->id);
+        $this->assertSame($matriculaAntiga->id, $resultado->last()->id);
+    }
+
+    public function test_matricula_actual_ignora_matriculas_com_estado_terminal(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $aluno = $this->criarAluno($estabelecimento);
+        $turmaAntiga = $this->criarTurma($estabelecimento, $anoActivo);
+        $turmaCancelada = $this->criarTurma($estabelecimento, $anoActivo);
+        $matriculaActiva = $this->matricular($aluno, $turmaAntiga, $anoActivo, '2026-09-01', EstadoMatriculaEnum::ACTIVA);
+        $this->matricular($aluno, $turmaCancelada, $anoActivo, '2026-09-20', EstadoMatriculaEnum::CANCELADA);
+
+        $resultado = app(MatriculaConsultaService::class)->matriculaActual($aluno);
+
+        $this->assertSame($matriculaActiva->id, $resultado->id);
     }
 
     public function test_matricula_actual_devolve_null_quando_aluno_nao_tem_matricula_no_ano_lectivo_activo(): void

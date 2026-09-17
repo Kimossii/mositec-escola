@@ -5,11 +5,13 @@ namespace Modules\Infraestrutura\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Infraestrutura\Enums\EstadoSala;
 use Modules\Infraestrutura\Enums\TipoSala;
+use Modules\Turma\Models\TurmaSala;
 use Modules\Usuario\Models\User;
 
 class Sala extends Model
@@ -46,6 +48,11 @@ class Sala extends Model
     public function estabelecimento(): BelongsTo
     {
         return $this->belongsTo(Estabelecimento::class);
+    }
+
+    public function turmaSalas(): HasMany
+    {
+        return $this->hasMany(TurmaSala::class);
     }
 
     public function criadoPor(): BelongsTo

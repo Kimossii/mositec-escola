@@ -70,7 +70,7 @@ function submeter() {
                 <form @submit.prevent="submeter">
                     <div class="fv-row mb-7">
                         <label class="required fw-semibold fs-6 mb-2">Disciplina</label>
-                        <SelectSolid v-model="form.disciplina_id" :options="opcoesDisciplinas" placeholder="Selecione a disciplina" />
+                        <SelectSolid v-model="form.disciplina_id" :options="opcoesDisciplinas" searchable placeholder="Selecione a disciplina" />
                         <div class="text-danger fs-7 mt-1" v-if="errors.disciplina_id">{{ errors.disciplina_id }}</div>
                     </div>
 

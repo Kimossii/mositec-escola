@@ -44,25 +44,38 @@ class MatriculaConsultaService
     }
 
     /**
-     * A matrícula do aluno no ano lectivo activo do seu estabelecimento —
-     * usada para mostrar Curso/Turma/Nível Académico/Ano na ficha do aluno.
-     * Devolve null quando o aluno não está matriculado no ano lectivo
-     * actualmente activo (não recua para anos lectivos anteriores).
+     * Matrículas não terminais (Pendente/Activa) do aluno no ano lectivo
+     * activo do seu estabelecimento, da mais para a menos recente. No
+     * Ensino Superior um aluno pode ter mais de uma em simultâneo (ex.:
+     * cursos diferentes) — matriculaActual() devolve só a primeira, o
+     * resto fica disponível para quem precisar de as listar todas.
      */
-    public function matriculaActual(Aluno $aluno): ?Matricula
+    public function matriculasActivasNoAnoLectivo(Aluno $aluno): Collection
     {
         $anoLectivoAtivoId = AnoLectivo::current($aluno->estabelecimento_id)?->id;
 
         if ($anoLectivoAtivoId === null) {
-            return null;
+            return new Collection();
         }
 
         return Matricula::with(['turma.curso', 'turma.nivelAcademico', 'turma.turno', 'turma.turmaSalas.sala', 'anoLectivo'])
             ->where('aluno_id', $aluno->id)
             ->where('ano_lectivo_id', $anoLectivoAtivoId)
+            ->whereIn('estado', [EstadoMatriculaEnum::PENDENTE->value, EstadoMatriculaEnum::ACTIVA->value])
             ->orderByDesc('data_matricula')
             ->orderByDesc('id')
-            ->first();
+            ->get();
+    }
+
+    /**
+     * A matrícula não terminal mais recente do aluno no ano lectivo activo
+     * — usada para mostrar Curso/Turma/Nível Académico/Ano na ficha do
+     * aluno. Devolve null quando o aluno não está matriculado (ou só tem
+     * matrículas terminais) no ano lectivo actualmente activo.
+     */
+    public function matriculaActual(Aluno $aluno): ?Matricula
+    {
+        return $this->matriculasActivasNoAnoLectivo($aluno)->first();
     }
 
     /**
