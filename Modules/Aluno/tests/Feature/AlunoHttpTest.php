@@ -8,12 +8,21 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Aluno\Models\Aluno;
+use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
+use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Enums\Estado;
+use Modules\Curso\Models\Curso;
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Models\Matricula;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
+use Modules\Turma\Models\NivelAcademico;
+use Modules\Turma\Models\Turma;
+use Modules\Turma\Models\Turno;
 use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
@@ -218,6 +227,35 @@ class AlunoHttpTest extends TestCase
         $this->get(route('alunos.show', $aluno))->assertInertia(fn (Assert $page) => $page
             ->component('Aluno/Show')
             ->where('aluno.numero_matricula', '2026-0001')
+        );
+    }
+
+    public function test_show_expoe_a_matricula_actual_do_aluno(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N1', 'nome' => 'Nível 1', 'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO, 'ordem' => 1]);
+        $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $turno = Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
+        $turma = Turma::create(['ano_lectivo_id' => $anoActivo->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'turno_id' => $turno->id, 'codigo' => 'T1', 'nome' => 'Turma A']);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
+        Matricula::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'ano_lectivo_id' => $anoActivo->id,
+            'numero_registo_matricula' => 'M0001',
+            'data_matricula' => now(),
+            'estado' => EstadoMatriculaEnum::ACTIVA->value,
+        ]);
+
+        $this->get(route('alunos.show', $aluno))->assertInertia(fn (Assert $page) => $page
+            ->component('Aluno/Show')
+            ->where('matriculaActual.turma.curso.nome', 'Informática')
+            ->where('matriculaActual.turma.nivel_academico.nome', 'Nível 1')
+            ->where('matriculaActual.turma.turno.nome', 'Manhã')
+            ->where('matriculaActual.ano_lectivo.nome', '2026/2027')
         );
     }
 

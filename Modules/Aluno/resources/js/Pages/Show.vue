@@ -19,6 +19,7 @@ import { ESTADO_MATRICULA, estadoMatriculaLabel, transicoesDisponiveis } from '.
 const props = defineProps({
     aluno: { type: Object, required: true },
     matriculas: { type: Object, default: () => ({ data: [], links: [] }) }, // paginator
+    matriculaActual: { type: Object, default: null },
     turmasDisponiveis: { type: Array, default: () => [] },
     anosLectivosComMatricula: { type: Array, default: () => [] },
     filtrosMatricula: { type: Object, default: () => ({}) },
@@ -309,31 +310,60 @@ function confirmarEliminacao() {
 
         <div class="card">
             <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-3 fw-bold text-muted">Estado</div>
-                    <div class="col-md-9">
-                        <EstadoBadge :estado="aluno.estado" :estado-descricao="aluno.estado_descricao" />
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Estado</div>
+                            <div class="col-md-8">
+                                <EstadoBadge :estado="aluno.estado" :estado-descricao="aluno.estado_descricao" />
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Email</div>
+                            <div class="col-md-8">{{ aluno.dados_pessoa?.email ?? '—' }}</div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Telefone Principal</div>
+                            <div class="col-md-8">{{ aluno.dados_pessoa?.telefone ?? '—' }}</div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Telefone Alternativo</div>
+                            <div class="col-md-8">{{ aluno.dados_pessoa?.telefone_alternativo ?? '—' }}</div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Data de nascimento</div>
+                            <div class="col-md-8">{{ formatarData(aluno.dados_pessoa?.data_nascimento) }}</div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Número de identificação</div>
+                            <div class="col-md-8">{{ aluno.dados_pessoa?.numero_identificacao ?? '—' }}</div>
+                        </div>
                     </div>
-                </div>
-                <div class="row mb-4">
-                    <div class="col-md-3 fw-bold text-muted">Email</div>
-                    <div class="col-md-9">{{ aluno.dados_pessoa?.email ?? '—' }}</div>
-                </div>
-                <div class="row mb-4">
-                    <div class="col-md-3 fw-bold text-muted">Telefone Principal</div>
-                    <div class="col-md-9">{{ aluno.dados_pessoa?.telefone ?? '—' }}</div>
-                </div>
-                <div class="row mb-4">
-                    <div class="col-md-3 fw-bold text-muted">Telefone Alternativo</div>
-                    <div class="col-md-9">{{ aluno.dados_pessoa?.telefone_alternativo ?? '—' }}</div>
-                </div>
-                <div class="row mb-4">
-                    <div class="col-md-3 fw-bold text-muted">Data de nascimento</div>
-                    <div class="col-md-9">{{ formatarData(aluno.dados_pessoa?.data_nascimento) }}</div>
-                </div>
-                <div class="row mb-4">
-                    <div class="col-md-3 fw-bold text-muted">Número de identificação</div>
-                    <div class="col-md-9">{{ aluno.dados_pessoa?.numero_identificacao ?? '—' }}</div>
+                    <div class="col-md-6">
+                        <template v-if="matriculaActual">
+                            <div v-if="matriculaActual.turma?.curso" class="row mb-4">
+                                <div class="col-md-4 fw-bold text-muted">Curso</div>
+                                <div class="col-md-8">{{ matriculaActual.turma.curso.nome }}</div>
+                            </div>
+                            <div v-if="matriculaActual.turma" class="row mb-4">
+                                <div class="col-md-4 fw-bold text-muted">Turma</div>
+                                <div class="col-md-8">{{ matriculaActual.turma.codigo }} — {{ matriculaActual.turma.nome }}</div>
+                            </div>
+                            <div v-if="matriculaActual.turma?.nivel_academico" class="row mb-4">
+                                <div class="col-md-4 fw-bold text-muted">Nível Académico</div>
+                                <div class="col-md-8">{{ matriculaActual.turma.nivel_academico.nome }}</div>
+                            </div>
+                            <div v-if="matriculaActual.turma?.turno" class="row mb-4">
+                                <div class="col-md-4 fw-bold text-muted">Turno</div>
+                                <div class="col-md-8">{{ matriculaActual.turma.turno.nome }}</div>
+                            </div>
+                            <div v-if="matriculaActual.ano_lectivo" class="row mb-4">
+                                <div class="col-md-4 fw-bold text-muted">Ano</div>
+                                <div class="col-md-8">{{ matriculaActual.ano_lectivo.nome }}</div>
+                            </div>
+                        </template>
+                        <div v-else class="text-muted fs-7">Sem matrícula no ano lectivo actual.</div>
+                    </div>
                 </div>
             </div>
         </div>

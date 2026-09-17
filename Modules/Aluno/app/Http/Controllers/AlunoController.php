@@ -58,6 +58,7 @@ class AlunoController extends Controller
         return Inertia::render('Aluno/Show', [
             'aluno' => $aluno->load('dadosPessoa'),
             'matriculas' => $this->matriculaConsulta->listarPorAluno($aluno, $filtrosMatricula),
+            'matriculaActual' => $this->matriculaConsulta->matriculaActual($aluno),
             'turmasDisponiveis' => $this->matriculaConsulta->turmasDisponiveis(),
             'anosLectivosComMatricula' => $this->matriculaConsulta->anosLectivosComMatricula($aluno),
             'filtrosMatricula' => $filtrosMatricula,

@@ -5,6 +5,7 @@ namespace Modules\Matricula\Services;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
+use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Aluno\Models\Aluno;
 use Modules\Core\Enums\Estado;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -40,6 +41,28 @@ class MatriculaConsultaService
             ->orderByDesc('id')
             ->paginate($porPagina)
             ->appends($filtros);
+    }
+
+    /**
+     * A matrícula do aluno no ano lectivo activo do seu estabelecimento —
+     * usada para mostrar Curso/Turma/Nível Académico/Ano na ficha do aluno.
+     * Devolve null quando o aluno não está matriculado no ano lectivo
+     * actualmente activo (não recua para anos lectivos anteriores).
+     */
+    public function matriculaActual(Aluno $aluno): ?Matricula
+    {
+        $anoLectivoAtivoId = AnoLectivo::current($aluno->estabelecimento_id)?->id;
+
+        if ($anoLectivoAtivoId === null) {
+            return null;
+        }
+
+        return Matricula::with(['turma.curso', 'turma.nivelAcademico', 'turma.turno', 'anoLectivo'])
+            ->where('aluno_id', $aluno->id)
+            ->where('ano_lectivo_id', $anoLectivoAtivoId)
+            ->orderByDesc('data_matricula')
+            ->orderByDesc('id')
+            ->first();
     }
 
     /**
