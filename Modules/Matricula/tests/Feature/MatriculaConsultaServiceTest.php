@@ -12,6 +12,8 @@ use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\MatriculaConsultaService;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
+use Modules\Infraestrutura\Enums\TipoSala;
+use Modules\Infraestrutura\Models\Sala;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
 use Modules\Turma\Models\Turno;
@@ -98,6 +100,22 @@ class MatriculaConsultaServiceTest extends TestCase
 
         $this->assertTrue($resultado->turma->relationLoaded('turno'));
         $this->assertSame('Manhã', $resultado->turma->turno->nome);
+    }
+
+    public function test_matricula_actual_carrega_a_sala_activa_da_turma(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $sala = Sala::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'S1', 'nome' => 'Sala 1', 'tipo' => TipoSala::SALA_AULA->value]);
+        $aluno = $this->criarAluno($estabelecimento);
+        $turma = $this->criarTurma($estabelecimento, $anoActivo);
+        $turma->turmaSalas()->create(['sala_id' => $sala->id, 'inicio' => '2026-09-01']);
+        $this->matricular($aluno, $turma, $anoActivo, '2026-09-05');
+
+        $resultado = app(MatriculaConsultaService::class)->matriculaActual($aluno);
+
+        $this->assertTrue($resultado->turma->relationLoaded('turmaSalas'));
+        $this->assertSame('Sala 1', $resultado->turma->turmaSalas->first()->sala->nome);
     }
 
     public function test_matricula_actual_devolve_null_quando_aluno_nao_tem_matricula_no_ano_lectivo_activo(): void

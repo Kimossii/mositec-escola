@@ -5,7 +5,6 @@ import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
-import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import AlunoFormModal from '../Components/AlunoFormModal.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
@@ -14,7 +13,7 @@ import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/
 import MatriculaFormModal from '../../../../Matricula/resources/js/Components/MatriculaFormModal.vue';
 import InscricaoDisciplinaModal from '../../../../Matricula/resources/js/Components/InscricaoDisciplinaModal.vue';
 import DocumentoPessoaModal from '../../../../Usuario/resources/js/Components/DocumentoPessoaModal.vue';
-import { ESTADO_MATRICULA, estadoMatriculaLabel, transicoesDisponiveis } from '../../../../Matricula/resources/js/Models/Estado';
+import { ESTADO_MATRICULA, estadoMatriculaBadgeClass, estadoMatriculaLabel, transicoesDisponiveis } from '../../../../Matricula/resources/js/Models/Estado';
 
 const props = defineProps({
     aluno: { type: Object, required: true },
@@ -44,6 +43,28 @@ function formatarData(data) {
     const [ano, mes, dia] = data.slice(0, 10).split('-');
     return `${dia}/${mes}/${ano}`;
 }
+
+const iniciaisAluno = computed(() => {
+    const partes = (props.aluno.dados_pessoa?.nome_completo ?? '').trim().split(/\s+/).filter(Boolean);
+    if (!partes.length) return '?';
+    const primeira = partes[0][0];
+    const ultima = partes.length > 1 ? partes[partes.length - 1][0] : '';
+    return (primeira + ultima).toUpperCase();
+});
+
+// Nada no módulo Turma impede duas associações activas (fim nulo) em
+// simultâneo — quando acontece, mostramos a mais recente como "a" sala e
+// as restantes ficam acessíveis no dropdown "+N" ao lado.
+const salasActivasDaTurma = computed(() => {
+    const turmaSalas = props.matriculaActual?.turma?.turma_salas ?? [];
+    return turmaSalas
+        .filter((turmaSala) => !turmaSala.fim && turmaSala.sala)
+        .sort((a, b) => (a.inicio < b.inicio ? 1 : -1));
+});
+
+const salaActual = computed(() => salasActivasDaTurma.value[0]?.sala ?? null);
+
+const outrasSalasActivas = computed(() => salasActivasDaTurma.value.slice(1).map((turmaSala) => turmaSala.sala));
 
 function guardar(payload) {
     processing.value = true;
@@ -294,12 +315,17 @@ function confirmarEliminacao() {
                 <div class="symbol symbol-circle symbol-75px overflow-hidden">
                     <div class="symbol-label bg-light-primary">
                         <img v-if="aluno.foto_url" :src="aluno.foto_url" :alt="aluno.dados_pessoa?.nome_completo" class="w-100 h-100 object-fit-cover" />
-                        <i v-else class="ki-duotone ki-picture fs-2x text-primary"><span class="path1"></span><span class="path2"></span></i>
+                        <span v-else class="fs-2x fw-bold text-primary">{{ iniciaisAluno }}</span>
                     </div>
                 </div>
                 <div>
                     <h1 class="fs-2 fw-bold mb-1">{{ aluno.dados_pessoa?.nome_completo }}</h1>
-                    <span class="text-muted">Matrícula: {{ aluno.numero_matricula }}</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="text-muted">Matrícula: {{ aluno.numero_matricula }}</span>
+                        <span v-if="matriculaActual" class="badge fw-bold" :class="estadoMatriculaBadgeClass(matriculaActual.estado)">
+                            Matrícula {{ estadoMatriculaLabel(matriculaActual.estado) }}
+                        </span>
+                    </div>
                 </div>
             </div>
             <div class="d-flex gap-2">
@@ -310,14 +336,100 @@ function confirmarEliminacao() {
 
         <div class="card">
             <div class="card-body">
+                <h4 class="fw-bold mb-4">Situação Académica Actual</h4>
+                <template v-if="matriculaActual">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="row mb-4">
+                                <div class="col-md-4 fw-bold text-muted">Estado da matrícula</div>
+                                <div class="col-md-8"><MatriculaEstadoBadge :estado="matriculaActual.estado" /></div>
+                            </div>
+                            <div v-if="matriculaActual.ano_lectivo" class="row mb-4">
+                                <div class="col-md-4 fw-bold text-muted">Ano Lectivo</div>
+                                <div class="col-md-8">{{ matriculaActual.ano_lectivo.nome }}</div>
+                            </div>
+                            <div v-if="matriculaActual.turma?.curso" class="row mb-4">
+                                <div class="col-md-4 fw-bold text-muted">Curso</div>
+                                <div class="col-md-8">{{ matriculaActual.turma.curso.nome }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div v-if="matriculaActual.turma?.nivel_academico" class="row mb-4">
+                                <div class="col-md-4 fw-bold text-muted">Nível Académico</div>
+                                <div class="col-md-8">{{ matriculaActual.turma.nivel_academico.nome }}</div>
+                            </div>
+                            <div v-if="matriculaActual.turma" class="row mb-4">
+                                <div class="col-md-4 fw-bold text-muted">Turma</div>
+                                <div class="col-md-8">{{ matriculaActual.turma.codigo }} — {{ matriculaActual.turma.nome }}</div>
+                            </div>
+                            <div v-if="matriculaActual.turma?.turno" class="row mb-4">
+                                <div class="col-md-4 fw-bold text-muted">Turno</div>
+                                <div class="col-md-8">{{ matriculaActual.turma.turno.nome }}</div>
+                            </div>
+                            <div v-if="salaActual" class="row mb-4">
+                                <div class="col-md-4 fw-bold text-muted">Sala</div>
+                                <div class="col-md-8 d-flex align-items-center gap-2">
+                                    <span>{{ salaActual.codigo }} — {{ salaActual.nome }}</span>
+                                    <a
+                                        v-if="outrasSalasActivas.length"
+                                        href="#"
+                                        class="badge badge-light-primary"
+                                        data-kt-menu-trigger="click"
+                                        data-kt-menu-placement="bottom-start"
+                                        title="Ver outras salas activas associadas a esta turma"
+                                    >
+                                        +{{ outrasSalasActivas.length }}
+                                    </a>
+                                    <div
+                                        v-if="outrasSalasActivas.length"
+                                        class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 fw-semibold fs-7 w-250px py-3"
+                                        data-kt-menu="true"
+                                    >
+                                        <div class="menu-item px-3 pb-2">
+                                            <span class="text-muted text-uppercase fs-8">Outras salas activas</span>
+                                        </div>
+                                        <div v-for="sala in outrasSalasActivas" :key="sala.id" class="menu-item px-3">
+                                            <span class="menu-link px-3">{{ sala.codigo }} — {{ sala.nome }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <div v-else class="text-muted fs-7 mb-2">Sem matrícula no ano lectivo actual.</div>
+
+                <div class="separator separator-dashed my-6"></div>
+
+                <h4 class="fw-bold mb-4">Dados Pessoais</h4>
                 <div class="row">
                     <div class="col-md-6">
                         <div class="row mb-4">
-                            <div class="col-md-4 fw-bold text-muted">Estado</div>
-                            <div class="col-md-8">
-                                <EstadoBadge :estado="aluno.estado" :estado-descricao="aluno.estado_descricao" />
-                            </div>
+                            <div class="col-md-4 fw-bold text-muted">Nome completo</div>
+                            <div class="col-md-8">{{ aluno.dados_pessoa?.nome_completo ?? '—' }}</div>
                         </div>
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Nº de matrícula</div>
+                            <div class="col-md-8">{{ aluno.numero_matricula }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Data de nascimento</div>
+                            <div class="col-md-8">{{ formatarData(aluno.dados_pessoa?.data_nascimento) }}</div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Nº de identificação</div>
+                            <div class="col-md-8">{{ aluno.dados_pessoa?.numero_identificacao ?? '—' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="separator separator-dashed my-6"></div>
+
+                <h4 class="fw-bold mb-4">Contactos</h4>
+                <div class="row">
+                    <div class="col-md-6">
                         <div class="row mb-4">
                             <div class="col-md-4 fw-bold text-muted">Email</div>
                             <div class="col-md-8">{{ aluno.dados_pessoa?.email ?? '—' }}</div>
@@ -326,43 +438,12 @@ function confirmarEliminacao() {
                             <div class="col-md-4 fw-bold text-muted">Telefone Principal</div>
                             <div class="col-md-8">{{ aluno.dados_pessoa?.telefone ?? '—' }}</div>
                         </div>
+                    </div>
+                    <div class="col-md-6">
                         <div class="row mb-4">
                             <div class="col-md-4 fw-bold text-muted">Telefone Alternativo</div>
                             <div class="col-md-8">{{ aluno.dados_pessoa?.telefone_alternativo ?? '—' }}</div>
                         </div>
-                        <div class="row mb-4">
-                            <div class="col-md-4 fw-bold text-muted">Data de nascimento</div>
-                            <div class="col-md-8">{{ formatarData(aluno.dados_pessoa?.data_nascimento) }}</div>
-                        </div>
-                        <div class="row mb-4">
-                            <div class="col-md-4 fw-bold text-muted">Número de identificação</div>
-                            <div class="col-md-8">{{ aluno.dados_pessoa?.numero_identificacao ?? '—' }}</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <template v-if="matriculaActual">
-                            <div v-if="matriculaActual.turma?.curso" class="row mb-4">
-                                <div class="col-md-4 fw-bold text-muted">Curso</div>
-                                <div class="col-md-8">{{ matriculaActual.turma.curso.nome }}</div>
-                            </div>
-                            <div v-if="matriculaActual.turma" class="row mb-4">
-                                <div class="col-md-4 fw-bold text-muted">Turma</div>
-                                <div class="col-md-8">{{ matriculaActual.turma.codigo }} — {{ matriculaActual.turma.nome }}</div>
-                            </div>
-                            <div v-if="matriculaActual.turma?.nivel_academico" class="row mb-4">
-                                <div class="col-md-4 fw-bold text-muted">Nível Académico</div>
-                                <div class="col-md-8">{{ matriculaActual.turma.nivel_academico.nome }}</div>
-                            </div>
-                            <div v-if="matriculaActual.turma?.turno" class="row mb-4">
-                                <div class="col-md-4 fw-bold text-muted">Turno</div>
-                                <div class="col-md-8">{{ matriculaActual.turma.turno.nome }}</div>
-                            </div>
-                            <div v-if="matriculaActual.ano_lectivo" class="row mb-4">
-                                <div class="col-md-4 fw-bold text-muted">Ano</div>
-                                <div class="col-md-8">{{ matriculaActual.ano_lectivo.nome }}</div>
-                            </div>
-                        </template>
-                        <div v-else class="text-muted fs-7">Sem matrícula no ano lectivo actual.</div>
                     </div>
                 </div>
             </div>

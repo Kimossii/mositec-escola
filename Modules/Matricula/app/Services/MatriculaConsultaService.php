@@ -57,7 +57,7 @@ class MatriculaConsultaService
             return null;
         }
 
-        return Matricula::with(['turma.curso', 'turma.nivelAcademico', 'turma.turno', 'anoLectivo'])
+        return Matricula::with(['turma.curso', 'turma.nivelAcademico', 'turma.turno', 'turma.turmaSalas.sala', 'anoLectivo'])
             ->where('aluno_id', $aluno->id)
             ->where('ano_lectivo_id', $anoLectivoAtivoId)
             ->orderByDesc('data_matricula')
