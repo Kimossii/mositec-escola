@@ -178,35 +178,37 @@ function confirmarEliminacao() {
         </div>
 
         <div class="card mb-6">
-            <div class="card-body d-flex flex-wrap gap-4">
-                <div style="min-width: 220px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label>
-                    <input
-                        v-model="filtros.pesquisa"
-                        type="text"
-                        class="form-control form-control-solid"
-                        placeholder="Código ou nome"
-                    />
-                </div>
-                <div style="min-width: 180px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Ano Lectivo</label>
-                    <SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAnoLectivo" />
-                </div>
-                <div style="min-width: 200px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Curso</label>
-                    <SelectSolid v-model="filtros.curso_id" :options="opcoesCurso" searchable />
-                </div>
-                <div style="min-width: 200px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Nível Académico</label>
-                    <SelectSolid v-model="filtros.nivel_academico_id" :options="opcoesNivelAcademico" searchable />
-                </div>
-                <div style="min-width: 180px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Turno</label>
-                    <SelectSolid v-model="filtros.turno_id" :options="opcoesTurno" />
-                </div>
-                <div style="min-width: 160px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Estado</label>
-                    <SelectSolid v-model="filtros.estado" :options="opcoesEstado" />
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label>
+                        <input
+                            v-model="filtros.pesquisa"
+                            type="text"
+                            class="form-control form-control-solid"
+                            placeholder="Código ou nome"
+                        />
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <label class="fw-semibold fs-7 text-muted mb-1">Ano Lectivo</label>
+                        <SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAnoLectivo" />
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <label class="fw-semibold fs-7 text-muted mb-1">Curso</label>
+                        <SelectSolid v-model="filtros.curso_id" :options="opcoesCurso" searchable />
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <label class="fw-semibold fs-7 text-muted mb-1">Nível Académico</label>
+                        <SelectSolid v-model="filtros.nivel_academico_id" :options="opcoesNivelAcademico" searchable />
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <label class="fw-semibold fs-7 text-muted mb-1">Turno</label>
+                        <SelectSolid v-model="filtros.turno_id" :options="opcoesTurno" />
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <label class="fw-semibold fs-7 text-muted mb-1">Estado</label>
+                        <SelectSolid v-model="filtros.estado" :options="opcoesEstado" />
+                    </div>
                 </div>
             </div>
         </div>

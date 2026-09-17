@@ -148,8 +148,34 @@ class DisciplinaHttpTest extends TestCase
 
         $this->get(route('disciplinas.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Disciplina/Index')
-            ->has('disciplinas', 1)
-            ->where('disciplinas.0.codigo', 'INF')
+            ->has('disciplinas.data', 1)
+            ->where('disciplinas.data.0.codigo', 'INF')
+        );
+    }
+
+    public function test_index_pesquisa_por_codigo_ou_nome(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade']);
+
+        $this->get(route('disciplinas.index', ['pesquisa' => 'INF']))->assertInertia(fn (Assert $page) => $page
+            ->has('disciplinas.data', 1)
+            ->where('disciplinas.data.0.codigo', 'INF')
+        );
+    }
+
+    public function test_index_filtra_por_estado_inativo(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $disciplinaInativa = Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade', 'estado' => Estado::INATIVO->value]);
+
+        $this->get(route('disciplinas.index', ['estado' => Estado::INATIVO->value]))->assertInertia(fn (Assert $page) => $page
+            ->has('disciplinas.data', 1)
+            ->where('disciplinas.data.0.id', $disciplinaInativa->id)
         );
     }
 
