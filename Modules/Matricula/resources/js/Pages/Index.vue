@@ -257,7 +257,13 @@ function confirmarEliminacao() {
 
 // Renovação em massa — só faz sentido para matrículas Concluídas, tal como
 // a ação individual na página do aluno.
-const matriculasConcluidasDaPagina = computed(() => props.matriculas.data.filter((m) => m.estado === ESTADO_MATRICULA.CONCLUIDA));
+// Vazio (e a UI de selecção em massa toda escondida) para quem não pode
+// renovar — a rota já exige matricula.criar, isto só evita mostrar
+// checkboxes e um botão que iam sempre falhar com 403.
+const matriculasConcluidasDaPagina = computed(() => {
+    if (!can('matricula.criar')) return [];
+    return props.matriculas.data.filter((m) => m.estado === ESTADO_MATRICULA.CONCLUIDA);
+});
 
 const seleccionadas = ref([]);
 
@@ -384,7 +390,7 @@ function confirmarRenovacaoEmMassa() {
                         <tr v-for="matricula in matriculas.data" :key="matricula.id">
                             <td>
                                 <input
-                                    v-if="matricula.estado === ESTADO_MATRICULA.CONCLUIDA"
+                                    v-if="matriculasConcluidasDaPagina.includes(matricula)"
                                     v-model="seleccionadas"
                                     type="checkbox"
                                     class="form-check-input"

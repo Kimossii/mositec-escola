@@ -1,21 +1,54 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import Pagination from '@/Components/Shared/Pagination.vue';
 import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
 import TurmaTabs from '../../Components/Shared/TurmaTabs.vue';
 import NivelAcademicoFormModal from '../../Components/NivelAcademico/NivelAcademicoFormModal.vue';
 import { ESTADO } from '../../Models/Estado';
 
-defineProps({
-    niveisAcademicos: { type: Array, required: true },
+const props = defineProps({
+    niveisAcademicos: { type: Object, required: true }, // paginator: { data, links, ... }
     etapasEnsino: { type: Array, required: true },
+    filtros: { type: Object, default: () => ({}) },
 });
 defineOptions({ layout: AppLayout });
+
+const opcoesEtapaEnsino = computed(() => [
+    { value: '', label: 'Todas as etapas' },
+    ...props.etapasEnsino.map((etapa) => ({ value: etapa.etapa_ensino, label: etapa.etapa_ensino_descricao })),
+]);
+
+const opcoesEstado = computed(() => [
+    { value: '', label: 'Todos os estados' },
+    { value: ESTADO.ATIVO, label: 'Ativo' },
+    { value: ESTADO.INATIVO, label: 'Inativo' },
+]);
+
+const filtros = reactive({
+    pesquisa: props.filtros.pesquisa ?? '',
+    etapa_ensino: props.filtros.etapa_ensino ?? '',
+    estado: props.filtros.estado ?? '',
+});
+
+let debounceId = null;
+
+watch(filtros, (valor) => {
+    clearTimeout(debounceId);
+    debounceId = setTimeout(() => {
+        router.get('/niveis-academicos', valor, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    }, 300);
+});
 
 const modalAberto = ref(false);
 const nivelEmEdicao = ref(null);
@@ -123,6 +156,28 @@ function confirmarEliminacao() {
             <button v-if="can('turmas.criar')" class="btn btn-primary" @click="abrirCriacao">Novo Nível Académico</button>
         </div>
 
+        <div class="card mb-6">
+            <div class="card-body d-flex flex-wrap gap-4">
+                <div style="min-width: 220px;">
+                    <label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label>
+                    <input
+                        v-model="filtros.pesquisa"
+                        type="text"
+                        class="form-control form-control-solid"
+                        placeholder="Código ou nome"
+                    />
+                </div>
+                <div style="min-width: 200px;">
+                    <label class="fw-semibold fs-7 text-muted mb-1">Etapa de Ensino</label>
+                    <SelectSolid v-model="filtros.etapa_ensino" :options="opcoesEtapaEnsino" />
+                </div>
+                <div style="min-width: 160px;">
+                    <label class="fw-semibold fs-7 text-muted mb-1">Estado</label>
+                    <SelectSolid v-model="filtros.estado" :options="opcoesEstado" />
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-body p-0">
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
@@ -137,10 +192,10 @@ function confirmarEliminacao() {
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
-                        <tr v-if="niveisAcademicos.length === 0">
-                            <td colspan="6" class="text-center text-muted py-6">Nenhum nível académico criado.</td>
+                        <tr v-if="niveisAcademicos.data.length === 0">
+                            <td colspan="6" class="text-center text-muted py-6">Nenhum nível académico encontrado.</td>
                         </tr>
-                        <tr v-for="nivel in niveisAcademicos" :key="nivel.id">
+                        <tr v-for="nivel in niveisAcademicos.data" :key="nivel.id">
                             <td>{{ nivel.ordem }}</td>
                             <td>
                                 <a :href="`/niveis-academicos/${nivel.id}`" class="text-gray-800 text-hover-primary">{{ nivel.codigo }}</a>
@@ -191,6 +246,9 @@ function confirmarEliminacao() {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <div v-if="niveisAcademicos.data.length" class="card-footer d-flex justify-content-end">
+                <Pagination :links="niveisAcademicos.links" />
             </div>
         </div>
 

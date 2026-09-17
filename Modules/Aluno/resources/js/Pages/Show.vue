@@ -652,7 +652,6 @@ function confirmarEliminacao() {
                             <td><MatriculaEstadoBadge :estado="matricula.estado" /></td>
                             <td class="text-end">
                                 <a
-                                    v-if="can('matricula.editar')"
                                     href="#"
                                     class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm"
                                     data-kt-menu-trigger="click"
@@ -668,7 +667,7 @@ function confirmarEliminacao() {
                                         </a>
                                     </div>
                                     <div
-                                        v-if="[ESTADO_MATRICULA.PENDENTE, ESTADO_MATRICULA.ACTIVA].includes(matricula.estado)"
+                                        v-if="[ESTADO_MATRICULA.PENDENTE, ESTADO_MATRICULA.ACTIVA].includes(matricula.estado) && can('matricula.editar')"
                                         class="menu-item px-3"
                                     >
                                         <a href="#" class="menu-link px-3" @click.prevent="abrirEdicaoMatricula(matricula)">
@@ -676,7 +675,7 @@ function confirmarEliminacao() {
                                         </a>
                                     </div>
                                     <div
-                                        v-for="proximoEstado in transicoesDisponiveis(matricula.estado)"
+                                        v-for="proximoEstado in (can('matricula.editar') ? transicoesDisponiveis(matricula.estado) : [])"
                                         :key="proximoEstado"
                                         class="menu-item px-3"
                                     >
@@ -689,7 +688,7 @@ function confirmarEliminacao() {
                                         </a>
                                     </div>
                                     <div
-                                        v-if="matricula.estado === ESTADO_MATRICULA.CONCLUIDA"
+                                        v-if="matricula.estado === ESTADO_MATRICULA.CONCLUIDA && can('matricula.criar')"
                                         class="menu-item px-3"
                                     >
                                         <a
