@@ -15,6 +15,7 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/{matricula}/estado', [MatriculaController::class, 'alterarEstado'])->middleware('can:matricula.editar')->name('alterar-estado');
         Route::post('/{matricula}/renovar', [MatriculaController::class, 'renovar'])->middleware('can:matricula.criar')->name('renovar');
         Route::delete('/{matricula}', [MatriculaController::class, 'destroy'])->middleware('can:matricula.eliminar')->name('destroy');
+        Route::get('/{matricula}/historico', [MatriculaController::class, 'historico'])->middleware('can:matricula.ver')->name('historico');
 
         Route::get('/{matricula}/disciplinas', [InscricaoDisciplinaController::class, 'listar'])->middleware('can:matricula.ver')->name('disciplinas.index');
         Route::get('/{matricula}/disciplinas-disponiveis', [InscricaoDisciplinaController::class, 'disponiveis'])->middleware('can:matricula.ver')->name('disciplinas.disponiveis');

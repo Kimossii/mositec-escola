@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, reactive, ref, watch } from 'vue';
+import axios from 'axios';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -43,6 +44,11 @@ function formatarData(data) {
     if (!data) return '—';
     const [ano, mes, dia] = data.slice(0, 10).split('-');
     return `${dia}/${mes}/${ano}`;
+}
+
+function formatarDataHora(data) {
+    if (!data) return '—';
+    return new Date(data).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
 }
 
 const iniciaisAluno = computed(() => {
@@ -109,6 +115,41 @@ function voltarAMatriculaActual() {
 // presa a um registo que pode já não fazer sentido.
 watch(() => props.matriculaActual?.id, () => {
     matriculaSelecionadaManual.value = null;
+});
+
+const historicoAberto = ref(false);
+const historicoCarregando = ref(false);
+const historicoLista = ref([]);
+
+async function carregarHistorico() {
+    if (!matriculaExibida.value) return;
+    historicoCarregando.value = true;
+    try {
+        const { data } = await axios.get(`/alunos/${props.aluno.id}/matriculas/${matriculaExibida.value.id}/historico`);
+        historicoLista.value = data.historico;
+    } catch {
+        toast.error('Não foi possível carregar o histórico desta matrícula.');
+    } finally {
+        historicoCarregando.value = false;
+    }
+}
+
+function alternarHistorico() {
+    historicoAberto.value = !historicoAberto.value;
+    if (historicoAberto.value) {
+        carregarHistorico();
+    }
+}
+
+// Trocar de matrícula (dropdown "+N" ou "Ver Situação Académica" na tabela)
+// invalida o histórico já carregado — se o painel estiver aberto, recarrega
+// para a nova matrícula; senão só limpa para não mostrar dados obsoletos.
+watch(() => matriculaExibida.value?.id, () => {
+    if (historicoAberto.value) {
+        carregarHistorico();
+    } else {
+        historicoLista.value = [];
+    }
 });
 
 // Nada no módulo Turma impede duas associações activas (fim nulo) em
@@ -492,6 +533,26 @@ function confirmarEliminacao() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        <a href="#" class="fs-7 fw-semibold" @click.prevent="alternarHistorico">
+                            {{ historicoAberto ? 'Ocultar histórico da matrícula' : 'Ver histórico da matrícula' }}
+                        </a>
+                        <div v-if="historicoAberto" class="mt-3">
+                            <div v-if="historicoCarregando" class="text-muted fs-7">A carregar…</div>
+                            <ul v-else-if="historicoLista.length" class="list-unstyled mb-0">
+                                <li v-for="entrada in historicoLista" :key="entrada.id" class="d-flex align-items-center flex-wrap gap-2 fs-7 py-1">
+                                    <span class="text-muted" style="min-width: 130px;">{{ formatarDataHora(entrada.created_at) }}</span>
+                                    <span>
+                                        <template v-if="entrada.estado_anterior">{{ estadoMatriculaLabel(entrada.estado_anterior) }} → </template>
+                                        <span class="fw-bold">{{ estadoMatriculaLabel(entrada.estado_novo) }}</span>
+                                    </span>
+                                    <span class="text-muted">— {{ entrada.utilizador?.name ?? 'Sistema' }}</span>
+                                </li>
+                            </ul>
+                            <div v-else class="text-muted fs-7">Sem alterações de estado registadas.</div>
                         </div>
                     </div>
                 </template>

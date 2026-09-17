@@ -243,6 +243,38 @@ class MatriculaHttpTest extends TestCase
         $this->assertSame($staff->id, $matricula->editado_por);
     }
 
+    public function test_historico_da_matricula_via_http(): void
+    {
+        $staff = $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
+
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001',
+            'data_matricula' => '2026-02-01',
+            'estado' => EstadoMatriculaEnum::PENDENTE->value,
+        ]);
+
+        $this->patch(route('matriculas.alterar-estado', [$aluno, $matricula]), [
+            'estado' => EstadoMatriculaEnum::ACTIVA->value,
+        ])->assertSessionHasNoErrors();
+
+        $resposta = $this->get(route('matriculas.historico', [$aluno, $matricula]));
+
+        $resposta->assertOk();
+        $resposta->assertJsonCount(1, 'historico');
+        $resposta->assertJsonPath('historico.0.estado_anterior', EstadoMatriculaEnum::PENDENTE->value);
+        $resposta->assertJsonPath('historico.0.estado_novo', EstadoMatriculaEnum::ACTIVA->value);
+        $resposta->assertJsonPath('historico.0.utilizador.id', $staff->id);
+    }
+
     public function test_elimina_matricula_pendente_via_http(): void
     {
         $this->actingAsStaff();

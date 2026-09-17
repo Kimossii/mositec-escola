@@ -86,6 +86,15 @@ class MatriculaController extends Controller
         return redirect()->back()->with('success', 'Matrícula eliminada com sucesso.');
     }
 
+    public function historico(Aluno $aluno, Matricula $matricula)
+    {
+        $this->authorize('matricula.ver');
+
+        return response()->json([
+            'historico' => $this->consulta->historicoDaMatricula($matricula),
+        ]);
+    }
+
     public function renovarEmMassa(RenovarMatriculasEmMassaRequest $request)
     {
         $this->authorize('matricula.criar');
