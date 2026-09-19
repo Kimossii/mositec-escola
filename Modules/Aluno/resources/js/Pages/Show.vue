@@ -421,7 +421,7 @@ function confirmarEliminacao() {
                 <div>
                     <h1 class="fs-2 fw-bold mb-1">{{ aluno.dados_pessoa?.nome_completo }}</h1>
                     <div class="d-flex align-items-center gap-3">
-                        <span class="text-muted">Matrícula: {{ aluno.numero_matricula }}</span>
+                        <span class="text-muted">Nº de aluno(a): {{ aluno.numero_matricula }}</span>
                         <span v-if="matriculaParaCabecalho" class="badge fw-bold" :class="estadoMatriculaBadgeClass(matriculaParaCabecalho.estado)">
                             Matrícula {{ estadoMatriculaLabel(matriculaParaCabecalho.estado) }}
                         </span>
