@@ -20,10 +20,10 @@ class AlunoConsultaService
             ->where('estabelecimento_id', Estabelecimento::current()?->id)
             ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
                 $query->where(function ($query) use ($pesquisa) {
-                    $query->where('numero_matricula', 'like', "%{$pesquisa}%")
+                    $query->whereContem('numero_matricula', $pesquisa)
                         ->orWhereHas('dadosPessoa', function ($query) use ($pesquisa) {
-                            $query->where('nome_completo', 'like', "%{$pesquisa}%")
-                                ->orWhere('numero_identificacao', 'like', "%{$pesquisa}%");
+                            $query->whereContem('nome_completo', $pesquisa)
+                                ->orWhereContem('numero_identificacao', $pesquisa);
                         });
                 });
             })

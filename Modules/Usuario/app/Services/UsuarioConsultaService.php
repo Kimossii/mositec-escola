@@ -27,9 +27,9 @@ class UsuarioConsultaService
             ->when($perfil, fn ($query) => $query->whereHas('roles', fn ($query) => $query->where('nome', $perfil->value)))
             ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
                 $query->where(function ($query) use ($pesquisa) {
-                    $query->where('name', 'like', "%{$pesquisa}%")
-                        ->orWhere('email', 'like', "%{$pesquisa}%")
-                        ->orWhere('numero_matricula', 'like', "%{$pesquisa}%");
+                    $query->whereContem('name', $pesquisa)
+                        ->orWhereContem('email', $pesquisa)
+                        ->orWhereContem('numero_matricula', $pesquisa);
                 });
             })
             ->when(

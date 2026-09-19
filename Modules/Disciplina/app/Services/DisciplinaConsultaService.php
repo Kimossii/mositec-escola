@@ -14,8 +14,8 @@ class DisciplinaConsultaService
             ->when(($filtros['estado'] ?? '') !== '', fn ($query) => $query->where('estado', $filtros['estado']))
             ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
                 $query->where(function ($query) use ($pesquisa) {
-                    $query->where('codigo', 'like', "%{$pesquisa}%")
-                        ->orWhere('nome', 'like', "%{$pesquisa}%");
+                    $query->whereContem('codigo', $pesquisa)
+                        ->orWhereContem('nome', $pesquisa);
                 });
             })
             ->orderBy('nome')
