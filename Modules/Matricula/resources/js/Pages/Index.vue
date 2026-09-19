@@ -72,6 +72,21 @@ function formatarData(data) {
     return `${dia}/${mes}/${ano}`;
 }
 
+// --- Colapso de detalhes por linha (curso, nível académico, contacto, auditoria) ---
+// Todos os dados já vêm carregados no payload da listagem (ver eager loading em
+// MatriculaConsultaService::listarTodas), não é preciso pedir nada ao servidor.
+const linhasExpandidas = ref(new Set());
+
+function alternarLinha(matricula) {
+    const novoConjunto = new Set(linhasExpandidas.value);
+    if (novoConjunto.has(matricula.id)) {
+        novoConjunto.delete(matricula.id);
+    } else {
+        novoConjunto.add(matricula.id);
+    }
+    linhasExpandidas.value = novoConjunto;
+}
+
 // Qualquer acção que altere uma matrícula recarrega a lista com preserveState
 // (redirect()->back() do controller) — recria as linhas e os seus dropdowns
 // "Ações", que ficam sem o clique ligado pelo KTMenu global até isto correr.
@@ -365,6 +380,7 @@ function confirmarRenovacaoEmMassa() {
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                            <th class="w-25px"></th>
                             <th class="w-25px">
                                 <input
                                     v-if="matriculasConcluidasDaPagina.length"
@@ -385,9 +401,21 @@ function confirmarRenovacaoEmMassa() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="matriculas.data.length === 0">
-                            <td colspan="8" class="text-center text-muted py-6">Nenhuma matrícula encontrada.</td>
+                            <td colspan="9" class="text-center text-muted py-6">Nenhuma matrícula encontrada.</td>
                         </tr>
-                        <tr v-for="matricula in matriculas.data" :key="matricula.id">
+                        <template v-for="matricula in matriculas.data" :key="matricula.id">
+                        <tr :class="{ 'bg-light-primary bg-opacity-25': linhasExpandidas.has(matricula.id) }">
+                            <td>
+                                <button
+                                    type="button"
+                                    class="btn btn-icon btn-sm"
+                                    :class="linhasExpandidas.has(matricula.id) ? 'btn-light-primary' : 'btn-light'"
+                                    :title="linhasExpandidas.has(matricula.id) ? 'Ocultar detalhes' : 'Ver curso, nível académico e mais detalhes'"
+                                    @click="alternarLinha(matricula)"
+                                >
+                                    <i class="ki-duotone fs-3" :class="linhasExpandidas.has(matricula.id) ? 'ki-up' : 'ki-down'"></i>
+                                </button>
+                            </td>
                             <td>
                                 <input
                                     v-if="matriculasConcluidasDaPagina.includes(matricula)"
@@ -474,6 +502,41 @@ function confirmarRenovacaoEmMassa() {
                                 </div>
                             </td>
                         </tr>
+                        <tr v-if="linhasExpandidas.has(matricula.id)">
+                            <td colspan="9" class="bg-light-primary bg-opacity-25 p-6">
+                                <div class="row g-6">
+                                    <div class="col-md-4">
+                                        <div class="bg-body-secondary rounded p-4 h-100 text-gray-800">
+                                            <h6 class="fw-bold text-uppercase fs-8 text-muted mb-3">Curso e Nível Académico</h6>
+                                            <div class="fs-7 mb-1"><span class="text-muted">Curso:</span> {{ matricula.turma?.curso?.nome ?? '—' }}</div>
+                                            <div class="fs-7 mb-1"><span class="text-muted">Nível Académico:</span> {{ matricula.turma?.nivel_academico?.nome ?? '—' }}</div>
+                                            <div class="fs-7 mb-1"><span class="text-muted">Turno:</span> {{ matricula.turma?.turno?.nome ?? '—' }}</div>
+                                            <div v-if="matricula.data_fim" class="fs-7 mb-1"><span class="text-muted">Data Fim:</span> {{ formatarData(matricula.data_fim) }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="bg-body-secondary rounded p-4 h-100 text-gray-800">
+                                            <h6 class="fw-bold text-uppercase fs-8 text-muted mb-3">Contacto do Aluno</h6>
+                                            <div class="fs-7 mb-1"><span class="text-muted">Nº Identificação:</span> {{ matricula.aluno?.dados_pessoa?.numero_identificacao ?? '—' }}</div>
+                                            <div class="fs-7 mb-1"><span class="text-muted">Telefone:</span> {{ matricula.aluno?.dados_pessoa?.telefone ?? '—' }}</div>
+                                            <div class="fs-7 mb-1"><span class="text-muted">Email:</span> {{ matricula.aluno?.dados_pessoa?.email ?? '—' }}</div>
+                                            <div v-if="matricula.aluno?.dados_pessoa?.data_nascimento" class="fs-7 mb-1">
+                                                <span class="text-muted">Data de Nascimento:</span> {{ formatarData(matricula.aluno.dados_pessoa.data_nascimento) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="bg-body-secondary rounded p-4 h-100 text-gray-800">
+                                            <h6 class="fw-bold text-uppercase fs-8 text-muted mb-3">Registo</h6>
+                                            <div class="fs-7 mb-1"><span class="text-muted">Registada por:</span> {{ matricula.criado_por?.name ?? '—' }}</div>
+                                            <div v-if="matricula.editado_por" class="fs-7 mb-1"><span class="text-muted">Última edição por:</span> {{ matricula.editado_por?.name ?? '—' }}</div>
+                                            <div v-if="matricula.observacoes" class="fs-7 mb-1"><span class="text-muted">Observações:</span> {{ matricula.observacoes }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>

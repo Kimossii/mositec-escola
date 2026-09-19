@@ -183,7 +183,7 @@ class MatriculaConsultaService
         $estabelecimentoId = Estabelecimento::current()?->id;
 
         return Matricula::query()
-            ->with(['aluno.dadosPessoa', 'turma.curso', 'turma.nivelAcademico', 'anoLectivo'])
+            ->with(['aluno.dadosPessoa', 'turma.curso', 'turma.nivelAcademico', 'turma.turno', 'anoLectivo', 'criadoPor', 'editadoPor'])
             ->whereHas('aluno', fn ($query) => $query->where('estabelecimento_id', $estabelecimentoId))
             ->when($filtros['turma_id'] ?? null, fn ($query, $turmaId) => $query->where('turma_id', $turmaId))
             ->when($filtros['ano_lectivo_id'] ?? null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))
