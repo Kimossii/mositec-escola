@@ -10,5 +10,6 @@
     "Curso": true,
     "Disciplina": true,
     "Aluno": true,
-    "PlanoCurricular": true
+    "PlanoCurricular": true,
+    "Matricula": true
 }

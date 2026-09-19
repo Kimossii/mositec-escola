@@ -7,9 +7,17 @@ use Illuminate\Support\Facades\Hash;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Enums\TipoPeriodo;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Aluno\Models\Aluno;
+use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
+use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Models\Matricula;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
+use Modules\Turma\Models\NivelAcademico;
+use Modules\Turma\Models\Turma;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -91,6 +99,45 @@ class AnoLectivoHttpTest extends TestCase
 
         $this->get("/ano-lectivos/{$anoLectivo->id}")->assertOk();
         $this->assertDatabaseHas('ano_lectivos', ['id' => $anoLectivo->id, 'estado' => EstadoAnoLectivo::ENCERRADO->value]);
+    }
+
+    public function test_encerrar_com_matriculas_pede_confirmacao_e_depois_resolve_via_http(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+
+        $this->post('/ano-lectivos', [
+            'nome' => '2026/2027',
+            'data_inicio' => '2026-09-01',
+            'data_fim' => '2027-07-31',
+            'estado' => EstadoAnoLectivo::ATIVO->value,
+        ]);
+        $anoLectivo = AnoLectivo::where('nome', '2026/2027')->firstOrFail();
+
+        $nivel = NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 1,
+        ]);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
+        $matricula = Matricula::create([
+            'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-0001', 'data_matricula' => '2026-02-01', 'estado' => EstadoMatriculaEnum::ACTIVA->value,
+        ]);
+
+        // Sem confirmação — recusado.
+        $this->patch("/ano-lectivos/{$anoLectivo->id}/estado", ['estado' => EstadoAnoLectivo::ENCERRADO->value])
+            ->assertSessionHasErrors('ano_lectivo');
+        $this->assertSame(EstadoAnoLectivo::ATIVO->value, $anoLectivo->fresh()->estado->value);
+
+        // Com confirmação — encerra e resolve a matrícula.
+        $this->patch("/ano-lectivos/{$anoLectivo->id}/estado", [
+            'estado' => EstadoAnoLectivo::ENCERRADO->value,
+            'confirmar_encerramento_matriculas' => true,
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame(EstadoAnoLectivo::ENCERRADO->value, $anoLectivo->fresh()->estado->value);
+        $this->assertSame(EstadoMatriculaEnum::CONCLUIDA, $matricula->fresh()->estado);
     }
 
     public function test_bloqueia_eliminar_ano_lectivo_com_periodos_via_http(): void

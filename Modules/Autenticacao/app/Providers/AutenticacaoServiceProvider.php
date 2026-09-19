@@ -2,6 +2,7 @@
 
 namespace Modules\Autenticacao\Providers;
 
+use Modules\Autenticacao\Service\LimitadorLogin;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 
@@ -38,6 +39,8 @@ class AutenticacaoServiceProvider extends ModuleServiceProvider
         parent::boot();
         // Carrega as migrations do módulo
         $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
+
+        LimitadorLogin::definir();
     }
 
     /**

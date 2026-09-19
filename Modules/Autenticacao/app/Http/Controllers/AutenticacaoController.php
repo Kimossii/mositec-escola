@@ -21,13 +21,11 @@ class AutenticacaoController extends Controller
 
     public function store(LoginRequest $request, GestaoAutenticacao $gestaoAutenticacao)
     {
-        $key = 'login-attempts:' . $request->ip();
-
         $resposta = $gestaoAutenticacao->login(
+            $request,
             $request->login,
             $request->password,
-            $request->boolean('remember'),
-            $key
+            $request->boolean('remember')
         );
 
         if (!$resposta['success']) {

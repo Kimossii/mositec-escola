@@ -1,22 +1,49 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import Pagination from '@/Components/Shared/Pagination.vue';
 import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
 import TurmaTabs from '../../Components/Shared/TurmaTabs.vue';
 import TurnoFormModal from '../../Components/Turno/TurnoFormModal.vue';
 import TurnoHorariosModal from '../../Components/Turno/TurnoHorariosModal.vue';
 import { ESTADO } from '../../Models/Estado';
 
-defineProps({
-    turnos: { type: Array, required: true },
+const props = defineProps({
+    turnos: { type: Object, required: true }, // paginator: { data, links, ... }
     horariosDisponiveis: { type: Array, required: true },
+    filtros: { type: Object, default: () => ({}) },
 });
 defineOptions({ layout: AppLayout });
+
+const opcoesEstado = computed(() => [
+    { value: '', label: 'Todos os estados' },
+    { value: ESTADO.ATIVO, label: 'Ativo' },
+    { value: ESTADO.INATIVO, label: 'Inativo' },
+]);
+
+const filtros = reactive({
+    pesquisa: props.filtros.pesquisa ?? '',
+    estado: props.filtros.estado ?? '',
+});
+
+let debounceId = null;
+
+watch(filtros, (valor) => {
+    clearTimeout(debounceId);
+    debounceId = setTimeout(() => {
+        router.get('/turnos', valor, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    }, 300);
+});
 
 const modalAberto = ref(false);
 const turnoEmEdicao = ref(null);
@@ -156,6 +183,24 @@ function adicionarHorario(payload) {
             <button v-if="can('turmas.criar')" class="btn btn-primary" @click="abrirCriacao">Novo Turno</button>
         </div>
 
+        <div class="card mb-6">
+            <div class="card-body d-flex flex-wrap gap-4">
+                <div style="min-width: 220px;">
+                    <label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label>
+                    <input
+                        v-model="filtros.pesquisa"
+                        type="text"
+                        class="form-control form-control-solid"
+                        placeholder="Nome do turno"
+                    />
+                </div>
+                <div style="min-width: 160px;">
+                    <label class="fw-semibold fs-7 text-muted mb-1">Estado</label>
+                    <SelectSolid v-model="filtros.estado" :options="opcoesEstado" />
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-body p-0">
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
@@ -168,10 +213,10 @@ function adicionarHorario(payload) {
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
-                        <tr v-if="turnos.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhum turno criado.</td>
+                        <tr v-if="turnos.data.length === 0">
+                            <td colspan="4" class="text-center text-muted py-6">Nenhum turno encontrado.</td>
                         </tr>
-                        <tr v-for="turno in turnos" :key="turno.id">
+                        <tr v-for="turno in turnos.data" :key="turno.id">
                             <td>
                                 <a :href="`/turnos/${turno.id}`" class="text-gray-800 text-hover-primary">{{ turno.nome }}</a>
                             </td>
@@ -224,6 +269,9 @@ function adicionarHorario(payload) {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <div v-if="turnos.data.length" class="card-footer d-flex justify-content-end">
+                <Pagination :links="turnos.links" />
             </div>
         </div>
 

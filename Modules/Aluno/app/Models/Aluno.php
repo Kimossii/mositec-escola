@@ -2,13 +2,18 @@
 
 namespace Modules\Aluno\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Estabelecimento\Models\Estabelecimento;
-use Modules\Usuario\Models\DadosPessoal;
+use Modules\Matricula\Models\Matricula;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
+use Modules\Aluno\Models\AlunoEnquadramentoAcademico;
 
 class Aluno extends Model
 {
@@ -21,6 +26,7 @@ class Aluno extends Model
         'estabelecimento_id',
         'dados_pessoa_id',
         'numero_matricula',
+        'foto_path',
         'estado',
         'estado_descricao',
         'criado_por',
@@ -35,6 +41,15 @@ class Aluno extends Model
         'estado' => 'integer',
     ];
 
+    protected $appends = ['foto_url'];
+
+    protected function fotoUrl(): Attribute
+    {
+        return Attribute::get(
+            fn () => $this->foto_path ? Storage::disk('public')->url($this->foto_path) : null,
+        );
+    }
+
     public function estabelecimento(): BelongsTo
     {
         return $this->belongsTo(Estabelecimento::class);
@@ -42,7 +57,7 @@ class Aluno extends Model
 
     public function dadosPessoa(): BelongsTo
     {
-        return $this->belongsTo(DadosPessoal::class, 'dados_pessoa_id');
+        return $this->belongsTo(DadosPessoa::class, 'dados_pessoa_id');
     }
 
     public function criadoPor(): BelongsTo
@@ -53,5 +68,15 @@ class Aluno extends Model
     public function editadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'editado_por');
+    }
+
+    public function enquadramentosAcademicos(): HasMany
+    {
+        return $this->hasMany(AlunoEnquadramentoAcademico::class);
+    }
+
+    public function matriculas(): HasMany
+    {
+        return $this->hasMany(Matricula::class);
     }
 }

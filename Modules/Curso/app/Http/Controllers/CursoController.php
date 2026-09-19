@@ -3,6 +3,7 @@
 namespace Modules\Curso\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Core\Enums\Estado;
 use Modules\Curso\Http\Requests\AlterarEstadoCursoRequest;
@@ -20,12 +21,15 @@ class CursoController extends Controller
     ) {
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('curso.ver');
 
+        $filtros = $request->only(['pesquisa', 'estado']);
+
         return Inertia::render('Curso/Index', [
-            'cursos' => $this->consulta->listar(),
+            'cursos' => $this->consulta->listar($filtros),
+            'filtros' => $filtros,
         ]);
     }
 

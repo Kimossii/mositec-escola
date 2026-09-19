@@ -59,7 +59,11 @@ class AnoLectivoController extends Controller
     {
         $this->authorize('ano-lectivo.editar');
 
-        $this->service->alterarEstado($anoLectivo, EstadoAnoLectivo::from((int) $request->validated('estado')));
+        $this->service->alterarEstado(
+            $anoLectivo,
+            EstadoAnoLectivo::from((int) $request->validated('estado')),
+            (bool) $request->validated('confirmar_encerramento_matriculas'),
+        );
 
         return redirect()->back()->with('success', 'Estado do Ano Lectivo atualizado com sucesso.');
     }

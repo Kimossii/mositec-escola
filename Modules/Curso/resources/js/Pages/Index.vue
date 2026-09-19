@@ -1,19 +1,46 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import Pagination from '@/Components/Shared/Pagination.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import CursoFormModal from '../Components/CursoFormModal.vue';
 import { ESTADO } from '../Models/Estado';
 
-defineProps({
-    cursos: { type: Array, required: true },
+const props = defineProps({
+    cursos: { type: Object, required: true }, // paginator: { data, links, ... }
+    filtros: { type: Object, default: () => ({}) },
 });
 defineOptions({ layout: AppLayout });
+
+const opcoesEstado = computed(() => [
+    { value: '', label: 'Todos os estados' },
+    { value: ESTADO.ATIVO, label: 'Ativo' },
+    { value: ESTADO.INATIVO, label: 'Inativo' },
+]);
+
+const filtros = reactive({
+    pesquisa: props.filtros.pesquisa ?? '',
+    estado: props.filtros.estado ?? '',
+});
+
+let debounceId = null;
+
+watch(filtros, (valor) => {
+    clearTimeout(debounceId);
+    debounceId = setTimeout(() => {
+        router.get('/cursos', valor, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    }, 300);
+});
 
 const modalAberto = ref(false);
 const cursoEmEdicao = ref(null);
@@ -95,6 +122,26 @@ function confirmarAlteracaoEstado() {
             <button v-if="can('curso.criar')" class="btn btn-primary" @click="abrirCriacao">Novo Curso</button>
         </div>
 
+        <div class="card mb-6">
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-6 col-md-4">
+                        <label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label>
+                        <input
+                            v-model="filtros.pesquisa"
+                            type="text"
+                            class="form-control form-control-solid"
+                            placeholder="Código ou nome"
+                        />
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <label class="fw-semibold fs-7 text-muted mb-1">Estado</label>
+                        <SelectSolid v-model="filtros.estado" :options="opcoesEstado" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-body p-0">
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
@@ -107,10 +154,10 @@ function confirmarAlteracaoEstado() {
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
-                        <tr v-if="cursos.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhum curso criado.</td>
+                        <tr v-if="cursos.data.length === 0">
+                            <td colspan="4" class="text-center text-muted py-6">Nenhum curso encontrado.</td>
                         </tr>
-                        <tr v-for="curso in cursos" :key="curso.id">
+                        <tr v-for="curso in cursos.data" :key="curso.id">
                             <td>
                                 <a :href="`/cursos/${curso.id}`" class="text-gray-800 text-hover-primary">{{ curso.codigo }}</a>
                             </td>
@@ -153,6 +200,9 @@ function confirmarAlteracaoEstado() {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <div v-if="cursos.data.length" class="card-footer d-flex justify-content-end">
+                <Pagination :links="cursos.links" />
             </div>
         </div>
 

@@ -9,7 +9,7 @@ export const ESTADO = Object.freeze({ INATIVO: 0, ATIVO: 1 });
 export const estadoBadgeClass = (estado) => {
     switch (estado) {
         case ESTADO.ATIVO: return 'badge-light-success';
-        case ESTADO.INATIVO: return 'badge-light-secondary';
+        case ESTADO.INATIVO: return 'badge-inativo';
         default: return 'badge-light-secondary';
     }
 };
