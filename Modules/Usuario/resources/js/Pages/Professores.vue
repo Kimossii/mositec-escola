@@ -6,7 +6,8 @@ import UsuarioListLayout from '../Components/UsuarioListLayout.vue';
 import ProfessorForm from '../Forms/Professores/ProfessorForm.vue';
 
 defineProps({
-    usuarios: { type: Array, required: true },
+    usuarios: { type: Object, required: true }, // paginator: { data, links, ... }
+    filtros: { type: Object, default: () => ({}) },
     perfis: { type: Array, required: true },
     modulos: { type: Array, required: true },
     acoes: { type: Array, required: true },
@@ -14,8 +15,6 @@ defineProps({
 });
 
 const { loadAll } = usePageScripts([
-    '/themes/metronic/assets/plugins/custom/datatables/datatables.bundle.js',
-    '/themes/metronic/assets/js/components/custom/apps/user-management/users/list/table.js',
     '/themes/metronic/assets/js/components/custom/apps/user-management/users/list/export-users.js',
     '/themes/metronic/assets/js/widgets.bundle.js',
     '/themes/metronic/assets/js/components/custom/widgets.js',
@@ -37,6 +36,7 @@ defineOptions({ layout: AppLayout })
         icon="ki-teacher"
         accent="success"
         :usuarios="usuarios"
+        :filtros="filtros"
         :form-component="ProfessorForm"
         :perfis="perfis"
         :modulos="modulos"

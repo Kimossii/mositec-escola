@@ -4,6 +4,7 @@ namespace Modules\Usuario\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Usuario\Http\Requests\AtualizarUsuarioRequest;
@@ -22,55 +23,56 @@ class UsuarioController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Inertia::render('Usuario/Index', array_merge([
-            'usuarios' => $this->consulta->listarTodos(),
-        ], $this->consulta->dadosDeApoio()));
+        return Inertia::render('Usuario/Index', array_merge($this->listagem($request, null), $this->consulta->dadosDeApoio()));
     }
 
     /**
      * Lista apenas usuários com o perfil Aluno.
      */
-    public function alunos()
+    public function alunos(Request $request)
     {
-        return Inertia::render('Usuario/Alunos', array_merge([
-            'usuarios' => $this->consulta->listarPorPerfil(Perfil::ALUNO),
-        ], $this->consulta->dadosDeApoio()));
+        return Inertia::render('Usuario/Alunos', array_merge($this->listagem($request, Perfil::ALUNO), $this->consulta->dadosDeApoio()));
     }
 
     /**
      * Lista apenas usuários com o perfil Professor.
      */
-    public function professores()
+    public function professores(Request $request)
     {
-        return Inertia::render('Usuario/Professores', array_merge([
-            'usuarios' => $this->consulta->listarPorPerfil(Perfil::PROFESSOR),
-        ], $this->consulta->dadosDeApoio()));
+        return Inertia::render('Usuario/Professores', array_merge($this->listagem($request, Perfil::PROFESSOR), $this->consulta->dadosDeApoio()));
     }
 
     /**
      * Lista apenas usuários com o perfil Funcionário.
      */
-    public function funcionarios()
+    public function funcionarios(Request $request)
     {
-        return Inertia::render('Usuario/Funcionarios', array_merge([
-            'usuarios' => $this->consulta->listarPorPerfil(Perfil::FUNCIONARIO),
-        ], $this->consulta->dadosDeApoio()));
+        return Inertia::render('Usuario/Funcionarios', array_merge($this->listagem($request, Perfil::FUNCIONARIO), $this->consulta->dadosDeApoio()));
     }
 
-    public function administradores()
+    public function administradores(Request $request)
     {
-        return Inertia::render('Usuario/Administradores', array_merge([
-            'usuarios' => $this->consulta->listarPorPerfil(Perfil::ADMIN_ESCOLA),
-        ], $this->consulta->dadosDeApoio()));
+        return Inertia::render('Usuario/Administradores', array_merge($this->listagem($request, Perfil::ADMIN_ESCOLA), $this->consulta->dadosDeApoio()));
     }
 
-    public function encarregados()
+    public function encarregados(Request $request)
     {
-        return Inertia::render('Usuario/Encarregados', array_merge([
-            'usuarios' => $this->consulta->listarPorPerfil(Perfil::ENCARREGADO),
-        ], $this->consulta->dadosDeApoio()));
+        return Inertia::render('Usuario/Encarregados', array_merge($this->listagem($request, Perfil::ENCARREGADO), $this->consulta->dadosDeApoio()));
+    }
+
+    /**
+     * @return array{usuarios: mixed, filtros: array<string, mixed>}
+     */
+    private function listagem(Request $request, ?Perfil $perfil): array
+    {
+        $filtros = $request->only(['pesquisa', 'estado']);
+
+        return [
+            'usuarios' => $this->consulta->listar($perfil, $filtros),
+            'filtros' => $filtros,
+        ];
     }
 
     public function store(CriarUsuarioRequest $request)

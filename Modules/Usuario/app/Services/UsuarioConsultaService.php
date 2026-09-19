@@ -2,7 +2,7 @@
 
 namespace Modules\Usuario\Services;
 
-use Illuminate\Support\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo;
@@ -13,18 +13,34 @@ use Modules\Usuario\Models\User;
 
 class UsuarioConsultaService
 {
-    public function listarTodos(): array
+    /**
+     * Listagem paginada de utilizadores, opcionalmente restrita a um perfil.
+     * Filtros: `pesquisa` (nome, email ou matrícula) e `estado` (0/1; vazio
+     * = todos). Ordem por nome, com o id como desempate, para a paginação
+     * ser estável.
+     *
+     * @param  array{pesquisa?: ?string, estado?: ?string}  $filtros
+     */
+    public function listar(?Perfil $perfil = null, array $filtros = [], int $porPagina = 10): LengthAwarePaginator
     {
-        return $this->serializar(User::with('roles')->get());
-    }
-
-    public function listarPorPerfil(Perfil $perfil): array
-    {
-        $usuarios = User::with('roles')
-            ->whereHas('roles', fn ($query) => $query->where('nome', $perfil->value))
-            ->get();
-
-        return $this->serializar($usuarios);
+        return User::with('roles')
+            ->when($perfil, fn ($query) => $query->whereHas('roles', fn ($query) => $query->where('nome', $perfil->value)))
+            ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
+                $query->where(function ($query) use ($pesquisa) {
+                    $query->where('name', 'like', "%{$pesquisa}%")
+                        ->orWhere('email', 'like', "%{$pesquisa}%")
+                        ->orWhere('numero_matricula', 'like', "%{$pesquisa}%");
+                });
+            })
+            ->when(
+                ($filtros['estado'] ?? '') !== '',
+                fn ($query) => $query->where('estado', (int) $filtros['estado']),
+            )
+            ->orderBy('name')
+            ->orderBy('id')
+            ->paginate($porPagina)
+            ->withQueryString()
+            ->through(fn (User $user) => $this->serializar($user));
     }
 
     public function dadosDeApoio(): array
@@ -67,12 +83,9 @@ class UsuarioConsultaService
         ];
     }
 
-    /**
-     * @param Collection<int, User> $usuarios
-     */
-    private function serializar(Collection $usuarios): array
+    private function serializar(User $user): array
     {
-        return $usuarios->map(fn (User $user) => [
+        return [
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
@@ -83,6 +96,6 @@ class UsuarioConsultaService
             'estado' => $user->estado,
             'ultimo_acesso' => 'Nunca',
             'created_at' => $user->created_at->format('d M Y, H:i'),
-        ])->values()->all();
+        ];
     }
 }

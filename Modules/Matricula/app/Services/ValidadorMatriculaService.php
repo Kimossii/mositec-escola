@@ -124,12 +124,22 @@ class ValidadorMatriculaService
      * diferentes são permitidas (ex.: aluno do 2º ano com uma cadeira em
      * atraso do 1º). A inscrição em disciplinas específicas fica para quando
      * esse conceito existir; a Matrícula só cobre o vínculo à Turma.
+     *
+     * Concorrência: a regra vive em `turmas` (curso/nível), por isso não há
+     * índice único possível em `matriculas`. Em vez disso serializamos por
+     * aluno com um bloqueio de linha — dois pedidos simultâneos para o mesmo
+     * aluno passam a validar um de cada vez, e o segundo já vê a matrícula
+     * do primeiro. O bloqueio só dura até ao fim da transacção, por isso
+     * quem chama TEM de estar dentro de uma (CriarMatriculaAction e
+     * AtualizarMatriculaAction estão).
      */
     public function validarMatriculaNaoDuplicada(
         Aluno $aluno,
         Turma $turma,
         ?int $ignorarMatriculaId = null,
     ): void {
+        Aluno::query()->whereKey($aluno->id)->lockForUpdate()->value('id');
+
         $query = Matricula::query()
             ->where('aluno_id', $aluno->id)
             ->whereIn('estado', [
