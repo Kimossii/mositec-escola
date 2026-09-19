@@ -2,25 +2,28 @@
 
 namespace Modules\Autenticacao\Service;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Auth;
 
 class GestaoAutenticacao
 {
-    public function login($identificador, $password, $remember = false, $key = null)
+    public function __construct(private LimitadorLogin $limitador)
     {
-        $limiterResponse = $this->checkLoginAttempts($identificador, $password, $remember, $key);
+    }
+
+    public function login(Request $request, $identificador, $password, $remember = false)
+    {
+        $limiterResponse = $this->checkLoginAttempts($request, $identificador, $password, $remember);
         if ($limiterResponse !== true) {
-            Log::warning('Falha no login', ['identificador' => $identificador, 'ip' => request()->ip(), 'motivo' => $limiterResponse['message']]);
+            Log::warning('Falha no login', ['identificador' => $identificador, 'ip' => $request->ip(), 'motivo' => $limiterResponse['message']]);
             return $limiterResponse;
         }
 
         $user = Auth::user();
-        Log::info('Login realizado com sucesso', ['user_id' => $user->id, 'identificador' => $identificador, 'ip' => request()->ip()]);
+        Log::info('Login realizado com sucesso', ['user_id' => $user->id, 'identificador' => $identificador, 'ip' => $request->ip()]);
 
-        if ($key)
-            RateLimiter::clear($key);
+        $this->limitador->limparConta($request);
 
         return [
             'success' => true,
@@ -29,18 +32,18 @@ class GestaoAutenticacao
         ];
     }
 
-    private function checkLoginAttempts($identificador, $password, $remember = false, $key = null)
+    private function checkLoginAttempts(Request $request, $identificador, $password, $remember = false)
     {
-        if ($key && RateLimiter::tooManyAttempts($key, 5)) {
-            $seconds = RateLimiter::availableIn($key);
+        $segundos = $this->limitador->segundosDeBloqueio($request);
+        if ($segundos !== null) {
             Log::warning('Usuário bloqueado por muitas tentativas', [
                 'identificador' => $identificador,
-                'ip' => request()->ip(),
-                'tempo_restante' => $seconds
+                'ip' => $request->ip(),
+                'tempo_restante' => $segundos
             ]);
             return [
                 'success' => false,
-                'message' => 'Muitas tentativas de login. Tente novamente em ' . $seconds . ' segundos.',
+                'message' => LimitadorLogin::mensagem($segundos),
                 'code' => 429
             ];
         }
@@ -48,11 +51,10 @@ class GestaoAutenticacao
         $campo = str_contains($identificador, '@') ? 'email' : 'numero_matricula';
 
         if (!Auth::attempt([$campo => $identificador, 'password' => $password], $remember)) {
-            if ($key)
-                RateLimiter::hit($key, 60);
+            $this->limitador->registarFalha($request);
             Log::warning('Credenciais inválidas', [
                 'identificador' => $identificador,
-                'ip' => request()->ip()
+                'ip' => $request->ip()
             ]);
             return [
                 'success' => false,
