@@ -12,6 +12,9 @@ use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Estabelecimento\Models\EstabelecimentoEtapaEnsino;
+use Modules\Aluno\Models\Aluno;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Models\Matricula;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
@@ -19,6 +22,7 @@ use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
 use Modules\Turma\Models\Turno;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -403,6 +407,68 @@ class TurmaHttpTest extends TestCase
         $this->assertSoftDeleted('turmas', ['id' => $turma->id]);
     }
 
+    private function criarMatriculaNaTurma(Estabelecimento $estabelecimento, AnoLectivo $anoLectivo, Turma $turma, EstadoMatriculaEnum $estado): Matricula
+    {
+        $pessoa = DadosPessoa::create([
+            'nome_completo' => 'Aluno Teste', 'numero_identificacao' => 'BI' . random_int(10000, 99999), 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO,
+        ]);
+        $aluno = Aluno::create([
+            'estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-' . random_int(10000, 99999),
+        ]);
+
+        return Matricula::create([
+            'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
+            'numero_registo_matricula' => '2026-' . random_int(10000, 99999), 'data_matricula' => '2026-02-01',
+            'estado' => $estado->value,
+        ]);
+    }
+
+    public function test_nao_desactiva_turma_com_matricula_activa(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $this->criarMatriculaNaTurma($estabelecimento, $anoLectivo, $turma, EstadoMatriculaEnum::ACTIVA);
+
+        $this->patch(route('turmas.alterar-estado', $turma), [
+            'estado' => Estado::INATIVO->value,
+        ])->assertSessionHasErrors('turma');
+
+        $this->assertSame(Estado::ATIVO->value, $turma->fresh()->estado);
+    }
+
+    public function test_nao_elimina_turma_com_matricula_pendente(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $this->criarMatriculaNaTurma($estabelecimento, $anoLectivo, $turma, EstadoMatriculaEnum::PENDENTE);
+
+        $this->delete(route('turmas.destroy', $turma))->assertSessionHasErrors('turma');
+
+        $this->assertDatabaseHas('turmas', ['id' => $turma->id, 'deleted_at' => null]);
+    }
+
+    public function test_elimina_turma_com_matricula_concluida(): void
+    {
+        // Histórico (Concluída/Cancelada/Transferida) não bloqueia — só
+        // Pendente/Activa contam como "em uso".
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
+        $this->criarMatriculaNaTurma($estabelecimento, $anoLectivo, $turma, EstadoMatriculaEnum::CONCLUIDA);
+
+        $this->delete(route('turmas.destroy', $turma))->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSoftDeleted('turmas', ['id' => $turma->id]);
+    }
+
     public function test_index_da_turma_expoe_opcoes_de_formulario(): void
     {
         $this->actingAsStaff();
@@ -432,6 +498,130 @@ class TurmaHttpTest extends TestCase
         $this->get(route('turmas.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Turma/Turmas/Index')
             ->has('cursos', 1)
+        );
+    }
+
+    public function test_index_da_turma_pagina_e_filtra_por_ano_lectivo_activo_por_omissao(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = $this->criarAnoLectivo($estabelecimento);
+        $anoAnterior = AnoLectivo::create([
+            'estabelecimento_id' => $estabelecimento->id, 'nome' => '2025',
+            'data_inicio' => '2025-01-01', 'data_fim' => '2025-12-31', 'estado' => EstadoAnoLectivo::ENCERRADO,
+        ]);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        Turma::create(['ano_lectivo_id' => $anoActivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'TA', 'nome' => 'Turma Activa']);
+        Turma::create(['ano_lectivo_id' => $anoAnterior->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'TB', 'nome' => 'Turma Antiga']);
+
+        // Sem filtro explícito — só o ano lectivo activo.
+        $this->get(route('turmas.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('Turma/Turmas/Index')
+            ->has('turmas.data', 1)
+            ->where('turmas.data.0.codigo', 'TA')
+        );
+
+        // Explicitamente "todos".
+        $this->get(route('turmas.index', ['ano_lectivo_id' => '']))->assertInertia(fn (Assert $page) => $page
+            ->has('turmas.data', 2)
+        );
+    }
+
+    public function test_index_da_turma_pesquisa_por_codigo_ou_nome(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        Turma::create(['ano_lectivo_id' => $anoActivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'ADM1M', 'nome' => 'Turma A']);
+        Turma::create(['ano_lectivo_id' => $anoActivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'AG2M', 'nome' => 'Turma B']);
+
+        $this->get(route('turmas.index', ['ano_lectivo_id' => '', 'pesquisa' => 'ADM1M']))->assertInertia(fn (Assert $page) => $page
+            ->has('turmas.data', 1)
+            ->where('turmas.data.0.codigo', 'ADM1M')
+        );
+    }
+
+    public function test_index_da_turma_filtra_por_estado_inativo(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoActivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turmaAtiva = Turma::create(['ano_lectivo_id' => $anoActivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'TA', 'nome' => 'Turma Activa']);
+        $turmaInativa = Turma::create(['ano_lectivo_id' => $anoActivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'TB', 'nome' => 'Turma Inactiva', 'estado' => Estado::INATIVO->value]);
+
+        $this->get(route('turmas.index', ['ano_lectivo_id' => '', 'estado' => Estado::INATIVO->value]))->assertInertia(fn (Assert $page) => $page
+            ->has('turmas.data', 1)
+            ->where('turmas.data.0.id', $turmaInativa->id)
+        );
+    }
+
+    public function test_index_do_turno_pagina_e_pesquisa_por_nome(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
+        Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Tarde']);
+
+        $this->get(route('turnos.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('Turma/Turnos/Index')
+            ->has('turnos.data', 2)
+        );
+
+        $this->get(route('turnos.index', ['pesquisa' => 'Manhã']))->assertInertia(fn (Assert $page) => $page
+            ->has('turnos.data', 1)
+            ->where('turnos.data.0.nome', 'Manhã')
+        );
+    }
+
+    public function test_index_do_turno_filtra_por_estado_inativo(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $turnoAtivo = Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
+        $turnoInativo = Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Tarde', 'estado' => Estado::INATIVO->value]);
+
+        $this->get(route('turnos.index', ['estado' => Estado::INATIVO->value]))->assertInertia(fn (Assert $page) => $page
+            ->has('turnos.data', 1)
+            ->where('turnos.data.0.id', $turnoInativo->id)
+        );
+    }
+
+    public function test_index_do_nivel_academico_pagina_e_filtra_por_etapa_ensino(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $this->criarNivelAcademico($estabelecimento, EtapaEnsinoEnum::SECUNDARIO);
+        NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id, 'codigo' => 'PRE', 'nome' => 'Pré-Escolar',
+            'ordem' => 2, 'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
+        ]);
+
+        $this->get(route('niveis-academicos.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('Turma/NiveisAcademicos/Index')
+            ->has('niveisAcademicos.data', 2)
+        );
+
+        $this->get(route('niveis-academicos.index', ['etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO->value]))->assertInertia(fn (Assert $page) => $page
+            ->has('niveisAcademicos.data', 1)
+            ->where('niveisAcademicos.data.0.codigo', '1C')
+        );
+    }
+
+    public function test_index_do_nivel_academico_filtra_por_estado_inativo(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $nivelAtivo = $this->criarNivelAcademico($estabelecimento);
+        $nivelInativo = NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id, 'codigo' => 'PRE', 'nome' => 'Pré-Escolar',
+            'ordem' => 2, 'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO, 'estado' => Estado::INATIVO->value,
+        ]);
+
+        $this->get(route('niveis-academicos.index', ['estado' => Estado::INATIVO->value]))->assertInertia(fn (Assert $page) => $page
+            ->has('niveisAcademicos.data', 1)
+            ->where('niveisAcademicos.data.0.id', $nivelInativo->id)
         );
     }
 
@@ -527,8 +717,8 @@ class TurmaHttpTest extends TestCase
 
         $this->get(route('turnos.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Turma/Turnos/Index')
-            ->has('turnos.0.turno_horarios', 1)
-            ->where('turnos.0.turno_horarios.0.horario.nome', 'Bloco 1')
+            ->has('turnos.data.0.turno_horarios', 1)
+            ->where('turnos.data.0.turno_horarios.0.horario.nome', 'Bloco 1')
         );
     }
 

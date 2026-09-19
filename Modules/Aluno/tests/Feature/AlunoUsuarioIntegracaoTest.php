@@ -14,7 +14,7 @@ use Modules\Permissao\Models\Role;
 use Modules\Usuario\Actions\UsuarioAction;
 use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Enums\TipoLogin;
-use Modules\Usuario\Models\DadosPessoal;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -39,10 +39,10 @@ class AlunoUsuarioIntegracaoTest extends TestCase
         $estabelecimento = Estabelecimento::current() ?? Estabelecimento::create([
             'nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true,
         ]);
-        $pessoa = DadosPessoal::create([
+        $pessoa = DadosPessoa::create([
             'nome_completo' => 'Ana Silva',
             'numero_identificacao' => $numeroIdentificacao,
-            'tipo_pessoa' => DadosPessoal::TIPO_ALUNO,
+            'tipo_pessoa' => DadosPessoa::TIPO_ALUNO,
         ]);
 
         return Aluno::create([
@@ -124,7 +124,7 @@ class AlunoUsuarioIntegracaoTest extends TestCase
     public function test_user_criado_primeiro_pode_depois_ser_associado_a_um_aluno_da_mesma_pessoa(): void
     {
         $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
-        $pessoa = DadosPessoal::create(['nome_completo' => 'Carlos Neto', 'numero_identificacao' => 'BI0003', 'tipo_pessoa' => DadosPessoal::TIPO_ALUNO]);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Carlos Neto', 'numero_identificacao' => 'BI0003', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
 
         $user = app(UsuarioAction::class)->criar(new UsuarioDTO(
             name: 'Carlos Neto',
@@ -143,7 +143,7 @@ class AlunoUsuarioIntegracaoTest extends TestCase
 
         $this->assertSame($pessoa->id, $aluno->dados_pessoa_id);
         $this->assertSame($pessoa->id, $user->dados_pessoa_id);
-        $this->assertSame(1, DadosPessoal::count());
+        $this->assertSame(1, DadosPessoa::count());
         $this->assertSame(1, User::where('dados_pessoa_id', $pessoa->id)->count());
     }
 }

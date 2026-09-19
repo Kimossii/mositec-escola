@@ -1,19 +1,46 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import Pagination from '@/Components/Shared/Pagination.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import DisciplinaFormModal from '../Components/DisciplinaFormModal.vue';
 import { ESTADO } from '../Models/Estado';
 
-defineProps({
-    disciplinas: { type: Array, required: true },
+const props = defineProps({
+    disciplinas: { type: Object, required: true }, // paginator: { data, links, ... }
+    filtros: { type: Object, default: () => ({}) },
 });
 defineOptions({ layout: AppLayout });
+
+const opcoesEstado = computed(() => [
+    { value: '', label: 'Todos os estados' },
+    { value: ESTADO.ATIVO, label: 'Ativo' },
+    { value: ESTADO.INATIVO, label: 'Inativo' },
+]);
+
+const filtros = reactive({
+    pesquisa: props.filtros.pesquisa ?? '',
+    estado: props.filtros.estado ?? '',
+});
+
+let debounceId = null;
+
+watch(filtros, (valor) => {
+    clearTimeout(debounceId);
+    debounceId = setTimeout(() => {
+        router.get('/disciplinas', valor, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    }, 300);
+});
 
 const modalAberto = ref(false);
 const disciplinaEmEdicao = ref(null);
@@ -95,6 +122,26 @@ function confirmarAlteracaoEstado() {
             <button v-if="can('disciplina.criar')" class="btn btn-primary" @click="abrirCriacao">Nova Disciplina</button>
         </div>
 
+        <div class="card mb-6">
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-6 col-md-4">
+                        <label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label>
+                        <input
+                            v-model="filtros.pesquisa"
+                            type="text"
+                            class="form-control form-control-solid"
+                            placeholder="Código ou nome"
+                        />
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <label class="fw-semibold fs-7 text-muted mb-1">Estado</label>
+                        <SelectSolid v-model="filtros.estado" :options="opcoesEstado" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-body p-0">
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
@@ -107,10 +154,10 @@ function confirmarAlteracaoEstado() {
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
-                        <tr v-if="disciplinas.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhuma disciplina criada.</td>
+                        <tr v-if="disciplinas.data.length === 0">
+                            <td colspan="4" class="text-center text-muted py-6">Nenhuma disciplina encontrada.</td>
                         </tr>
-                        <tr v-for="disciplina in disciplinas" :key="disciplina.id">
+                        <tr v-for="disciplina in disciplinas.data" :key="disciplina.id">
                             <td>
                                 <a :href="`/disciplinas/${disciplina.id}`" class="text-gray-800 text-hover-primary">{{ disciplina.codigo }}</a>
                             </td>
@@ -147,6 +194,9 @@ function confirmarAlteracaoEstado() {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <div v-if="disciplinas.data.length" class="card-footer d-flex justify-content-end">
+                <Pagination :links="disciplinas.links" />
             </div>
         </div>
 

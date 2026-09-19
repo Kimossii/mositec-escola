@@ -40,4 +40,11 @@ class ModuloEnumTest extends TestCase
         $this->assertSame('Plano Curricular', Modulo::PLANO_CURRICULAR->label());
         $this->assertSame(Modulo::PLANO_CURRICULAR, Modulo::fromSlug('plano-curricular'));
     }
+
+    public function test_documento_pessoa_slug_e_label(): void
+    {
+        $this->assertSame('documento-pessoa', Modulo::DOCUMENTO_PESSOA->slug());
+        $this->assertSame('Documento Pessoa', Modulo::DOCUMENTO_PESSOA->label());
+        $this->assertSame(Modulo::DOCUMENTO_PESSOA, Modulo::fromSlug('documento-pessoa'));
+    }
 }

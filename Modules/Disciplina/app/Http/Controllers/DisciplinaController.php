@@ -3,6 +3,7 @@
 namespace Modules\Disciplina\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Core\Enums\Estado;
 use Modules\Disciplina\Http\Requests\AlterarEstadoDisciplinaRequest;
@@ -20,12 +21,15 @@ class DisciplinaController extends Controller
     ) {
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('disciplina.ver');
 
+        $filtros = $request->only(['pesquisa', 'estado']);
+
         return Inertia::render('Disciplina/Index', [
-            'disciplinas' => $this->consulta->listar(),
+            'disciplinas' => $this->consulta->listar($filtros),
+            'filtros' => $filtros,
         ]);
     }
 

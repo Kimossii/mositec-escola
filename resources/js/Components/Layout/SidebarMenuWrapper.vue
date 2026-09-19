@@ -469,7 +469,7 @@ const academico = {
         // { href: '#', title: 'Encarregados de Educação' },
         { href: '/cursos', title: 'Cursos', permissao: 'curso.ver' },
         { href: '/turmas', title: 'Turmas', permissao: 'turmas.ver' },
-        // { href: '#', title: 'Matrículas' },
+        { href: '/matriculas', title: 'Matrículas', permissao: 'matricula.ver' },
         // { href: '#', title: 'Transferências' },
         // { href: '#', title: 'Histórico Escolar' },
         // { href: '#', title: 'Ficha do Aluno' },

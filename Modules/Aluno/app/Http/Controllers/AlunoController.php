@@ -3,6 +3,7 @@
 namespace Modules\Aluno\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Aluno\Http\Requests\AlterarEstadoAlunoRequest;
 use Modules\Aluno\Http\Requests\AtualizarAlunoRequest;
@@ -10,31 +11,78 @@ use Modules\Aluno\Http\Requests\CriarAlunoRequest;
 use Modules\Aluno\Models\Aluno;
 use Modules\Aluno\Services\AlunoConsultaService;
 use Modules\Aluno\Services\GestaoAlunoService;
+use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Enums\Estado;
+use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Matricula\Services\MatriculaConsultaService;
 
 class AlunoController extends Controller
 {
     public function __construct(
         private GestaoAlunoService $service,
         private AlunoConsultaService $consulta,
+        private MatriculaConsultaService $matriculaConsulta,
     ) {
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('aluno.ver');
 
+        $filtros = $request->only(['pesquisa', 'ano_lectivo_id', 'curso_id', 'turma_id', 'nivel_academico_id']);
+        // Por omissão mostra só o ano lectivo activo — mas só quando o
+        // pedido não indicou nenhum (incluindo "todos", que chega como
+        // ano_lectivo_id vazio); assim escolher "Todos" fica sempre
+        // possível e não é substituído de volta pelo ano activo.
+        if (! $request->has('ano_lectivo_id')) {
+            $filtros['ano_lectivo_id'] = AnoLectivo::current(Estabelecimento::current()?->id)?->id;
+        }
+
         return Inertia::render('Aluno/Index', [
-            'alunos' => $this->consulta->listar(),
+            'alunos' => $this->consulta->listar($filtros),
+            'filtros' => $filtros,
+            'anosLectivosDisponiveis' => $this->consulta->anosLectivosDisponiveis(),
+            'turmasDisponiveis' => $this->consulta->turmasDisponiveis(),
+            'cursosDisponiveis' => $this->consulta->cursosDisponiveis(),
+            'niveisAcademicosDisponiveis' => $this->consulta->niveisAcademicosDisponiveis(),
         ]);
     }
 
-    public function show(Aluno $aluno)
+    public function show(Aluno $aluno, Request $request)
     {
         $this->authorize('aluno.ver');
 
+        // Por omissão mostra só o ano lectivo activo — mas só quando o
+        // pedido não indicou nenhum (incluindo "todos", que chega como
+        // ano_lectivo_id vazio); assim a paginação/pesquisa não perdem esse
+        // filtro implícito ao navegar.
+        $filtrosMatricula = [
+            'ano_lectivo_id' => $request->has('ano_lectivo_id')
+                ? $request->input('ano_lectivo_id')
+                : AnoLectivo::current($aluno->estabelecimento_id)?->id,
+            'pesquisa' => $request->input('pesquisa'),
+        ];
+
+        $matriculasActivas = $this->matriculaConsulta->matriculasActivasNoAnoLectivo($aluno);
+
         return Inertia::render('Aluno/Show', [
             'aluno' => $aluno->load('dadosPessoa'),
+            'matriculas' => $this->matriculaConsulta->listarPorAluno($aluno, $filtrosMatricula),
+            'matriculaActual' => $matriculasActivas->first(),
+            'outrasMatriculasActivas' => $matriculasActivas->slice(1)->values(),
+            'turmasDisponiveis' => $this->matriculaConsulta->turmasDisponiveis(),
+            'anosLectivosComMatricula' => $this->matriculaConsulta->anosLectivosComMatricula($aluno),
+            'filtrosMatricula' => $filtrosMatricula,
+        ]);
+    }
+
+    public function resumoAcademico(Aluno $aluno)
+    {
+        $this->authorize('aluno.ver');
+
+        return response()->json([
+            'matriculaActual' => $this->matriculaConsulta->matriculaActual($aluno),
+            'ultimasMatriculas' => $this->matriculaConsulta->ultimasMatriculas($aluno),
         ]);
     }
 

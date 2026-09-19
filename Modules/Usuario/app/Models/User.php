@@ -47,7 +47,7 @@ class User extends Authenticatable
 
     public function pessoa()
     {
-        return $this->belongsTo(DadosPessoal::class, 'dados_pessoa_id');
+        return $this->belongsTo(DadosPessoa::class, 'dados_pessoa_id');
     }
 
     public function criadoPor()

@@ -83,7 +83,7 @@ function submeter() {
                     <div class="row">
                         <div class="fv-row mb-7" :class="nivelExigeCurso ? 'col-md-6' : 'col-md-12'">
                             <label class="required fw-semibold fs-6 mb-2">Nível Académico</label>
-                            <SelectSolid v-model="form.nivel_academico_id" :options="opcoesNivelAcademico()" placeholder="Selecione o nível académico" />
+                            <SelectSolid v-model="form.nivel_academico_id" :options="opcoesNivelAcademico()" searchable placeholder="Selecione o nível académico" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.nivel_academico_id">{{ errors.nivel_academico_id }}</div>
                         </div>
                         <div v-if="nivelExigeCurso" class="col-md-6 fv-row mb-7">

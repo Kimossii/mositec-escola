@@ -3,8 +3,11 @@
 namespace Modules\Turma\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Enums\Estado;
+use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Turma\Http\Requests\AlterarEstadoTurmaRequest;
 use Modules\Turma\Http\Requests\AssociarSalaTurmaRequest;
 use Modules\Turma\Http\Requests\AtualizarSalaTurmaRequest;
@@ -23,12 +26,22 @@ class TurmaController extends Controller
         private TurmaConsultaService $consulta,
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('turmas.ver');
 
+        $filtros = $request->only(['pesquisa', 'ano_lectivo_id', 'curso_id', 'nivel_academico_id', 'turno_id', 'estado']);
+        // Por omissão mostra só o ano lectivo activo — mas só quando o
+        // pedido não indicou nenhum (incluindo "todos", que chega como
+        // ano_lectivo_id vazio); assim escolher "Todos" fica sempre
+        // possível e não é substituído de volta pelo ano activo.
+        if (! $request->has('ano_lectivo_id')) {
+            $filtros['ano_lectivo_id'] = AnoLectivo::current(Estabelecimento::current()?->id)?->id;
+        }
+
         return Inertia::render('Turma/Turmas/Index', array_merge([
-            'turmas' => $this->consulta->listar(),
+            'turmas' => $this->consulta->listar($filtros),
+            'filtros' => $filtros,
         ], $this->consulta->opcoesFormulario()));
     }
 

@@ -19,7 +19,7 @@ export const estadoSalaBadgeClass = (estado) => {
     switch (estado) {
         case ESTADO_SALA.ATIVA: return 'badge-light-success';
         case ESTADO_SALA.MANUTENCAO: return 'badge-light-warning';
-        case ESTADO_SALA.INATIVA: return 'badge-light-secondary';
+        case ESTADO_SALA.INATIVA: return 'badge-inativo';
         default: return 'badge-light-secondary';
     }
 };

@@ -2,28 +2,31 @@
 
 namespace Modules\Autenticacao\Service;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Auth;
 
 class GestaoAutenticacaoAPI
 {
-    public function login($email, $password, $key = null)
+    public function __construct(private LimitadorLogin $limitador)
+    {
+    }
+
+    public function login(Request $request, $email, $password)
     {
         // Primeiro checa rate limiter e tentativa de login
-        $limiterResponse = $this->checkLoginAttempts($email, $password, $key);
+        $limiterResponse = $this->checkLoginAttempts($request, $email, $password);
         if ($limiterResponse !== true) {
-             Log::warning('Falha no login', ['email' => $email,'ip' => request()->ip(),'motivo' => $limiterResponse['message'] ]);
+             Log::warning('Falha no login', ['email' => $email,'ip' => $request->ip(),'motivo' => $limiterResponse['message'] ]);
             return $limiterResponse;
         }
 
         $user = Auth::user();
-        Log::info('Login realizado com sucesso', ['user_id' => $user->id,'email' => $user->email,'ip' => request()->ip()]);
+        Log::info('Login realizado com sucesso', ['user_id' => $user->id,'email' => $user->email,'ip' => $request->ip()]);
         $token = $user->createToken('api-token', ['*'], now()->addHours(2))->plainTextToken;
 
         // Reseta contagem de tentativas em caso de sucesso
-        if ($key)
-            RateLimiter::clear($key);
+        $this->limitador->limparConta($request);
 
         return [
             'success' => true,
@@ -33,28 +36,27 @@ class GestaoAutenticacaoAPI
         ];
     }
 
-    private function checkLoginAttempts($email, $password, $key = null)
+    private function checkLoginAttempts(Request $request, $email, $password)
     {
-        if ($key && RateLimiter::tooManyAttempts($key, 5)) {
-            $seconds = RateLimiter::availableIn($key);
+        $segundos = $this->limitador->segundosDeBloqueio($request);
+        if ($segundos !== null) {
              Log::warning('Usuário bloqueado por muitas tentativas', [
                 'email' => $email,
-                'ip' => request()->ip(),
-                'tempo_restante' => $seconds
+                'ip' => $request->ip(),
+                'tempo_restante' => $segundos
             ]);
             return [
                 'success' => false,
-                'message' => 'Muitas tentativas de login. Tente novamente em ' . $seconds . ' segundos.',
+                'message' => LimitadorLogin::mensagem($segundos),
                 'code' => 429
             ];
         }
 
         if (!Auth::attempt(['email' => $email, 'password' => $password])) {
-            if ($key)
-                RateLimiter::hit($key, 60);
+            $this->limitador->registarFalha($request);
             Log::warning('Credenciais inválidas', [
                 'email' => $email,
-                'ip' => request()->ip()
+                'ip' => $request->ip()
             ]);
             return [
                 'success' => false,

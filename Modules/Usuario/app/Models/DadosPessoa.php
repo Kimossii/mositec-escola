@@ -4,9 +4,10 @@ namespace Modules\Usuario\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 // use Modules\Usuario\Database\Factories\DadosPessoalFactory;
 
-class DadosPessoal extends Model
+class DadosPessoa extends Model
 {
     use HasFactory;
 
@@ -19,6 +20,7 @@ class DadosPessoal extends Model
         'nome_completo',
         'email',
         'telefone',
+        'telefone_alternativo',
         'data_nascimento',
         'sexo',
         'numero_identificacao',
@@ -39,4 +41,9 @@ class DadosPessoal extends Model
     const TIPO_PROFESSOR = 1;
     const TIPO_FUNCIONARIO = 2;
     const TIPO_OUTRO = 3;
+
+    public function documentos(): HasMany
+    {
+        return $this->hasMany(DocumentoPessoa::class, 'dados_pessoa_id');
+    }
 }

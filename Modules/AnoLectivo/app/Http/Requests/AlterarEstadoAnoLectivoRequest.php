@@ -17,6 +17,7 @@ class AlterarEstadoAnoLectivoRequest extends BaseRequest
     {
         return [
             'estado' => ['required', new Enum(EstadoAnoLectivo::class)],
+            'confirmar_encerramento_matriculas' => ['nullable', 'boolean'],
         ];
     }
 

@@ -240,3 +240,11 @@ html[data-bs-theme='light'] .btn-permissao-concedido {
     color: #0b5c2e;
     background-color: #a8e6bd;
 }
+
+/* Badge partilhado por todos os estados "Inativo/Inactivo" (o toggle binário
+   Activo/Inactivo) em qualquer módulo — cor fixa, não depende de tema
+   claro/escuro. */
+.badge-inativo {
+    background-color: #800000;
+    color: #ffffff;
+}

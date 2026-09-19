@@ -150,8 +150,34 @@ class CursoHttpTest extends TestCase
 
         $this->get(route('cursos.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Curso/Index')
-            ->has('cursos', 1)
-            ->where('cursos.0.codigo', 'INF')
+            ->has('cursos.data', 1)
+            ->where('cursos.data.0.codigo', 'INF')
+        );
+    }
+
+    public function test_index_pesquisa_por_codigo_ou_nome(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade']);
+
+        $this->get(route('cursos.index', ['pesquisa' => 'INF']))->assertInertia(fn (Assert $page) => $page
+            ->has('cursos.data', 1)
+            ->where('cursos.data.0.codigo', 'INF')
+        );
+    }
+
+    public function test_index_filtra_por_estado_inativo(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $cursoInativo = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade', 'estado' => Estado::INATIVO->value]);
+
+        $this->get(route('cursos.index', ['estado' => Estado::INATIVO->value]))->assertInertia(fn (Assert $page) => $page
+            ->has('cursos.data', 1)
+            ->where('cursos.data.0.id', $cursoInativo->id)
         );
     }
 

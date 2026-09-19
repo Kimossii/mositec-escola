@@ -3,6 +3,7 @@
 namespace Modules\Turma\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Core\Enums\Estado;
 use Modules\Turma\Http\Requests\AdicionarHorarioTurnoRequest;
@@ -20,13 +21,16 @@ class TurnoController extends Controller
         private TurnoConsultaService $consulta,
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('turmas.ver');
 
+        $filtros = $request->only(['pesquisa', 'estado']);
+
         return Inertia::render('Turma/Turnos/Index', [
-            'turnos' => $this->consulta->listar(),
+            'turnos' => $this->consulta->listar($filtros),
             'horariosDisponiveis' => $this->consulta->horariosDisponiveis(),
+            'filtros' => $filtros,
         ]);
     }
 

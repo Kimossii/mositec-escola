@@ -3,6 +3,7 @@
 namespace Modules\Turma\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Core\Enums\Estado;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -20,14 +21,17 @@ class NivelAcademicoController extends Controller
         private NivelAcademicoConsultaService $consulta,
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('turmas.ver');
 
+        $filtros = $request->only(['pesquisa', 'etapa_ensino', 'estado']);
+
         return Inertia::render('Turma/NiveisAcademicos/Index', [
-            'niveisAcademicos' => $this->consulta->listar(),
+            'niveisAcademicos' => $this->consulta->listar($filtros),
             'etapasEnsino' => Estabelecimento::current()?->etapasEnsino()
                 ->get(['etapa_ensino', 'etapa_ensino_descricao']) ?? [],
+            'filtros' => $filtros,
         ]);
     }
 
