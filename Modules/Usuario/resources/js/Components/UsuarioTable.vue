@@ -74,11 +74,6 @@ function confirmarEliminacao() {
     <table class="table align-middle table-row-dashed table-hover fs-6 gy-5" id="kt_table_users">
         <thead>
             <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                <th class="w-10px pe-2">
-                    <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
-                        <input class="form-check-input" type="checkbox" data-kt-check="true" data-kt-check-target="#kt_table_users .form-check-input" value="1" />
-                    </div>
-                </th>
                 <th class="min-w-125px">Utilizador</th>
                 <th class="min-w-125px">Perfil</th>
                 <th class="min-w-125px">Último acesso</th>
@@ -88,12 +83,10 @@ function confirmarEliminacao() {
             </tr>
         </thead>
         <tbody class="text-gray-600 fw-semibold">
+            <tr v-if="usuarios.length === 0">
+                <td colspan="6" class="text-center text-muted py-6">Nenhum utilizador encontrado.</td>
+            </tr>
             <tr v-for="usuario in usuarios" :key="usuario.id">
-                <td>
-                    <div class="form-check form-check-sm form-check-custom form-check-solid">
-                        <input class="form-check-input" type="checkbox" :value="usuario.id" />
-                    </div>
-                </td>
                 <td class="d-flex align-items-center">
                     <UsuarioAvatar :usuario="usuario" />
                     <!--begin::User details-->

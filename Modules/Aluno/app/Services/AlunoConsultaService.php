@@ -20,10 +20,10 @@ class AlunoConsultaService
             ->where('estabelecimento_id', Estabelecimento::current()?->id)
             ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
                 $query->where(function ($query) use ($pesquisa) {
-                    $query->where('numero_matricula', 'like', "%{$pesquisa}%")
+                    $query->whereContem('numero_matricula', $pesquisa)
                         ->orWhereHas('dadosPessoa', function ($query) use ($pesquisa) {
-                            $query->where('nome_completo', 'like', "%{$pesquisa}%")
-                                ->orWhere('numero_identificacao', 'like', "%{$pesquisa}%");
+                            $query->whereContem('nome_completo', $pesquisa)
+                                ->orWhereContem('numero_identificacao', $pesquisa);
                         });
                 });
             })
@@ -54,9 +54,18 @@ class AlunoConsultaService
             ->get(['id', 'nome']);
     }
 
-    public function turmasDisponiveis(): SupportCollection
+    /**
+     * Opções do filtro de turma. Com um ano lectivo seleccionado no filtro
+     * só traz as turmas desse ano — a lista não cresce com os anos, já que
+     * uma turma de outro ano nunca daria resultados ao combinar-se com ele.
+     * Sem ano ("todos os anos lectivos") traz todas.
+     *
+     * @param  array{ano_lectivo_id?: int|string|null}  $filtros
+     */
+    public function turmasDisponiveis(array $filtros = []): SupportCollection
     {
         return Turma::with(['anoLectivo', 'curso', 'nivelAcademico'])
+            ->when($filtros['ano_lectivo_id'] ?? null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))
             ->whereHas('anoLectivo', fn ($query) => $query->where('estabelecimento_id', Estabelecimento::current()?->id))
             ->orderByDesc('ano_lectivo_id')
             ->orderBy('codigo')

@@ -30,10 +30,10 @@ class MatriculaConsultaService
             ->when($filtros['ano_lectivo_id'] ?? null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))
             ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
                 $query->where(function ($query) use ($pesquisa) {
-                    $query->where('numero_registo_matricula', 'like', "%{$pesquisa}%")
+                    $query->whereContem('numero_registo_matricula', $pesquisa)
                         ->orWhereHas('turma', function ($query) use ($pesquisa) {
-                            $query->where('codigo', 'like', "%{$pesquisa}%")
-                                ->orWhere('nome', 'like', "%{$pesquisa}%");
+                            $query->whereContem('codigo', $pesquisa)
+                                ->orWhereContem('nome', $pesquisa);
                         });
                 });
             })
@@ -190,10 +190,10 @@ class MatriculaConsultaService
             ->when($filtros['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
             ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
                 $query->whereHas('aluno', function ($query) use ($pesquisa) {
-                    $query->where('numero_matricula', 'like', "%{$pesquisa}%")
+                    $query->whereContem('numero_matricula', $pesquisa)
                         ->orWhereHas('dadosPessoa', function ($query) use ($pesquisa) {
-                            $query->where('nome_completo', 'like', "%{$pesquisa}%")
-                                ->orWhere('numero_identificacao', 'like', "%{$pesquisa}%");
+                            $query->whereContem('nome_completo', $pesquisa)
+                                ->orWhereContem('numero_identificacao', $pesquisa);
                         });
                 });
             })

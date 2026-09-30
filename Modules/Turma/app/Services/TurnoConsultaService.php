@@ -15,7 +15,7 @@ class TurnoConsultaService
         return Turno::where('estabelecimento_id', Estabelecimento::current()?->id)
             ->with(['turnoHorarios.horario'])
             ->when(($filtros['estado'] ?? '') !== '', fn ($query) => $query->where('estado', $filtros['estado']))
-            ->when($filtros['pesquisa'] ?? null, fn ($query, $pesquisa) => $query->where('nome', 'like', "%{$pesquisa}%"))
+            ->when($filtros['pesquisa'] ?? null, fn ($query, $pesquisa) => $query->whereContem('nome', $pesquisa))
             ->orderBy('nome')
             ->paginate($porPagina)
             ->withQueryString();
