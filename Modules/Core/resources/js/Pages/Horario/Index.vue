@@ -8,6 +8,7 @@ import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import HorarioStatusBadge from '../../Components/HorarioStatusBadge.vue';
 import HorarioFormModal from '../../Components/HorarioFormModal.vue';
+import { tipoLabel } from '../../Models/Horario';
 
 defineProps({
     horarios: { type: Array, required: true },
@@ -104,17 +105,19 @@ function confirmarEliminacao() {
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th class="min-w-200px">Nome</th>
                             <th class="min-w-150px">Intervalo</th>
+                            <th class="min-w-100px">Tipo</th>
                             <th class="min-w-100px">Estado</th>
                             <th class="text-end min-w-100px">Ações</th>
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="horarios.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhum Horário criado.</td>
+                            <td colspan="5" class="text-center text-muted py-6">Nenhum Horário criado.</td>
                         </tr>
                         <tr v-for="horario in horarios" :key="horario.id">
                             <td>{{ horario.nome }}</td>
                             <td>{{ horario.hora_inicio }} — {{ horario.hora_fim }}</td>
+                            <td>{{ tipoLabel(horario.tipo) }}</td>
                             <td>
                                 <HorarioStatusBadge :estado="horario.estado" :estado-descricao="horario.estado_descricao" />
                             </td>

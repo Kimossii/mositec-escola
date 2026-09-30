@@ -1,0 +1,11 @@
+{
+    "name": "Matricula",
+    "alias": "matricula",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Matricula\\Providers\\MatriculaServiceProvider"
+    ],
+    "files": []
+}

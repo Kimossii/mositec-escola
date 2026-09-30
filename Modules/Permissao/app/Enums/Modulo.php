@@ -16,6 +16,10 @@ enum Modulo: int
     case NOTA = 9;
     case ESTABELECIMENTO = 10;
     case HORARIO = 11;
+    case INFRAESTRUTURA = 12;
+    case CURSO = 13;
+    case PLANO_CURRICULAR = 14;
+    case DOCUMENTO_PESSOA = 15;
 
     public function slug(): string
     {
@@ -32,6 +36,10 @@ enum Modulo: int
             self::NOTA => 'nota',
             self::ESTABELECIMENTO => 'estabelecimento',
             self::HORARIO => 'horario',
+            self::INFRAESTRUTURA => 'infraestrutura',
+            self::CURSO => 'curso',
+            self::PLANO_CURRICULAR => 'plano-curricular',
+            self::DOCUMENTO_PESSOA => 'documento-pessoa',
         };
     }
 
@@ -61,6 +69,10 @@ enum Modulo: int
             self::NOTA => 'Nota',
             self::ESTABELECIMENTO => 'Estabelecimento',
             self::HORARIO => 'Horário',
+            self::INFRAESTRUTURA => 'Infraestrutura',
+            self::CURSO => 'Curso',
+            self::PLANO_CURRICULAR => 'Plano Curricular',
+            self::DOCUMENTO_PESSOA => 'Documento Pessoa',
         };
     }
 }

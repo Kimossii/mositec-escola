@@ -60,7 +60,7 @@ class AnoLectivoEstabelecimentoConsistenciaTest extends TestCase
 
         // Toque de rotina em anoA (mesma acção/estado) deve fazer o backfill
         // do estabelecimento_id, autocorrigindo o registo.
-        $anoA = (new AlterarEstadoAnoLectivoAction())->alterar($anoA, EstadoAnoLectivo::ATIVO);
+        $anoA = (app(AlterarEstadoAnoLectivoAction::class))->alterar($anoA, EstadoAnoLectivo::ATIVO);
         $this->assertSame($estabelecimento->id, $anoA->estabelecimento_id);
 
         $this->expectException(ValidationException::class);

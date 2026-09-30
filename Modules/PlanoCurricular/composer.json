@@ -1,0 +1,28 @@
+{
+    "name": "nwidart/planocurricular",
+    "description": "",
+    "authors": [
+        {
+            "name": "Nicolas Widart",
+            "email": "n.widart@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\PlanoCurricular\\": "app/",
+            "Modules\\PlanoCurricular\\Database\\Factories\\": "database/factories/",
+            "Modules\\PlanoCurricular\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\PlanoCurricular\\Tests\\": "tests/"
+        }
+    }
+}

@@ -1,5 +1,16 @@
 <script setup>
+import { router } from '@inertiajs/vue3';
+
+const props = defineProps({
+    href: { type: String, default: null },
+});
+
 function voltar() {
+    if (props.href) {
+        router.visit(props.href);
+        return;
+    }
+
     window.history.back();
 }
 </script>

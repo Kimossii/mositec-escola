@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Usuario\Http\Controllers\DocumentoPessoaController;
 use Modules\Usuario\Http\Controllers\UsuarioController;
 
 // Sem "can:" à volta do grupo: criar/editar/eliminar/alternar-estado ramificam
@@ -40,4 +41,23 @@ Route::middleware(['auth'])->prefix('usuarios')->group(function () {
         Route::post('/cadastrar', [UsuarioController::class, 'store'])->name('usuario.encarregados.store');
     });
 
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dados-pessoais/{dadosPessoa}/documentos', [DocumentoPessoaController::class, 'index'])
+        ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.index');
+    Route::get('/dados-pessoais/{dadosPessoa}/documentos-inativos', [DocumentoPessoaController::class, 'inativos'])
+        ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.inativos');
+    Route::post('/dados-pessoais/{dadosPessoa}/documentos', [DocumentoPessoaController::class, 'store'])
+        ->middleware('can:documento-pessoa.criar')->name('documentos-pessoa.store');
+    Route::delete('/documentos-pessoa/{documento}', [DocumentoPessoaController::class, 'destroy'])
+        ->middleware('can:documento-pessoa.eliminar')->name('documentos-pessoa.destroy');
+    Route::patch('/documentos-pessoa/{documento}/estado', [DocumentoPessoaController::class, 'alternarEstado'])
+        ->middleware('can:documento-pessoa.editar')->name('documentos-pessoa.alternarEstado');
+    Route::get('/documentos-pessoa/{documento}/download', [DocumentoPessoaController::class, 'download'])
+        ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.download');
+    Route::get('/documentos-pessoa/{documento}/visualizar', [DocumentoPessoaController::class, 'visualizar'])
+        ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.visualizar');
+    Route::get('/tipos-documentos', [DocumentoPessoaController::class, 'tipos'])
+        ->middleware('can:documento-pessoa.criar')->name('documentos-pessoa.tipos');
 });

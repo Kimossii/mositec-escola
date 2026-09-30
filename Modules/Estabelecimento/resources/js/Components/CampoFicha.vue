@@ -3,9 +3,9 @@ import { computed } from 'vue';
 
 const props = defineProps({
     label: { type: String, required: true },
-    modelValue: { type: [String, Number], default: '' },
+    modelValue: { type: [String, Number, Array], default: '' },
     editing: { type: Boolean, default: false },
-    type: { type: String, default: 'text' }, // text | email | number | textarea | select
+    type: { type: String, default: 'text' }, // text | email | number | textarea | select | checkboxes
     options: { type: Array, default: () => [] }, // [{ value, label }]
     error: { type: String, default: null },
     placeholder: { type: String, default: '' },
@@ -19,6 +19,12 @@ defineEmits(['update:modelValue']);
 const valorExibido = computed(() => {
     if (props.type === 'select') {
         return props.options.find((opcao) => opcao.value === props.modelValue)?.label ?? '';
+    }
+    if (props.type === 'checkboxes') {
+        return props.options
+            .filter((opcao) => Array.isArray(props.modelValue) && props.modelValue.includes(opcao.value))
+            .map((opcao) => opcao.label)
+            .join(', ');
     }
     return props.modelValue;
 });
@@ -41,6 +47,21 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
                 :value="modelValue"
                 @input="$emit('update:modelValue', $event.target.value)"
             ></textarea>
+
+            <div v-else-if="type === 'checkboxes'" class="d-flex flex-wrap gap-4">
+                <div v-for="opcao in options" :key="opcao.value" class="form-check form-check-custom form-check-solid">
+                    <input
+                        :id="`campo-ficha-${label}-${opcao.value}`"
+                        type="checkbox"
+                        class="form-check-input"
+                        :checked="Array.isArray(modelValue) && modelValue.includes(opcao.value)"
+                        @change="$emit('update:modelValue', $event.target.checked
+                            ? [...(Array.isArray(modelValue) ? modelValue : []), opcao.value]
+                            : (Array.isArray(modelValue) ? modelValue : []).filter((v) => v !== opcao.value))"
+                    />
+                    <label class="form-check-label fw-semibold fs-6" :for="`campo-ficha-${label}-${opcao.value}`">{{ opcao.label }}</label>
+                </div>
+            </div>
 
             <div v-else class="ficha-input-wrap" :class="{ 'ficha-input-wrap--icone': temCampoComIcone }">
                 <span v-if="temCampoComIcone" class="ficha-input-wrap__icone-emblema">

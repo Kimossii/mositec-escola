@@ -1,0 +1,11 @@
+{
+    "name": "Turma",
+    "alias": "turma",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Turma\\Providers\\TurmaServiceProvider"
+    ],
+    "files": []
+}

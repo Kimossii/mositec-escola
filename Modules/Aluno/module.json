@@ -1,0 +1,11 @@
+{
+    "name": "Aluno",
+    "alias": "aluno",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Aluno\\Providers\\AlunoServiceProvider"
+    ],
+    "files": []
+}

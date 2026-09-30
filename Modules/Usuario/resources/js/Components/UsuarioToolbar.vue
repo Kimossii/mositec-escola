@@ -1,9 +1,14 @@
 <script setup>
+import { reactive, watch } from 'vue';
+import { router, usePage } from '@inertiajs/vue3';
 import { can } from '@/Composables/usePermissoes';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import UsuarioExportModal from './UsuarioExportModal.vue';
 import UsuarioCreateModal from './UsuarioCreateModal.vue';
 
-defineProps({
+const props = defineProps({
+    /** filtros aplicados no servidor: { pesquisa, estado } */
+    filtros: { type: Object, default: () => ({}) },
     /** componente de form a usar no modal "Add User" — repassado até UsuarioCreateModal */
     formComponent: {
         type: [Object, Function],
@@ -16,6 +21,33 @@ defineProps({
     permissoesPorPerfil: { type: Object, default: () => ({}) },
     criarPermissao: { type: String, default: 'usuario.criar' },
 });
+
+const opcoesEstado = [
+    { value: '', label: 'Todos os estados' },
+    { value: '1', label: 'Ativo' },
+    { value: '0', label: 'Inativo' },
+];
+
+const consulta = reactive({
+    pesquisa: props.filtros.pesquisa ?? '',
+    estado: props.filtros.estado ?? '',
+});
+
+const pagina = usePage();
+let debounceId = null;
+
+// Pesquisa e filtro correm no servidor (a tabela só tem a página actual).
+// Mudar qualquer filtro volta à página 1: `page` não vai no pedido.
+watch(consulta, (valor) => {
+    clearTimeout(debounceId);
+    debounceId = setTimeout(() => {
+        router.get(new URL(pagina.url, window.location.origin).pathname, valor, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    }, 300);
+});
 </script>
 
 <template>
@@ -24,7 +56,7 @@ defineProps({
         <!--begin::Search-->
         <div class="d-flex align-items-center position-relative my-1">
             <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-5"><span class="path1"></span><span class="path2"></span></i>
-            <input type="text" data-kt-user-table-filter="search" class="form-control form-control-solid w-250px ps-13" placeholder="Search user" />
+            <input v-model="consulta.pesquisa" type="text" class="form-control form-control-solid w-250px w-md-300px ps-13" placeholder="Nome, email ou matrícula" />
         </div>
         <!--end::Search-->
     </div>
@@ -33,54 +65,11 @@ defineProps({
     <!--begin::Card toolbar-->
     <div class="card-toolbar">
         <!--begin::Toolbar-->
-        <div class="d-flex justify-content-end" data-kt-user-table-toolbar="base">
+        <div class="d-flex justify-content-end">
             <!--begin::Filter-->
-            <button type="button" class="btn btn-light-primary me-3" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
-                <i class="ki-duotone ki-filter fs-2"><span class="path1"></span><span class="path2"></span></i>
-                Filter
-            </button>
-            <!--begin::Menu 1-->
-            <div class="menu menu-sub menu-sub-dropdown w-300px w-md-325px" data-kt-menu="true">
-                <!--begin::Header-->
-                <div class="px-7 py-5">
-                    <div class="fs-5 text-dark fw-bold">Filter Options</div>
-                </div>
-                <!--end::Header-->
-
-                <!--begin::Separator-->
-                <div class="separator border-gray-200"></div>
-                <!--end::Separator-->
-
-                <!--begin::Content-->
-                <div class="px-7 py-5" data-kt-user-table-filter="form">
-                    <!--begin::Input group-->
-                    <div class="mb-10">
-                        <label class="form-label fs-6 fw-semibold">Matrícula:</label>
-                        <input type="text" class="form-control form-control-solid fw-bold" data-kt-user-table-filter="matricula" placeholder="Digite a matrícula" />
-                    </div>
-                    <!--end::Input group-->
-
-                    <!--begin::Input group-->
-                    <div class="mb-10">
-                        <label class="form-label fs-6 fw-semibold">Estado:</label>
-                        <select class="form-select form-select-solid fw-bold" data-kt-select2="true" data-placeholder="Select option" data-allow-clear="true" data-kt-user-table-filter="estado" data-hide-search="true">
-                            <option></option>
-                            <option value="Ativo">Ativo</option>
-                            <option value="Inativo">Inativo</option>
-                        </select>
-                    </div>
-                    <!--end::Input group-->
-
-                    <!--begin::Actions-->
-                    <div class="d-flex justify-content-end">
-                        <button type="reset" class="btn btn-light btn-active-light-primary fw-semibold me-2 px-6" data-kt-menu-dismiss="true" data-kt-user-table-filter="reset">Reset</button>
-                        <button type="submit" class="btn btn-primary fw-semibold px-6" data-kt-menu-dismiss="true" data-kt-user-table-filter="filter">Apply</button>
-                    </div>
-                    <!--end::Actions-->
-                </div>
-                <!--end::Content-->
+            <div class="w-175px me-3">
+                <SelectSolid v-model="consulta.estado" :options="opcoesEstado" />
             </div>
-            <!--end::Menu 1-->
             <!--end::Filter-->
 
             <!--begin::Export-->
@@ -98,18 +87,6 @@ defineProps({
             <!--end::Add user-->
         </div>
         <!--end::Toolbar-->
-
-        <!--begin::Group actions-->
-        <div class="d-flex justify-content-end align-items-center d-none" data-kt-user-table-toolbar="selected">
-            <div class="fw-bold me-5">
-                <span class="me-2" data-kt-user-table-select="selected_count"></span> Selected
-            </div>
-
-            <button type="button" class="btn btn-danger" data-kt-user-table-select="delete_selected">
-                Excluir selecionados
-            </button>
-        </div>
-        <!--end::Group actions-->
 
         <UsuarioExportModal />
         <UsuarioCreateModal
