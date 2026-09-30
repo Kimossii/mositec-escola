@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue';
+import Pagination from '@/Components/Shared/Pagination.vue';
 import UsuarioTable from './UsuarioTable.vue';
 import UsuarioToolbar from './UsuarioToolbar.vue';
 import UsuarioVisualizarDrawer from './UsuarioVisualizarDrawer.vue';
@@ -26,10 +27,12 @@ defineProps({
         type: String,
         default: 'primary',
     },
+    /** paginator do Laravel: { data, links, ... } */
     usuarios: {
-        type: Array,
+        type: Object,
         required: true,
     },
+    filtros: { type: Object, default: () => ({}) },
     /** componente de form a usar no modal "Add User" desta lista — ver pasta Forms/ de cada lista */
     formComponent: {
         type: [Object, Function],
@@ -120,6 +123,7 @@ onMounted(() => {
                         <!--begin::Card header-->
                         <div class="card-header border-0 pt-6">
                             <UsuarioToolbar
+                                :filtros="filtros"
                                 :form-component="formComponent"
                                 :utilizador-em-edicao="utilizadorEmEdicao"
                                 :perfis="perfis"
@@ -133,9 +137,13 @@ onMounted(() => {
 
                         <!--begin::Card body-->
                         <div class="card-body py-4">
-                            <UsuarioTable :usuarios="usuarios" @editar="abrirEdicao" @visualizar="abrirVisualizacao" />
+                            <UsuarioTable :usuarios="usuarios.data" @editar="abrirEdicao" @visualizar="abrirVisualizacao" />
                         </div>
                         <!--end::Card body-->
+
+                        <div v-if="usuarios.data.length" class="card-footer d-flex justify-content-end">
+                            <Pagination :links="usuarios.links" />
+                        </div>
                     </div>
                     <!--end::Card-->
                 </div>

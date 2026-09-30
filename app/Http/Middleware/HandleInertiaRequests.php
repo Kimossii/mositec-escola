@@ -60,8 +60,12 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            // Só o que o frontend realmente lê (UserMenu.vue: name, email) —
+            // $request->user() completo ia inteiro, sem necessidade, a cada
+            // página. Controlo de acesso não passa por aqui: quem decide o
+            // que o utilizador pode ver/fazer é a `permissoes` abaixo.
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user()?->only(['id', 'name', 'email']),
             ],
             'permissoes' => $request->user()
                 ? app(PermissionResolver::class)->conjuntoConcedido($request->user())

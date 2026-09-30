@@ -5,7 +5,8 @@ import { usePageScripts } from '@/composables/usePageScripts';
 import UsuarioListLayout from '../Components/UsuarioListLayout.vue';
 
 defineProps({
-    usuarios: { type: Array, required: true },
+    usuarios: { type: Object, required: true }, // paginator: { data, links, ... }
+    filtros: { type: Object, default: () => ({}) },
     perfis: { type: Array, required: true },
     modulos: { type: Array, required: true },
     acoes: { type: Array, required: true },
@@ -13,8 +14,6 @@ defineProps({
 });
 
 const { loadAll } = usePageScripts([
-    '/themes/metronic/assets/plugins/custom/datatables/datatables.bundle.js',
-    '/themes/metronic/assets/js/components/custom/apps/user-management/users/list/table.js',
     '/themes/metronic/assets/js/components/custom/apps/user-management/users/list/export-users.js',
     '/themes/metronic/assets/js/widgets.bundle.js',
     '/themes/metronic/assets/js/components/custom/widgets.js',
@@ -36,6 +35,7 @@ defineOptions({ layout: AppLayout })
         icon="ki-people"
         accent="dark"
         :usuarios="usuarios"
+        :filtros="filtros"
         :perfis="perfis"
         :modulos="modulos"
         :acoes="acoes"

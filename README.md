@@ -152,16 +152,14 @@ Este projeto é **apenas para estudo e aprendizado**.
      │    └── Administradores
      │
      ├── 🔐  Perfis & Permissões
-     │    ├── Perfis de Acesso
-     │    └── Regras & Restrições
+     │    ├── Perfis e Permissões
      │
      ├── 🏫  Estabelecimento
      │    ├── Dados da Escola
      │    └── Logótipo & Aparência
      │
      ├── 📅  Ano Lectivo
-     │    ├── Períodos / Trimestres
-     │    └── Calendário Escolar
+     │    └── Ano Lectivo
      │
      └── 🔧  Sistema
           ├── Parâmetros Gerais

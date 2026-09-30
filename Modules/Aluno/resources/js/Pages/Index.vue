@@ -94,6 +94,13 @@ const valorSegundoSelect = computed({
     },
 });
 
+// As opções de turma dependem do ano lectivo (o servidor só envia as desse
+// ano) — trocar de ano invalida a turma escolhida, que deixaria de aparecer
+// no select mas continuaria a filtrar.
+watch(() => filtros.ano_lectivo_id, () => {
+    filtros.turma_id = '';
+});
+
 let debounceId = null;
 
 watch(filtros, (valor) => {

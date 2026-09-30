@@ -42,7 +42,7 @@ class AlunoController extends Controller
             'alunos' => $this->consulta->listar($filtros),
             'filtros' => $filtros,
             'anosLectivosDisponiveis' => $this->consulta->anosLectivosDisponiveis(),
-            'turmasDisponiveis' => $this->consulta->turmasDisponiveis(),
+            'turmasDisponiveis' => $this->consulta->turmasDisponiveis($filtros),
             'cursosDisponiveis' => $this->consulta->cursosDisponiveis(),
             'niveisAcademicosDisponiveis' => $this->consulta->niveisAcademicosDisponiveis(),
         ]);

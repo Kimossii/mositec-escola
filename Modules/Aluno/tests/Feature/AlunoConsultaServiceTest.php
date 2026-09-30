@@ -284,4 +284,31 @@ class AlunoConsultaServiceTest extends TestCase
         $this->assertCount(1, $resultado);
         $this->assertSame($turmaActual->id, $resultado->first()->id);
     }
+
+    public function test_turmas_disponiveis_restringe_ao_ano_lectivo_indicado(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $ano2025 = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2025/2026', 'data_inicio' => '2025-09-01', 'data_fim' => '2026-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $ano2026 = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $this->criarTurma($estabelecimento, $ano2025);
+        $turma2026 = $this->criarTurma($estabelecimento, $ano2026);
+
+        $resultado = (new AlunoConsultaService())->turmasDisponiveis(['ano_lectivo_id' => $ano2026->id]);
+
+        $this->assertCount(1, $resultado);
+        $this->assertSame($turma2026->id, $resultado->first()->id);
+    }
+
+    public function test_turmas_disponiveis_sem_ano_lectivo_devolve_todos_os_anos(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $ano2025 = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2025/2026', 'data_inicio' => '2025-09-01', 'data_fim' => '2026-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $ano2026 = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $this->criarTurma($estabelecimento, $ano2025);
+        $this->criarTurma($estabelecimento, $ano2026);
+
+        $this->assertCount(2, (new AlunoConsultaService())->turmasDisponiveis());
+        // "Todos os anos lectivos" chega do filtro como string vazia.
+        $this->assertCount(2, (new AlunoConsultaService())->turmasDisponiveis(['ano_lectivo_id' => '']));
+    }
 }
