@@ -28,13 +28,14 @@ jobs:
           node-version: '22'
           cache: npm
 
-      # Advisories em dependências PHP directas ou transitivas — falha o
-      # build sem bloquear em avisos já conhecidos e aceites (--ignore).
-      - name: Auditar dependências PHP (composer)
-        run: composer audit --no-dev
-
       - name: Instalar dependências PHP
         run: composer install --prefer-dist --no-progress
+
+      # Advisories em dependências PHP directas ou transitivas — precisa do
+      # vendor/ instalado (composer install acima), senão falha com "No
+      # installed packages found".
+      - name: Auditar dependências PHP (composer)
+        run: composer audit --no-dev
 
       - name: Instalar dependências JS
         run: npm ci
