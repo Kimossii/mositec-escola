@@ -18,6 +18,11 @@ class RenovarMatriculasEmMassaAction
      * seguinte sugerível) não interrompe as restantes, porque cada
      * RenovarMatriculaAction já corre na sua própria transacção.
      *
+     * As matrículas são carregadas de uma vez com `whereIn` (antes: uma
+     * query `find()` por id, N+1), com as relações que RenovarMatriculaAction
+     * acaba sempre por tocar já pré-carregadas — evita repetir esse
+     * carregamento a cada iteração do ciclo.
+     *
      * @param  int[]  $matriculaIds
      * @return array{sucesso: int, falhas: array<int, string>}
      */
@@ -26,8 +31,13 @@ class RenovarMatriculasEmMassaAction
         $sucesso = 0;
         $falhas = [];
 
+        $matriculas = Matricula::whereIn('id', $matriculaIds)
+            ->with(['turma.nivelAcademico', 'turma.curso', 'anoLectivo', 'aluno'])
+            ->get()
+            ->keyBy('id');
+
         foreach ($matriculaIds as $matriculaId) {
-            $matricula = Matricula::find($matriculaId);
+            $matricula = $matriculas->get($matriculaId);
 
             if ($matricula === null) {
                 $falhas[$matriculaId] = 'Matrícula não encontrada.';

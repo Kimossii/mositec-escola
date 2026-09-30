@@ -1022,6 +1022,41 @@ class MatriculaActionTest extends TestCase
         $this->assertArrayHasKey(999999, $resultado['falhas']);
     }
 
+    /**
+     * Antes, a acção carregava cada matrícula com `Matricula::find($id)`
+     * dentro do ciclo — uma query SELECT por id (N+1). Agora carrega todas
+     * de uma vez com `whereIn`, antes de processar qualquer uma.
+     */
+    public function test_renova_em_massa_carrega_as_matriculas_numa_unica_query(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turma = $this->criarTurma($anoLectivo, $nivel);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
+
+        $ids = [];
+        for ($i = 0; $i < 5; $i++) {
+            $aluno = $this->criarAluno($estabelecimento, "BI-massa-{$i}");
+            $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+            $ids[] = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turma->id, $anoLectivo->id))->id;
+        }
+
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        app(RenovarMatriculasEmMassaAction::class)->executar($ids);
+        $queries = \Illuminate\Support\Facades\DB::getQueryLog();
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        $buscasEmLote = array_filter($queries, fn ($q) => str_contains($q['query'], '"matriculas"') && str_contains($q['query'], '"id" in ('));
+
+        $this->assertCount(
+            1,
+            $buscasEmLote,
+            "Esperava 1 query 'matriculas ... id in (...)' a carregar as 5 matrículas de uma vez; encontrei "
+                .count($buscasEmLote)
+        );
+    }
+
     // ---------- Inscrição automática em disciplinas ----------
 
     public function test_criar_matricula_fora_do_superior_inscreve_automaticamente_nas_disciplinas(): void
