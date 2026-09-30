@@ -1,0 +1,11 @@
+{
+    "name": "Tenant",
+    "alias": "tenant",
+    "description": "Gestão de Tenants: identidade, domínios, ciclo de vida e provisioning.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Tenant\\Providers\\TenantServiceProvider"
+    ],
+    "files": []
+}

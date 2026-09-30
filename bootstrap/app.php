@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Modules\Core\Tenancy\Http\Middleware\ResolverTenant;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -13,6 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Global, e não nos grupos web/api: o tenant tem de estar resolvido
+        // antes de qualquer middleware de rota. No grupo api, o Sanctum põe o
+        // EnsureFrontendRequestsAreStateful (que inicia a sessão e autentica)
+        // à frente de tudo o que o grupo registe.
+        $middleware->append(ResolverTenant::class);
+
         $middleware->api([
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'throttle:api',

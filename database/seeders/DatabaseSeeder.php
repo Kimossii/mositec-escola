@@ -10,6 +10,7 @@ use Modules\Infraestrutura\Database\Seeders\InfraestruturaDatabaseSeeder;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Disciplina\Database\Seeders\DisciplinaDatabaseSeeder;
 use Modules\Turma\Database\Seeders\TurmaDatabaseSeeder;
+use Modules\Tenant\Database\Seeders\TenantDesenvolvimentoSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -19,6 +20,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            TenantDesenvolvimentoSeeder::class,
             PermissaoDatabaseSeeder::class,
             AdminUserSeeder::class,
            // DisciplinaDatabaseSeeder::class,
