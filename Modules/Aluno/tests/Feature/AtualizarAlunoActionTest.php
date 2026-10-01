@@ -64,10 +64,10 @@ class AtualizarAlunoActionTest extends TestCase
 
     public function test_actualiza_foto_substituindo_a_anterior(): void
     {
-        Storage::fake('public');
+        Storage::fake('privado');
         $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
-        $fotoAntiga = UploadedFile::fake()->image('antiga.jpg')->store('alunos/fotos', 'public');
+        $fotoAntiga = UploadedFile::fake()->image('antiga.jpg')->store("tenants/{$this->tenant->id}/alunos/fotos", 'privado');
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001', 'foto_path' => $fotoAntiga]);
 
         $dto = new AlunoDTO(
@@ -83,8 +83,8 @@ class AtualizarAlunoActionTest extends TestCase
 
         $actualizado = (new AtualizarAlunoAction())->executar($aluno, $dto, $fotoNova);
 
-        Storage::disk('public')->assertMissing($fotoAntiga);
-        Storage::disk('public')->assertExists($actualizado->foto_path);
+        Storage::disk('privado')->assertMissing($fotoAntiga);
+        Storage::disk('privado')->assertExists($actualizado->foto_path);
         $this->assertNotSame($fotoAntiga, $actualizado->foto_path);
     }
 }

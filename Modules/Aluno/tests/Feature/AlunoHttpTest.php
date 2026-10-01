@@ -87,7 +87,7 @@ class AlunoHttpTest extends TestCase
 
     public function test_cria_aluno_via_http_com_foto(): void
     {
-        Storage::fake('public');
+        Storage::fake('privado');
         $this->actingAsStaff();
         $this->criarEstabelecimento();
 
@@ -100,7 +100,7 @@ class AlunoHttpTest extends TestCase
 
         $aluno = Aluno::firstWhere('dados_pessoa_id', DadosPessoa::firstWhere('numero_identificacao', 'BI0001')?->id);
         $this->assertNotNull($aluno->foto_path);
-        Storage::disk('public')->assertExists($aluno->foto_path);
+        Storage::disk('privado')->assertExists($aluno->foto_path);
     }
 
     public function test_actualiza_aluno_via_http(): void

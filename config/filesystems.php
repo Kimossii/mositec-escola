@@ -47,6 +47,15 @@ return [
             'report' => false,
         ],
 
+        // Disco privado para ficheiros que só se servem por rota autenticada (ex.: fotos de
+        // alunos). Fora de storage/app/public e sem 'url': nunca é exposto por public/storage.
+        'privado' => [
+            'driver' => 'local',
+            'root' => storage_path('app/privado'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'documentos' => [
             'driver' => 'local',
             'root' => storage_path('app/documentos'),

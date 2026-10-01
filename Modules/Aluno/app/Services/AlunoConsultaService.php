@@ -4,16 +4,43 @@ namespace Modules\Aluno\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\Facades\Storage;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Aluno\Models\Aluno;
+use InvalidArgumentException;
 use Modules\Core\Enums\Estado;
+use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AlunoConsultaService
 {
+    /**
+     * Serve a foto do aluno a partir do model (já filtrado por tenant), nunca de um
+     * caminho recebido do cliente. 404 se não houver foto registada ou ficheiro.
+     */
+    public function servirFoto(Aluno $aluno): StreamedResponse
+    {
+        $disco = Storage::disk('privado');
+
+        // Um caminho guardado que não esteja sob o prefixo do tenant trata-se como foto inexistente.
+        try {
+            $caminho = $aluno->foto_path ? CaminhoTenant::garantir($aluno->foto_path) : null;
+        } catch (InvalidArgumentException) {
+            $caminho = null;
+        }
+
+        abort_if($caminho === null || ! $disco->exists($caminho), 404);
+
+        return $disco->response($caminho, null, [
+            'Cache-Control' => 'private, max-age=0, must-revalidate',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
     {
         return Aluno::with('dadosPessoa')

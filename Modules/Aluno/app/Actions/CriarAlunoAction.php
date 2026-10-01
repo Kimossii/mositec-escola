@@ -6,6 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Modules\Aluno\DTO\AlunoDTO;
 use Modules\Aluno\Models\Aluno;
+use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Services\GeradorMatriculaService;
@@ -40,7 +41,7 @@ class CriarAlunoAction
             ]);
 
             if ($foto) {
-                $aluno->update(['foto_path' => $foto->store('alunos/fotos', 'public')]);
+                $aluno->update(['foto_path' => $foto->store(CaminhoTenant::para('alunos/fotos'), 'privado')]);
             }
 
             return $aluno;

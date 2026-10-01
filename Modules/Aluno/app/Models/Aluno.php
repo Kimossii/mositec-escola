@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
 use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
@@ -48,7 +47,8 @@ class Aluno extends Model
     protected function fotoUrl(): Attribute
     {
         return Attribute::get(
-            fn () => $this->foto_path ? Storage::disk('public')->url($this->foto_path) : null,
+            // Rota autenticada: a foto vive em disco privado e nunca tem URL pública.
+            fn () => $this->foto_path && $this->exists ? route('alunos.foto', $this) : null,
         );
     }
 
