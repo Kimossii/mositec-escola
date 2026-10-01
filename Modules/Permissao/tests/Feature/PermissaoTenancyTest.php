@@ -84,7 +84,6 @@ class PermissaoTenancyTest extends TestCase
         });
 
         $perfilA = Role::create(['nome' => Role::PERFIL_PERSONALIZADO, 'descricao' => 'A']);
-        RolePermissao::where('role_id', $perfilA->id)->delete();
         app(SincronizarPermissoesPerfilAction::class)->executar($perfilA, [['modulo_id' => $modulo, 'acao_id' => $acao]]);
         app(SincronizarPermissoesUtilizadorAction::class)->executar($user, [['modulo_id' => $modulo, 'acao_id' => $acao, 'permitido' => true]]);
 

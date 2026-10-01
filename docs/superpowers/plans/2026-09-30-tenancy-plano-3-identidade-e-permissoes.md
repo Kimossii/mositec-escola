@@ -1,8 +1,11 @@
 # Tenancy — Plano 3: Identidade, Permissões e Autenticação
 
+> **Revisto em 2026-10-01 — recuperação de palavra-passe removida do âmbito.** O MosiTec não tem `forgot-password`/`reset-password` nem `password_reset_tokens` (spec §10.4 reescrito: redefinição manual pelo Administrador da Escola, palavra-passe temporária e troca obrigatória). A **Task 5** (broker/repositório de tokens) e todas as referências a `password_reset_tokens`, `TokenRepositoryTenant`, `PasswordBrokerManagerTenant`, `POST /forgot-password` e §10.4 como "recuperação" ficam **substituídas** pelo Plano 3b (`2026-10-01-tenancy-plano-3b-fortify.md`, Tarefas 2 a 6). O texto histórico da Task 5 é mantido abaixo só como registo do que foi executado e depois revertido.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Isolar por tenant a identidade (utilizadores, dados pessoais, documentos, tipos de documento, encarregados), as permissões (perfis e permissões de perfil e de utilizador), a autenticação web e API (login, sessão, tokens Sanctum, recuperação de palavra-passe, limitador de login) e a cache de permissões.
+**Goal:** Isolar por tenant a identidade (utilizadores, dados pessoais, documentos, tipos de documento, encarregados), as permissões (perfis e permissões de perfil e de utilizador), a autenticação web e API (login, sessão, tokens Sanctum, limitador de login; a recuperação de palavra-passe por e-mail foi retirada, ver nota no topo) e a cache de permissões.
 
 **Architecture:** As tabelas de identidade e permissões ganham `tenant_id` (migrations originais editadas, BD recriada) e os models passam a usar `PertenceAoTenant`. O `User` passa a ser pesquisado só dentro do tenant corrente, por isso o provider Eloquent, o Sanctum e o broker de palavras-passe ficam isolados sem alterar os controllers. Três peças novas e pequenas fecham as vias que não passam pelo Eloquent: `CacheTenant` (Core), um repositório de tokens de recuperação que filtra por tenant, e um middleware que confere o tenant da sessão. A conversão é feita por camadas, com a suite verde no fim de cada tarefa.
 
@@ -35,7 +38,7 @@ Comportamentos que o spec implica e que mais facilmente ficam sem teste. Cada um
 1. **Mesmo email, número de matrícula ou número de identificação em dois tenants** é permitido; duplicado dentro do mesmo tenant falha, na BD e na validação (`unique`) → Tarefa 3.
 2. **Sessão reenviada ao domínio de outro tenant** não autentica, e uma sessão com `tenant_id` diferente do do pedido é invalidada → Tarefa 6.
 3. **Token Sanctum emitido no tenant A** devolve 401 no domínio do tenant B, e a eliminação do utilizador não deixa tokens órfãos visíveis → Tarefa 4.
-4. **Recuperação de palavra-passe com o mesmo email em A e B**: pedir reposição em A não apaga nem consome o token de B, e o token de A não repõe a palavra-passe de B → Tarefa 5.
+4. ~~**Recuperação de palavra-passe com o mesmo email em A e B**~~ (retirado em 2026-10-01; o isolamento da redefinição manual é coberto no Plano 3b, Tarefa 3).
 5. **Limitador de login**: falhas de uma conta em A não bloqueiam a mesma conta em B; a **anti-perda de acesso** (`GarantirAdministradorEfetivoAction`) conta só administradores do tenant corrente; invalidar a cache de permissões em A não afecta B → Tarefas 1, 2 e 6.
 
 ## Mapa de ficheiros
@@ -51,7 +54,7 @@ Comportamentos que o spec implica e que mais facilmente ficam sem teste. Cada um
 | `Modules/Usuario/app/Models/*` | Trait, pivots de encarregados |
 | `app/Actions/Fortify/*`, `app/Models/User.php`, `database/factories/UserFactory.php` | Deixam de usar o `User` de boilerplate |
 | `Modules/Autenticacao/app/Models/TokenDeAcesso.php` | Token Sanctum com trait |
-| `Modules/Autenticacao/app/Passwords/TokenRepositoryTenant.php`, `PasswordBrokerManagerTenant.php` | Recuperação de palavra-passe isolada |
+| `Modules/Autenticacao/app/Passwords/TokenRepositoryTenant.php`, `PasswordBrokerManagerTenant.php` | ~~Recuperação de palavra-passe isolada~~ (removida no Plano 3b) |
 | `Modules/Autenticacao/app/Http/Middleware/VerificarTenantDaSessao.php` | Confere o tenant da sessão |
 | `Modules/Autenticacao/app/Service/LimitadorLogin.php` | Chaves com tenant |
 | `config/fortify.php`, `config/tenancy.php` | Registo público desactivado; lista de transição |
@@ -834,7 +837,7 @@ git add Modules/Autenticacao Modules/Usuario/database config/tenancy.php tests
 
 ---
 
-### Task 5: Recuperação de palavra-passe por tenant
+### Task 5: ~~Recuperação de palavra-passe por tenant~~ (SUBSTITUÍDA pelo Plano 3b, Tarefa 2; já não se executa)
 
 **Files:**
 - Modify: `Modules/Usuario/database/migrations/2026_03_31_104100_create_users_table.php` (só o bloco `password_reset_tokens`)
@@ -1440,7 +1443,7 @@ As migrations originais de `users`, `password_reset_tokens`, `personal_access_to
 - `/login` responde 200 em `localhost`, `127.0.0.1` e no host de `APP_URL`, e 404 num host desconhecido;
 - o login do administrador (`admin@mositec.gmail.com`) funciona e leva ao ecrã de configuração do estabelecimento;
 - `POST /register` dá 404;
-- o pedido de recuperação de palavra-passe (`POST /forgot-password`) responde sem erro de BD.
+- ~~o pedido de recuperação de palavra-passe (`POST /forgot-password`) responde sem erro de BD~~ (retirado: `/forgot-password` e `/reset-password` devem dar 404).
 
 - [ ] **Step 3: Stage**
 
@@ -1453,7 +1456,7 @@ git add database
 ## Auto-revisão
 
 **Cobertura do spec (etapa 5 de §20.2):**
-- §10.1 utilizadores e únicos → Tarefa 3; §10.2 sessão → Tarefa 6; §10.3 Sanctum → Tarefa 4; §10.4 recuperação de palavra-passe → Tarefa 5; §10.5 limitador (identificado o que está em uso: `LimitadorLogin`) → Tarefa 6; §10.6 registo público desactivado → Tarefa 6.
+- §10.1 utilizadores e únicos → Tarefa 3; §10.2 sessão → Tarefa 6; §10.3 Sanctum → Tarefa 4; §10.4 (agora redefinição manual) → Plano 3b, Tarefas 3 a 5; §10.5 limitador (identificado o que está em uso: `LimitadorLogin`) → Tarefa 6; §10.6 registo público desactivado → Tarefa 6.
 - §11 `CacheTenant`, `PermissaoCache`, `PermissionResolver` com âmbito → Tarefa 1.
 - §15 permissões (quatro tabelas tenant-scoped; `modulos` e `acoes` globais) → Tarefa 2.
 - §17.2 únicos que mudam (`users.email`, `users.numero_matricula`, `dados_pessoas.numero_identificacao`, `tipos_documentos.slug`, `password_reset_tokens`) → Tarefas 3 e 5. `alunos.numero_matricula`, `matriculas.*` e as sequências ficam para as etapas 6 e 7.

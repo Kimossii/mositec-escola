@@ -4,7 +4,6 @@ namespace Modules\Autenticacao\Providers;
 
 use Laravel\Sanctum\Sanctum;
 use Modules\Autenticacao\Models\TokenDeAcesso;
-use Modules\Autenticacao\Passwords\PasswordBrokerManagerTenant;
 use Modules\Autenticacao\Service\LimitadorLogin;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
@@ -37,15 +36,6 @@ class AutenticacaoServiceProvider extends ModuleServiceProvider
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
-    public function register(): void
-    {
-        parent::register();
-
-        // Tokens de recuperação de palavra-passe isolados por tenant. O PasswordResetServiceProvider
-        // do Laravel é diferido e regista 'auth.password' depois deste provider, anulando um
-        // singleton() directo; extend() sobrevive a esse registo e substitui o gestor na resolução.
-        $this->app->extend('auth.password', fn ($gestor, $app) => new PasswordBrokerManagerTenant($app));
-    }
 
     public function boot(): void
     {

@@ -14,6 +14,7 @@ use Modules\Disciplina\Database\Seeders\DisciplinaDatabaseSeeder;
 use Modules\Turma\Database\Seeders\TurmaDatabaseSeeder;
 use Modules\Tenant\Database\Seeders\TenantDesenvolvimentoSeeder;
 use Modules\Tenant\Models\Tenant;
+use Modules\Usuario\Database\Seeders\TipoDocumentoSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -32,6 +33,7 @@ class DatabaseSeeder extends Seeder
                 EstabelecimentoDesenvolvimentoSeeder::class,
                 PermissaoDatabaseSeeder::class,
                 AdminUserSeeder::class,
+                TipoDocumentoSeeder::class,
                 // DisciplinaDatabaseSeeder::class,
                 // CursoDatabaseSeeder::class,
                 // CoreDatabaseSeeder::class,

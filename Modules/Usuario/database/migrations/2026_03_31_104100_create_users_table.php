@@ -23,6 +23,10 @@ return new class extends Migration
             $table->string('password');
             $table->foreignId('dados_pessoa_id')->nullable()->constrained('dados_pessoas')->onDelete('set null');
             $table->rememberToken();
+            // Redefinição manual de palavra-passe: a flag obriga à troca no próximo acesso.
+            $table->boolean('deve_alterar_senha')->default(false);
+            $table->foreignId('senha_redefinida_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('senha_redefinida_em')->nullable();
             $table->integer('estado')->default(1); // 0 = inativo, 1 = ativo
             $table->string('estado_descricao')->default('Ativo');
             $table->foreignId('criado_por')->nullable()->constrained('users')->onDelete('set null');
@@ -31,15 +35,6 @@ return new class extends Migration
 
             $table->unique(['tenant_id', 'email']);
             $table->unique(['tenant_id', 'numero_matricula']);
-        });
-
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
-            $table->string('email');
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
-
-            $table->primary(['tenant_id', 'email']);
         });
 
         Schema::create('sessions', function (Blueprint $table) {
@@ -58,7 +53,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
     }
 };

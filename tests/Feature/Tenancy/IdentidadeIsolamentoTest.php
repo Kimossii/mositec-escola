@@ -65,7 +65,7 @@ class IdentidadeIsolamentoTest extends TestCase
         $this->withSession(['tenant_id' => $this->tenant->id])
             ->actingAs($admin)
             ->get($this->urlDoTenant($outro, '/usuarios'))
-            ->assertRedirect();
+            ->assertRedirect(route('login'));
 
         $this->assertGuest();
     }

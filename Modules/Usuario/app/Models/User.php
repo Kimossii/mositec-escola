@@ -42,6 +42,8 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'tipo_login' => TipoLogin::class,
+        'deve_alterar_senha' => 'boolean',
+        'senha_redefinida_em' => 'datetime',
     ];
 
     // =========================
@@ -61,6 +63,11 @@ class User extends Authenticatable
     public function editadoPor()
     {
         return $this->belongsTo(User::class, 'editado_por');
+    }
+
+    public function senhaRedefinidaPor()
+    {
+        return $this->belongsTo(User::class, 'senha_redefinida_por');
     }
 
     public function usuariosCriados()

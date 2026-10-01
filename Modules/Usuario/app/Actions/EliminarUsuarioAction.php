@@ -32,6 +32,7 @@ class EliminarUsuarioAction
 
         DB::transaction(function () use ($user) {
             $userId = $user->id;
+            $user->tokens()->delete();
             $user->delete();
             $this->cache->esquecerUtilizador($userId);
             $this->garantirAdministrador->verificar();

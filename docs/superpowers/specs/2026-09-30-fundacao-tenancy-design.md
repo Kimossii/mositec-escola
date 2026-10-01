@@ -438,13 +438,19 @@ Depois de validado, o ID é carregado por Eloquent (com scope). Um ID de outro t
 - O Sanctum passa a usar um model de token próprio com a trait (`Sanctum::usePersonalAccessTokenModel`). Um token emitido no tenant A não é encontrado no domínio do tenant B.
 - As rotas `api` passam pelo `ResolverTenant`.
 
-### 10.4 Recuperação de palavra-passe
+### 10.4 Redefinição manual de palavra-passe (sem recuperação por e-mail)
 
-`password_reset_tokens` tem hoje o email como chave primária. Com o mesmo email em dois tenants, colidiriam.
+**Decisão (2026-10-01):** o MosiTec **não tem recuperação automática de palavra-passe** (`forgot-password` / `reset-password`). Não há `password_reset_tokens`, broker de palavras-passe, rotas, páginas nem e-mail de recuperação. Um utilizador que esqueça a palavra-passe contacta o Administrador da Escola, que a redefine manualmente. Isto cobre também utilizadores sem e-mail (só matrícula).
 
-- A chave passa a `(tenant_id, email)`.
-- O repositório de tokens do Laravel é estendido para filtrar e gravar o `tenant_id`.
-- O link de recuperação é gerado com o domínio do tenant.
+- **Quem e onde:** a redefinição só actua em utilizadores do tenant do administrador (o `TenantScope` faz o binding de outro tenant dar 404). Exige a permissão própria `senha-utilizador.editar` (módulo `Modulo::SENHA_UTILIZADOR`), concedida por seed ao perfil `ADMIN_ESCOLA`; não está acoplada ao perfil. O administrador não redefine a própria palavra-passe por este fluxo (usa a troca obrigatória/voluntária). Uma conta privilegiada só pode ser redefinida por um `ADMIN_ESCOLA` activo (evita escalada de privilégio por quem tenha só a permissão). É privilegiada a que tem o perfil `ADMIN_ESCOLA` ou permissões efectivas `autorizacao.*` ou `senha-utilizador.editar`.
+- **Palavra-passe temporária:** gerada sempre aleatoriamente no servidor (`Str::password`, nunca fornecida por quem redefine), gravada apenas com hash, mostrada **uma única vez** ao administrador (flash de sessão consumido no pedido seguinte) e nunca escrita em logs.
+- **Troca obrigatória:** `users.deve_alterar_senha` (boolean, por omissão `false`) fica `true` após a redefinição. Enquanto estiver `true`, o utilizador só alcança a página/acção de alteração de palavra-passe e o logout; tudo o resto (web e API) é bloqueado. Ao alterar, a flag passa a `false`.
+- **Invalidação:** a redefinição apaga as sessões do utilizador (tabela `sessions`), os tokens Sanctum (`personal_access_tokens`, via `TokenDeAcesso`) e roda o `remember_token`.
+- **Auditoria da última redefinição:** `users.senha_redefinida_por` (FK para `users`, `nullOnDelete`) e `users.senha_redefinida_em` (timestamp). Não há tabela de histórico nesta fase.
+- **Requisitos de implantação:**
+  - O driver de sessão tem de ser `database` (omissão do projecto). A invalidação das sessões do alvo apaga linhas de `sessions`; com `file`, `redis` ou `cookie` não tem efeito e uma sessão antiga recuperaria acesso quando a flag voltasse a `false`. Mudar de driver exige antes ligar o `AuthenticateSession` ao grupo web.
+  - HTTPS obrigatório: a cifragem do histórico do Inertia (que protege a senha temporária no browser) só actua em contexto seguro.
+- **Fora do âmbito:** recuperação por e-mail/SMS, perguntas de segurança, histórico de redefinições.
 
 ### 10.5 Limitador de login
 
@@ -583,7 +589,7 @@ transacção única:
 se algo falhar → nada é criado
 ```
 
-- O administrador inicial **não recebe palavra-passe digitada por quem cria o tenant**. É criado com palavra-passe aleatória não comunicada e recebe um link de definição de palavra-passe (o mecanismo de recuperação de §10.4).
+- O administrador inicial **não recebe palavra-passe digitada por quem cria o tenant**. É criado com palavra-passe temporária aleatória, gerada pela Action e mostrada **uma única vez** a quem executa o comando (nunca registada em logs), com `deve_alterar_senha = true`: troca-a no primeiro acesso (§10.4). Não há link por e-mail.
 - O domínio personalizado não faz parte deste fluxo. É acrescentado depois com `AdicionarDominioAction`.
 
 ### 16.5 Comando
@@ -601,7 +607,7 @@ se algo falhar → nada é criado
 | **Globais** (`tabelas_globais`) | `tenants`, `domains`, `modulos`, `acoes`, `licencas` (legado) |
 | **Infra-estrutura** | `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `migrations` |
 | **Tenant, com `estabelecimento_id`** | `cursos`, `disciplinas`, `salas`, `turnos`, `niveis_academicos`, `planos_curriculares`, `ano_lectivos`, `alunos`, `estabelecimento_etapas_ensino` |
-| **Tenant, só `tenant_id`** | `estabelecimentos`, `users`, `dados_pessoas`, `documentos_pessoas`, `tipos_documentos`, `encarregados_alunos`, `roles`, `role_permissoes`, `user_roles`, `user_permissoes`, `personal_access_tokens`, `password_reset_tokens`, `periodos`, `eventos_calendario`, `horarios`, `turno_horarios`, `turmas`, `turma_salas`, `plano_curricular_disciplinas`, `plano_curricular_anos_lectivos`, `plano_curricular_disciplina_periodos`, `aluno_enquadramentos_academicos`, `matriculas`, `matricula_historicos`, `inscricoes_disciplinas`, `matricula_sequencias`, `matricula_registo_sequencias` |
+| **Tenant, só `tenant_id`** | `estabelecimentos`, `users`, `dados_pessoas`, `documentos_pessoas`, `tipos_documentos`, `encarregados_alunos`, `roles`, `role_permissoes`, `user_roles`, `user_permissoes`, `personal_access_tokens`, `periodos`, `eventos_calendario`, `horarios`, `turno_horarios`, `turmas`, `turma_salas`, `plano_curricular_disciplinas`, `plano_curricular_anos_lectivos`, `plano_curricular_disciplina_periodos`, `aluno_enquadramentos_academicos`, `matriculas`, `matricula_historicos`, `inscricoes_disciplinas`, `matricula_sequencias`, `matricula_registo_sequencias` |
 
 ### 17.2 Índices únicos que mudam
 
@@ -615,7 +621,6 @@ se algo falhar → nada é criado
 | `matricula_sequencias.ano` | `(tenant_id, ano)` |
 | `matricula_registo_sequencias.ano` | `(tenant_id, ano)` |
 | `tipos_documentos.slug` | `(tenant_id, slug)` |
-| `password_reset_tokens.email` (chave primária) | `(tenant_id, email)` |
 
 Ficam como estão: todos os índices compostos com `estabelecimento_id` ou com o ID de um pai (`(ano_lectivo_id, codigo)`, `(turno_id, ordem)`, …), `users.dados_pessoa_id`, `alunos.dados_pessoa_id`, `personal_access_tokens.token`, `jobs.uuid`, `licencas.chave_licenca`.
 
@@ -626,8 +631,8 @@ Ficam como estão: todos os índices compostos com `estabelecimento_id` ou com o
 | **Core** | `horarios` | Todo o runtime de tenancy; gerador de sequências; verificador de presença |
 | **Tenant** (novo) | `tenants`, `domains` | Todo o módulo |
 | **Estabelecimento** | `tenant_id` único, índice `(tenant_id, id)`, etapas | `current()`; Action de actualização; caminho do logótipo; provisionador |
-| **Usuario** | `users`, `dados_pessoas`, `documentos_pessoas`, `tipos_documentos`, `encarregados_alunos`, `matricula_sequencias`, tokens | Traits; relações pivot; gerador de matrícula; caminho dos documentos; provisionador |
-| **Autenticacao** | `password_reset_tokens` | Limitador; sessão; repositório de tokens; provisionador do administrador |
+| **Usuario** | `users` (+ `deve_alterar_senha`, `senha_redefinida_por`, `senha_redefinida_em`), `dados_pessoas`, `documentos_pessoas`, `tipos_documentos`, `encarregados_alunos`, `matricula_sequencias`, tokens | Traits; relações pivot; gerador de matrícula; caminho dos documentos; provisionador |
+| **Autenticacao** | — (sem tabelas próprias; `password_reset_tokens` deixa de existir) | Limitador; sessão; troca obrigatória de palavra-passe; provisionador do administrador |
 | **Permissao** | 4 tabelas | Traits; `PermissaoCache`; `PermissionResolver` com âmbito de pedido; provisionador |
 | **AnoLectivo** | `ano_lectivos`, `periodos`, `eventos_calendario` | Traits |
 | **Curso, Disciplina, Infraestrutura** | 1 tabela cada | Traits |
@@ -759,7 +764,7 @@ Cada etapa termina com a suite completa a passar.
 | 2 | **Módulo Tenant (base)**: tabelas, models, enums, resolvedores, middleware nos grupos `web` e `api`, os dois modos, base de testes com tenant por omissão | A aplicação corre dentro de um tenant. Ainda sem isolamento de dados. |
 | 3 | **Verificador de presença** e teste de esquema (arquitectura 1 e 2) | A rede de segurança existe antes de as tabelas serem convertidas. |
 | 4 | **Estabelecimento**: `tenant_id` único, `current()` pelo contexto, `configurado_em` e encaminhamento para a configuração inicial | Perfil institucional ligado ao tenant. |
-| 5 | **Usuario, Permissao, Autenticacao**: tabelas, únicos, pivots, login, sessão, Sanctum, recuperação de palavra-passe, limitador, cache de permissões | Identidade e permissões isoladas. |
+| 5 | **Usuario, Permissao, Autenticacao**: tabelas, únicos, pivots, login, sessão, Sanctum, redefinição manual de palavra-passe com troca obrigatória (sem recuperação por e-mail), limitador, cache de permissões | Identidade e permissões isoladas. |
 | 6 | **Módulos académicos**, por ordem de dependência: AnoLectivo e horários → Curso, Disciplina, Infraestrutura → Turma → PlanoCurricular → Aluno → Matricula. Inclui chaves compostas (arquitectura 8) | Cada módulo com a sua linha da matriz de isolamento. |
 | 7 | **Sequências**: gerador único no Core, únicos por tenant | Numeração por escola. |
 | 8 | **Ficheiros**: prefixo por tenant, fotos em disco privado | Ficheiros isolados. |

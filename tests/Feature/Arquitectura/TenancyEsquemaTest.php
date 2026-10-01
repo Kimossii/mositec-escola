@@ -147,12 +147,42 @@ class TenancyEsquemaTest extends TestCase
         $this->assertSame([], $erros, implode("\n", $erros));
     }
 
+    public function test_toda_a_tabela_com_tenant_id_exige_not_null_e_chave_para_tenants(): void
+    {
+        $erros = [];
+        $verificadas = 0;
+
+        foreach ($this->tabelas() as $tabela) {
+            if (! Schema::hasColumn($tabela, 'tenant_id')) {
+                continue;
+            }
+
+            $verificadas++;
+            $coluna = collect(Schema::getColumns($tabela))->firstWhere('name', 'tenant_id');
+
+            if ($coluna['nullable']) {
+                $erros[] = "{$tabela}: tenant_id devia ser NOT NULL.";
+            }
+
+            $temChave = collect(Schema::getForeignKeys($tabela))->contains(
+                fn (array $fk) => $fk['foreign_table'] === 'tenants' && $fk['columns'] === ['tenant_id']
+            );
+
+            if (! $temChave) {
+                $erros[] = "{$tabela}: falta a chave estrangeira tenant_id → tenants.";
+            }
+        }
+
+        $this->assertGreaterThan(10, $verificadas, 'Não foram encontradas as tabelas com tenant_id.');
+        $this->assertSame([], $erros, implode("\n", $erros));
+    }
+
     public function test_as_tabelas_de_identidade_ja_nao_estao_na_lista_de_transicao(): void
     {
         $convertidas = [
             'users', 'dados_pessoas', 'documentos_pessoas', 'tipos_documentos', 'encarregados_alunos',
             'roles', 'role_permissoes', 'user_roles', 'user_permissoes',
-            'personal_access_tokens', 'password_reset_tokens',
+            'personal_access_tokens',
         ];
 
         $aindaPorConverter = array_values(array_intersect($convertidas, config('tenancy.tabelas_por_converter')));
@@ -186,9 +216,6 @@ class TenancyEsquemaTest extends TestCase
                 $this->assertNotSame(['slug'], $colunas, "{$tabela} não pode ter slug único global.");
             }
         }
-
-        $chaves = collect(Schema::getIndexes('password_reset_tokens'))->where('primary', true)->map(fn (array $i) => $i['columns'])->all();
-        $this->assertContains(['tenant_id', 'email'], $chaves, 'A chave primária de password_reset_tokens devia ser (tenant_id, email).');
     }
 
     /**

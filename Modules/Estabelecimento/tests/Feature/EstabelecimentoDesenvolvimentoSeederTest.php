@@ -8,6 +8,7 @@ use Modules\Core\Tenancy\TenantContext;
 use Modules\Estabelecimento\Database\Seeders\EstabelecimentoDesenvolvimentoSeeder;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Tenant\Models\Tenant;
+use Modules\Usuario\Models\TipoDocumento;
 use Tests\TestCase;
 
 class EstabelecimentoDesenvolvimentoSeederTest extends TestCase
@@ -47,6 +48,7 @@ class EstabelecimentoDesenvolvimentoSeederTest extends TestCase
 
         $this->noTenant($this->tenant, function () {
             $this->assertSame(1, Estabelecimento::count());
+            $this->assertGreaterThan(0, TipoDocumento::count());
         });
     }
 }

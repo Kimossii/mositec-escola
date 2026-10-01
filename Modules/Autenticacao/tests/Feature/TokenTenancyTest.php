@@ -6,6 +6,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
 use Modules\Autenticacao\Models\TokenDeAcesso;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
+use Modules\Permissao\Enums\Perfil;
+use Modules\Permissao\Models\Role;
+use Modules\Usuario\Actions\EliminarUsuarioAction;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -83,6 +87,25 @@ class TokenTenancyTest extends TestCase
             ->assertSuccessful();
 
         $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    public function test_eliminar_o_utilizador_apaga_os_tokens_e_o_token_deixa_de_autenticar(): void
+    {
+        // Outro utilizador com autorizacao.editar, para a eliminação não deixar o sistema sem administrador.
+        $this->seed(PermissaoDatabaseSeeder::class);
+        $this->utilizador('admin@example.com')->roles()->attach(Role::where('nome', Perfil::ADMIN_ESCOLA->value)->firstOrFail()->id);
+
+        $utilizador = $this->utilizador('a@example.com');
+        $token = $utilizador->createToken('api-token');
+        $idToken = $token->accessToken->id;
+
+        app(EliminarUsuarioAction::class)->executar($utilizador);
+
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $idToken]);
+
+        $this->withToken($token->plainTextToken)
+            ->postJson($this->urlDoTenant($this->tenant, '/api/v1/autenticacaoApi/api/logout'))
+            ->assertUnauthorized();
     }
 
     public function test_o_uso_do_token_actualiza_last_used_at(): void

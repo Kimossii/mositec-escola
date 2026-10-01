@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Modules\Autenticacao\Http\Middleware\ExigirTrocaDeSenha;
 use Modules\Autenticacao\Http\Middleware\VerificarTenantDaSessao;
 use Modules\Core\Tenancy\Http\Middleware\ResolverTenant;
 use Modules\Estabelecimento\Http\Middleware\ExigirConfiguracaoInicial;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api([
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            ExigirTrocaDeSenha::class,
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
@@ -32,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             VerificarTenantDaSessao::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
+            ExigirTrocaDeSenha::class,
             ExigirConfiguracaoInicial::class,
         ]);
     })

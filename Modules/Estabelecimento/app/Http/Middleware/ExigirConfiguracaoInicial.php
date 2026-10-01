@@ -41,6 +41,8 @@ class ExigirConfiguracaoInicial
 
         return $rota === null
             || $rota->getName() === 'logout'
-            || $request->routeIs('estabelecimento.*');
+            || $request->routeIs('estabelecimento.*')
+            // A troca obrigatória de senha tem prioridade: sem esta isenção os dois middlewares redireccionam em ciclo.
+            || $request->routeIs('senha.alterar', 'senha.alterar.store');
     }
 }
