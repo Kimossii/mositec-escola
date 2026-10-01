@@ -4,7 +4,12 @@ namespace Modules\Tenant\Providers;
 
 use InvalidArgumentException;
 use Modules\Core\Tenancy\Contracts\ResolvedorTenant;
+use Modules\Tenant\Console\AdicionarDominioCommand;
 use Modules\Tenant\Console\CriarTenantCommand;
+use Modules\Tenant\Console\EncerrarTenantCommand;
+use Modules\Tenant\Console\ReactivarTenantCommand;
+use Modules\Tenant\Console\RemoverDominioCommand;
+use Modules\Tenant\Console\SuspenderTenantCommand;
 use Modules\Tenant\Services\ResolvedorTenantPorDominio;
 use Modules\Tenant\Services\ResolvedorTenantUnico;
 use Nwidart\Modules\Support\ModuleServiceProvider;
@@ -20,6 +25,11 @@ class TenantServiceProvider extends ModuleServiceProvider
      */
     protected array $commands = [
         CriarTenantCommand::class,
+        SuspenderTenantCommand::class,
+        ReactivarTenantCommand::class,
+        EncerrarTenantCommand::class,
+        AdicionarDominioCommand::class,
+        RemoverDominioCommand::class,
     ];
 
     public function register(): void

@@ -16,6 +16,12 @@ return [
     'hosts_centrais' => array_values(array_filter(array_map('trim', explode(',', (string) env('TENANCY_HOSTS_CENTRAIS', ''))))),
 
     /*
+    | Domínios-raiz da MosiTec: um domínio de tenant sob uma destas raízes (ou sob o host de APP_URL)
+    | é do tipo Subdomínio; qualquer outro é Domínio personalizado. Lista separada por vírgulas.
+    */
+    'dominios_raiz' => array_values(array_filter(array_map('trim', explode(',', (string) env('TENANCY_DOMINIOS_RAIZ', 'mositec.ao'))))),
+
+    /*
     | Caminhos que respondem em qualquer host, sem tenant: só a verificação de saúde.
     */
     'caminhos_sem_tenant' => ['up'],

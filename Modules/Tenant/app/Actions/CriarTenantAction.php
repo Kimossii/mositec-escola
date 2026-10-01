@@ -11,11 +11,11 @@ use Modules\Core\Tenancy\Provisioning\DadosProvisionamento;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Tenant\DTO\CriarTenantDTO;
 use Modules\Tenant\DTO\TenantCriado;
-use Modules\Tenant\Enums\TipoDominio;
 use Modules\Tenant\Exceptions\DadosDeTenantInvalidos;
 use Modules\Tenant\Exceptions\OrdemDeProvisionamentoDuplicada;
 use Modules\Tenant\Exceptions\ProvisionamentoIncompleto;
 use Modules\Tenant\Models\Tenant;
+use Modules\Tenant\Services\ClassificadorDominio;
 use Modules\Tenant\Services\GeradorCodigoTenant;
 use Modules\Tenant\Services\ValidadorDominio;
 
@@ -34,6 +34,7 @@ class CriarTenantAction
         private readonly ColectorDeCredenciais $credenciais,
         private readonly GeradorCodigoTenant $codigos,
         private readonly ValidadorDominio $dominios,
+        private readonly ClassificadorDominio $classificador,
     ) {}
 
     /**
@@ -57,7 +58,7 @@ class CriarTenantAction
 
                 $dominioPrincipal = $tenant->dominios()->create([
                     'dominio' => $dominio,
-                    'tipo' => TipoDominio::SUBDOMINIO,
+                    'tipo' => $this->classificador->classificar($dominio),
                     'is_principal' => true,
                 ]);
 

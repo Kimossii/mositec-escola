@@ -1,0 +1,44 @@
+<?php
+
+namespace Modules\Tenant\Console;
+
+use Illuminate\Console\Command;
+use Modules\Tenant\Actions\SuspenderTenantAction;
+use Modules\Tenant\Exceptions\DadosDeTenantInvalidos;
+use Modules\Tenant\Exceptions\OperacaoDeTenantRecusada;
+use Modules\Tenant\Services\TenantConsultaService;
+
+/** Recolhe o código e o motivo e chama SuspenderTenantAction. Sem lógica. */
+class SuspenderTenantCommand extends Command
+{
+    protected $signature = 'mosi:tenant:suspend
+        {codigo : Código do tenant (MOSI-000000)}
+        {--motivo= : Motivo da suspensão (obrigatório)}';
+
+    protected $description = 'Suspende uma escola (tenant): deixa de ser acessível, os dados ficam intactos';
+
+    public function handle(TenantConsultaService $consulta, SuspenderTenantAction $action): int
+    {
+        try {
+            $tenant = $consulta->porCodigo((string) $this->argument('codigo'));
+            $motivo = trim((string) $this->option('motivo'));
+            $motivo = $motivo !== '' ? $motivo : trim((string) $this->ask('Motivo da suspensão'));
+
+            $action->executar($tenant, $motivo);
+        } catch (DadosDeTenantInvalidos $e) {
+            foreach ($e->erros as $erro) {
+                $this->error($erro);
+            }
+
+            return self::FAILURE;
+        } catch (OperacaoDeTenantRecusada $e) {
+            $this->error($e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        $this->info("Tenant {$tenant->codigo} suspenso.");
+
+        return self::SUCCESS;
+    }
+}

@@ -40,6 +40,21 @@ class Tenant extends Model
         return $this->hasMany(Domain::class, 'tenant_id');
     }
 
+    public function estaActivo(): bool
+    {
+        return $this->estado === EstadoTenant::ACTIVO;
+    }
+
+    public function estaSuspenso(): bool
+    {
+        return $this->estado === EstadoTenant::SUSPENSO;
+    }
+
+    public function estaEncerrado(): bool
+    {
+        return $this->estado === EstadoTenant::ENCERRADO;
+    }
+
     public function paraTenantAtual(): TenantAtual
     {
         return new TenantAtual($this->id, $this->codigo, $this->nome, $this->estado);
