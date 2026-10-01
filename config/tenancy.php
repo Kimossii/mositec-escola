@@ -56,8 +56,5 @@ return [
     | Cada plano seguinte retira daqui as tabelas que converte.
     | O último plano exige que esteja vazia e remove esta chave.
     */
-    'tabelas_por_converter' => [
-        'matricula_registo_sequencias',
-        'matricula_sequencias',
-    ],
+    'tabelas_por_converter' => [],
 ];

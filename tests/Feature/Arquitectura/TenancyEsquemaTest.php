@@ -211,9 +211,27 @@ class TenancyEsquemaTest extends TestCase
             $this->assertTrue(Schema::hasColumn($tabela, 'tenant_id'), "{$tabela} devia ter tenant_id.");
         }
 
-        $restantes = config('tenancy.tabelas_por_converter');
-        sort($restantes);
-        $this->assertSame(['matricula_registo_sequencias', 'matricula_sequencias'], $restantes);
+        $this->assertSame([], config('tenancy.tabelas_por_converter'));
+    }
+
+    public function test_as_sequencias_sao_por_tenant_e_ano(): void
+    {
+        foreach (['matricula_sequencias', 'matricula_registo_sequencias'] as $tabela) {
+            $coluna = collect(Schema::getColumns($tabela))->firstWhere('name', 'tenant_id');
+
+            $this->assertNotNull($coluna, "{$tabela} devia ter tenant_id.");
+            $this->assertFalse($coluna['nullable'], "{$tabela}.tenant_id devia ser NOT NULL.");
+
+            $this->assertTrue(
+                collect(Schema::getForeignKeys($tabela))->contains(fn (array $fk) => $fk['foreign_table'] === 'tenants' && $fk['columns'] === ['tenant_id']),
+                "{$tabela}.tenant_id devia ter chave estrangeira para tenants."
+            );
+
+            $unicos = collect(Schema::getIndexes($tabela))->where('unique', true)->map(fn (array $i) => $i['columns'])->all();
+
+            $this->assertContains(['tenant_id', 'ano'], $unicos, "{$tabela} devia ter único (tenant_id, ano).");
+            $this->assertNotContains(['ano'], $unicos, "{$tabela} não pode ter ano único global.");
+        }
     }
 
     public function test_os_unicos_de_alunos_e_matriculas_sao_por_tenant(): void

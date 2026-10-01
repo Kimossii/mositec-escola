@@ -380,6 +380,8 @@ class MatriculaTenancyTest extends TestCase
         $numeros[] = $gerador->gerar();
         $numeros[] = $this->noTenant($this->outro, fn () => $gerador->gerar());
 
-        $this->assertCount(4, array_unique($numeros));
+        // Sequências por tenant: A e B começam cada um em 0001.
+        $ano = now()->year;
+        $this->assertSame(["{$ano}-0001", "{$ano}-0001", "{$ano}-0002", "{$ano}-0002"], $numeros);
     }
 }

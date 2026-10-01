@@ -15,12 +15,11 @@ use RecursiveIteratorIterator;
 class TenancyArquitecturaTest extends TestCase
 {
     /**
-     * Temporário. O plano das sequências substitui estes dois geradores por um
-     * gerador único no Core, que passa a ser a única entrada desta lista.
+     * Gerador único de sequências por tenant: filtra por tenant_id explicitamente
+     * no upsert e lê o resto pelo model.
      */
     private const EXCEPCOES_DB_TABLE = [
-        'Modules/Usuario/app/Services/GeradorMatriculaService.php',
-        'Modules/Matricula/app/Services/GeradorNumeroRegistoMatriculaService.php',
+        'Modules/Core/app/Services/GeradorSequencia.php',
     ];
 
     private function raiz(): string
@@ -107,6 +106,28 @@ class TenancyArquitecturaTest extends TestCase
         $violacoes = $this->ocorrencias('/\bTenantScope\b/', ['Modules/Core/app/Tenancy/']);
 
         $this->assertSame([], $violacoes, "TenantScope só é usado pela trait PertenceAoTenant:\n" . implode("\n", $violacoes));
+    }
+
+    /**
+     * O Core não depende de módulos de negócio. Excepção pré-existente e anterior à
+     * tenancy: Horario referencia o User (relação), não é do âmbito das sequências.
+     */
+    public function test_o_core_nao_importa_modulos_de_negocio(): void
+    {
+        $permitidos = ['Modules/Core/app/Models/Horario.php'];
+        $violacoes = [];
+
+        foreach ($this->codigoDeAplicacao() as $caminho => $conteudo) {
+            if (! str_starts_with($caminho, 'Modules/Core/app/') || in_array($caminho, $permitidos, true)) {
+                continue;
+            }
+
+            if (preg_match('/^use\s+Modules\\\\(?!Core\\\\)/m', $conteudo)) {
+                $violacoes[] = $caminho;
+            }
+        }
+
+        $this->assertSame([], $violacoes, "O Core não pode importar módulos de negócio:\n" . implode("\n", $violacoes));
     }
 
     public function test_db_table_so_e_usado_nas_excepcoes_declaradas(): void
