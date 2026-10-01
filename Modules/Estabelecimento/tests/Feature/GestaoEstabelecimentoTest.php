@@ -5,7 +5,9 @@ namespace Modules\Estabelecimento\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
@@ -37,34 +39,87 @@ class GestaoEstabelecimentoTest extends TestCase
         return $admin;
     }
 
-    public function test_cria_o_estabelecimento_ao_atualizar_dados_pela_primeira_vez(): void
+    private function dadosValidos(array $extra = []): array
     {
-        $this->actingAsAdmin();
-
-        $response = $this->put('/estabelecimento', [
+        return array_merge([
             'nome' => 'Escola Exemplo',
             'tipo' => TipoEstabelecimentoEnum::PRIVADO->value,
             'tipo_ensino' => TipoEnsinoEnum::GERAL->value,
             'etapas_ensino' => [EtapaEnsinoEnum::PRIMARIO->value],
             'nif' => '5000123456',
-        ]);
+        ], $extra);
+    }
 
-        $response->assertRedirect();
+    private function desconfigurar(): Estabelecimento
+    {
+        $estabelecimento = Estabelecimento::current();
+        $estabelecimento->forceFill(['configurado_em' => null, 'tipo' => null])->save();
+
+        return $estabelecimento;
+    }
+
+    public function test_primeira_gravacao_valida_actualiza_o_estabelecimento_minimo_e_preenche_configurado_em(): void
+    {
+        $this->actingAsAdmin();
+        $id = $this->desconfigurar()->id;
+
+        $this->put('/estabelecimento', $this->dadosValidos())->assertRedirect();
+
+        $this->assertSame(1, Estabelecimento::count());
         $this->assertDatabaseHas('estabelecimentos', [
+            'id' => $id,
             'nome' => 'Escola Exemplo',
             'tipo' => TipoEstabelecimentoEnum::PRIVADO->value,
             'tipo_descricao' => 'Privado',
             'tipo_ensino' => TipoEnsinoEnum::GERAL->value,
             'tipo_ensino_descricao' => 'Ensino Geral',
-            'is_active' => true,
         ]);
+        $this->assertNotNull(Estabelecimento::current()->configurado_em);
+    }
+
+    public function test_gravacao_invalida_nao_preenche_configurado_em(): void
+    {
+        $this->actingAsAdmin();
+        $this->desconfigurar();
+
+        $this->put('/estabelecimento', $this->dadosValidos(['nome' => '']))->assertSessionHasErrors('nome');
+
+        $this->assertNull(Estabelecimento::current()->configurado_em);
+    }
+
+    public function test_segunda_gravacao_nao_altera_configurado_em(): void
+    {
+        $this->actingAsAdmin();
+        $this->desconfigurar();
+
+        $this->put('/estabelecimento', $this->dadosValidos())->assertRedirect();
+        $primeira = Estabelecimento::current()->configurado_em;
+
+        Carbon::setTestNow($primeira->copy()->addDay());
+        $this->put('/estabelecimento', $this->dadosValidos(['nome' => 'Escola Renomeada']))->assertRedirect();
+        Carbon::setTestNow();
+
+        $this->assertEquals($primeira, Estabelecimento::current()->configurado_em);
+    }
+
+    public function test_ecra_dados_da_escola_abre_com_o_estabelecimento_minimo(): void
+    {
+        $this->actingAsAdmin();
+        $this->desconfigurar();
+
+        $this->get('/estabelecimento')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Estabelecimento/DadosDaEscola')
+                ->where('estabelecimento.tipo', null)
+                ->where('estabelecimento.configurado_em', null));
     }
 
     public function test_atualiza_o_estabelecimento_atual_em_vez_de_duplicar(): void
     {
         $this->actingAsAdmin();
 
-        Estabelecimento::create(['nome' => 'Escola Antiga', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL, 'is_active' => true]);
+        $this->estabelecimentoDeTeste(['nome' => 'Escola Antiga', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL]);
 
         $response = $this->put('/estabelecimento', [
             'nome' => 'Escola Renomeada',
@@ -159,7 +214,7 @@ class GestaoEstabelecimentoTest extends TestCase
     public function test_remove_etapa_sem_niveis_academicos_associados(): void
     {
         $this->actingAsAdmin();
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola', 'tipo' => 1, 'tipo_ensino' => TipoEnsinoEnum::GERAL, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola', 'tipo' => 1, 'tipo_ensino' => TipoEnsinoEnum::GERAL]);
         EstabelecimentoEtapaEnsino::create(['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO]);
         EstabelecimentoEtapaEnsino::create(['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO]);
 
@@ -177,7 +232,8 @@ class GestaoEstabelecimentoTest extends TestCase
     public function test_remove_etapa_com_niveis_academicos_associados_falha(): void
     {
         $this->actingAsAdmin();
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola', 'tipo' => 1, 'tipo_ensino' => TipoEnsinoEnum::GERAL, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola', 'tipo' => 1, 'tipo_ensino' => TipoEnsinoEnum::GERAL]);
+        $this->desconfigurar();
         EstabelecimentoEtapaEnsino::create(['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO]);
         EstabelecimentoEtapaEnsino::create(['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO]);
         \Modules\Turma\Models\NivelAcademico::create([
@@ -199,6 +255,8 @@ class GestaoEstabelecimentoTest extends TestCase
             'estabelecimento_id' => $estabelecimento->id,
             'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO->value,
         ]);
+        // A transação reverte o configurado_em definido antes da exceção (lido da BD).
+        $this->assertNull(Estabelecimento::query()->whereKey($estabelecimento->id)->value('configurado_em'));
     }
 
     public function test_utilizador_sem_permissao_nao_acede_ao_estabelecimento(): void
@@ -215,7 +273,7 @@ class GestaoEstabelecimentoTest extends TestCase
     {
         $this->actingAsAdmin();
 
-        Estabelecimento::create(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL, 'is_active' => true]);
+        $this->estabelecimentoDeTeste(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL]);
 
         $response = $this->get('/estabelecimento');
 
@@ -230,7 +288,7 @@ class GestaoEstabelecimentoTest extends TestCase
     {
         $this->actingAsAdmin();
 
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL]);
         EstabelecimentoEtapaEnsino::create(['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO]);
         EstabelecimentoEtapaEnsino::create(['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO]);
 
@@ -244,7 +302,7 @@ class GestaoEstabelecimentoTest extends TestCase
     {
         $this->actingAsAdmin();
 
-        Estabelecimento::create(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL, 'is_active' => true]);
+        $this->estabelecimentoDeTeste(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL]);
 
         $response = $this->get('/estabelecimento/aparencia');
 
@@ -260,7 +318,7 @@ class GestaoEstabelecimentoTest extends TestCase
         Storage::fake('public');
         $this->actingAsAdmin();
 
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL]);
 
         $response = $this->post('/estabelecimento/logotipo', [
             'logotipo' => UploadedFile::fake()->image('logo.png'),
@@ -272,21 +330,9 @@ class GestaoEstabelecimentoTest extends TestCase
         Storage::disk('public')->assertExists($estabelecimento->logotipo_path);
     }
 
-    public function test_nao_atualiza_logotipo_sem_estabelecimento_cadastrado(): void
-    {
-        Storage::fake('public');
-        $this->actingAsAdmin();
-
-        $response = $this->post('/estabelecimento/logotipo', [
-            'logotipo' => UploadedFile::fake()->image('logo.png'),
-        ]);
-
-        $response->assertSessionHasErrors('estabelecimento');
-    }
-
     public function test_etapas_ensino_relaciona_com_estabelecimento_e_sincroniza_descricao(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Exemplo', 'tipo' => 1, 'tipo_ensino' => TipoEnsinoEnum::GERAL, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Exemplo', 'tipo' => 1, 'tipo_ensino' => TipoEnsinoEnum::GERAL]);
 
         $etapa = EstabelecimentoEtapaEnsino::create([
             'estabelecimento_id' => $estabelecimento->id,

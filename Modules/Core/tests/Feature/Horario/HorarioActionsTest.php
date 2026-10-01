@@ -88,7 +88,7 @@ class HorarioActionsTest extends TestCase
             'hora_inicio' => '08:00',
             'hora_fim' => '12:00',
         ]);
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => 1]);
         $turno = Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
         $turno->turnoHorarios()->create(['horario_id' => $horario->id, 'ordem' => 1]);
 

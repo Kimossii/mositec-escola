@@ -4,6 +4,7 @@ namespace Modules\Permissao\Services;
 
 use Illuminate\Support\Collection;
 use Modules\Core\Enums\Estado;
+use Modules\Core\Tenancy\TenantContext;
 use Modules\Permissao\Enums\Modulo;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo as ModuloRegistro;
@@ -18,8 +19,14 @@ class PermissionResolver
 
     private ?array $acaoNomesValidos = null;
 
-    public function __construct(private readonly PermissaoCache $cache)
+    public function __construct(
+        private readonly PermissaoCache $cache,
+        private readonly TenantContext $contexto,
+    ) {}
+
+    private function chaveMemoria(int $userId): string
     {
+        return $this->contexto->id() . ':' . $userId;
     }
 
     public function reconhece(string $permissao): bool
@@ -52,13 +59,13 @@ class PermissionResolver
      * Limpa a memoização em memória de um utilizador específico.
      *
      * Chamado pela PermissaoCache quando esta invalida a cache persistente
-     * de um utilizador, para que esta instância (agora singleton) não
+     * de um utilizador, para que esta instância (ligação scoped) não
      * continue a devolver um resultado memoizado desatualizado dentro do
      * mesmo request/processo.
      */
     public function esquecerUtilizador(int $userId): void
     {
-        unset($this->memoria[$userId]);
+        unset($this->memoria[$this->chaveMemoria($userId)]);
     }
 
     /**
@@ -74,8 +81,10 @@ class PermissionResolver
 
     public function conjuntoConcedido(User $user): array
     {
-        if (array_key_exists($user->id, $this->memoria)) {
-            return $this->memoria[$user->id];
+        $chave = $this->chaveMemoria($user->id);
+
+        if (array_key_exists($chave, $this->memoria)) {
+            return $this->memoria[$chave];
         }
 
         $conjunto = $this->cache->obter($user->id);
@@ -84,7 +93,7 @@ class PermissionResolver
             $this->cache->guardar($user->id, $conjunto);
         }
 
-        return $this->memoria[$user->id] = $conjunto;
+        return $this->memoria[$chave] = $conjunto;
     }
 
     private function calcular(User $user): array

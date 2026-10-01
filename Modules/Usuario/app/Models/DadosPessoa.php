@@ -5,11 +5,13 @@ namespace Modules\Usuario\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Core\Tenancy\PertenceAoTenant;
 // use Modules\Usuario\Database\Factories\DadosPessoalFactory;
 
 class DadosPessoa extends Model
 {
     use HasFactory;
+    use PertenceAoTenant;
 
     /**
      * The attributes that are mass assignable.

@@ -56,7 +56,7 @@ class CursoHttpTest extends TestCase
 
     private function criarEstabelecimento(): Estabelecimento
     {
-        return Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        return $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
     }
 
     public function test_cria_curso_via_http_infere_estabelecimento_actual_e_regista_autoria(): void
@@ -145,7 +145,7 @@ class CursoHttpTest extends TestCase
         $estabelecimentoActual = $this->criarEstabelecimento();
         Curso::create(['estabelecimento_id' => $estabelecimentoActual->id, 'codigo' => 'INF', 'nome' => 'Informática']);
 
-        $outroEstabelecimento = Estabelecimento::create(['nome' => 'Outra Escola', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => false]);
+        $outroEstabelecimento = $this->estabelecimentoDeOutroTenant(['nome' => 'Outra Escola', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         Curso::create(['estabelecimento_id' => $outroEstabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade']);
 
         $this->get(route('cursos.index'))->assertInertia(fn (Assert $page) => $page

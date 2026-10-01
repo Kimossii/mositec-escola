@@ -25,7 +25,7 @@ class RemoverDisciplinaDoPlanoActionTest extends TestCase
 
     public function test_remove_disciplina_do_plano(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => 1, 'tipo_ensino' => 1]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
         $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
         $plano = PlanoCurricular::create([
@@ -51,7 +51,7 @@ class RemoverDisciplinaDoPlanoActionTest extends TestCase
 
     public function test_bloqueia_remocao_de_disciplina_com_periodos_associados(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => 1, 'tipo_ensino' => 1]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
         $nivelAcademico = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
         $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimento->id, 'nivel_academico_id' => $nivelAcademico->id, 'curso_id' => $curso->id, 'codigo' => 'PC1', 'nome' => 'Plano 1']);

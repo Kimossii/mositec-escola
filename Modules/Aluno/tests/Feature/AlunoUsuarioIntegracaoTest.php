@@ -36,9 +36,7 @@ class AlunoUsuarioIntegracaoTest extends TestCase
 
     private function criarAluno(string $numeroIdentificacao, string $numeroMatricula): Aluno
     {
-        $estabelecimento = Estabelecimento::current() ?? Estabelecimento::create([
-            'nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true,
-        ]);
+        $estabelecimento = $this->estabelecimentoDeTeste();
         $pessoa = DadosPessoa::create([
             'nome_completo' => 'Ana Silva',
             'numero_identificacao' => $numeroIdentificacao,
@@ -123,7 +121,7 @@ class AlunoUsuarioIntegracaoTest extends TestCase
 
     public function test_user_criado_primeiro_pode_depois_ser_associado_a_um_aluno_da_mesma_pessoa(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         $pessoa = DadosPessoa::create(['nome_completo' => 'Carlos Neto', 'numero_identificacao' => 'BI0003', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
 
         $user = app(UsuarioAction::class)->criar(new UsuarioDTO(

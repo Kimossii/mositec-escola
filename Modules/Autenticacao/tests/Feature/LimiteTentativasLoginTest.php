@@ -161,4 +161,25 @@ class LimiteTentativasLoginTest extends TestCase
             'password' => 'password123',
         ])->assertStatus(200);
     }
+
+    public function test_falhas_numa_conta_em_a_nao_bloqueiam_a_mesma_conta_em_b(): void
+    {
+        $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->post($this->urlDoTenant($this->tenant, '/login'), ['login' => 'igual@example.com', 'password' => 'errada']);
+        }
+
+        $resposta = $this->post($this->urlDoTenant($outro, '/login'), ['login' => 'igual@example.com', 'password' => 'errada']);
+
+        $resposta->assertSessionHasErrors('login');
+        $this->assertStringNotContainsString('Muitas tentativas', session('errors')->first('login'));
+    }
+
+    public function test_o_registo_publico_esta_desactivado(): void
+    {
+        $this->post($this->urlDoTenant($this->tenant, '/register'), [
+            'name' => 'X', 'email' => 'x@example.com', 'password' => 'segredo1234', 'password_confirmation' => 'segredo1234',
+        ])->assertNotFound();
+    }
 }

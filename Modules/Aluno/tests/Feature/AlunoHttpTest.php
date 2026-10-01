@@ -63,7 +63,7 @@ class AlunoHttpTest extends TestCase
 
     private function criarEstabelecimento(bool $activo = true): Estabelecimento
     {
-        return Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => $activo]);
+        return $activo ? $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]) : $this->estabelecimentoDeOutroTenant(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
     }
 
     public function test_cria_aluno_via_http_infere_estabelecimento_actual_e_regista_autoria(): void

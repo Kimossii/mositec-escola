@@ -81,7 +81,7 @@ class EliminarAnoLectivoActionTest extends TestCase
 
     public function test_bloqueia_eliminacao_quando_existem_turmas(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         $anoLectivo = AnoLectivo::create([
             'estabelecimento_id' => $estabelecimento->id, 'nome' => '2024/2025',
             'data_inicio' => '2024-09-01', 'data_fim' => '2025-07-31', 'estado' => EstadoAnoLectivo::ENCERRADO->value,
@@ -102,7 +102,7 @@ class EliminarAnoLectivoActionTest extends TestCase
 
     public function test_bloqueia_eliminacao_quando_existem_matriculas(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         $anoLectivo = AnoLectivo::create([
             'estabelecimento_id' => $estabelecimento->id, 'nome' => '2024/2025',
             'data_inicio' => '2024-09-01', 'data_fim' => '2025-07-31', 'estado' => EstadoAnoLectivo::ENCERRADO->value,
@@ -129,7 +129,7 @@ class EliminarAnoLectivoActionTest extends TestCase
 
     public function test_bloqueia_eliminacao_quando_existe_plano_curricular_associado(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         $anoLectivo = AnoLectivo::create([
             'estabelecimento_id' => $estabelecimento->id, 'nome' => '2024/2025',
             'data_inicio' => '2024-09-01', 'data_fim' => '2025-07-31', 'estado' => EstadoAnoLectivo::ENCERRADO->value,

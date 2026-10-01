@@ -3,6 +3,7 @@
 namespace Modules\Permissao\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Modules\Core\Tenancy\TenantContext;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\RolePermissao;
 use Modules\Permissao\Support\PermissaoCache;
@@ -20,7 +21,10 @@ class SincronizarPermissoesPerfilAction
         DB::transaction(function () use ($role, $celulas) {
             RolePermissao::where('role_id', $role->id)->delete();
 
+            $tenantId = app(TenantContext::class)->id();
+
             $linhas = collect($celulas)->map(fn (array $celula) => [
+                'tenant_id' => $tenantId,
                 'role_id' => $role->id,
                 'modulo_id' => $celula['modulo_id'],
                 'acao_id' => $celula['acao_id'],

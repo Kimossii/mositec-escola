@@ -4,7 +4,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Modules\Autenticacao\Http\Middleware\VerificarTenantDaSessao;
 use Modules\Core\Tenancy\Http\Middleware\ResolverTenant;
+use Modules\Estabelecimento\Http\Middleware\ExigirConfiguracaoInicial;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -25,8 +27,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
+        // VerificarTenantDaSessao antes do Inertia: nunca partilhar os dados
+        // de um utilizador de outra escola.
         $middleware->web(append: [
+            VerificarTenantDaSessao::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
+            ExigirConfiguracaoInicial::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

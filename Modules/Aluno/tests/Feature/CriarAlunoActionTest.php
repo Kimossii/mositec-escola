@@ -19,7 +19,7 @@ class CriarAlunoActionTest extends TestCase
 
     private function criarEstabelecimento(): Estabelecimento
     {
-        return Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        return $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
     }
 
     public function test_cria_aluno_com_nova_dados_pessoa_e_gera_numero_matricula(): void

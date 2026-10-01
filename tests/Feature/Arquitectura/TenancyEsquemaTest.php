@@ -106,6 +106,91 @@ class TenancyEsquemaTest extends TestCase
         $this->assertSame([], $erros, implode("\n", $erros));
     }
 
+    public function test_toda_a_tabela_com_estabelecimento_id_e_tenant_id_tem_a_chave_composta(): void
+    {
+        $porConverter = config('tenancy.tabelas_por_converter');
+        $erros = [];
+        $comEstabelecimento = 0;
+
+        foreach ($this->tabelas() as $tabela) {
+            if (! Schema::hasColumn($tabela, 'estabelecimento_id')) {
+                continue;
+            }
+
+            $comEstabelecimento++;
+
+            if (! Schema::hasColumn($tabela, 'tenant_id')) {
+                if (! in_array($tabela, $porConverter, true)) {
+                    $erros[] = "{$tabela}: tem estabelecimento_id sem tenant_id e não consta em tabelas_por_converter.";
+                }
+
+                continue;
+            }
+
+            $temChaveComposta = collect(Schema::getForeignKeys($tabela))->contains(function (array $fk) {
+                if ($fk['foreign_table'] !== 'estabelecimentos') {
+                    return false;
+                }
+
+                $pares = array_combine($fk['columns'], $fk['foreign_columns']);
+                ksort($pares);
+
+                return $pares === ['estabelecimento_id' => 'id', 'tenant_id' => 'tenant_id'];
+            });
+
+            if (! $temChaveComposta) {
+                $erros[] = "{$tabela}: falta a chave estrangeira composta (tenant_id, estabelecimento_id) → estabelecimentos (tenant_id, id).";
+            }
+        }
+
+        $this->assertGreaterThan(5, $comEstabelecimento, 'Não foram encontradas as tabelas com estabelecimento_id.');
+        $this->assertSame([], $erros, implode("\n", $erros));
+    }
+
+    public function test_as_tabelas_de_identidade_ja_nao_estao_na_lista_de_transicao(): void
+    {
+        $convertidas = [
+            'users', 'dados_pessoas', 'documentos_pessoas', 'tipos_documentos', 'encarregados_alunos',
+            'roles', 'role_permissoes', 'user_roles', 'user_permissoes',
+            'personal_access_tokens', 'password_reset_tokens',
+        ];
+
+        $aindaPorConverter = array_values(array_intersect($convertidas, config('tenancy.tabelas_por_converter')));
+
+        $this->assertSame([], $aindaPorConverter, 'Tabelas de identidade ainda em tabelas_por_converter: '.implode(', ', $aindaPorConverter));
+
+        foreach ($convertidas as $tabela) {
+            $this->assertTrue(Schema::hasColumn($tabela, 'tenant_id'), "{$tabela} devia ter tenant_id.");
+        }
+    }
+
+    public function test_os_unicos_de_identidade_sao_por_tenant(): void
+    {
+        $esperados = [
+            'users' => [['tenant_id', 'email'], ['tenant_id', 'numero_matricula']],
+            'dados_pessoas' => [['tenant_id', 'numero_identificacao']],
+            'tipos_documentos' => [['tenant_id', 'slug']],
+        ];
+
+        foreach ($esperados as $tabela => $indices) {
+            $unicos = collect(Schema::getIndexes($tabela))->where('unique', true)->map(fn (array $i) => $i['columns'])->all();
+
+            foreach ($indices as $colunas) {
+                $this->assertContains($colunas, $unicos, "{$tabela} devia ter um índice único por ".implode(', ', $colunas).'.');
+            }
+
+            foreach ($unicos as $colunas) {
+                $this->assertNotSame(['email'], $colunas, "{$tabela} não pode ter email único global.");
+                $this->assertNotSame(['numero_matricula'], $colunas, "{$tabela} não pode ter numero_matricula único global.");
+                $this->assertNotSame(['numero_identificacao'], $colunas, "{$tabela} não pode ter numero_identificacao único global.");
+                $this->assertNotSame(['slug'], $colunas, "{$tabela} não pode ter slug único global.");
+            }
+        }
+
+        $chaves = collect(Schema::getIndexes('password_reset_tokens'))->where('primary', true)->map(fn (array $i) => $i['columns'])->all();
+        $this->assertContains(['tenant_id', 'email'], $chaves, 'A chave primária de password_reset_tokens devia ser (tenant_id, email).');
+    }
+
     /**
      * Models da aplicação e de todos os módulos, incluindo subpastas de Models/.
      *

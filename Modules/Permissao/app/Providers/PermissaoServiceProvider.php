@@ -41,7 +41,7 @@ class PermissaoServiceProvider extends ModuleServiceProvider
     {
         parent::register();
 
-        $this->app->singleton(PermissionResolver::class);
+        $this->app->scoped(PermissionResolver::class);
     }
 
     public function boot(): void

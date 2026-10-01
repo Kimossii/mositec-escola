@@ -20,10 +20,9 @@ class CursoModelTest extends TestCase
 
     private function criarEstabelecimento(): Estabelecimento
     {
-        return Estabelecimento::create([
+        return $this->estabelecimentoDeTeste([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
     }
 
@@ -98,7 +97,7 @@ class CursoModelTest extends TestCase
     public function test_mesmo_codigo_e_nome_permitido_em_estabelecimentos_diferentes(): void
     {
         $estabelecimentoA = $this->criarEstabelecimento();
-        $estabelecimentoB = Estabelecimento::create(['nome' => 'Escola B', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => false]);
+        $estabelecimentoB = $this->estabelecimentoDeOutroTenant(['nome' => 'Escola B', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
 
         $cursoA = Curso::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'INF', 'nome' => 'Informática']);
         $cursoB = Curso::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'INF', 'nome' => 'Informática']);

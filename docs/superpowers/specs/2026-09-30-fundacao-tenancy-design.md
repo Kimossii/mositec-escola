@@ -1,7 +1,7 @@
 # Fundação de Tenancy — Design
 
 **Data:** 2026-09-30
-**Estado:** proposto, a aguardar revisão
+**Estado:** aprovado em 2026-09-30
 **Âmbito:** fundação de multi-tenancy (runtime + gestão mínima de Tenants). Sem interface de Plataforma, sem parte comercial.
 
 ---
@@ -69,6 +69,8 @@ Tudo aquilo de que os módulos académicos dependem vive aqui. Nada aqui conhece
 | Componente | Responsabilidade |
 |---|---|
 | `TenantAtual` | Objecto imutável com `id`, `codigo`, `nome`, `estado`. É a única representação do tenant que os módulos académicos conhecem. |
+| `EstadoTenant` | Enum dos estados (§6). Vive aqui e não em `Modules/Tenant` porque faz parte de `TenantAtual` e é lido pelo middleware. |
+| `NormalizadorHost` | Normaliza hosts (minúsculas, sem porta, sem ponto final). Usado pelo middleware e pelo módulo Tenant. |
 | `TenantContext` | Guarda o tenant do pedido corrente (§4). |
 | `PertenceAoTenant` (trait) | Aplica o isolamento aos models (§7). |
 | `TenantScope` | Global scope usado pela trait. |
@@ -124,7 +126,7 @@ O domínio identifica o tenant; não é a identidade dele. Um tenant pode ter v�
 Modules/Tenant/
 ├── app/
 │   ├── Models/        Tenant, Domain            (sem a trait PertenceAoTenant)
-│   ├── Enums/         EstadoTenant, TipoDominio
+│   ├── Enums/         TipoDominio            (EstadoTenant vive em Core/Tenancy: faz parte de TenantAtual)
 │   ├── DTO/           CriarTenantDTO, DominioDTO
 │   ├── Actions/       CriarTenantAction, SuspenderTenantAction,
 │   │                  ReactivarTenantAction, EncerrarTenantAction,
@@ -206,7 +208,8 @@ Usa o único tenant da instalação e ignora o host, porque uma instalação loc
 
 ### 5.2 Middleware
 
-- `ResolverTenant` corre nos grupos `web` **e** `api`, **antes** de sessão e autenticação. É registado em `bootstrap/app.php` e colocado na lista de prioridade de middleware à frente de `StartSession`.
+- `ResolverTenant` é **middleware global**, registado em `bootstrap/app.php`: corre em todos os pedidos (`web`, `api` e rotas fora dos grupos), **antes** de qualquer middleware de rota, logo antes de sessão e autenticação. Não é registado nos grupos porque, no grupo `api`, o Sanctum coloca `EnsureFrontendRequestsAreStateful` (que inicia a sessão e autentica) à frente de tudo o que o grupo registe.
+- A única excepção são os caminhos de `tenancy.caminhos_sem_tenant` (a verificação de saúde `up`), que respondem em qualquer host.
 - No fim do pedido, limpa o contexto.
 - O 404 para host desconhecido é igual ao de tenant encerrado, para não revelar que domínios existem.
 
@@ -271,7 +274,7 @@ Esta regra é aplicada em três pontos, e só três:
 
 - **Leitura:** o global scope acrescenta `where tenant_id = <tenant corrente>`. Sem contexto, **lança `TenantNaoResolvido`**. Não devolve colecção vazia: um resultado vazio esconderia o erro.
 - **Criação:** preenche `tenant_id` a partir do contexto. Se vier preenchido com outro valor, lança excepção.
-- **Actualização:** alterar `tenant_id` lança `AlteracaoDeTenantProibida`.
+- **Actualização, eliminação e restauro:** exigem contexto (sem ele, `TenantNaoResolvido`) e que o registo pertença ao tenant corrente; caso contrário, ou se `tenant_id` tiver sido alterado, lançam `AlteracaoDeTenantProibida`. Isto é necessário porque `save()` e `delete()` de uma instância não passam pelo global scope.
 - `tenant_id` nunca está em `$fillable` e nunca faz parte de um DTO. Vem sempre do contexto, nunca do input.
 
 ### 7.3 Consequências nos caminhos existentes
@@ -335,6 +338,25 @@ Mantém o nome e a assinatura como fachada.
 - O ramo `current() ?? new Estabelecimento(['is_active' => true])` em `AtualizarDadosEstabelecimentoAction` é removido: o estabelecimento nasce no provisioning.
 - Os cerca de 40 ficheiros que chamam `current()` não são alterados, excepto onde tratavam o retorno nulo.
 
+### 8.5 Configuração inicial (`configurado_em`)
+
+A ordem de existência e a ordem de configuração são diferentes:
+
+```text
+Provisioning (transacção única)
+    Tenant → Estabelecimento mínimo (só o nome) → perfis → Administrador
+
+Primeiro acesso
+    Administrador → completa os dados institucionais do Estabelecimento
+```
+
+- `estabelecimentos.configurado_em` (data, nula por omissão) indica que a configuração inicial foi concluída.
+- O provisioning cria o estabelecimento com `configurado_em` nulo. A MosiTec só escreve o nome inicial.
+- `AtualizarDadosEstabelecimentoAction` preenche `configurado_em` na primeira gravação bem-sucedida dos dados institucionais. Depois disso, nunca volta a nulo.
+- Enquanto `configurado_em` for nulo, um middleware a seguir à autenticação encaminha para o ecrã de configuração do estabelecimento os utilizadores **com permissão para o editar**. As rotas desse ecrã e a de terminar sessão ficam de fora. Utilizadores sem essa permissão não são encaminhados.
+- Não existe criação tardia: `Estabelecimento::current()` nunca devolve nulo dentro de um tenant, esteja o perfil configurado ou não.
+- Os campos institucionais que hoje são obrigatórios na BD passam a aceitar nulo, para permitir o estabelecimento mínimo. A obrigatoriedade mantém-se na validação do formulário de configuração.
+
 ---
 
 ## 9. Validação tenant-aware
@@ -385,6 +407,10 @@ table($tabela):
 - **Teste de esquema:** percorre todas as tabelas da BD e exige que cada uma ou tenha a coluna `tenant_id`, ou conste em `tabelas_globais`, ou conste na lista de tabelas de infra-estrutura. Nunca as duas coisas, nunca nenhuma. Uma tabela nova mal classificada faz o teste falhar.
 - Nenhum FormRequest existente é alterado por causa do isolamento.
 
+### 9.5.1 Lista de transição
+
+Durante a implementação, as tabelas que ainda não receberam `tenant_id` constam em `tenancy.tabelas_por_converter` e não são filtradas (filtrá-las daria erro de coluna inexistente). Cada etapa retira dessa lista as tabelas que converte. O teste de esquema trata-a como quarta classe válida; a última etapa exige que esteja vazia e remove-a.
+
 ### 9.6 Relações e IDs encadeados
 
 Depois de validado, o ID é carregado por Eloquent (com scope). Um ID de outro tenant é barrado duas vezes: na validação e no carregamento.
@@ -428,7 +454,7 @@ Existem hoje três definições de limitador de login (em `FortifyServiceProvide
 
 ### 10.6 Ponto em aberto
 
-`Features::registration()` está activo em `config/fortify.php`. Registo público num domínio de escola criaria utilizadores nesse tenant sem controlo. Recomenda-se desactivar; a decisão é tomada na revisão deste spec.
+`Features::registration()` está activo em `config/fortify.php`. Registo público num domínio de escola criaria utilizadores nesse tenant sem controlo. É desactivado (ver §22).
 
 ---
 
@@ -536,7 +562,7 @@ Cada módulo regista o seu provisionador no container com uma etiqueta comum. `C
 
 | Ordem | Módulo | O que cria | Origem da lógica |
 |---|---|---|---|
-| 10 | Estabelecimento | O estabelecimento do tenant, com os dados mínimos | — |
+| 10 | Estabelecimento | O estabelecimento mínimo do tenant: só o nome, com `configurado_em` nulo (§8.5) | — |
 | 20 | Permissao | Perfis de sistema e respectivas permissões | `RoleSeeder`, `RolePermissaoSeeder` |
 | 30 | Usuario | Tipos de documento por omissão | `TipoDocumentoSeeder` |
 | 40 | Autenticacao | Administrador inicial, com perfil de Administrador da Escola | `AdminUserSeeder` |
@@ -614,7 +640,11 @@ Controllers, FormRequests, DTOs, Repositories e Services dos módulos académico
 
 ### 17.4 Frontend
 
-Apenas uma página "conta suspensa". O resto do frontend não muda.
+- Uma página "conta suspensa".
+- O ecrã de configuração do estabelecimento já existe; passa a ser o destino do encaminhamento enquanto `configurado_em` for nulo (§8.5).
+- As fotos de alunos passam a ser obtidas por rota autenticada (§12).
+
+O resto do frontend não muda.
 
 ---
 
@@ -697,6 +727,7 @@ Escritos em PHPUnit, por análise de ficheiros e de esquema:
 - Modo `unico` com zero ou dois tenants → erro explícito.
 - `CriarTenantAction` com falha num provisionador → nada fica criado.
 - Subdomínio reservado e domínio duplicado → recusados.
+- Tenant acabado de criar: `Estabelecimento::current()` devolve o estabelecimento mínimo com `configurado_em` nulo; o administrador é encaminhado para a configuração; após gravar, `configurado_em` fica preenchido e o encaminhamento cessa; um utilizador sem permissão de edição não é encaminhado.
 
 ---
 
@@ -727,7 +758,7 @@ Cada etapa termina com a suite completa a passar.
 | 1 | **Runtime no Core**: `TenantAtual`, `TenantContext`, trait, scope, excepções, configuração, testes de arquitectura 3 a 7 | Mecanismo existe e está testado isoladamente. Nenhuma tabela tocada. |
 | 2 | **Módulo Tenant (base)**: tabelas, models, enums, resolvedores, middleware nos grupos `web` e `api`, os dois modos, base de testes com tenant por omissão | A aplicação corre dentro de um tenant. Ainda sem isolamento de dados. |
 | 3 | **Verificador de presença** e teste de esquema (arquitectura 1 e 2) | A rede de segurança existe antes de as tabelas serem convertidas. |
-| 4 | **Estabelecimento**: `tenant_id` único, `current()` pelo contexto | Perfil institucional ligado ao tenant. |
+| 4 | **Estabelecimento**: `tenant_id` único, `current()` pelo contexto, `configurado_em` e encaminhamento para a configuração inicial | Perfil institucional ligado ao tenant. |
 | 5 | **Usuario, Permissao, Autenticacao**: tabelas, únicos, pivots, login, sessão, Sanctum, recuperação de palavra-passe, limitador, cache de permissões | Identidade e permissões isoladas. |
 | 6 | **Módulos académicos**, por ordem de dependência: AnoLectivo e horários → Curso, Disciplina, Infraestrutura → Turma → PlanoCurricular → Aluno → Matricula. Inclui chaves compostas (arquitectura 8) | Cada módulo com a sua linha da matriz de isolamento. |
 | 7 | **Sequências**: gerador único no Core, únicos por tenant | Numeração por escola. |
@@ -753,9 +784,13 @@ Cada etapa termina com a suite completa a passar.
 
 ---
 
-## 22. Pontos a confirmar na revisão
+## 22. Pontos assumidos na aprovação
 
-1. Desactivar `Features::registration()` do Fortify (§10.6).
-2. Mover as fotos de alunos para disco privado nesta fundação (§12), ou tratar em tarefa separada.
-3. `tipos_documentos` por tenant (proposto) ou catálogo global.
-4. Formato do código: `MOSI-` seguido de seis dígitos.
+O spec foi aprovado "conforme definido", sem resposta individual a estes quatro pontos. Ficam assumidas as propostas do próprio spec; qualquer uma pode ser revertida antes da etapa que a implementa.
+
+| # | Ponto | Assumido | Etapa |
+|---|---|---|---|
+| 1 | `Features::registration()` do Fortify (§10.6) | Desactivado | 5 |
+| 2 | Fotos de alunos em disco privado (§12) | Incluído nesta fundação | 8 |
+| 3 | `tipos_documentos` | Por tenant | 5 |
+| 4 | Formato do código do tenant | `MOSI-` seguido de seis dígitos | 2 |

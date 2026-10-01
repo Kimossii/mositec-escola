@@ -13,9 +13,10 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->string('name');
-            $table->string('email')->nullable()->unique();
-            $table->string('numero_matricula')->nullable()->unique();
+            $table->string('email')->nullable();
+            $table->string('numero_matricula')->nullable();
             $table->integer('tipo_login')->default(0); // 0: email | 1: matricula
             $table->string('tipo_login_descricao')->default('Email');
             $table->timestamp('email_verified_at')->nullable();
@@ -27,12 +28,18 @@ return new class extends Migration
             $table->foreignId('criado_por')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('editado_por')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
+
+            $table->unique(['tenant_id', 'email']);
+            $table->unique(['tenant_id', 'numero_matricula']);
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
+            $table->string('email');
             $table->string('token');
             $table->timestamp('created_at')->nullable();
+
+            $table->primary(['tenant_id', 'email']);
         });
 
         Schema::create('sessions', function (Blueprint $table) {

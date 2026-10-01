@@ -3,6 +3,7 @@
 namespace Modules\Tenant\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Modules\Tenant\Database\Seeders\TenantDesenvolvimentoSeeder;
 use Modules\Tenant\Models\Domain;
 use Modules\Tenant\Models\Tenant;
@@ -18,6 +19,8 @@ class TenantDesenvolvimentoSeederTest extends TestCase
 
         // O seeder corre numa BD acabada de migrar, sem o tenant da base de testes.
         Domain::query()->delete();
+        // O estabelecimento do tenant de teste prende o tenant (chave estrangeira).
+        DB::table('estabelecimentos')->delete();
         Tenant::query()->delete();
     }
 

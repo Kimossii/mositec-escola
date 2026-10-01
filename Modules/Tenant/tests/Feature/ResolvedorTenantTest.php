@@ -3,6 +3,7 @@
 namespace Modules\Tenant\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 use Modules\Core\Tenancy\Contracts\ResolvedorTenant;
@@ -23,6 +24,8 @@ class ResolvedorTenantTest extends TestCase
 
         // Estes testes controlam exactamente que tenants existem.
         Domain::query()->delete();
+        // O estabelecimento do tenant de teste prende o tenant (chave estrangeira).
+        DB::table('estabelecimentos')->delete();
         Tenant::query()->delete();
     }
 

@@ -4,22 +4,28 @@ namespace Modules\Core\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
-use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Tenant\Models\Tenant;
 use Tests\TestCase;
 
 class PesquisaTextoTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function criar(string $nome): void
+    private int $n = 0;
+
+    private function criar(string $nome, ?string $codigo = null): void
     {
-        Estabelecimento::create(['nome' => $nome, 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => false]);
+        Tenant::create(['codigo' => $codigo ?? sprintf('MOSI-%06d', 800000 + ++$this->n), 'nome' => $nome]);
     }
 
     private function buscar(string $termo): array
     {
-        return Estabelecimento::query()->whereContem('nome', $termo)->orderBy('nome')->pluck('nome')->all();
+        return Tenant::query()
+            ->whereKeyNot($this->tenant->id)
+            ->whereContem('nome', $termo)
+            ->orderBy('nome')
+            ->pluck('nome')
+            ->all();
     }
 
     public function test_ignora_maiusculas_e_minusculas(): void
@@ -73,11 +79,12 @@ class PesquisaTextoTest extends TestCase
     public function test_or_where_contem_combina_colunas_dentro_de_um_grupo(): void
     {
         $this->criar('Escola Norte');
-        Estabelecimento::create(['nome' => 'Outra', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => false, 'nome_abreviado' => 'NRT']);
+        $this->criar('Outra', 'MOSI-NRT001');
         $this->criar('Sul');
 
-        $resultado = Estabelecimento::query()
-            ->where(fn ($q) => $q->whereContem('nome', 'norte')->orWhereContem('nome_abreviado', 'nrt'))
+        $resultado = Tenant::query()
+            ->whereKeyNot($this->tenant->id)
+            ->where(fn ($q) => $q->whereContem('nome', 'norte')->orWhereContem('codigo', 'nrt'))
             ->orderBy('nome')->pluck('nome')->all();
 
         $this->assertSame(['Escola Norte', 'Outra'], $resultado);

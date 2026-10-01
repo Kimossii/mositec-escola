@@ -104,7 +104,7 @@ class AnoLectivoHttpTest extends TestCase
     public function test_encerrar_com_matriculas_pede_confirmacao_e_depois_resolve_via_http(): void
     {
         $this->actingAsStaff();
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
 
         $this->post('/ano-lectivos', [
             'nome' => '2026/2027',

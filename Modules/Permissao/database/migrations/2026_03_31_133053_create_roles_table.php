@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->integer('nome')->default(0); // 0: admin_escola, 1: funcionario, 2: professor, 3: aluno, 4: encarregado
             $table->string('descricao')->nullable();
             $table->integer('estado')->default(1); // 0: inativo, 1: ativo

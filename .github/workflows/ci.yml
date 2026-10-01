@@ -6,10 +6,10 @@ on:
     branches:
       - development
       - quality
-      - main
+      - production
 
 jobs:
-  testes:
+  ci:
     runs-on: ubuntu-latest
 
     steps:

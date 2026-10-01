@@ -18,8 +18,8 @@ class PlanoCurricularConsultaServiceTest extends TestCase
 
     public function test_opcoes_formulario_filtra_pelo_estabelecimento_actual(): void
     {
-        $atual = Estabelecimento::create(['nome' => 'Escola Actual', 'tipo' => 1, 'is_active' => true]);
-        $outra = Estabelecimento::create(['nome' => 'Outra Escola', 'tipo' => 1, 'is_active' => false]);
+        $atual = $this->estabelecimentoDeTeste(['nome' => 'Escola Actual', 'tipo' => 1]);
+        $outra = $this->estabelecimentoDeOutroTenant(['nome' => 'Outra Escola', 'tipo' => 1]);
 
         $cursoAtual = Curso::create(['estabelecimento_id' => $atual->id, 'codigo' => 'C1', 'nome' => 'Curso Actual']);
         Curso::create(['estabelecimento_id' => $outra->id, 'codigo' => 'C1', 'nome' => 'Curso Outro']);

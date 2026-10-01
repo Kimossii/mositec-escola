@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::create('user_roles', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('users_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('role_id')->constrained('roles')->onDelete('cascade');
             $table->foreignId('criado_por')->nullable()->constrained('users')->onDelete('set null');

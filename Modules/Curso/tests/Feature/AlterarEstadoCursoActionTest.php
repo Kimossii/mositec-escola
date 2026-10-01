@@ -16,10 +16,9 @@ class AlterarEstadoCursoActionTest extends TestCase
 
     public function test_desactiva_curso_e_sincroniza_descricao(): void
     {
-        $estabelecimento = Estabelecimento::create([
+        $estabelecimento = $this->estabelecimentoDeTeste([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
 

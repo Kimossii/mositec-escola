@@ -44,10 +44,9 @@ class CriarAnoLectivoActionTest extends TestCase
     public function test_cria_ano_lectivo_associado_ao_estabelecimento_activo(): void
     {
         $this->actingAsStaff();
-        $estabelecimento = Estabelecimento::create([
+        $estabelecimento = $this->estabelecimentoDeTeste([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
 
         $anoLectivo = (new CriarAnoLectivoAction())->criar(new AnoLectivoDTO(
@@ -64,10 +63,9 @@ class CriarAnoLectivoActionTest extends TestCase
     public function test_bloqueia_segundo_ano_lectivo_activo_no_mesmo_estabelecimento(): void
     {
         $this->actingAsStaff();
-        Estabelecimento::create([
+        $this->estabelecimentoDeTeste([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
 
         (new CriarAnoLectivoAction())->criar(new AnoLectivoDTO(
@@ -94,10 +92,9 @@ class CriarAnoLectivoActionTest extends TestCase
     public function test_permite_criar_ano_lectivo_planeado_com_outro_ja_activo(): void
     {
         $this->actingAsStaff();
-        Estabelecimento::create([
+        $this->estabelecimentoDeTeste([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
 
         (new CriarAnoLectivoAction())->criar(new AnoLectivoDTO(

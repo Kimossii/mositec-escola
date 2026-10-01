@@ -23,14 +23,6 @@ class TenancyArquitecturaTest extends TestCase
         'Modules/Matricula/app/Services/GeradorNumeroRegistoMatriculaService.php',
     ];
 
-    /**
-     * Temporário. O plano de identidade e permissões passa o PermissaoCache
-     * para CacheTenant e esvazia esta lista.
-     */
-    private const EXCEPCOES_CACHE = [
-        'Modules/Permissao/app/Support/PermissaoCache.php',
-    ];
-
     private function raiz(): string
     {
         return dirname(__DIR__, 3);
@@ -126,7 +118,7 @@ class TenancyArquitecturaTest extends TestCase
 
     public function test_a_cache_so_e_usada_nas_excepcoes_declaradas(): void
     {
-        $violacoes = $this->ocorrencias('/\bCache::|\bcache\s*\(/', ['Modules/Core/app/Tenancy/', ...self::EXCEPCOES_CACHE]);
+        $violacoes = $this->ocorrencias('/\bCache::|\bcache\s*\(/', ['Modules/Core/app/Tenancy/']);
 
         $this->assertSame([], $violacoes, "A cache partilhada não é isolada por tenant:\n" . implode("\n", $violacoes));
     }
@@ -150,7 +142,7 @@ class TenancyArquitecturaTest extends TestCase
 
     public function test_as_excepcoes_declaradas_ainda_existem(): void
     {
-        foreach ([...self::EXCEPCOES_DB_TABLE, ...self::EXCEPCOES_CACHE] as $caminho) {
+        foreach (self::EXCEPCOES_DB_TABLE as $caminho) {
             $this->assertFileExists($this->raiz() . '/' . $caminho, "Excepção obsoleta em TenancyArquitecturaTest: {$caminho}");
         }
     }

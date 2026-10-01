@@ -16,7 +16,7 @@ class CriarPlanoCurricularActionTest extends TestCase
 
     public function test_cria_plano_com_estabelecimento_actual(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'C1', 'nome' => 'Curso A']);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
 
@@ -32,7 +32,7 @@ class CriarPlanoCurricularActionTest extends TestCase
 
     public function test_cria_plano_sem_curso(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1]);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'CR', 'nome' => 'Creche I', 'ordem' => 1, 'etapa_ensino' => 1]);
 
         $plano = (new CriarPlanoCurricularAction())->executar(new PlanoCurricularDTO(
