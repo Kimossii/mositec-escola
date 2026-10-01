@@ -2,6 +2,8 @@
 
 namespace Modules\Usuario\Providers;
 
+use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
+use Modules\Usuario\Provisioning\ProvisionarTiposDocumento;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 
@@ -33,6 +35,13 @@ class UsuarioServiceProvider extends ModuleServiceProvider
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->tag([ProvisionarTiposDocumento::class], ProvisionaTenant::ETIQUETA);
+    }
+
     public function boot(): void
     {
         parent::boot();

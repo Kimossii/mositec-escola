@@ -4,6 +4,7 @@ namespace Modules\Tenant\Providers;
 
 use InvalidArgumentException;
 use Modules\Core\Tenancy\Contracts\ResolvedorTenant;
+use Modules\Tenant\Console\CriarTenantCommand;
 use Modules\Tenant\Services\ResolvedorTenantPorDominio;
 use Modules\Tenant\Services\ResolvedorTenantUnico;
 use Nwidart\Modules\Support\ModuleServiceProvider;
@@ -13,6 +14,13 @@ class TenantServiceProvider extends ModuleServiceProvider
     protected string $name = 'Tenant';
 
     protected string $nameLower = 'tenant';
+
+    /**
+     * @var string[]
+     */
+    protected array $commands = [
+        CriarTenantCommand::class,
+    ];
 
     public function register(): void
     {

@@ -5,6 +5,8 @@ namespace Modules\Autenticacao\Providers;
 use Laravel\Sanctum\Sanctum;
 use Modules\Autenticacao\Models\TokenDeAcesso;
 use Modules\Autenticacao\Service\LimitadorLogin;
+use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
+use Modules\Autenticacao\Provisioning\ProvisionarAdministradorInicial;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 
@@ -36,6 +38,13 @@ class AutenticacaoServiceProvider extends ModuleServiceProvider
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
+
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->tag([ProvisionarAdministradorInicial::class], ProvisionaTenant::ETIQUETA);
+    }
 
     public function boot(): void
     {

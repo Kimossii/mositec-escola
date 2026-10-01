@@ -26,6 +26,17 @@ return [
     'subdominios_reservados' => ['www', 'api', 'admin', 'plataforma', 'mail', 'app'],
 
     /*
+    | Provisionadores que têm de estar etiquetados para criar um tenant (FQCN como texto: o módulo Tenant
+    | não importa módulos de negócio). Se algum faltar (módulo desactivado), nada é criado.
+    */
+    'provisionadores_esperados' => [
+        'Modules\\Estabelecimento\\Provisioning\\ProvisionarEstabelecimento',
+        'Modules\\Permissao\\Provisioning\\ProvisionarPerfis',
+        'Modules\\Usuario\\Provisioning\\ProvisionarTiposDocumento',
+        'Modules\\Autenticacao\\Provisioning\\ProvisionarAdministradorInicial',
+    ],
+
+    /*
     | Tabelas sem tenant_id por desenho: catálogo do produto e gestão de tenants.
     | As regras exists/unique sobre estas tabelas não são filtradas por tenant.
     | Qualquer tabela que NÃO esteja numa das três listas abaixo é tratada como tenant-scoped.
