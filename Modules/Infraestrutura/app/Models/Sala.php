@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Infraestrutura\Enums\EstadoSala;
@@ -19,6 +20,7 @@ class Sala extends Model
     use HasFactory;
     use SoftDeletes;
     use RegistaAutoria;
+    use PertenceAoTenant;
 
     protected $table = 'salas';
 

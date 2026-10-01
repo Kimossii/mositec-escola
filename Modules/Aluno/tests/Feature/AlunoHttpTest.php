@@ -186,8 +186,10 @@ class AlunoHttpTest extends TestCase
         Aluno::create(['estabelecimento_id' => $actual->id, 'dados_pessoa_id' => $pessoa1->id, 'numero_matricula' => '2026-0001']);
 
         $outra = $this->criarEstabelecimento(false);
-        $pessoa2 = DadosPessoa::create(['nome_completo' => 'Bruno', 'numero_identificacao' => 'BI0002', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
-        Aluno::create(['estabelecimento_id' => $outra->id, 'dados_pessoa_id' => $pessoa2->id, 'numero_matricula' => '2026-0002']);
+        $this->noTenantDe($outra, function () use ($outra) {
+            $pessoa2 = DadosPessoa::create(['nome_completo' => 'Bruno', 'numero_identificacao' => 'BI0002', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+            Aluno::create(['estabelecimento_id' => $outra->id, 'dados_pessoa_id' => $pessoa2->id, 'numero_matricula' => '2026-0002']);
+        });
 
         $this->get(route('alunos.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Aluno/Index')

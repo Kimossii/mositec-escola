@@ -144,7 +144,7 @@ class DisciplinaHttpTest extends TestCase
         Disciplina::create(['estabelecimento_id' => $estabelecimentoActual->id, 'codigo' => 'INF', 'nome' => 'Informática']);
 
         $outroEstabelecimento = $this->estabelecimentoDeOutroTenant(['nome' => 'Outra Escola', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
-        Disciplina::create(['estabelecimento_id' => $outroEstabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade']);
+        $this->noTenantDe($outroEstabelecimento, fn () => Disciplina::create(['estabelecimento_id' => $outroEstabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade']));
 
         $this->get(route('disciplinas.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Disciplina/Index')

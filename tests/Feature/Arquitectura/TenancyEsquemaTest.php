@@ -194,6 +194,42 @@ class TenancyEsquemaTest extends TestCase
         }
     }
 
+    public function test_as_tabelas_academicas_ja_nao_estao_na_lista_de_transicao(): void
+    {
+        $convertidas = [
+            'ano_lectivos', 'periodos', 'eventos_calendario', 'horarios', 'cursos', 'disciplinas', 'salas',
+            'turnos', 'niveis_academicos', 'turmas', 'turno_horarios', 'turma_salas', 'planos_curriculares',
+            'plano_curricular_disciplinas', 'plano_curricular_anos_lectivos', 'plano_curricular_disciplina_periodos',
+            'alunos', 'aluno_enquadramentos_academicos', 'matriculas', 'matricula_historicos', 'inscricoes_disciplinas',
+        ];
+
+        $aindaPorConverter = array_values(array_intersect($convertidas, config('tenancy.tabelas_por_converter')));
+
+        $this->assertSame([], $aindaPorConverter, 'Tabelas académicas ainda em tabelas_por_converter: '.implode(', ', $aindaPorConverter));
+
+        foreach ($convertidas as $tabela) {
+            $this->assertTrue(Schema::hasColumn($tabela, 'tenant_id'), "{$tabela} devia ter tenant_id.");
+        }
+
+        $restantes = config('tenancy.tabelas_por_converter');
+        sort($restantes);
+        $this->assertSame(['matricula_registo_sequencias', 'matricula_sequencias'], $restantes);
+    }
+
+    public function test_os_unicos_de_alunos_e_matriculas_sao_por_tenant(): void
+    {
+        $esperados = [
+            'alunos' => ['tenant_id', 'numero_matricula'],
+            'matriculas' => ['tenant_id', 'numero_registo_matricula'],
+        ];
+
+        foreach ($esperados as $tabela => $colunas) {
+            $unicos = collect(Schema::getIndexes($tabela))->where('unique', true)->map(fn (array $i) => $i['columns'])->all();
+
+            $this->assertContains($colunas, $unicos, "{$tabela} devia ter um índice único por ".implode(', ', $colunas).'.');
+        }
+    }
+
     public function test_os_unicos_de_identidade_sao_por_tenant(): void
     {
         $esperados = [

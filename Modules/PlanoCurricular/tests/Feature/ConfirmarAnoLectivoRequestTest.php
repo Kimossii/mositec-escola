@@ -35,7 +35,7 @@ class ConfirmarAnoLectivoRequestTest extends TestCase
         $curso = Curso::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'C1', 'nome' => 'Curso A']);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
         $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimentoA->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'PC1', 'nome' => 'Plano A']);
-        $anoDeOutroEstabelecimento = AnoLectivo::create(['estabelecimento_id' => $estabelecimentoB->id, 'nome' => '2026/2027', 'data_inicio' => '2026-02-01', 'data_fim' => '2026-11-30', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $anoDeOutroEstabelecimento = $this->noTenantDe($estabelecimentoB, fn () => AnoLectivo::create(['estabelecimento_id' => $estabelecimentoB->id, 'nome' => '2026/2027', 'data_inicio' => '2026-02-01', 'data_fim' => '2026-11-30', 'estado' => EstadoAnoLectivo::ATIVO]));
 
         $validator = Validator::make(
             ['ano_lectivo_id' => $anoDeOutroEstabelecimento->id],

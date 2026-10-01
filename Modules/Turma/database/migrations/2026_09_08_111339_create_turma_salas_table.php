@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('turma_salas', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('turma_id')->constrained('turmas')->cascadeOnDelete();
             $table->foreignId('sala_id')->constrained('salas')->restrictOnDelete();
             $table->date('inicio');

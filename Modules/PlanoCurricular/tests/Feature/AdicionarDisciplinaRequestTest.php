@@ -25,7 +25,7 @@ class AdicionarDisciplinaRequestTest extends TestCase
         $curso = Curso::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'C1', 'nome' => 'Curso A']);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
         $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimentoA->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'codigo' => 'PC1', 'nome' => 'Plano A']);
-        $disciplinaDeOutroEstabelecimento = Disciplina::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'D1', 'nome' => 'Matemática']);
+        $disciplinaDeOutroEstabelecimento = $this->noTenantDe($estabelecimentoB, fn () => Disciplina::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'D1', 'nome' => 'Matemática']));
 
         $request = new AdicionarDisciplinaRequest;
         $request->setRouteResolver(fn () => tap(new Route('POST', '/x', []), fn ($r) => $r->bind(new Request)->setParameter('planoCurricular', $plano)));

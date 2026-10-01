@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -17,6 +18,7 @@ use Modules\Aluno\Models\AlunoEnquadramentoAcademico;
 
 class Aluno extends Model
 {
+    use PertenceAoTenant;
     use RegistaAutoria;
     use SincronizaEstadoDescricao;
 

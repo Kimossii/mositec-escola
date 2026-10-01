@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
@@ -15,6 +16,7 @@ use Modules\Usuario\Models\User;
 
 class NivelAcademico extends Model
 {
+    use PertenceAoTenant;
     use SoftDeletes;
     use RegistaAutoria;
     use SincronizaEstadoDescricao;

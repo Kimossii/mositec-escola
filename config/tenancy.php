@@ -57,28 +57,7 @@ return [
     | O último plano exige que esteja vazia e remove esta chave.
     */
     'tabelas_por_converter' => [
-        'aluno_enquadramentos_academicos',
-        'alunos',
-        'ano_lectivos',
-        'cursos',
-        'disciplinas',
-        'eventos_calendario',
-        'horarios',
-        'inscricoes_disciplinas',
-        'matricula_historicos',
         'matricula_registo_sequencias',
         'matricula_sequencias',
-        'matriculas',
-        'niveis_academicos',
-        'periodos',
-        'plano_curricular_anos_lectivos',
-        'plano_curricular_disciplina_periodos',
-        'plano_curricular_disciplinas',
-        'planos_curriculares',
-        'salas',
-        'turma_salas',
-        'turmas',
-        'turno_horarios',
-        'turnos',
     ],
 ];

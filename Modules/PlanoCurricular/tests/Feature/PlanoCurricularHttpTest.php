@@ -69,12 +69,12 @@ class PlanoCurricularHttpTest extends TestCase
 
     private function criarCurso(Estabelecimento $estabelecimento, string $codigo = 'INF'): Curso
     {
-        return Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => $codigo, 'nome' => 'Informática']);
+        return $this->noTenantDe($estabelecimento, fn () => Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => $codigo, 'nome' => 'Informática']));
     }
 
     private function criarDisciplina(Estabelecimento $estabelecimento, string $codigo = 'MAT'): Disciplina
     {
-        return Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => $codigo, 'nome' => 'Matemática']);
+        return $this->noTenantDe($estabelecimento, fn () => Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => $codigo, 'nome' => 'Matemática']));
     }
 
     private function criarNivelAcademico(Estabelecimento $estabelecimento, string $codigo = '1C'): NivelAcademico

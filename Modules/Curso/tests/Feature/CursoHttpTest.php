@@ -146,7 +146,7 @@ class CursoHttpTest extends TestCase
         Curso::create(['estabelecimento_id' => $estabelecimentoActual->id, 'codigo' => 'INF', 'nome' => 'Informática']);
 
         $outroEstabelecimento = $this->estabelecimentoDeOutroTenant(['nome' => 'Outra Escola', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
-        Curso::create(['estabelecimento_id' => $outroEstabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade']);
+        $this->noTenantDe($outroEstabelecimento, fn () => Curso::create(['estabelecimento_id' => $outroEstabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade']));
 
         $this->get(route('cursos.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Curso/Index')

@@ -100,7 +100,7 @@ class CursoModelTest extends TestCase
         $estabelecimentoB = $this->estabelecimentoDeOutroTenant(['nome' => 'Escola B', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
 
         $cursoA = Curso::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'INF', 'nome' => 'Informática']);
-        $cursoB = Curso::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $cursoB = $this->noTenantDe($estabelecimentoB, fn () => Curso::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'INF', 'nome' => 'Informática']));
 
         $this->assertNotSame($cursoA->id, $cursoB->id);
     }

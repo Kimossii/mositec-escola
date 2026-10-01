@@ -67,7 +67,7 @@ class CriarDisciplinaRequestTest extends TestCase
     public function test_mesmo_codigo_em_estabelecimentos_diferentes_e_permitido(): void
     {
         $estabelecimentoA = $this->estabelecimentoDeOutroTenant(['nome' => 'Escola A', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
-        Disciplina::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $this->noTenantDe($estabelecimentoA, fn () => Disciplina::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'INF', 'nome' => 'Informática']));
 
         $this->estabelecimentoDeTeste(['nome' => 'Escola B', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
 

@@ -204,7 +204,7 @@ class TurmaHttpTest extends TestCase
         $turnoA = Turno::create(['estabelecimento_id' => $estabelecimentoA->id, 'nome' => 'Manhã']);
 
         $estabelecimentoB = $this->estabelecimentoDeOutroTenant(['nome' => 'Escola B', 'tipo' => 1]);
-        $turnoB = Turno::create(['estabelecimento_id' => $estabelecimentoB->id, 'nome' => 'Manhã']);
+        $turnoB = $this->noTenantDe($estabelecimentoB, fn () => Turno::create(['estabelecimento_id' => $estabelecimentoB->id, 'nome' => 'Manhã']));
 
         $this->assertNotSame($turnoA->id, $turnoB->id);
         $this->assertDatabaseHas('turnos', ['id' => $turnoA->id, 'nome' => 'Manhã']);

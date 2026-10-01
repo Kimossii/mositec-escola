@@ -60,41 +60,41 @@ class PlanoCurricularIsolamentoTest extends TestCase
 
     private function criarCurso(Estabelecimento $estabelecimento, string $codigo, ?string $nome = null): Curso
     {
-        return Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => $codigo, 'nome' => $nome ?? "Curso {$codigo}"]);
+        return $this->noTenantDe($estabelecimento, fn () => Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => $codigo, 'nome' => $nome ?? "Curso {$codigo}"]));
     }
 
     private function criarDisciplina(Estabelecimento $estabelecimento, string $codigo): Disciplina
     {
-        return Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => $codigo, 'nome' => 'Matemática']);
+        return $this->noTenantDe($estabelecimento, fn () => Disciplina::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => $codigo, 'nome' => 'Matemática']));
     }
 
     private function criarNivelAcademico(Estabelecimento $estabelecimento, string $codigo = '1C'): NivelAcademico
     {
-        return NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => $codigo, 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
+        return $this->noTenantDe($estabelecimento, fn () => NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => $codigo, 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]));
     }
 
     private function criarAnoLectivo(Estabelecimento $estabelecimento, string $nome = '2026'): AnoLectivo
     {
-        return AnoLectivo::create([
+        return $this->noTenantDe($estabelecimento, fn () => AnoLectivo::create([
             'estabelecimento_id' => $estabelecimento->id,
             'nome' => $nome,
             'data_inicio' => '2026-01-01',
             'data_fim' => '2026-12-31',
             'estado' => EstadoAnoLectivo::ATIVO,
-        ]);
+        ]));
     }
 
     private function criarPlano(Estabelecimento $estabelecimento, Curso $curso, string $codigo): PlanoCurricular
     {
         $nivel = $this->criarNivelAcademico($estabelecimento);
 
-        return PlanoCurricular::create([
+        return $this->noTenantDe($estabelecimento, fn () => PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
             'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso->id,
             'codigo' => $codigo,
             'nome' => 'Plano do Estabelecimento B',
-        ]);
+        ]));
     }
 
     /**
@@ -170,12 +170,12 @@ class PlanoCurricularIsolamentoTest extends TestCase
     {
         [$estabelecimentoA, $estabelecimentoB, $planoB] = $this->prepararCenarioCrossEstabelecimento();
         $disciplinaB = $this->criarDisciplina($estabelecimentoB, 'MAT');
-        $itemB = $planoB->disciplinas()->create([
+        $itemB = $this->noTenantDe($estabelecimentoB, fn () => $planoB->disciplinas()->create([
             'disciplina_id' => $disciplinaB->id,
             'tipo' => TipoDisciplinaPlano::NORMAL,
             'obrigatoria' => true,
             'ordem' => 1,
-        ]);
+        ]));
 
         // Payload válido para o estabelecimento actual (A), para isolar exactamente
         // a guarda do Controller — não uma rejeição da FormRequest por FK inválida.
@@ -197,12 +197,12 @@ class PlanoCurricularIsolamentoTest extends TestCase
     {
         [, $estabelecimentoB, $planoB] = $this->prepararCenarioCrossEstabelecimento();
         $disciplinaB = $this->criarDisciplina($estabelecimentoB, 'MAT');
-        $itemB = $planoB->disciplinas()->create([
+        $itemB = $this->noTenantDe($estabelecimentoB, fn () => $planoB->disciplinas()->create([
             'disciplina_id' => $disciplinaB->id,
             'tipo' => TipoDisciplinaPlano::NORMAL,
             'obrigatoria' => true,
             'ordem' => 1,
-        ]);
+        ]));
 
         $this->delete(route('planos-curriculares.disciplinas.destroy', [$planoB, $itemB]))->assertNotFound();
 
@@ -225,15 +225,15 @@ class PlanoCurricularIsolamentoTest extends TestCase
     {
         [, $estabelecimentoB, $planoB] = $this->prepararCenarioCrossEstabelecimento();
         $disciplinaB = $this->criarDisciplina($estabelecimentoB, 'MAT');
-        $itemB = $planoB->disciplinas()->create([
+        $itemB = $this->noTenantDe($estabelecimentoB, fn () => $planoB->disciplinas()->create([
             'disciplina_id' => $disciplinaB->id,
             'tipo' => TipoDisciplinaPlano::NORMAL,
             'obrigatoria' => true,
             'ordem' => 1,
-        ]);
+        ]));
         $anoLectivoB = $this->criarAnoLectivo($estabelecimentoB);
-        $periodoB = Periodo::create(['ano_lectivo_id' => $anoLectivoB->id, 'nome' => '1º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 1, 'data_inicio' => '2026-01-01', 'data_fim' => '2026-04-01']);
-        $aplicacaoB = PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $planoB->id, 'ano_lectivo_id' => $anoLectivoB->id]);
+        $periodoB = $this->noTenantDe($estabelecimentoB, fn () => Periodo::create(['ano_lectivo_id' => $anoLectivoB->id, 'nome' => '1º Trimestre', 'tipo' => TipoPeriodo::TRIMESTRE, 'numero' => 1, 'data_inicio' => '2026-01-01', 'data_fim' => '2026-04-01']));
+        $aplicacaoB = $this->noTenantDe($estabelecimentoB, fn () => PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $planoB->id, 'ano_lectivo_id' => $anoLectivoB->id]));
 
         $this->put(route('planos-curriculares.anos-lectivos.disciplinas.periodos.update', [$planoB, $aplicacaoB, $itemB]), [
             'periodo_ids' => [$periodoB->id],

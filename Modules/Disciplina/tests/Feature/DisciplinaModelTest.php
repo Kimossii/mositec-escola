@@ -84,7 +84,7 @@ class DisciplinaModelTest extends TestCase
         $estabelecimentoB = $this->estabelecimentoDeOutroTenant(['nome' => 'Escola B', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
 
         $disciplinaA = Disciplina::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'INF', 'nome' => 'Informática']);
-        $disciplinaB = Disciplina::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $disciplinaB = $this->noTenantDe($estabelecimentoB, fn () => Disciplina::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'INF', 'nome' => 'Informática']));
 
         $this->assertNotSame($disciplinaA->id, $disciplinaB->id);
     }

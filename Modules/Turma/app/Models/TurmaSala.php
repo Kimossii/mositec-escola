@@ -4,10 +4,13 @@ namespace Modules\Turma\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Infraestrutura\Models\Sala;
 
 class TurmaSala extends Model
 {
+    use PertenceAoTenant;
+
     protected $table = 'turma_salas';
 
     protected $fillable = [

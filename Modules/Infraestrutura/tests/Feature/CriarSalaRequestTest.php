@@ -73,12 +73,12 @@ class CriarSalaRequestTest extends TestCase
             'nome' => 'Escola A',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
         ]);
-        Sala::create([
+        $this->noTenantDe($estabelecimentoA, fn () => Sala::create([
             'estabelecimento_id' => $estabelecimentoA->id,
             'codigo' => 'A101',
             'nome' => 'Sala 101',
             'tipo' => TipoSala::SALA_AULA->value,
-        ]);
+        ]));
 
         $estabelecimentoB = $this->estabelecimentoDeTeste([
             'nome' => 'Escola B',

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Aluno\Enums\EstadoEnquadramentoAcademicoEnum;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Curso\Models\Curso;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Usuario\Models\User;
@@ -13,6 +14,7 @@ use Modules\Usuario\Models\User;
 class AlunoEnquadramentoAcademico extends Model
 {
     use HasFactory;
+    use PertenceAoTenant;
 
     protected $table = 'aluno_enquadramentos_academicos';
 

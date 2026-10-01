@@ -51,6 +51,15 @@ trait ComTenantDeTeste
     }
 
     /**
+     * Corre o closure no tenant dono do estabelecimento dado. Para criar, na
+     * preparação de um teste, dados que pertencem a um estabelecimento de outro tenant.
+     */
+    protected function noTenantDe(Estabelecimento $estabelecimento, Closure $fn): mixed
+    {
+        return $this->noTenant(Tenant::findOrFail($estabelecimento->tenant_id), $fn);
+    }
+
+    /**
      * Num teste que faz pedidos a mais de um tenant, usar sempre este método:
      * depois de um pedido com URL absoluto, os caminhos relativos ('/x') do
      * mesmo teste herdam o host desse pedido.

@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('plano_curricular_disciplina_periodos', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('plano_curricular_ano_lectivo_id')->constrained('plano_curricular_anos_lectivos')->cascadeOnDelete();
             $table->foreignId('plano_curricular_disciplina_id')->constrained('plano_curricular_disciplinas')->restrictOnDelete();
             $table->foreignId('periodo_id')->constrained('periodos')->restrictOnDelete();

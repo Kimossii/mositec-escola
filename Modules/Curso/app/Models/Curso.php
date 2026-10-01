@@ -5,6 +5,7 @@ namespace Modules\Curso\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -14,6 +15,7 @@ use Modules\Usuario\Models\User;
 class Curso extends Model
 {
     use RegistaAutoria;
+    use PertenceAoTenant;
     use SincronizaEstadoDescricao;
 
     protected $table = 'cursos';
