@@ -5,6 +5,7 @@ namespace Modules\Core\Providers;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Modules\Core\Providers\RouteServiceProvider;
 use Modules\Core\Support\PesquisaTexto;
+use Modules\Core\Tenancy\Jobs\CapturaTenantNoPayload;
 use Modules\Core\Tenancy\Provisioning\ColectorDeCredenciais;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Core\Tenancy\Validation\VerificadorPresencaTenant;
@@ -36,5 +37,6 @@ class CoreServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         PesquisaTexto::registar();
+        CapturaTenantNoPayload::registar();
     }
 }

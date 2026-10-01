@@ -3,6 +3,8 @@
 namespace Modules\Autenticacao\Providers;
 
 use Laravel\Sanctum\Sanctum;
+use Modules\Autenticacao\Console\RecuperarAdministradorCommand;
+use Modules\Autenticacao\Console\SincronizarPerfisCommand;
 use Modules\Autenticacao\Models\TokenDeAcesso;
 use Modules\Autenticacao\Service\LimitadorLogin;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
@@ -27,7 +29,10 @@ class AutenticacaoServiceProvider extends ModuleServiceProvider
      *
      * @var string[]
      */
-    // protected array $commands = [];
+    protected array $commands = [
+        SincronizarPerfisCommand::class,
+        RecuperarAdministradorCommand::class,
+    ];
 
     /**
      * Provider classes to register.

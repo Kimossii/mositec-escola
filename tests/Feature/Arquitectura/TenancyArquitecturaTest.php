@@ -277,6 +277,81 @@ class TenancyArquitecturaTest extends TestCase
         $this->assertSame([], $violacoes, "Leitura/remoção de ficheiros por caminho literal:\n" . implode("\n", $violacoes));
     }
 
+    /**
+     * Classes de aplicação que entram em filas ou na linha de comandos correm sem pedido HTTP,
+     * logo sem tenant: têm de declarar como o obtêm. Varrimento por texto (sem analisar quais
+     * models tocam): qualquer classe assim, fora destas excepções, tem de usar a trait. Os
+     * comandos do módulo Tenant gerem `tenants` e `domains`, que não são tenant-scoped.
+     */
+    private const EXCEPCOES_FILAS_E_COMANDOS = [];
+
+    private function declaraClasse(string $conteudo, string $padraoHerancaOuInterface): bool
+    {
+        return preg_match('/^(?:abstract\s+|final\s+)?class\s+\w+[^{]*\b' . $padraoHerancaOuInterface . '\b/m', $conteudo) === 1;
+    }
+
+    public function test_jobs_enfileirados_usam_com_tenant(): void
+    {
+        $violacoes = [];
+
+        foreach ($this->codigoDeAplicacao() as $caminho => $conteudo) {
+            if (! str_starts_with($caminho, 'Modules/') || in_array($caminho, self::EXCEPCOES_FILAS_E_COMANDOS, true)) {
+                continue;
+            }
+
+            if ($this->declaraClasse($conteudo, 'ShouldQueue(?:AfterCommit)?') && ! preg_match('/^[ \t]+use\s+[^;]*\bComTenant\b/m', $conteudo)) {
+                $violacoes[] = $caminho;
+            }
+        }
+
+        $this->assertSame([], $violacoes, "Classes ShouldQueue sem a trait ComTenant (correriam sem tenant):\n" . implode("\n", $violacoes));
+    }
+
+    public function test_comandos_de_dados_de_escola_usam_a_convencao_de_tenant(): void
+    {
+        $violacoes = [];
+
+        foreach ($this->codigoDeAplicacao() as $caminho => $conteudo) {
+            if (! str_starts_with($caminho, 'Modules/') || str_starts_with($caminho, 'Modules/Tenant/') || in_array($caminho, self::EXCEPCOES_FILAS_E_COMANDOS, true)) {
+                continue;
+            }
+
+            if ($this->declaraClasse($conteudo, '(?:Symfony)?Command') && ! preg_match('/^[ \t]+use\s+(?:ParaTodosOsTenants|EscolheUmTenant)\b/m', $conteudo)) {
+                $violacoes[] = $caminho;
+            }
+        }
+
+        $this->assertSame([], $violacoes, "Comandos fora do módulo Tenant sem ParaTodosOsTenants/EscolheUmTenant (--tenant/--todos):\n" . implode("\n", $violacoes));
+    }
+
+    /** @dataProvider exemplosDeClasses */
+    public function test_o_varrimento_de_classes_apanha_o_que_deve(string $codigo, string $padrao, bool $esperado): void
+    {
+        $this->assertSame($esperado, $this->declaraClasse($codigo, $padrao), $codigo);
+    }
+
+    public static function exemplosDeClasses(): array
+    {
+        return [
+            'job' => ['class Foo implements ShouldQueue', 'ShouldQueue', true],
+            'job com outras interfaces' => ['final class Foo extends Bar implements Baz, ShouldQueue {', 'ShouldQueue', true],
+            'job em várias linhas' => ["class Foo\n    implements ShouldQueue\n{", 'ShouldQueue', true],
+            'classe normal' => ['class Foo extends Bar', 'ShouldQueue', false],
+            'comando' => ['class FooCommand extends Command', 'Command', true],
+            'comando abstracto' => ['abstract class Foo extends Command', 'Command', true],
+            'job após commit' => ['class Foo implements ShouldQueueAfterCommit', 'ShouldQueue(?:AfterCommit)?', true],
+            'comando Symfony' => ['class Foo extends SymfonyCommand', '(?:Symfony)?Command', true],
+            'não é comando' => ['class Foo extends CommandBus', '(?:Symfony)?Command', false],
+        ];
+    }
+
+    public function test_o_core_nao_conhece_o_modulo_tenant_nos_ficheiros_de_runtime(): void
+    {
+        foreach (glob($this->raiz() . '/Modules/Core/app/Tenancy/{Jobs,Console,Contracts}/*.php', GLOB_BRACE) as $ficheiro) {
+            $this->assertStringNotContainsString('Modules\\Tenant\\', file_get_contents($ficheiro), $ficheiro);
+        }
+    }
+
     public function test_as_excepcoes_declaradas_ainda_existem(): void
     {
         foreach (self::EXCEPCOES_DB_TABLE as $caminho) {
