@@ -54,6 +54,8 @@ return [
         'modulos',
         'acoes',
         'licencas', // legado; ver spec §18
+        'super_admins', // Plataforma MosiTec: operadores, sem escola
+        'plataforma_auditoria', // Plataforma MosiTec: rasto das acções, sobrevive aos tenants
     ],
 
     /*

@@ -129,11 +129,43 @@ class TenancyArquitecturaTest extends TestCase
 
     public function test_so_o_modulo_tenant_conhece_o_modulo_tenant(): void
     {
-        // O seeder raiz compõe os seeders de todos os módulos; é o único ponto
+        // O seeder raiz compõe os seeders de todos os módulos; é um dos pontos
         // fora do módulo Tenant que o pode referir.
-        $violacoes = $this->ocorrencias('/Modules\\\\Tenant\\\\/', ['Modules/Tenant/', 'database/seeders/DatabaseSeeder.php']);
+        // Modules/Plataforma/ é a segunda excepção, explícita: a Plataforma é uma segunda interface
+        // sobre as Actions e os Services de gestão de tenants (Plano 13) e depende do módulo Tenant
+        // por desenho (D1). Qualquer outro módulo continua sem o poder importar.
+        $violacoes = $this->ocorrencias('/Modules\\\\Tenant\\\\/', ['Modules/Tenant/', 'Modules/Plataforma/', 'database/seeders/DatabaseSeeder.php']);
 
         $this->assertSame([], $violacoes, "Estes ficheiros importam Modules\\Tenant. Os módulos da escola e o Core só podem conhecer TenantAtual e TenantContext:\n" . implode("\n", $violacoes));
+    }
+
+    /**
+     * A Plataforma só conhece o Core (contratos e tipos) e o módulo Tenant (Plano 13, D1/D6);
+     * nunca módulos de negócio (Usuario, Permissao, Autenticacao, módulos académicos...).
+     */
+    public function test_a_plataforma_so_importa_core_e_tenant(): void
+    {
+        $violacoes = [];
+
+        foreach ($this->codigoDeAplicacao() as $caminho => $conteudo) {
+            if (! str_starts_with($caminho, 'Modules/Plataforma/')) {
+                continue;
+            }
+
+            if (preg_match('/(?<![\\\\\w])Modules\\\\(?!Core\\\\|Tenant\\\\|Plataforma\\\\)\w+/', $conteudo, $achado) === 1) {
+                $violacoes[] = "{$caminho}: {$achado[0]}";
+            }
+        }
+
+        $this->assertSame([], $violacoes, "A Plataforma só pode importar Core e Tenant:\n" . implode("\n", $violacoes));
+    }
+
+    /** O Core, o Tenant e os módulos da escola não conhecem a Plataforma (só o seeder raiz a compõe). */
+    public function test_ninguem_importa_a_plataforma(): void
+    {
+        $violacoes = $this->ocorrencias('/Modules\\\\Plataforma\\\\/', ['Modules/Plataforma/', 'database/seeders/DatabaseSeeder.php']);
+
+        $this->assertSame([], $violacoes, "Estes ficheiros importam Modules\\Plataforma:\n" . implode("\n", $violacoes));
     }
 
     public function test_ninguem_remove_os_global_scopes(): void
@@ -376,6 +408,17 @@ class TenancyArquitecturaTest extends TestCase
      */
     private const EXCEPCOES_FILAS_E_COMANDOS = [];
 
+    /**
+     * Comandos da Plataforma: gerem super admins (tabela global) e não operam sobre dados de escola,
+     * por isso não têm --tenant/--todos. Excepção explícita, por ficheiro (nunca por pasta, para um
+     * comando futuro de dados de escola não escapar à convenção). O teste seguinte garante que estes
+     * comandos continuam sem tocar no contexto de tenant.
+     */
+    private const COMANDOS_DA_PLATAFORMA = [
+        'Modules/Plataforma/app/Console/CriarSuperAdminCommand.php',
+        'Modules/Plataforma/app/Console/RedefinirSuperAdminCommand.php',
+    ];
+
     private function declaraClasse(string $conteudo, string $padraoHerancaOuInterface): bool
     {
         return preg_match('/^(?:abstract\s+|final\s+)?class\s+\w+[^{]*\b' . $padraoHerancaOuInterface . '\b/m', $conteudo) === 1;
@@ -453,7 +496,7 @@ class TenancyArquitecturaTest extends TestCase
         $violacoes = [];
 
         foreach ($this->codigoDeAplicacao() as $caminho => $conteudo) {
-            if (! str_starts_with($caminho, 'Modules/') || str_starts_with($caminho, 'Modules/Tenant/') || in_array($caminho, self::EXCEPCOES_FILAS_E_COMANDOS, true)) {
+            if (! str_starts_with($caminho, 'Modules/') || str_starts_with($caminho, 'Modules/Tenant/') || in_array($caminho, self::EXCEPCOES_FILAS_E_COMANDOS, true) || in_array($caminho, self::COMANDOS_DA_PLATAFORMA, true)) {
                 continue;
             }
 
@@ -463,6 +506,144 @@ class TenancyArquitecturaTest extends TestCase
         }
 
         $this->assertSame([], $violacoes, "Comandos fora do módulo Tenant sem ParaTodosOsTenants/EscolheUmTenant (--tenant/--todos):\n" . implode("\n", $violacoes));
+    }
+
+    public function test_os_comandos_da_plataforma_nao_tocam_no_contexto_de_tenant(): void
+    {
+        $codigo = $this->codigoDeAplicacao();
+
+        foreach (self::COMANDOS_DA_PLATAFORMA as $caminho) {
+            $this->assertArrayHasKey($caminho, $codigo);
+            $this->assertStringNotContainsString('TenantContext', $codigo[$caminho], $caminho);
+            $this->assertStringNotContainsString('Modules\\Tenant\\Models', $codigo[$caminho], $caminho);
+        }
+    }
+
+    /** Operações que abrem, fecham, trocam ou memorizam contexto de tenant. A leitura (temTenant, id, atual) é permitida. */
+    private const PADRAO_OPERACAO_DE_CONTEXTO = '/\b(?:definir|limpar|executarComo|lembrar)\b/';
+
+    /** Ficheiro que refere o contexto ou o obtém do container (sem o nomear). */
+    private const PADRAO_TEM_ACESSO_AO_CONTEXTO = '/TenantContext|\bresolve\s*\(|\bapp\s*\(|->\s*make\s*\(|->\s*get\s*\(\s*[\'"]/';
+
+    /** Formas de chamar um método sem o escrever: não existem no código da Plataforma que acede ao contexto. */
+    private const PADRAO_CHAMADA_DINAMICA = '/->\s*\{|::\s*\{|\bcall_user_func(?:_array)?\s*\(|Closure::fromCallable|->\s*call\s*\(|\bnew\s+ReflectionMethod/';
+
+    private function semComentarios(string $codigo): string
+    {
+        $saida = '';
+
+        foreach (token_get_all($codigo) as $token) {
+            if (is_array($token)) {
+                if (in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                    continue;
+                }
+                $saida .= $token[1];
+            } else {
+                $saida .= $token;
+            }
+        }
+
+        return $saida;
+    }
+
+    /**
+     * Regra de ouro (Plano 13), para um ficheiro da Plataforma.
+     *
+     * @return string[] motivos de violação
+     */
+    private function violacoesDaRegraDeOuro(string $codigo, bool $camadaHttpOuRotas): array
+    {
+        $codigo = $this->semComentarios($codigo);
+        $motivos = [];
+
+        if ($camadaHttpOuRotas && str_contains($codigo, 'TenantContext')) {
+            $motivos[] = 'refere TenantContext na camada HTTP/rotas (nem injecção, nem leitura)';
+        }
+
+        if (preg_match(self::PADRAO_TEM_ACESSO_AO_CONTEXTO, $codigo) === 1) {
+            if (preg_match(self::PADRAO_OPERACAO_DE_CONTEXTO, $codigo, $achado) === 1) {
+                $motivos[] = "usa '{$achado[0]}' num ficheiro com acesso ao contexto";
+            }
+
+            if (preg_match(self::PADRAO_CHAMADA_DINAMICA, $codigo, $achado) === 1) {
+                $motivos[] = "chamada dinâmica '{$achado[0]}' num ficheiro com acesso ao contexto";
+            }
+        }
+
+        return $motivos;
+    }
+
+    /** @return array<string, string> caminho relativo => conteúdo, de TODO o módulo Plataforma (sem testes) */
+    private function codigoDaPlataforma(): array
+    {
+        $ficheiros = [];
+        $iterador = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($this->raiz() . '/Modules/Plataforma', FilesystemIterator::SKIP_DOTS));
+
+        foreach ($iterador as $ficheiro) {
+            $relativo = str_replace($this->raiz() . '/', '', $ficheiro->getPathname());
+
+            if ($ficheiro->isFile() && $ficheiro->getExtension() === 'php' && ! str_starts_with($relativo, 'Modules/Plataforma/tests/')) {
+                $ficheiros[$relativo] = file_get_contents($ficheiro->getPathname());
+            }
+        }
+
+        return $ficheiros;
+    }
+
+    /**
+     * Nada na Plataforma (app, routes, providers, seeders, config) abre, fecha, troca ou memoriza o
+     * contexto de tenant, de forma directa ou dinâmica; a camada HTTP e as rotas nem o referem.
+     * Só uma Action fora da Plataforma pode usar TenantContext::executarComo.
+     */
+    public function test_a_plataforma_nao_abre_contexto_de_tenant(): void
+    {
+        $codigo = $this->codigoDaPlataforma();
+        $http = 0;
+        $violacoes = [];
+
+        foreach ($codigo as $caminho => $conteudo) {
+            $camadaHttp = str_starts_with($caminho, 'Modules/Plataforma/app/Http/') || str_starts_with($caminho, 'Modules/Plataforma/routes/');
+            $http += $camadaHttp ? 1 : 0;
+
+            foreach ($this->violacoesDaRegraDeOuro($conteudo, $camadaHttp) as $motivo) {
+                $violacoes[] = "{$caminho}: {$motivo}";
+            }
+        }
+
+        $this->assertGreaterThan(0, $http, 'Nenhum ficheiro HTTP/rotas da Plataforma foi analisado.');
+        $this->assertArrayHasKey('Modules/Plataforma/app/Providers/PlataformaServiceProvider.php', $codigo);
+        $this->assertArrayHasKey('Modules/Plataforma/config/config.php', $codigo);
+        $this->assertArrayHasKey('Modules/Plataforma/database/seeders/PlataformaDesenvolvimentoSeeder.php', $codigo);
+        $this->assertSame([], $violacoes, "A Plataforma não pode abrir contexto de tenant:\n" . implode("\n", $violacoes));
+    }
+
+    /** @return array<string, array{string, bool, bool}> */
+    public static function exemplosDeRegraDeOuro(): array
+    {
+        return [
+            'chamada directa' => ['<?php app(TenantContext::class)->executarComo($t, fn () => 1);', false, true],
+            'definir estático' => ['<?php TenantContext::definir($t);', false, true],
+            'limpar injectado' => ['<?php class A { function __construct(private TenantContext $c) {} function f() { $this->c->limpar(); } }', false, true],
+            'lembrar' => ['<?php $ctx = resolve(TenantContext::class); $ctx->lembrar("k", fn () => 1);', false, true],
+            'array-callable' => ['<?php $ctx = app(TenantContext::class); call_user_func([$ctx, "definir"], $t);', false, true],
+            'array-callable sem call_user_func' => ['<?php $ctx = app(TenantContext::class); [$ctx, "definir"]($t);', false, true],
+            'string do método' => ['<?php $ctx = app(TenantContext::class); $m = "executarComo"; $ctx->$m($t, fn () => 1);', false, true],
+            'método dinâmico' => ['<?php $ctx = app(TenantContext::class); $ctx->{$m}($t);', false, true],
+            'call_user_func sem nomear a operação' => ['<?php $ctx = app(TenantContext::class); call_user_func([$ctx, $m]);', false, true],
+            'container call' => ['<?php app()->call([app(TenantContext::class), "limpar"]);', false, true],
+            'obtido sem nomear a classe' => ['<?php app("tenancy.contexto")->limpar();', false, true],
+            'injecção na camada http' => ['<?php class C { function __construct(private TenantContext $c) {} }', true, true],
+            'leitura permitida' => ['<?php class A { function f(TenantContext $c) { return $c->temTenant() || $c->id() || $c->atual(); } }', false, false],
+            'comentário não conta' => ["<?php // TenantContext::limpar()\n/** executarComo */ \$x = app('session');", false, false],
+            'sem acesso ao contexto' => ['<?php $lista = []; $lista[] = "limpar"; $this->limpar();', false, false],
+            'leitura na camada http é recusada' => ['<?php class C { function f(TenantContext $c) { return $c->temTenant(); } }', true, true],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('exemplosDeRegraDeOuro')]
+    public function test_o_varrimento_da_regra_de_ouro_apanha_o_que_deve(string $codigo, bool $camadaHttp, bool $esperado): void
+    {
+        $this->assertSame($esperado, $this->violacoesDaRegraDeOuro($codigo, $camadaHttp) !== [], $codigo);
     }
 
     /** @dataProvider exemplosDeClasses */
@@ -495,7 +676,7 @@ class TenancyArquitecturaTest extends TestCase
 
     public function test_as_excepcoes_declaradas_ainda_existem(): void
     {
-        foreach ([...self::EXCEPCOES_DB_TABLE, ...self::EXCEPCOES_ELOQUENT] as $caminho) {
+        foreach ([...self::EXCEPCOES_DB_TABLE, ...self::EXCEPCOES_ELOQUENT, ...self::COMANDOS_DA_PLATAFORMA] as $caminho) {
             $this->assertFileExists($this->raiz() . '/' . $caminho, "Excepção obsoleta em TenancyArquitecturaTest: {$caminho}");
         }
     }

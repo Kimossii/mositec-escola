@@ -2,6 +2,7 @@
 
 namespace Modules\Tenant\Services;
 
+use Modules\Core\Tenancy\Support\HostsCentrais;
 use Modules\Core\Tenancy\Support\NormalizadorHost;
 use Modules\Tenant\Exceptions\DadosDeTenantInvalidos;
 use Modules\Tenant\Models\Domain;
@@ -42,7 +43,7 @@ class ValidadorDominio
             throw new DadosDeTenantInvalidos(['dominio' => "O subdomínio '{$primeiraEtiqueta}' está reservado."]);
         }
 
-        if (in_array($host, array_map([NormalizadorHost::class, 'normalizar'], config('tenancy.hosts_centrais', [])), true)) {
+        if (HostsCentrais::contem($host)) {
             throw new DadosDeTenantInvalidos(['dominio' => "'{$host}' é um host central e não pode pertencer a um tenant."]);
         }
 

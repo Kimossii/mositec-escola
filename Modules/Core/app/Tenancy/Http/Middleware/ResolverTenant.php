@@ -7,7 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Core\Tenancy\Contracts\ResolvedorTenant;
 use Modules\Core\Tenancy\Enums\EstadoTenant;
-use Modules\Core\Tenancy\Support\NormalizadorHost;
+use Modules\Core\Tenancy\Support\HostsCentrais;
 use Modules\Core\Tenancy\TenantContext;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -35,7 +35,7 @@ class ResolverTenant
 
         $this->contexto->limpar();
 
-        if ($this->hostCentral($request)) {
+        if (HostsCentrais::contem($request->getHost())) {
             return $next($request);
         }
 
@@ -89,14 +89,5 @@ class ResolverTenant
         return response()
             ->view('tenancy.conta-suspensa', [], 403)
             ->header('Cache-Control', 'no-store, private');
-    }
-
-    private function hostCentral(Request $request): bool
-    {
-        return in_array(
-            NormalizadorHost::normalizar($request->getHost()),
-            config('tenancy.hosts_centrais', []),
-            true,
-        );
     }
 }

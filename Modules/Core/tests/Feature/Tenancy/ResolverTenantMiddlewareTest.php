@@ -26,6 +26,8 @@ class ResolverTenantMiddlewareTest extends TestCase
 
         Route::middleware('web')->get('/_tenancy/web', $responder);
         Route::middleware('api')->get('/_tenancy/api', $responder);
+        // Fora dos grupos web/api (que exigem tenant): é onde um host central ainda responde.
+        Route::get('/_tenancy/sem-grupo', $responder);
     }
 
     public function test_a_base_de_testes_cria_um_tenant_por_omissao_e_define_o_contexto(): void
@@ -77,7 +79,7 @@ class ResolverTenantMiddlewareTest extends TestCase
     {
         config(['tenancy.hosts_centrais' => ['plataforma.localhost']]);
 
-        $this->get('http://plataforma.localhost/_tenancy/web')->assertOk()->assertSee('sem-tenant');
+        $this->get('http://plataforma.localhost/_tenancy/sem-grupo')->assertOk()->assertSee('sem-tenant');
     }
 
     public function test_depois_do_pedido_o_contexto_volta_ao_que_estava(): void
@@ -154,7 +156,7 @@ class ResolverTenantMiddlewareTest extends TestCase
 
         // Em host central o middleware não define tenant: se o contexto do
         // teste vazasse para dentro do pedido, a rota veria MOSI-000001.
-        $this->get('http://plataforma.localhost/_tenancy/web')->assertSee('sem-tenant');
+        $this->get('http://plataforma.localhost/_tenancy/sem-grupo')->assertSee('sem-tenant');
         $this->assertSame($this->tenant->id, app(TenantContext::class)->id());
     }
 

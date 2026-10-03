@@ -6,8 +6,12 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Modules\Autenticacao\Http\Middleware\ExigirTrocaDeSenha;
 use Modules\Autenticacao\Http\Middleware\VerificarTenantDaSessao;
+use Modules\Core\Tenancy\Http\Middleware\ExigirTenantNoContexto;
 use Modules\Core\Tenancy\Http\Middleware\ResolverTenant;
 use Modules\Estabelecimento\Http\Middleware\ExigirConfiguracaoInicial;
+use Modules\Plataforma\Http\Middleware\ApenasHostCentral;
+use Modules\Plataforma\Http\Middleware\ConfigurarSessaoPlataforma;
+use Modules\Plataforma\Http\Middleware\HandleInertiaPlataforma;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -22,6 +26,27 @@ return Application::configure(basePath: dirname(__DIR__))
         // EnsureFrontendRequestsAreStateful (que inicia a sessão e autentica)
         // à frente de tudo o que o grupo registe.
         $middleware->append(ResolverTenant::class);
+
+        // Os dois mundos: `web` e `api` são a escola e exigem tenant resolvido (ExigirTenantNoContexto
+        // é o primeiro de cada grupo, antes até do Sanctum, que iniciaria a sessão); `plataforma` é o
+        // painel central e exige host central. Nunca partilham middleware de sessão da escola.
+        $middleware->prependToGroup('web', ExigirTenantNoContexto::class);
+        $middleware->prependToGroup('api', ExigirTenantNoContexto::class);
+
+        $middleware->group('plataforma', [
+            ApenasHostCentral::class,
+            ConfigurarSessaoPlataforma::class,
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            HandleInertiaPlataforma::class,
+        ]);
+
+        // O login de um visitante no painel é o do painel; a escola mantém o comportamento por omissão (route('login')).
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('plataforma', 'plataforma/*') ? route('plataforma.login') : null);
 
         $middleware->api([
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,

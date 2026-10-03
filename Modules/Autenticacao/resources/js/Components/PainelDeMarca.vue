@@ -1,3 +1,11 @@
+<script setup>
+// Texto configurável (por omissão, o da escola) para o painel da Plataforma reaproveitar o mesmo painel.
+defineProps({
+    titulo: { type: String, default: 'Gestão Acadêmica MosiTec' },
+    subtitulo: { type: String, default: 'Matrículas, turmas, notas e frequência num só lugar.' },
+});
+</script>
+
 <template>
     <div
         class="d-flex flex-lg-row-fluid w-lg-50 order-1 order-lg-2"
@@ -10,10 +18,10 @@
                 class="h-30px mb-10"
             />
             <h1 class="d-none d-lg-block text-white fs-2qx fw-bolder text-center mb-7">
-                Gestão Acadêmica MosiTec
+                {{ titulo }}
             </h1>
             <div class="d-none d-lg-block text-white fs-base text-center opacity-75">
-                Matrículas, turmas, notas e frequência num só lugar.
+                {{ subtitulo }}
             </div>
         </div>
     </div>

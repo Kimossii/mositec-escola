@@ -12,6 +12,7 @@ use Modules\Infraestrutura\Database\Seeders\SalaSeeder;
 use Modules\Permissao\Actions\SincronizarPerfisDeSistemaAction;
 use Modules\Permissao\Database\Seeders\AcaoSeeder;
 use Modules\Permissao\Database\Seeders\ModuloSeeder;
+use Modules\Plataforma\Database\Seeders\PlataformaDesenvolvimentoSeeder;
 use Modules\Tenant\Database\Seeders\TenantDesenvolvimentoSeeder;
 use Modules\Tenant\Models\Tenant;
 use Modules\Turma\Database\Seeders\TurnoSeeder;
@@ -24,7 +25,8 @@ class DatabaseSeeder extends Seeder
      *
      * 1. Catálogo global (módulos e acções de permissão): uma vez por instalação.
      * 2. Em desenvolvimento, os dois tenants, criados pelo provisioning (CriarTenantAction).
-     * 3. Em desenvolvimento, dentro de CADA tenant: administrador com senha conhecida e dados de demonstração.
+     * 3. Em desenvolvimento, o super admin da Plataforma (global).
+     * 4. Em desenvolvimento, dentro de CADA tenant: administrador com senha conhecida e dados de demonstração.
      *
      * Em produção só corre o passo 1: as escolas criam-se com `php artisan mosi:tenant:create`.
      */
@@ -40,6 +42,8 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->call(TenantDesenvolvimentoSeeder::class);
+        // Operador da Plataforma (global, sem tenant): fora do ciclo por tenant.
+        $this->call(PlataformaDesenvolvimentoSeeder::class);
 
         foreach (TenantDesenvolvimentoSeeder::TENANTS as $definicao) {
             $tenant = Tenant::query()->where('codigo', $definicao['codigo'])->first();
