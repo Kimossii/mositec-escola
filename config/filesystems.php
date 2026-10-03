@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Sem rota storage/{path}: nada neste disco se serve por URL (só por rotas autenticadas).
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

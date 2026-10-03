@@ -45,7 +45,8 @@ return [
     /*
     | Tabelas sem tenant_id por desenho: catálogo do produto e gestão de tenants.
     | As regras exists/unique sobre estas tabelas não são filtradas por tenant.
-    | Qualquer tabela que NÃO esteja numa das três listas abaixo é tratada como tenant-scoped.
+    | Toda a tabela é exactamente uma de: tem tenant_id, consta em tabelas_globais ou em
+    | tabelas_infraestrutura (verificado por TenancyEsquemaTest). Qualquer outra é tenant-scoped.
     */
     'tabelas_globais' => [
         'tenants',
@@ -67,11 +68,4 @@ return [
         'sessions',
         'migrations',
     ],
-
-    /*
-    | LISTA DE TRANSIÇÃO. Tabelas de tenant que ainda não receberam tenant_id.
-    | Cada plano seguinte retira daqui as tabelas que converte.
-    | O último plano exige que esteja vazia e remove esta chave.
-    */
-    'tabelas_por_converter' => [],
 ];

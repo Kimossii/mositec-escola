@@ -2,6 +2,7 @@
 
 **Data:** 2026-09-30
 **Estado:** aprovado em 2026-09-30
+**Implementado:** etapas 1-12 em 2026-10 (guia de equipa em `docs/tenancy.md`)
 **Âmbito:** fundação de multi-tenancy (runtime + gestão mínima de Tenants). Sem interface de Plataforma, sem parte comercial.
 
 ---

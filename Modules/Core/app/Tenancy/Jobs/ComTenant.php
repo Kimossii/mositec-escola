@@ -33,8 +33,8 @@ namespace Modules\Core\Tenancy\Jobs;
  *   (o payload é criado num processo filho, sem contexto).
  * - `dispatch()` devolve um PendingDispatch que só despacha ao ser destruído: não o devolva de um
  *   closure passado a executarComo(); trate-o dentro do contexto.
- * - ShouldBeUnique: o lock não inclui o tenant. Faça uniqueId() incluir o id do tenant, ou duas
- *   escolas bloqueiam-se uma à outra.
+ * - ShouldBeUnique: o lock do Laravel não inclui o tenant. Use também a trait UnicoPorTenant (o
+ *   uniqueId() passa a levar o id do tenant); o teste de arquitectura recusa ShouldBeUnique + ComTenant sem ela.
  * - Com a fila "sync" o job corre dentro do contexto de quem despacha (executarComo repõe-o no
  *   fim); com um worker não há contexto prévio, e o Laravel repõe as instâncias scoped entre jobs.
  * - Descarte (tenant inexistente/suspenso/encerrado): liberta o lock unique e, num lote, conta o job

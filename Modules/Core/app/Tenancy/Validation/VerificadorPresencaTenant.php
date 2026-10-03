@@ -10,7 +10,7 @@ use Modules\Core\Tenancy\TenantContext;
  * pelo Eloquent, por isso ignoram o TenantScope. Este verificador aplica a
  * mesma regra nesse caminho: ler uma tabela de tenant filtra sempre pelo tenant.
  *
- * Uma tabela que não esteja em nenhuma lista de config/tenancy.php é tratada
+ * Uma tabela que não esteja nas listas de config/tenancy.php é tratada
  * como tabela de tenant: o comportamento por omissão é o seguro.
  */
 class VerificadorPresencaTenant extends DatabasePresenceVerifier
@@ -34,7 +34,6 @@ class VerificadorPresencaTenant extends DatabasePresenceVerifier
         return in_array($nome, [
             ...config('tenancy.tabelas_globais', []),
             ...config('tenancy.tabelas_infraestrutura', []),
-            ...config('tenancy.tabelas_por_converter', []),
         ], true);
     }
 }

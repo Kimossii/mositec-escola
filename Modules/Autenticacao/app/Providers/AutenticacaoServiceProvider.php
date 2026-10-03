@@ -3,11 +3,14 @@
 namespace Modules\Autenticacao\Providers;
 
 use Laravel\Sanctum\Sanctum;
+use Modules\Autenticacao\Actions\RevogarAcessosDoTenantAction;
+use Modules\Autenticacao\Console\PodarTokensCommand;
 use Modules\Autenticacao\Console\RecuperarAdministradorCommand;
 use Modules\Autenticacao\Console\SincronizarPerfisCommand;
 use Modules\Autenticacao\Models\TokenDeAcesso;
 use Modules\Autenticacao\Service\LimitadorLogin;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
+use Modules\Core\Tenancy\Contracts\RevogaAcessosDoTenant;
 use Modules\Autenticacao\Provisioning\ProvisionarAdministradorInicial;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
@@ -32,6 +35,7 @@ class AutenticacaoServiceProvider extends ModuleServiceProvider
     protected array $commands = [
         SincronizarPerfisCommand::class,
         RecuperarAdministradorCommand::class,
+        PodarTokensCommand::class,
     ];
 
     /**
@@ -49,6 +53,7 @@ class AutenticacaoServiceProvider extends ModuleServiceProvider
         parent::register();
 
         $this->app->tag([ProvisionarAdministradorInicial::class], ProvisionaTenant::ETIQUETA);
+        $this->app->bind(RevogaAcessosDoTenant::class, RevogarAcessosDoTenantAction::class);
     }
 
     public function boot(): void

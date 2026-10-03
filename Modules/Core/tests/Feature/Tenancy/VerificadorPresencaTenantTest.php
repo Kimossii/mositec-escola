@@ -142,10 +142,4 @@ class VerificadorPresencaTenantTest extends TestCase
 
         $this->passa(['id' => $this->idDeA], ['id' => 'exists:tenancy_teste_itens,id']);
     }
-
-    public function test_tabela_por_converter_nao_e_filtrada(): void
-    {
-        // users ainda não tem tenant_id: filtrar daria erro de coluna inexistente.
-        $this->assertTrue($this->passa(['email' => 'livre@exemplo.ao'], ['email' => 'unique:users,email']));
-    }
 }

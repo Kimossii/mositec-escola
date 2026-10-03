@@ -2,18 +2,17 @@
 
 namespace Tests\Feature\Arquitectura;
 
-use FilesystemIterator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Modules\Core\Tenancy\PertenceAoTenant;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use ReflectionClass;
+use Tests\Concerns\DescobreModels;
 use Tests\TestCase;
 
 class TenancyEsquemaTest extends TestCase
 {
+    use DescobreModels;
     use RefreshDatabase;
 
     /** Tabelas de gestão que referem um tenant sem serem dados de tenant. */
@@ -25,33 +24,77 @@ class TenancyEsquemaTest extends TestCase
         return array_column(Schema::getTables(), 'name');
     }
 
-    public function test_cada_tabela_esta_classificada_exactamente_uma_vez(): void
+    /**
+     * Classes de uma tabela: tenant (tem tenant_id), global ou infra-estrutura. Exactamente uma.
+     * `domains` tem tenant_id por ser gestão de tenants: conta como global, não como de tenant.
+     *
+     * @param  string[]  $tabelas
+     * @return string[] um erro por tabela mal classificada
+     */
+    private function errosDeClassificacao(array $tabelas): array
     {
         $globais = config('tenancy.tabelas_globais');
         $infra = config('tenancy.tabelas_infraestrutura');
-        $porConverter = config('tenancy.tabelas_por_converter');
         $erros = [];
 
-        $this->assertNotEmpty($this->tabelas());
+        foreach ($tabelas as $tabela) {
+            $classes = [];
 
-        foreach ($this->tabelas() as $tabela) {
-            $listas = (int) in_array($tabela, $globais, true)
-                + (int) in_array($tabela, $infra, true)
-                + (int) in_array($tabela, $porConverter, true);
-            $temTenantId = Schema::hasColumn($tabela, 'tenant_id');
+            if (Schema::hasColumn($tabela, 'tenant_id') && ! in_array($tabela, self::GLOBAIS_COM_TENANT_ID, true)) {
+                $classes[] = 'tenant (tem tenant_id)';
+            }
 
-            if ($listas > 0 && $temTenantId && ! in_array($tabela, self::GLOBAIS_COM_TENANT_ID, true)) {
-                $erros[] = "{$tabela}: tem tenant_id mas consta numa lista sem filtro de config/tenancy.php; ficaria exposta na validação.";
-            } elseif ($listas > 1) {
-                $erros[] = "{$tabela}: consta em mais de uma lista de config/tenancy.php.";
-            } elseif ($listas === 0 && ! $temTenantId) {
-                $erros[] = "{$tabela}: não tem tenant_id nem consta em nenhuma lista de config/tenancy.php.";
-            } elseif (in_array($tabela, $porConverter, true) && $temTenantId) {
-                $erros[] = "{$tabela}: já tem tenant_id; retire-a de tabelas_por_converter.";
+            if (in_array($tabela, $globais, true)) {
+                $classes[] = 'global (tabelas_globais)';
+            }
+
+            if (in_array($tabela, $infra, true)) {
+                $classes[] = 'infra-estrutura (tabelas_infraestrutura)';
+            }
+
+            if (count($classes) === 0) {
+                $erros[] = "{$tabela}: não tem tenant_id nem consta em tabelas_globais ou tabelas_infraestrutura.";
+            } elseif (count($classes) > 1) {
+                $erros[] = "{$tabela}: está em mais de uma classe: " . implode(' e ', $classes) . '.';
             }
         }
 
+        return $erros;
+    }
+
+    public function test_cada_tabela_esta_classificada_exactamente_uma_vez(): void
+    {
+        $this->assertNotEmpty($this->tabelas());
+
+        $erros = $this->errosDeClassificacao($this->tabelas());
+
         $this->assertSame([], $erros, implode("\n", $erros));
+    }
+
+    public function test_uma_tabela_nova_sem_classificacao_faz_o_teste_falhar(): void
+    {
+        Schema::create('tabela_nova_sem_classificacao', function ($tabela) {
+            $tabela->id();
+        });
+
+        $erros = $this->errosDeClassificacao($this->tabelas());
+
+        $this->assertCount(1, $erros);
+        $this->assertStringContainsString('tabela_nova_sem_classificacao: não tem tenant_id', $erros[0]);
+    }
+
+    public function test_uma_tabela_em_mais_de_uma_classe_faz_o_teste_falhar(): void
+    {
+        // Com tenant_id e declarada global: ficaria exposta na validação.
+        config(['tenancy.tabelas_globais' => [...config('tenancy.tabelas_globais'), 'cursos']]);
+        // Global e infra-estrutura ao mesmo tempo.
+        config(['tenancy.tabelas_infraestrutura' => [...config('tenancy.tabelas_infraestrutura'), 'modulos']]);
+
+        $erros = $this->errosDeClassificacao($this->tabelas());
+
+        $this->assertCount(2, $erros);
+        $this->assertStringContainsString('cursos: está em mais de uma classe', implode("\n", $erros));
+        $this->assertStringContainsString('modulos: está em mais de uma classe', implode("\n", $erros));
     }
 
     public function test_as_listas_nao_tem_tabelas_que_ja_nao_existem(): void
@@ -59,7 +102,6 @@ class TenancyEsquemaTest extends TestCase
         $declaradas = [
             ...config('tenancy.tabelas_globais'),
             ...config('tenancy.tabelas_infraestrutura'),
-            ...config('tenancy.tabelas_por_converter'),
         ];
 
         $inexistentes = array_values(array_diff($declaradas, $this->tabelas()));
@@ -67,12 +109,16 @@ class TenancyEsquemaTest extends TestCase
         $this->assertSame([], $inexistentes, 'Tabelas declaradas em config/tenancy.php que não existem: ' . implode(', ', $inexistentes));
     }
 
+    public function test_a_lista_de_transicao_foi_removida(): void
+    {
+        $this->assertNull(config('tenancy.tabelas_por_converter'), 'A lista de transição (spec §9.5.1) devia ter sido removida de config/tenancy.php.');
+    }
+
     public function test_todo_o_model_de_uma_tabela_de_tenant_usa_a_trait(): void
     {
         $semFiltro = [
             ...config('tenancy.tabelas_globais'),
             ...config('tenancy.tabelas_infraestrutura'),
-            ...config('tenancy.tabelas_por_converter'),
         ];
         $erros = [];
         $analisados = 0;
@@ -108,7 +154,6 @@ class TenancyEsquemaTest extends TestCase
 
     public function test_toda_a_tabela_com_estabelecimento_id_e_tenant_id_tem_a_chave_composta(): void
     {
-        $porConverter = config('tenancy.tabelas_por_converter');
         $erros = [];
         $comEstabelecimento = 0;
 
@@ -120,9 +165,7 @@ class TenancyEsquemaTest extends TestCase
             $comEstabelecimento++;
 
             if (! Schema::hasColumn($tabela, 'tenant_id')) {
-                if (! in_array($tabela, $porConverter, true)) {
-                    $erros[] = "{$tabela}: tem estabelecimento_id sem tenant_id e não consta em tabelas_por_converter.";
-                }
+                $erros[] = "{$tabela}: tem estabelecimento_id sem tenant_id.";
 
                 continue;
             }
@@ -177,7 +220,7 @@ class TenancyEsquemaTest extends TestCase
         $this->assertSame([], $erros, implode("\n", $erros));
     }
 
-    public function test_as_tabelas_de_identidade_ja_nao_estao_na_lista_de_transicao(): void
+    public function test_as_tabelas_de_identidade_tem_tenant_id(): void
     {
         $convertidas = [
             'users', 'dados_pessoas', 'documentos_pessoas', 'tipos_documentos', 'encarregados_alunos',
@@ -185,16 +228,12 @@ class TenancyEsquemaTest extends TestCase
             'personal_access_tokens',
         ];
 
-        $aindaPorConverter = array_values(array_intersect($convertidas, config('tenancy.tabelas_por_converter')));
-
-        $this->assertSame([], $aindaPorConverter, 'Tabelas de identidade ainda em tabelas_por_converter: '.implode(', ', $aindaPorConverter));
-
         foreach ($convertidas as $tabela) {
             $this->assertTrue(Schema::hasColumn($tabela, 'tenant_id'), "{$tabela} devia ter tenant_id.");
         }
     }
 
-    public function test_as_tabelas_academicas_ja_nao_estao_na_lista_de_transicao(): void
+    public function test_as_tabelas_academicas_tem_tenant_id(): void
     {
         $convertidas = [
             'ano_lectivos', 'periodos', 'eventos_calendario', 'horarios', 'cursos', 'disciplinas', 'salas',
@@ -203,15 +242,9 @@ class TenancyEsquemaTest extends TestCase
             'alunos', 'aluno_enquadramentos_academicos', 'matriculas', 'matricula_historicos', 'inscricoes_disciplinas',
         ];
 
-        $aindaPorConverter = array_values(array_intersect($convertidas, config('tenancy.tabelas_por_converter')));
-
-        $this->assertSame([], $aindaPorConverter, 'Tabelas académicas ainda em tabelas_por_converter: '.implode(', ', $aindaPorConverter));
-
         foreach ($convertidas as $tabela) {
             $this->assertTrue(Schema::hasColumn($tabela, 'tenant_id'), "{$tabela} devia ter tenant_id.");
         }
-
-        $this->assertSame([], config('tenancy.tabelas_por_converter'));
     }
 
     public function test_as_sequencias_sao_por_tenant_e_ano(): void
@@ -270,37 +303,5 @@ class TenancyEsquemaTest extends TestCase
                 $this->assertNotSame(['slug'], $colunas, "{$tabela} não pode ter slug único global.");
             }
         }
-    }
-
-    /**
-     * Models da aplicação e de todos os módulos, incluindo subpastas de Models/.
-     *
-     * @return string[]
-     */
-    private function classesDeModels(): array
-    {
-        $classes = [];
-        $raizes = ['App\\Models\\' => base_path('app/Models')];
-
-        foreach (glob(base_path('Modules/*/app/Models')) as $pasta) {
-            $raizes['Modules\\' . basename(dirname($pasta, 2)) . '\\Models\\'] = $pasta;
-        }
-
-        foreach ($raizes as $namespace => $pasta) {
-            if (! is_dir($pasta)) {
-                continue;
-            }
-
-            $iterador = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($pasta, FilesystemIterator::SKIP_DOTS));
-
-            foreach ($iterador as $ficheiro) {
-                if ($ficheiro->isFile() && $ficheiro->getExtension() === 'php') {
-                    $relativo = substr($ficheiro->getPathname(), strlen($pasta) + 1, -4);
-                    $classes[] = $namespace . str_replace('/', '\\', $relativo);
-                }
-            }
-        }
-
-        return $classes;
     }
 }

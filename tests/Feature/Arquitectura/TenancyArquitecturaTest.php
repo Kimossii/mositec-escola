@@ -22,6 +22,48 @@ class TenancyArquitecturaTest extends TestCase
         'Modules/Core/app/Services/GeradorSequencia.php',
     ];
 
+    /**
+     * Escritas em massa que o Eloquent não protege (insert/upsert não passam pelos eventos de
+     * PertenceAoTenant, e os métodos "Quietly" e withoutEvents desligam-nos). Só estas excepções:
+     *  - as duas sincronizações de permissões constroem as linhas com o tenant_id do contexto
+     *    (provado em PermissaoTenancyTest::test_sincronizar_permissoes_grava_tenant_id_nas_escritas_em_massa);
+     *  - o gerador de sequências faz upsert com o tenant_id do contexto.
+     * Qualquer outra ocorrência é violação.
+     */
+    private const EXCEPCOES_ELOQUENT = [
+        'Modules/Permissao/app/Actions/SincronizarPermissoesPerfilAction.php',
+        'Modules/Permissao/app/Actions/SincronizarPermissoesUtilizadorAction.php',
+        'Modules/Core/app/Services/GeradorSequencia.php',
+    ];
+
+    /**
+     * Formas de contornar a trait PertenceAoTenant (e de aceder à BD fora do Eloquent).
+     *
+     * @return string[] excertos em violação
+     */
+    private function violacoesDeBypass(string $codigo): array
+    {
+        $padroes = [
+            '/\bwithoutEvents\s*\(/',
+            '/\b(?:save|update|delete|create|forceCreate)Quietly\s*\(/',
+            '/forceFill\s*\(\s*\[[^\]]*tenant_id/',
+            '/->\s*update\s*\(\s*\[[^\]]*tenant_id/',
+            '/(?:::|->)\s*(?:insert|insertOrIgnore|insertGetId|insertUsing|upsert)\s*\(/',
+            '/\bapp\s*\(\s*[\'"]db[\'"]\s*\)/',
+            '/->\s*getConnection\s*\(\s*\)\s*->\s*(?:table|select|insert|update|delete|statement|unprepared)\s*\(/',
+            '/\bDB::raw\s*\(/',
+        ];
+        $violacoes = [];
+
+        foreach ($padroes as $padrao) {
+            if (preg_match_all($padrao, $codigo, $achados) > 0) {
+                array_push($violacoes, ...$achados[0]);
+            }
+        }
+
+        return $violacoes;
+    }
+
     private function raiz(): string
     {
         return dirname(__DIR__, 3);
@@ -132,9 +174,58 @@ class TenancyArquitecturaTest extends TestCase
 
     public function test_db_table_so_e_usado_nas_excepcoes_declaradas(): void
     {
-        $violacoes = $this->ocorrencias('/\bDB::(table|select|selectOne|insert|update|delete|statement|unprepared|query|connection)\s*\(/', self::EXCEPCOES_DB_TABLE);
+        $violacoes = $this->ocorrencias('/\bDB::(table|select|selectOne|insert|update|delete|statement|unprepared|query|connection|raw)\s*\(|\bapp\s*\(\s*[\'"]db[\'"]\s*\)|->\s*getConnection\s*\(\s*\)\s*->\s*table\s*\(/', self::EXCEPCOES_DB_TABLE);
 
         $this->assertSame([], $violacoes, "As consultas directas pela fachada DB ignoram o isolamento por tenant. Use o model (com PertenceAoTenant):\n" . implode("\n", $violacoes));
+    }
+
+    public function test_ninguem_contorna_o_invariante_de_tenant_id_pelo_eloquent(): void
+    {
+        $violacoes = [];
+
+        foreach ($this->codigoDeAplicacao() as $caminho => $conteudo) {
+            if (in_array($caminho, self::EXCEPCOES_ELOQUENT, true) || str_starts_with($caminho, 'Modules/Core/app/Tenancy/')) {
+                continue;
+            }
+
+            foreach ($this->violacoesDeBypass($conteudo) as $excerto) {
+                $violacoes[] = "{$caminho}: {$excerto}";
+            }
+        }
+
+        $this->assertSame([], $violacoes, "Escritas em massa, métodos Quietly, withoutEvents ou acesso directo à ligação ignoram PertenceAoTenant. Use create()/save() num model, ou declare uma excepção explícita e comentada:\n" . implode("\n", $violacoes));
+    }
+
+    /** @dataProvider exemplosDeBypass */
+    public function test_o_varrimento_de_bypass_apanha_o_que_deve(string $codigo, bool $violacao): void
+    {
+        $this->assertSame($violacao, $this->violacoesDeBypass($codigo) !== [], $codigo);
+    }
+
+    public static function exemplosDeBypass(): array
+    {
+        return [
+            'withoutEvents' => ['Curso::withoutEvents(fn () => $c->save());', true],
+            'saveQuietly' => ['$curso->saveQuietly();', true],
+            'updateQuietly' => ['$curso->updateQuietly([\'nome\' => 1]);', true],
+            'deleteQuietly' => ['$curso->deleteQuietly();', true],
+            'createQuietly' => ['Curso::createQuietly([]);', true],
+            'forceFill com tenant_id' => ["\$m->forceFill(['tenant_id' => 2])->save();", true],
+            'update com tenant_id' => ["Curso::whereKey(1)->update(['tenant_id' => 2]);", true],
+            'insert estático' => ['Curso::insert($linhas);', true],
+            'insert na query' => ['Curso::query()->insert($linhas);', true],
+            'upsert' => ["Curso::upsert(\$linhas, ['codigo']);", true],
+            'insertOrIgnore' => ['Curso::insertOrIgnore($l);', true],
+            'insertGetId' => ['$q->insertGetId($l);', true],
+            'app db' => ["app('db')->table('x');", true],
+            'getConnection table' => ["\$m->getConnection()->table('x')->get();", true],
+            'DB raw' => ["DB::raw('1');", true],
+            'save normal' => ['$curso->save(); Curso::create([]);', false],
+            'update sem tenant_id' => ["\$curso->update(['nome' => 'x']);", false],
+            'forceFill sem tenant_id' => ["\$m->forceFill(['configurado_em' => now()])->save();", false],
+            'getConnection driver' => ["\$this->getConnection()->getDriverName();", false],
+            'transaction' => ['DB::transaction(fn () => 1);', false],
+        ];
     }
 
     public function test_a_cache_so_e_usada_nas_excepcoes_declaradas(): void
@@ -307,6 +398,56 @@ class TenancyArquitecturaTest extends TestCase
         $this->assertSame([], $violacoes, "Classes ShouldQueue sem a trait ComTenant (correriam sem tenant):\n" . implode("\n", $violacoes));
     }
 
+    /**
+     * Job único com ComTenant sem UnicoPorTenant (o lock seria partilhado entre escolas), ou que,
+     * mesmo com a trait, define o seu próprio uniqueId() (que sobrepõe o da trait e perde o tenant).
+     */
+    private function jobUnicoSemUnicoPorTenant(string $conteudo): bool
+    {
+        if (! $this->declaraClasse($conteudo, 'ShouldBeUnique(?:UntilProcessing)?')
+            || preg_match('/^[ \t]+use\s+[^;]*\bComTenant\b/m', $conteudo) !== 1) {
+            return false;
+        }
+
+        $usaTrait = preg_match('/^[ \t]+use\s+[^;]*\bUnicoPorTenant\b/m', $conteudo) === 1;
+        $defineUniqueId = preg_match('/function\s+uniqueId\s*\(/', $conteudo) === 1;
+
+        return ! $usaTrait || $defineUniqueId;
+    }
+
+    public function test_jobs_unicos_usam_unico_por_tenant(): void
+    {
+        $violacoes = [];
+
+        foreach ($this->codigoDeAplicacao() as $caminho => $conteudo) {
+            if (str_starts_with($caminho, 'Modules/') && $this->jobUnicoSemUnicoPorTenant($conteudo)) {
+                $violacoes[] = $caminho;
+            }
+        }
+
+        $this->assertSame([], $violacoes, "Jobs ShouldBeUnique com ComTenant sem a trait UnicoPorTenant (o lock seria partilhado entre escolas):\n" . implode("\n", $violacoes));
+    }
+
+    /** @dataProvider exemplosDeJobsUnicos */
+    public function test_o_varrimento_de_jobs_unicos_apanha_o_que_deve(string $codigo, bool $violacao): void
+    {
+        $this->assertSame($violacao, $this->jobUnicoSemUnicoPorTenant($codigo), $codigo);
+    }
+
+    public static function exemplosDeJobsUnicos(): array
+    {
+        return [
+            'único sem a trait' => ["class J implements ShouldBeUnique, ShouldQueue\n{\n    use Queueable, ComTenant;\n}", true],
+            'único até processar sem a trait' => ["class J implements ShouldQueue, ShouldBeUniqueUntilProcessing\n{\n    use ComTenant;\n}", true],
+            'único com a trait' => ["class J implements ShouldBeUnique, ShouldQueue\n{\n    use ComTenant, UnicoPorTenant;\n}", false],
+            'único com a trait em linha própria' => ["class J implements ShouldBeUnique\n{\n    use ComTenant;\n    use UnicoPorTenant;\n}", false],
+            'não único' => ["class J implements ShouldQueue\n{\n    use ComTenant;\n}", false],
+            'único com uniqueId próprio e sem a trait' => ["class J implements ShouldBeUnique\n{\n    use ComTenant;\n    public function uniqueId(): string { return 'x'; }\n}", true],
+            'único com a trait mas uniqueId próprio' => ["class J implements ShouldBeUnique\n{\n    use ComTenant, UnicoPorTenant;\n    public function uniqueId(): string { return 'x'; }\n}", true],
+            'único com a trait e identificadorUnico' => ["class J implements ShouldBeUnique\n{\n    use ComTenant, UnicoPorTenant;\n    protected function identificadorUnico(): string { return 'x'; }\n}", false],
+        ];
+    }
+
     public function test_comandos_de_dados_de_escola_usam_a_convencao_de_tenant(): void
     {
         $violacoes = [];
@@ -354,7 +495,7 @@ class TenancyArquitecturaTest extends TestCase
 
     public function test_as_excepcoes_declaradas_ainda_existem(): void
     {
-        foreach (self::EXCEPCOES_DB_TABLE as $caminho) {
+        foreach ([...self::EXCEPCOES_DB_TABLE, ...self::EXCEPCOES_ELOQUENT] as $caminho) {
             $this->assertFileExists($this->raiz() . '/' . $caminho, "Excepção obsoleta em TenancyArquitecturaTest: {$caminho}");
         }
     }
