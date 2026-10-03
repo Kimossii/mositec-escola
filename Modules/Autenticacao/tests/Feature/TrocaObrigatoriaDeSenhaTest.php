@@ -330,7 +330,7 @@ class TrocaObrigatoriaDeSenhaTest extends TestCase
     {
         $plain = $this->utilizador('ana@example.com', true)->createToken('api')->plainTextToken;
 
-        $this->withToken($plain)->getJson('/api/v1/matriculas')->assertForbidden()->assertJsonStructure(['message']);
+        $this->withToken($plain)->getJson('/api/v1/turmas')->assertForbidden()->assertJsonStructure(['message']);
     }
 
     public function test_bearer_token_numa_rota_web_e_bloqueado(): void
