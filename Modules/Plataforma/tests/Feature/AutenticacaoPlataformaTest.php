@@ -259,17 +259,19 @@ class AutenticacaoPlataformaTest extends TestCase
 
         // O id antigo (fixação de sessão) não dá acesso; o novo sim.
         $this->noPainel('GET', '/plataforma', $idAnterior)->assertRedirect($this->url('/plataforma/login'));
-        $this->noPainel('GET', '/plataforma', $idNovo)->assertOk();
+        $this->noPainel('GET', '/plataforma/_auth/leitura', $idNovo)->assertOk();
     }
 
-    public function test_a_pagina_inicial_e_inertia_com_o_super_admin(): void
+    public function test_a_pagina_inicial_do_painel_e_inertia_com_o_super_admin(): void
     {
         $sessao = $this->entrar($this->admin('outro@plataforma.test'));
 
-        $resposta = $this->noPainel('GET', '/plataforma', $sessao, cabecalhos: $this->inertia());
+        // `/plataforma` redirecciona para a listagem de escolas (Task 4).
+        $this->noPainel('GET', '/plataforma', $sessao)->assertRedirect($this->url('/plataforma/escolas'));
+        $resposta = $this->noPainel('GET', '/plataforma/escolas', $sessao, cabecalhos: $this->inertia());
 
         $resposta->assertOk();
-        $this->assertSame('Plataforma/Inicio', $resposta->json('component'));
+        $this->assertSame('Plataforma/Escolas/Index', $resposta->json('component'));
         $this->assertSame('outro@plataforma.test', $resposta->json('props.auth.superAdmin.email'));
     }
 
@@ -531,7 +533,7 @@ class AutenticacaoPlataformaTest extends TestCase
         $this->assertNotNull($admin->remember_token);
 
         // A sessão actual mantém o acesso e a rota que antes estava bloqueada abre.
-        $this->noPainel('GET', '/plataforma', $sessao)->assertOk();
+        $this->noPainel('GET', '/plataforma/_auth/leitura', $sessao)->assertOk();
         $this->noPainel('GET', '/plataforma/_auth/leitura', $sessao)->assertOk();
 
         // A senha temporária deixou de servir; a nova serve.
@@ -559,7 +561,7 @@ class AutenticacaoPlataformaTest extends TestCase
         $this->noPainel('GET', '/plataforma', $sessaoB)->assertRedirect($this->url('/plataforma/login'));
 
         // A actual continua.
-        $this->noPainel('GET', '/plataforma', $sessaoA)->assertOk();
+        $this->noPainel('GET', '/plataforma/_auth/leitura', $sessaoA)->assertOk();
         $this->assertDatabaseHas('sessions', ['id' => $sessaoA]);
     }
 
@@ -572,14 +574,14 @@ class AutenticacaoPlataformaTest extends TestCase
 
         $this->noPainel('PUT', '/plataforma/alterar-senha', $sessaoDeA, ['current_password' => self::SENHA, 'password' => self::NOVA, 'password_confirmation' => self::NOVA])->assertRedirect();
 
-        $this->noPainel('GET', '/plataforma', $sessaoDeB)->assertOk();
+        $this->noPainel('GET', '/plataforma/_auth/leitura', $sessaoDeB)->assertOk();
     }
 
     public function test_reset_por_comando_invalida_as_sessoes_abertas(): void
     {
         $admin = $this->admin();
         $sessao = $this->entrar($admin);
-        $this->noPainel('GET', '/plataforma', $sessao)->assertOk();
+        $this->noPainel('GET', '/plataforma/_auth/leitura', $sessao)->assertOk();
 
         $this->assertSame(0, Artisan::call('mosi:plataforma:admin:reset', ['--email' => $admin->email]));
 
@@ -592,7 +594,7 @@ class AutenticacaoPlataformaTest extends TestCase
         config(['session.driver' => 'database']);
         $admin = $this->admin();
         $sessao = $this->entrar($admin);
-        $this->noPainel('GET', '/plataforma', $sessao)->assertOk();
+        $this->noPainel('GET', '/plataforma/_auth/leitura', $sessao)->assertOk();
 
         $admin->update(['estado' => 0]);
 
@@ -651,7 +653,7 @@ class AutenticacaoPlataformaTest extends TestCase
     {
         $admin = $this->admin();
         $sessao = $this->entrar($admin);
-        $this->noPainel('GET', '/plataforma', $sessao)->assertOk();
+        $this->noPainel('GET', '/plataforma/_auth/leitura', $sessao)->assertOk();
 
         // Sessão do painel enviada à escola, sob os dois nomes de cookie.
         $this->naEscola('/alterar-senha', $sessao)->assertRedirect(self::ESCOLA . '/login');
@@ -678,7 +680,7 @@ class AutenticacaoPlataformaTest extends TestCase
         $this->assertStringContainsString('login_plataforma_', base64_decode($linha->payload), 'Controlo positivo: a sessão está mesmo autenticada.');
 
         // Também depois de pedidos AUTENTICADOS (`auth:plataforma` muda o guard por omissão durante o pedido).
-        $this->noPainel('GET', '/plataforma', $sessao)->assertOk();
+        $this->noPainel('GET', '/plataforma/_auth/leitura', $sessao)->assertOk();
         $this->noPainel('GET', '/plataforma/alterar-senha', $sessao)->assertOk();
         $this->assertNull(DB::table('sessions')->where('id', $sessao)->value('user_id'));
         $this->assertSame('web', config('auth.defaults.guard'), 'O guard por omissão não pode ficar alterado depois do pedido.');
@@ -686,7 +688,7 @@ class AutenticacaoPlataformaTest extends TestCase
         $this->noTenant($this->tenant, fn () => app(RevogarAcessosDoTenantAction::class)->revogar());
 
         $this->assertDatabaseHas('sessions', ['id' => $sessao]);
-        $this->noPainel('GET', '/plataforma', $sessao)->assertOk();
+        $this->noPainel('GET', '/plataforma/_auth/leitura', $sessao)->assertOk();
     }
 
     public function test_a_sessao_de_escola_com_o_mesmo_id_numerico_nao_e_afectada_e_vice_versa(): void
@@ -738,7 +740,7 @@ class AutenticacaoPlataformaTest extends TestCase
 
         $this->assertDatabaseMissing('sessions', ['id' => $outraSessaoEscola]);
         $this->assertDatabaseHas('sessions', ['id' => $sessaoPlataforma]);
-        $this->noPainel('GET', '/plataforma', $sessaoPlataforma)->assertOk();
+        $this->noPainel('GET', '/plataforma/_auth/leitura', $sessaoPlataforma)->assertOk();
     }
 
     public function test_o_primeiro_pedido_ao_painel_usa_os_minutos_da_plataforma_no_handler_de_base_de_dados(): void
@@ -831,7 +833,7 @@ class AutenticacaoPlataformaTest extends TestCase
     {
         config(['session.driver' => 'database']);
         $sessao = $this->entrar($this->admin());
-        $token = $this->noPainel('GET', '/plataforma', $sessao, cabecalhos: $this->inertia())->json('props.csrf_token');
+        $token = $this->noPainel('GET', '/plataforma/escolas', $sessao, cabecalhos: $this->inertia())->json('props.csrf_token');
         $this->assertNotEmpty($token);
 
         $resposta = $this->noPainel('POST', '/plataforma/logout', $sessao);
@@ -868,7 +870,8 @@ class AutenticacaoPlataformaTest extends TestCase
 
         $sessao = $this->entrar($admin);
         $respostas['inicio'] = $this->noPainel('GET', '/plataforma', $sessao);
-        $respostas['inicio inertia'] = $this->noPainel('GET', '/plataforma', $sessao, cabecalhos: $this->inertia());
+        $respostas['escolas'] = $this->noPainel('GET', '/plataforma/escolas', $sessao);
+        $respostas['escolas inertia'] = $this->noPainel('GET', '/plataforma/escolas', $sessao, cabecalhos: $this->inertia());
         $respostas['senha GET'] = $this->noPainel('GET', '/plataforma/alterar-senha', $sessao);
         $respostas['senha PUT invalido'] = $this->noPainel('PUT', '/plataforma/alterar-senha', $sessao, ['current_password' => 'x']);
         $respostas['logout'] = $this->noPainel('POST', '/plataforma/logout', $sessao);
@@ -900,8 +903,12 @@ class AutenticacaoPlataformaTest extends TestCase
         $this->noPainel('GET', '/plataforma', $sessao);
         $this->noPainel('PUT', '/plataforma/alterar-senha', $sessao, ['current_password' => self::SENHA, 'password' => self::NOVA, 'password_confirmation' => self::NOVA]);
         $this->noPainel('GET', '/plataforma', $sessao);
+        // A listagem de escolas (Task 4) é uma rota real do painel que lê tenants sem contexto.
+        $this->noPainel('GET', '/plataforma/escolas', $sessao);
         $this->noPainel('POST', '/plataforma/logout', $sessao);
 
+        // (O primeiro GET do início, com a troca obrigatória pendente, é recusado antes de chegar ao espião,
+        // que está no fim do grupo: a verificação de conta corre antes de resolver `{tenant}`.)
         $this->assertGreaterThanOrEqual(7, count(EspiaDeContexto::$observacoes));
         $this->assertSame([], array_filter(EspiaDeContexto::$observacoes), 'Algum pedido do painel viu um tenant em contexto.');
         // (o helper `pedido` já afirma temTenant() === false depois de cada pedido ao painel.)

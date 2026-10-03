@@ -11,7 +11,9 @@ use Modules\Core\Tenancy\Http\Middleware\ResolverTenant;
 use Modules\Estabelecimento\Http\Middleware\ExigirConfiguracaoInicial;
 use Modules\Plataforma\Http\Middleware\ApenasHostCentral;
 use Modules\Plataforma\Http\Middleware\ConfigurarSessaoPlataforma;
+use Modules\Plataforma\Http\Middleware\ExigirTrocaDeSenhaPlataforma;
 use Modules\Plataforma\Http\Middleware\HandleInertiaPlataforma;
+use Modules\Plataforma\Http\Middleware\SuperAdminActivo;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -44,6 +46,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             HandleInertiaPlataforma::class,
         ]);
+
+        // As verificações de conta (activa, credencial actual, troca obrigatória) correm ANTES de resolver
+        // `{tenant}` pelo código: sem isto, uma sessão inválida receberia 404 (existe ou não) em vez de ser
+        // expulsa, e o painel consultaria `tenants` antes de saber quem pede.
+        $middleware->prependToPriorityList(before: \Illuminate\Routing\Middleware\SubstituteBindings::class, prepend: SuperAdminActivo::class);
+        $middleware->prependToPriorityList(before: \Illuminate\Routing\Middleware\SubstituteBindings::class, prepend: ExigirTrocaDeSenhaPlataforma::class);
 
         // O login de um visitante no painel é o do painel; a escola mantém o comportamento por omissão (route('login')).
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('plataforma', 'plataforma/*') ? route('plataforma.login') : null);

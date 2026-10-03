@@ -4,6 +4,7 @@ namespace Modules\Tenant\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use LogicException;
 use Modules\Core\Tenancy\Enums\EstadoTenant;
 use Modules\Core\Tenancy\TenantAtual;
@@ -38,6 +39,11 @@ class Tenant extends Model
     public function dominios(): HasMany
     {
         return $this->hasMany(Domain::class, 'tenant_id');
+    }
+
+    public function dominioPrincipal(): HasOne
+    {
+        return $this->hasOne(Domain::class, 'tenant_id')->where('is_principal', true);
     }
 
     public function estaActivo(): bool
