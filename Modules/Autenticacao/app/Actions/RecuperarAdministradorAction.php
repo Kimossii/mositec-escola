@@ -3,6 +3,7 @@
 namespace Modules\Autenticacao\Actions;
 
 use Modules\Autenticacao\Exceptions\AdministradorNaoRecuperavel;
+use Modules\Core\Tenancy\Enums\MotivoRecusaRecuperacao;
 use Modules\Core\Tenancy\Provisioning\CredencialInicial;
 use Modules\Core\Tenancy\Provisioning\GeradorSenhaTemporaria;
 use Modules\Permissao\Enums\Perfil;
@@ -38,19 +39,23 @@ class RecuperarAdministradorAction
             ->get();
 
         if ($encontrados->isEmpty()) {
-            throw new AdministradorNaoRecuperavel('Nenhum administrador da escola corresponde ao pedido.');
+            throw new AdministradorNaoRecuperavel(
+                'Nenhum administrador da escola corresponde ao pedido.',
+                $email === '' ? MotivoRecusaRecuperacao::SEM_ADMINISTRADORES : MotivoRecusaRecuperacao::NAO_ENCONTRADO,
+            );
         }
 
         // Só contas activas: não se repõe a senha de uma conta desactivada.
         $administradores = $encontrados->filter(fn (User $u) => (int) $u->estado === 1)->values();
 
         if ($administradores->isEmpty()) {
-            throw new AdministradorNaoRecuperavel('O administrador está desactivado: reactive a conta antes de recuperar o acesso.');
+            throw new AdministradorNaoRecuperavel('O administrador está desactivado: reactive a conta antes de recuperar o acesso.', MotivoRecusaRecuperacao::DESACTIVADO);
         }
 
         if ($administradores->count() > 1) {
             throw new AdministradorNaoRecuperavel(
                 'Há vários administradores activos; indique um com --email=. Disponíveis: ' . $administradores->pluck('email')->implode(', ') . '.',
+                MotivoRecusaRecuperacao::VARIOS_ADMINISTRADORES,
             );
         }
 

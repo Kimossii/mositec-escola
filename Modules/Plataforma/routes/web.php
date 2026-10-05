@@ -3,6 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Plataforma\Http\Controllers\Auth\AlterarSenhaController;
 use Modules\Plataforma\Http\Controllers\Auth\LoginController;
+use Modules\Plataforma\Http\Controllers\AdministradorEscolaController;
+use Modules\Plataforma\Http\Controllers\CicloDeVidaController;
+use Modules\Plataforma\Http\Controllers\DominioController;
 use Modules\Plataforma\Http\Controllers\EscolaController;
 use Modules\Plataforma\Http\Middleware\ExigirTrocaDeSenhaPlataforma;
 use Modules\Plataforma\Http\Middleware\SuperAdminActivo;
@@ -25,6 +28,19 @@ Route::middleware(['auth:plataforma', SuperAdminActivo::class, ExigirTrocaDeSenh
     // `nova` TEM de vir antes de `{tenant}`: senão seria interpretado como o código de uma escola.
     Route::get('/escolas/nova', [EscolaController::class, 'nova'])->name('plataforma.escolas.nova');
     Route::get('/escolas/{tenant}', [EscolaController::class, 'show'])->name('plataforma.escolas.show');
+
+    Route::post('/escolas/{tenant}/suspender', [CicloDeVidaController::class, 'suspender'])->name('plataforma.escolas.suspender');
+    Route::post('/escolas/{tenant}/reactivar', [CicloDeVidaController::class, 'reactivar'])->name('plataforma.escolas.reactivar');
+    Route::post('/escolas/{tenant}/encerrar', [CicloDeVidaController::class, 'encerrar'])->name('plataforma.escolas.encerrar');
+
+    // `{dominio}` é o nome do host (sem binding de model).
+    Route::post('/escolas/{tenant}/dominios', [DominioController::class, 'store'])->name('plataforma.escolas.dominios.store');
+    Route::delete('/escolas/{tenant}/dominios/{dominio}', [DominioController::class, 'destroy'])->name('plataforma.escolas.dominios.destroy');
+
+    // Administradores da escola: a lista carrega a pedido (ao abrir o modal), para o detalhe não abrir
+    // o contexto em cada visita; a recuperação delega no contrato do Core (que abre o contexto por dentro).
+    Route::get('/escolas/{tenant}/administradores', [AdministradorEscolaController::class, 'index'])->name('plataforma.escolas.administradores');
+    Route::post('/escolas/{tenant}/administrador/recuperar', [AdministradorEscolaController::class, 'recuperar'])->name('plataforma.escolas.administrador.recuperar');
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('plataforma.logout');
 

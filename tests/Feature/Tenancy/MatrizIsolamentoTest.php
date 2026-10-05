@@ -150,6 +150,35 @@ class MatrizIsolamentoTest extends TestCase
             'tests/Feature/Comandos/ConvencaoDeComandosTest.php' => ['test_tenant_suspenso_ou_encerrado_e_recusado', 'test_todos_corre_so_os_activos_e_avisa_dos_saltados'],
             'Modules/Autenticacao/tests/Feature/PodarTokensCommandTest.php' => ['test_todos_poda_cada_tenant_activo_e_salta_o_suspenso'],
         ],
+        'Plataforma / Super Admin' => [
+            // Task 2: a fronteira entre mundos (host, contexto, sessão e rotas).
+            'Modules/Plataforma/tests/Feature/FronteiraTest.php' => [
+                'test_host_central_serve_a_plataforma_e_nao_a_escola', 'test_no_modo_unico_o_host_central_e_do_painel_e_qualquer_outro_host_e_da_escola', 'test_host_central_nunca_abre_contexto', 'test_leitura_tenant_scoped_no_painel_falha_alto',
+                'test_cookie_da_plataforma_e_proprio', 'test_sessao_da_plataforma_nao_vale_na_escola_nem_vice_versa', 'test_sessions_user_id_fica_nulo_para_a_plataforma',
+            ],
+            'Modules/Plataforma/tests/Feature/FronteiraRotasTest.php' => [
+                'test_nenhuma_rota_plataforma_tem_middleware_de_tenancy_e_todas_comecam_por_apenas_host_central',
+                'test_as_rotas_autenticadas_tem_a_cadeia_de_autenticacao_pela_ordem_e_as_publicas_sao_so_o_login',
+            ],
+            // Task 3: autenticação, sessões e CSRF do painel.
+            'Modules/Plataforma/tests/Feature/AutenticacaoPlataformaTest.php' => [
+                'test_um_utilizador_de_escola_nao_passa_em_auth_plataforma', 'test_um_super_admin_nao_passa_na_escola',
+                'test_a_sessao_de_escola_com_o_mesmo_id_numerico_nao_e_afectada_e_vice_versa', 'test_pedido_json_de_conta_desactivada_da_401_json_e_web_e_inertia_continuam_a_redireccionar',
+            ],
+            // Task 5: revogar acessos só toca na escola alvo.
+            'Modules/Plataforma/tests/Feature/CicloDeVidaTest.php' => ['test_revogar_acessos_apaga_so_as_sessoes_e_tokens_da_escola_alvo_e_deixa_as_da_plataforma_e_de_outra_escola'],
+            // Task 6: recuperar o administrador abre o contexto só dentro da Action e só lê nome e e-mail.
+            'Modules/Plataforma/tests/Feature/RecuperarAdministradorTest.php' => [
+                'test_o_pedido_de_listar_corre_com_contexto_vazio_e_so_o_contrato_o_abre', 'test_so_o_administrador_alvo_e_afectado_e_a_outra_escola_fica_intacta',
+                'test_nenhuma_resposta_do_painel_leva_dados_de_escola_alem_do_nome_e_email_do_administrador',
+            ],
+            'Modules/Autenticacao/tests/Feature/RecuperaAdministradorDoTenantTest.php' => ['test_o_dto_so_tem_nome_e_email'],
+            // Task 7: ponta a ponta, espião do contexto e varrimento de dados académicos.
+            'tests/Feature/Tenancy/PlataformaIsolamentoTest.php' => [
+                'test_o_ciclo_completo_no_painel_nunca_abre_contexto_e_b_nao_ve_alteracoes_de_a', 'test_os_dados_de_escola_nunca_chegam_ao_painel_nem_por_erros_ou_404',
+                'test_o_espiao_falha_se_um_controller_da_plataforma_operar_o_contexto', 'test_uma_violacao_engolida_por_um_catch_falha_na_verificacao_final', 'test_depois_de_um_mundo_o_store_nao_vaza_para_o_outro',
+            ],
+        ],
     ];
 
     /** Módulo com models de tenant → o seu teste de tenancy. */
@@ -201,7 +230,7 @@ class MatrizIsolamentoTest extends TestCase
         $this->assertSame([
             'Listagem', 'ID directo / route model binding', 'exists', 'unique', 'Repository / Service', 'Action',
             'Sem contexto', 'Sequências', 'Cache', 'Ficheiros', 'Jobs', 'Commands', 'Autenticação', 'Consistência',
-            'Estado do tenant',
+            'Estado do tenant', 'Plataforma / Super Admin',
         ], array_keys(self::MAPA));
     }
 

@@ -618,6 +618,45 @@ class AutenticacaoPlataformaTest extends TestCase
             ->assertHeader('X-Inertia-Location', $this->url('/plataforma/login'));
     }
 
+    public function test_pedido_json_com_sessao_invalidada_pela_troca_de_senha_da_401_json(): void
+    {
+        config(['session.driver' => 'database']);
+        $admin = $this->admin();
+        $sessaoA = $this->entrar($admin);
+        $sessaoB = $this->entrar($admin, ip: '10.0.0.2');
+        $this->noPainel('PUT', '/plataforma/alterar-senha', $sessaoA, ['current_password' => self::SENHA, 'password' => self::NOVA, 'password_confirmation' => self::NOVA])->assertRedirect();
+
+        $resposta = $this->noPainel('GET', '/plataforma/escolas', $sessaoB, cabecalhos: ['Accept' => 'application/json']);
+
+        $resposta->assertStatus(401)->assertJsonStructure(['message']);
+        $this->assertGuest('plataforma');
+        $this->assertDatabaseMissing('sessions', ['id' => $sessaoB]);
+        // Pedido de navegador na mesma situação continua a redireccionar.
+        $this->noPainel('GET', '/plataforma', $sessaoB)->assertRedirect($this->url('/plataforma/login'));
+    }
+
+    public function test_pedido_json_de_conta_desactivada_da_401_json_e_web_e_inertia_continuam_a_redireccionar(): void
+    {
+        $admin = $this->admin();
+        $sessao = $this->entrar($admin);
+        $admin->update(['estado' => 0]);
+
+        $this->noPainel('GET', '/plataforma/escolas', $sessao, cabecalhos: ['Accept' => 'application/json'])
+            ->assertStatus(401)->assertJsonStructure(['message']);
+
+        $admin->update(['estado' => 1]);
+        $sessao = $this->entrar($admin, ip: '10.0.0.3');
+        $admin->update(['estado' => 0]);
+        // Inertia: mesmo com Accept JSON (o Inertia envia-o) segue a navegação completa.
+        $this->noPainel('GET', '/plataforma', $sessao, cabecalhos: $this->inertia() + ['Accept' => 'application/json'])
+            ->assertStatus(409)->assertHeader('X-Inertia-Location', $this->url('/plataforma/login'));
+
+        $admin->update(['estado' => 1]);
+        $sessao = $this->entrar($admin, ip: '10.0.0.4');
+        $admin->update(['estado' => 0]);
+        $this->noPainel('GET', '/plataforma', $sessao)->assertRedirect($this->url('/plataforma/login'));
+    }
+
     public function test_um_super_admin_apagado_com_sessao_aberta_e_expulso(): void
     {
         $admin = $this->admin();

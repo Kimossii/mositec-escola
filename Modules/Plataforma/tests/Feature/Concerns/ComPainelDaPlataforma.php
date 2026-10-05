@@ -8,10 +8,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Testing\TestResponse;
+use Modules\Core\Tenancy\Enums\EstadoTenant;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Plataforma\Http\Middleware\ConfigurarSessaoPlataforma;
 use Modules\Plataforma\Http\Middleware\HandleInertiaPlataforma;
 use Modules\Plataforma\Models\SuperAdmin;
+use Modules\Tenant\Models\Tenant;
 
 /**
  * Pedidos ao painel como se cada um fosse um processo novo (guards e Store de sessão limpos),
@@ -27,7 +29,7 @@ trait ComPainelDaPlataforma
 
     private function urlCentral(string $caminho): string
     {
-        return 'http://' . self::CENTRAL . $caminho;
+        return 'http://'.self::CENTRAL.$caminho;
     }
 
     private function superAdmin(string $email = 'rui@plataforma.test', bool $activo = true): SuperAdmin
@@ -38,6 +40,16 @@ trait ComPainelDaPlataforma
             'password' => Hash::make(self::SENHA_DO_ADMIN),
             'estado' => $activo ? 1 : 0,
         ]);
+    }
+
+    /** Escola só com registo de gestão (sem dados de escola), no estado pedido e com o domínio principal dado. */
+    private function escolaDeGestao(string $codigo, string $nome, string $dominio, EstadoTenant $estado = EstadoTenant::ACTIVO, array $extra = []): Tenant
+    {
+        $tenant = Tenant::create(['codigo' => $codigo, 'nome' => $nome, ...$extra]);
+        $tenant->forceFill(['estado' => $estado])->save();
+        $tenant->dominios()->create(['dominio' => $dominio, 'is_principal' => true]);
+
+        return $tenant->fresh();
     }
 
     /** Pedido como se fosse um processo novo; o contexto de tenant começa (e, no painel, acaba) vazio. */

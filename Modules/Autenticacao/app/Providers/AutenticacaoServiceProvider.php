@@ -9,7 +9,9 @@ use Modules\Autenticacao\Console\RecuperarAdministradorCommand;
 use Modules\Autenticacao\Console\SincronizarPerfisCommand;
 use Modules\Autenticacao\Models\TokenDeAcesso;
 use Modules\Autenticacao\Service\LimitadorLogin;
+use Modules\Autenticacao\Actions\RecuperaAdministradorDoTenantAction;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
+use Modules\Core\Tenancy\Contracts\RecuperaAdministradorDoTenant;
 use Modules\Core\Tenancy\Contracts\RevogaAcessosDoTenant;
 use Modules\Autenticacao\Provisioning\ProvisionarAdministradorInicial;
 use Nwidart\Modules\Support\ModuleServiceProvider;
@@ -54,6 +56,7 @@ class AutenticacaoServiceProvider extends ModuleServiceProvider
 
         $this->app->tag([ProvisionarAdministradorInicial::class], ProvisionaTenant::ETIQUETA);
         $this->app->bind(RevogaAcessosDoTenant::class, RevogarAcessosDoTenantAction::class);
+        $this->app->bind(RecuperaAdministradorDoTenant::class, RecuperaAdministradorDoTenantAction::class);
     }
 
     public function boot(): void

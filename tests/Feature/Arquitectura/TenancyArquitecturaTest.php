@@ -525,8 +525,8 @@ class TenancyArquitecturaTest extends TestCase
     /** Ficheiro que refere o contexto ou o obtém do container (sem o nomear). */
     private const PADRAO_TEM_ACESSO_AO_CONTEXTO = '/TenantContext|\bresolve\s*\(|\bapp\s*\(|->\s*make\s*\(|->\s*get\s*\(\s*[\'"]/';
 
-    /** Formas de chamar um método sem o escrever: não existem no código da Plataforma que acede ao contexto. */
-    private const PADRAO_CHAMADA_DINAMICA = '/->\s*\{|::\s*\{|\bcall_user_func(?:_array)?\s*\(|Closure::fromCallable|->\s*call\s*\(|\bnew\s+ReflectionMethod/';
+    /** Formas comuns de chamar um método sem o escrever (incluindo o nome em variável): não existem no código da Plataforma que acede ao contexto. */
+    private const PADRAO_CHAMADA_DINAMICA = '/->\s*\{|::\s*\{|->\s*\$\w+\s*\(|::\s*\$\w+\s*\(|\bcall_user_func(?:_array)?\s*\(|Closure::fromCallable|->\s*call\s*\(|\bnew\s+ReflectionMethod/';
 
     private function semComentarios(string $codigo): string
     {
@@ -628,6 +628,10 @@ class TenancyArquitecturaTest extends TestCase
             'array-callable' => ['<?php $ctx = app(TenantContext::class); call_user_func([$ctx, "definir"], $t);', false, true],
             'array-callable sem call_user_func' => ['<?php $ctx = app(TenantContext::class); [$ctx, "definir"]($t);', false, true],
             'string do método' => ['<?php $ctx = app(TenantContext::class); $m = "executarComo"; $ctx->$m($t, fn () => 1);', false, true],
+            'nome do método em variável, partido' => ["<?php \$m = 'executar' . 'Como'; app(TenantContext::class)->\$m(\$t, fn () => 1);", false, true],
+            'nome do método em variável, estático' => ["<?php \$m = 'de' . 'finir'; \$c = TenantContext::class; \$c::\$m(\$t);", false, true],
+            'variável como método sem acesso ao contexto' => ['<?php class A { function f() { $x = "total"; return $this->$x(); } }', false, false],
+            'variável como método, só a leitura do contexto fora da camada http' => ['<?php class A { function f(TenantContext $c) { $m = "id"; return $c->$m(); } }', false, true],
             'método dinâmico' => ['<?php $ctx = app(TenantContext::class); $ctx->{$m}($t);', false, true],
             'call_user_func sem nomear a operação' => ['<?php $ctx = app(TenantContext::class); call_user_func([$ctx, $m]);', false, true],
             'container call' => ['<?php app()->call([app(TenantContext::class), "limpar"]);', false, true],
@@ -671,6 +675,56 @@ class TenancyArquitecturaTest extends TestCase
     {
         foreach (glob($this->raiz() . '/Modules/Core/app/Tenancy/{Jobs,Console,Contracts}/*.php', GLOB_BRACE) as $ficheiro) {
             $this->assertStringNotContainsString('Modules\\Tenant\\', file_get_contents($ficheiro), $ficheiro);
+        }
+    }
+
+    /** Arquitectura final da Plataforma (Plano 13, Task 7): fronteiras de importação, contexto, rotas, tabelas e bypass. */
+    public function test_arquitectura_final_da_plataforma(): void
+    {
+        $codigo = $this->codigoDeAplicacao();
+        $controllers = 0;
+        $models = 0;
+
+        foreach ($codigo as $caminho => $conteudo) {
+            if (! str_starts_with($caminho, 'Modules/Plataforma/')) {
+                continue;
+            }
+
+            // Só importa Core e Tenant (e o próprio módulo).
+            $this->assertSame(0, preg_match('/(?<![\\\\\w])Modules\\\\(?!Core\\\\|Tenant\\\\|Plataforma\\\\)\w+/', $conteudo), "{$caminho}: importa um módulo que não é Core nem Tenant.");
+
+            if (str_starts_with($caminho, 'Modules/Plataforma/app/Http/Controllers/')) {
+                $controllers++;
+                $this->assertDoesNotMatchRegularExpression('/\bexecutarComo\b/', $this->semComentarios($conteudo), "{$caminho}: um controller não abre contexto.");
+            }
+
+            if (str_starts_with($caminho, 'Modules/Plataforma/app/Models/')) {
+                $models++;
+                $this->assertStringNotContainsString('PertenceAoTenant', $this->semComentarios($conteudo), "{$caminho}: um model da Plataforma não é de tenant.");
+            }
+
+            // O scanner de bypass do Eloquent cobre o módulo, sem excepções.
+            foreach ($this->violacoesDeBypass($conteudo) as $excerto) {
+                $this->fail("{$caminho}: {$excerto}");
+            }
+        }
+
+        $this->assertGreaterThan(5, $controllers);
+        $this->assertGreaterThanOrEqual(2, $models);
+        foreach ([...self::EXCEPCOES_ELOQUENT, ...self::EXCEPCOES_DB_TABLE] as $excepcao) {
+            $this->assertStringNotContainsString('Modules/Plataforma/', $excepcao, 'A Plataforma não tem excepções ao scanner de bypass.');
+        }
+        $this->assertArrayHasKey('Modules/Plataforma/routes/web.php', $codigo, 'O scanner tem de ver as rotas da Plataforma.');
+
+        // As rotas do painel não estão nos grupos da escola.
+        $rotas = $this->semComentarios($codigo['Modules/Plataforma/routes/web.php']);
+        $this->assertDoesNotMatchRegularExpression("/middleware\\(\\s*\\[?\\s*['\"](?:web|api)['\"]/", $rotas);
+        $this->assertStringNotContainsString("->prefix(", $rotas);
+
+        // As duas tabelas da Plataforma são globais.
+        $config = require $this->raiz() . '/config/tenancy.php';
+        foreach (['super_admins', 'plataforma_auditoria'] as $tabela) {
+            $this->assertContains($tabela, $config['tabelas_globais'], $tabela);
         }
     }
 

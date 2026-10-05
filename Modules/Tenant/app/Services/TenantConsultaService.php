@@ -39,7 +39,7 @@ class TenantConsultaService
             ->with('dominioPrincipal')
             ->when($estadoFiltro !== null, fn (Builder $q) => $q->where('estado', $estadoFiltro->value))
             ->when($termo !== '', function (Builder $q) use ($termo) {
-                $padrao = '%' . mb_strtolower($this->escaparLike($termo)) . '%';
+                $padrao = '%'.mb_strtolower($this->escaparLike($termo)).'%';
 
                 // `exists` em vez de join: uma escola com dois domínios a coincidir não duplica a linha.
                 $q->where(fn (Builder $q) => $q
@@ -58,6 +58,26 @@ class TenantConsultaService
     public function detalhe(Tenant $tenant): Tenant
     {
         return $tenant->load(['dominios' => fn ($q) => $q->orderByDesc('is_principal')->orderBy('dominio')]);
+    }
+
+    /**
+     * O que o estado da escola permite fazer, para a interface só oferecer o que as Actions aceitam
+     * (a autoridade continua a ser a Action: um teste confronta os dois). Encerrada é terminal.
+     *
+     * @return array{suspender: bool, reactivar: bool, encerrar: bool, gerir_dominios: bool, recuperar_administrador: bool}
+     */
+    public function accoesPermitidas(Tenant $tenant): array
+    {
+        $estado = $tenant->estado;
+
+        return [
+            'suspender' => $estado === EstadoTenant::ACTIVO,
+            'reactivar' => $estado === EstadoTenant::SUSPENSO,
+            'encerrar' => $estado !== EstadoTenant::ENCERRADO,
+            'gerir_dominios' => $estado !== EstadoTenant::ENCERRADO,
+            // Mesma regra do contrato RecuperaAdministradorDoTenant: só escolas Activas.
+            'recuperar_administrador' => $estado === EstadoTenant::ACTIVO,
+        ];
     }
 
     /** Os curingas do LIKE (`%`, `_`) e a própria barra são texto literal numa pesquisa. */

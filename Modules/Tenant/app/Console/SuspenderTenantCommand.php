@@ -3,8 +3,7 @@
 namespace Modules\Tenant\Console;
 
 use Illuminate\Console\Command;
-use Modules\Core\Tenancy\Contracts\RevogaAcessosDoTenant;
-use Modules\Core\Tenancy\TenantContext;
+use Modules\Tenant\Actions\RevogarAcessosAposSuspensaoAction;
 use Modules\Tenant\Actions\SuspenderTenantAction;
 use Modules\Tenant\Exceptions\DadosDeTenantInvalidos;
 use Modules\Tenant\Exceptions\OperacaoDeTenantRecusada;
@@ -20,7 +19,7 @@ class SuspenderTenantCommand extends Command
 
     protected $description = 'Suspende uma escola (tenant): deixa de ser acessível, os dados ficam intactos';
 
-    public function handle(TenantConsultaService $consulta, SuspenderTenantAction $action, TenantContext $contexto): int
+    public function handle(TenantConsultaService $consulta, SuspenderTenantAction $action, RevogarAcessosAposSuspensaoAction $revogar): int
     {
         try {
             $tenant = $consulta->porCodigo((string) $this->argument('codigo'));
@@ -43,7 +42,7 @@ class SuspenderTenantCommand extends Command
         $this->info("Tenant {$tenant->codigo} suspenso.");
 
         if ($this->option('revogar-sessoes')) {
-            $revogados = $contexto->executarComo($tenant->paraTenantAtual(), fn () => app(RevogaAcessosDoTenant::class)->revogar());
+            $revogados = $revogar->executar($tenant);
 
             $this->info("{$revogados['sessoes']} sessão(ões) e {$revogados['tokens']} token(s) revogado(s).");
         }

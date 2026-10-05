@@ -57,10 +57,13 @@ class EscolaController extends Controller
                 'suspenso_em' => $escola->suspenso_em,
                 'encerrado_em' => $escola->encerrado_em,
                 'created_at' => $escola->created_at,
+                'accoes_permitidas' => $consulta->accoesPermitidas($escola),
                 'dominios' => $escola->dominios->map(fn ($dominio) => [
                     'dominio' => $dominio->dominio,
                     'tipo_descricao' => $dominio->tipo_descricao,
                     'is_principal' => $dominio->is_principal,
+                    // O principal nunca sai e, numa escola encerrada, nenhum domínio sai (regras da RemoverDominioAction).
+                    'removivel' => ! $dominio->is_principal && $consulta->accoesPermitidas($escola)['gerir_dominios'],
                 ])->values(),
             ],
             'auditoria' => $auditoria->recentesDaEscola($escola->codigo)->map(fn (RegistoDeAuditoria $registo) => [

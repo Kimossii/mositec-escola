@@ -35,6 +35,12 @@ class SuperAdminActivo
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        // Pedido de dados (fetch do modal): 401 em JSON, para o cliente não seguir um 302 e tomar o HTML
+        // do login por uma resposta vazia. Os pedidos Inertia e de navegador seguem abaixo.
+        if ($request->expectsJson() && ! $request->header('X-Inertia')) {
+            return response()->json(['message' => 'A sessão terminou. Inicie sessão novamente.'], 401);
+        }
+
         // Visita completa: o pedido Inertia seguiria para uma página do painel sem sessão.
         return Inertia::location(route('plataforma.login'));
     }

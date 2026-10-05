@@ -3,6 +3,9 @@ import { onBeforeUnmount, ref, watch } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import LayoutPlataforma from '../../Components/LayoutPlataforma.vue';
 import EstadoBadge from '../../Components/EstadoBadge.vue';
+import AcoesCicloDeVida from '../../Components/AcoesCicloDeVida.vue';
+import DominiosCard from '../../Components/DominiosCard.vue';
+import RecuperarAdministradorModal from '../../Components/RecuperarAdministradorModal.vue';
 import SenhaTemporariaModal from '../../Components/SenhaTemporariaModal.vue';
 import { formatarDataHora } from '../../Composables/formatarData';
 
@@ -17,6 +20,8 @@ const page = usePage();
 // Senha temporária (flash, só na resposta que sucede à criação): passa para memória local e é
 // descartada ao fechar. Nunca vai para localStorage, store, URL ou consola. Fechar roda a chave do
 // histórico, para as entradas antigas (com a senha cifrada) ficarem ilegíveis.
+const recuperarAberto = ref(false);
+
 const senhaTemporaria = ref(page.props.flash?.senha_temporaria ?? null);
 
 watch(
@@ -45,11 +50,20 @@ onBeforeUnmount(() => {
                 <EstadoBadge :estado="escola.estado" />
             </div>
             <div class="d-flex align-items-center gap-3">
-                <!-- Espaço reservado: as acções de ciclo de vida da escola entram aqui (Task 5). -->
-                <slot name="acoes" />
+                <button
+                    v-if="escola.accoes_permitidas.recuperar_administrador"
+                    type="button"
+                    class="btn btn-light-primary"
+                    @click="recuperarAberto = true"
+                >
+                    Recuperar administrador
+                </button>
+                <AcoesCicloDeVida :escola="escola" />
                 <Link href="/plataforma/escolas" class="btn btn-light">Voltar</Link>
             </div>
         </div>
+
+        <div v-if="page.props.errors?.geral" class="alert alert-danger mb-6" role="alert">{{ page.props.errors.geral }}</div>
 
         <div class="card mb-6">
             <div class="card-header"><h3 class="card-title">Dados da escola</h3></div>
@@ -85,28 +99,7 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
-        <div class="card mb-6">
-            <div class="card-header"><h3 class="card-title">Domínios</h3></div>
-            <div class="card-body p-0">
-                <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
-                    <thead>
-                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                            <th class="min-w-200px">Domínio</th>
-                            <th class="min-w-150px">Tipo</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600 fw-semibold">
-                        <tr v-for="dominio in escola.dominios" :key="dominio.dominio">
-                            <td>
-                                {{ dominio.dominio }}
-                                <span v-if="dominio.is_principal" class="badge badge-light-primary fw-bold ms-2">Principal</span>
-                            </td>
-                            <td>{{ dominio.tipo_descricao }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <DominiosCard :escola="escola" />
 
         <div class="card">
             <div class="card-header"><h3 class="card-title">Actividade recente</h3></div>
@@ -135,6 +128,7 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
+        <RecuperarAdministradorModal :show="recuperarAberto" :escola="escola" @fechar="recuperarAberto = false" />
         <SenhaTemporariaModal :resultado="senhaTemporaria" @fechar="fecharSenha" />
     </div>
 </template>

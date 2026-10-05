@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Illuminate\Testing\TestResponse;
@@ -101,6 +102,40 @@ class FronteiraTest extends TestCase
         $this->assertFalse($resposta->headers->has('X-Robots-Tag'));
 
         $this->get($this->central('/plataforma/login'))->assertOk();
+    }
+
+    /** Modo `unico` (um só tenant, qualquer host é a escola): o host central continua a ser só do painel. */
+    public function test_no_modo_unico_o_host_central_e_do_painel_e_qualquer_outro_host_e_da_escola(): void
+    {
+        // O modo único exige exactamente um tenant: fica só o de teste por omissão.
+        Schema::disableForeignKeyConstraints();
+        DB::table('estabelecimentos')->where('tenant_id', $this->escola->id)->delete();
+        DB::table('domains')->where('tenant_id', $this->escola->id)->delete();
+        DB::table('tenants')->where('id', $this->escola->id)->delete();
+        Schema::enableForeignKeyConstraints();
+        config(['tenancy.modo' => 'unico']);
+        $this->semContexto();
+
+        // Host central: o painel responde e a escola dá 404 (o host central tem prioridade sobre o modo único).
+        $this->get($this->central('/plataforma/login'))->assertOk();
+        $this->get($this->central('/login'))->assertNotFound();
+        $this->get($this->central('/_fronteira/leitura-escola'))->assertNotFound();
+        $this->assertFalse(app(TenantContext::class)->temTenant());
+
+        // Um host arbitrário: a escola responde e o painel dá 404.
+        foreach (['192.168.1.10', 'qualquer.exemplo.test'] as $host) {
+            $this->get("http://{$host}/login")->assertOk();
+            $this->get("http://{$host}/_fronteira/leitura-escola")->assertOk()->assertSee('cursos:0');
+            $this->get("http://{$host}/plataforma/login")->assertNotFound();
+            $this->get("http://{$host}/plataforma/_fronteira/so-plataforma")->assertNotFound();
+        }
+
+        // Sem hosts centrais: o painel desaparece em todos os hosts e a escola fica intacta.
+        config(['tenancy.hosts_centrais' => []]);
+        $this->get($this->central('/plataforma/login'))->assertNotFound();
+        $this->get('http://192.168.1.10/plataforma/login')->assertNotFound();
+        $this->get('http://192.168.1.10/login')->assertOk();
+        $this->get($this->central('/login'))->assertOk();
     }
 
     public function test_sem_hosts_centrais_a_plataforma_esta_desactivada(): void

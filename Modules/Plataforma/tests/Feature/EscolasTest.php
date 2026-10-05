@@ -50,6 +50,9 @@ class EscolasTest extends TestCase
         config(['tenancy.hosts_centrais' => [self::CENTRAL]]);
         // Sessões na BD (como em produção): permite afirmar o que fica gravado no payload.
         config(['session.driver' => 'database']);
+        // Sem a lotaria de limpeza de sessões (2 em 100): acrescentaria um `delete from "sessions"` às
+        // vezes e tornaria instáveis os testes que contam consultas.
+        config(['session.lottery' => [0, 100]]);
         $this->admin = $this->superAdmin();
         $this->sessao = $this->entrarNoPainel($this->admin);
     }
@@ -216,21 +219,25 @@ class EscolasTest extends TestCase
         for ($i = 1; $i <= 10; $i++) {
             $this->escola(sprintf('MOSI-%06d', 400 + $i), "Escola {$i}", "n{$i}.mositec.test");
         }
-
-        DB::flushQueryLog();
-        DB::enableQueryLog();
-        $this->inertiaGet('/plataforma/escolas')->assertOk();
-        $consultas = count(DB::getQueryLog());
-        DB::disableQueryLog();
+        $consultas = $this->consultasAGestao();
 
         for ($i = 11; $i <= 20; $i++) {
             $this->escola(sprintf('MOSI-%06d', 400 + $i), "Escola {$i}", "n{$i}.mositec.test");
         }
+
+        $this->assertSame($consultas, $this->consultasAGestao(), 'O número de consultas a tenants/domains não pode crescer com o número de escolas.');
+    }
+
+    /** Número de consultas da listagem a `tenants` e `domains` (as de sessão e afins não contam para o N+1). */
+    private function consultasAGestao(): int
+    {
         DB::flushQueryLog();
         DB::enableQueryLog();
         $this->inertiaGet('/plataforma/escolas')->assertOk();
-        $this->assertSame($consultas, count(DB::getQueryLog()), 'O número de consultas não pode crescer com o número de escolas.');
+        $log = DB::getQueryLog();
         DB::disableQueryLog();
+
+        return count(array_filter($log, fn (array $q) => preg_match('/\b(from|join|into|update)\s+"?(tenants|domains)"?/i', $q['query']) === 1));
     }
 
     public function test_a_listagem_e_o_detalhe_so_consultam_tabelas_globais(): void
