@@ -64,7 +64,7 @@ class TenantConsultaService
      * O que o estado da escola permite fazer, para a interface só oferecer o que as Actions aceitam
      * (a autoridade continua a ser a Action: um teste confronta os dois). Encerrada é terminal.
      *
-     * @return array{suspender: bool, reactivar: bool, encerrar: bool, gerir_dominios: bool, recuperar_administrador: bool}
+     * @return array{suspender: bool, reactivar: bool, encerrar: bool, gerir_dominios: bool, recuperar_administrador: bool, revogar_acessos: bool}
      */
     public function accoesPermitidas(Tenant $tenant): array
     {
@@ -77,6 +77,8 @@ class TenantConsultaService
             'gerir_dominios' => $estado !== EstadoTenant::ENCERRADO,
             // Mesma regra do contrato RecuperaAdministradorDoTenant: só escolas Activas.
             'recuperar_administrador' => $estado === EstadoTenant::ACTIVO,
+            // Mesma regra da RevogarAcessosDeEscolaSuspensaAction: só escolas já Suspensas.
+            'revogar_acessos' => $estado === EstadoTenant::SUSPENSO,
         ];
     }
 

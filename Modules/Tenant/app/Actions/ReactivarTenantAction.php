@@ -8,8 +8,8 @@ use Modules\Tenant\Exceptions\TransicaoDeEstadoInvalida;
 use Modules\Tenant\Models\Tenant;
 
 /**
- * Suspenso -> Activo (spec §6). Limpa a suspensão (data e motivo); o instante da
- * reactivação fica em updated_at (o esquema do spec não tem coluna própria).
+ * Suspenso -> Activo (spec §6). Limpa a suspensão (data e motivo) e regista o instante da
+ * reactivação em `reactivado_em` (a última, se houver várias).
  */
 class ReactivarTenantAction
 {
@@ -29,6 +29,7 @@ class ReactivarTenantAction
                 'estado' => EstadoTenant::ACTIVO,
                 'suspenso_em' => null,
                 'motivo_suspensao' => null,
+                'reactivado_em' => now(),
             ])->save();
 
             $tenant->setRawAttributes($actual->getAttributes(), true);

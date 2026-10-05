@@ -81,6 +81,10 @@ onBeforeUnmount(() => {
                         <div class="text-muted fs-7 fw-semibold">Criada em</div>
                         <div class="fw-bold text-gray-800">{{ formatarDataHora(escola.created_at) }}</div>
                     </div>
+                    <div v-if="escola.reactivado_em" class="col-12 col-md-4">
+                        <div class="text-muted fs-7 fw-semibold">Última reactivação</div>
+                        <div class="fw-bold text-gray-800">{{ formatarDataHora(escola.reactivado_em) }}</div>
+                    </div>
                     <template v-if="escola.estado !== 1">
                         <div v-if="escola.suspenso_em" class="col-12 col-md-4">
                             <div class="text-muted fs-7 fw-semibold">Suspensa em</div>
@@ -89,6 +93,10 @@ onBeforeUnmount(() => {
                         <div v-if="escola.encerrado_em" class="col-12 col-md-4">
                             <div class="text-muted fs-7 fw-semibold">Encerrada em</div>
                             <div class="fw-bold text-gray-800">{{ formatarDataHora(escola.encerrado_em) }}</div>
+                        </div>
+                        <div v-if="escola.motivo_encerramento" class="col-12">
+                            <div class="text-muted fs-7 fw-semibold">Motivo do encerramento</div>
+                            <div class="bg-body-secondary rounded p-4 text-gray-800">{{ escola.motivo_encerramento }}</div>
                         </div>
                         <div v-if="escola.motivo_suspensao" class="col-12">
                             <div class="text-muted fs-7 fw-semibold">Motivo da suspensão</div>

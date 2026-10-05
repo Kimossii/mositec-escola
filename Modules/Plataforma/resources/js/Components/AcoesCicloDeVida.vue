@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import Loader from '@/Components/Shared/Loader.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import ConfirmarEncerramentoModal from './ConfirmarEncerramentoModal.vue';
 
 // Botões do ciclo de vida consoante as acções que o backend permite para o estado da escola
@@ -12,7 +13,7 @@ const props = defineProps({
 
 const base = () => `/plataforma/escolas/${props.escola.codigo}`;
 
-const modal = ref(null); // 'suspender' | 'encerrar' | null
+const modal = ref(null); // 'suspender' | 'encerrar' | 'revogar' | null
 const processando = ref(false);
 const erros = ref({});
 const motivo = ref('');
@@ -57,8 +58,12 @@ function reactivar() {
     enviar('reactivar', {});
 }
 
-function encerrar(confirmacao) {
-    enviar('encerrar', { confirmacao });
+function encerrar({ confirmacao, motivo }) {
+    enviar('encerrar', { confirmacao, motivo });
+}
+
+function revogar() {
+    enviar('revogar-acessos', {});
 }
 </script>
 
@@ -74,6 +79,9 @@ function encerrar(confirmacao) {
         <button v-if="escola.accoes_permitidas.reactivar" type="button" class="btn btn-light-success" :disabled="processando" @click="reactivar">
             <span v-if="!processando">Reactivar</span>
             <span v-else>Aguarde... <Loader size="0.3px" class="align-middle ms-2" /></span>
+        </button>
+        <button v-if="escola.accoes_permitidas.revogar_acessos" type="button" class="btn btn-light-primary" :disabled="processando" @click="abrir('revogar')">
+            Terminar sessões e tokens
         </button>
         <button v-if="escola.accoes_permitidas.encerrar" type="button" class="btn btn-light-danger" :disabled="processando" @click="abrir('encerrar')">
             Encerrar
@@ -121,7 +129,18 @@ function encerrar(confirmacao) {
         :nome="escola.nome"
         :processando="processando"
         :erro="erros.confirmacao ?? ''"
+        :erro-motivo="erros.motivo ?? ''"
         @confirmar="encerrar"
+        @cancelar="fechar"
+    />
+
+    <ConfirmModal
+        :show="modal === 'revogar'"
+        titulo="Terminar sessões e tokens"
+        :mensagem="`Terminar todas as sessões e tokens de API dos utilizadores de ${escola.nome}? Terão de iniciar sessão de novo quando a escola for reactivada.`"
+        texto-confirmar="Terminar sessões e tokens"
+        :processando="processando"
+        @confirmar="revogar"
         @cancelar="fechar"
     />
 </template>

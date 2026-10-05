@@ -10,6 +10,7 @@ use Modules\Plataforma\Actions\RegistarAuditoriaAction;
 use Modules\Plataforma\Http\Controllers\Concerns\AuditaSemFalhar;
 use Modules\Plataforma\Http\Requests\AdicionarDominioRequest;
 use Modules\Tenant\Actions\AdicionarDominioAction;
+use Modules\Tenant\Actions\DefinirDominioPrincipalAction;
 use Modules\Tenant\Actions\RemoverDominioAction;
 use Modules\Tenant\Exceptions\DadosDeTenantInvalidos;
 use Modules\Tenant\Exceptions\OperacaoDeTenantRecusada;
@@ -51,6 +52,22 @@ class DominioController extends Controller
         $this->auditar($auditoria, $request, 'dominio.removido', $tenant->codigo, ['dominio' => $host]);
 
         return $this->voltar($tenant)->with('success', "Domínio {$host} removido.");
+    }
+
+    /** Troca o principal para outro domínio da escola: a Action decide se pode (pertence, não é já o principal, escola não encerrada). */
+    public function principal(Request $request, Tenant $tenant, string $dominio, DefinirDominioPrincipalAction $definir, RegistarAuditoriaAction $auditoria): RedirectResponse
+    {
+        $anterior = $tenant->dominioPrincipal()->value('dominio');
+
+        try {
+            $novo = $definir->executar($tenant, $dominio);
+        } catch (OperacaoDeTenantRecusada $e) {
+            return $this->voltar($tenant)->withErrors(['geral' => $e->getMessage()]);
+        }
+
+        $this->auditar($auditoria, $request, 'dominio.principal_alterado', $tenant->codigo, ['de' => $anterior, 'para' => $novo->dominio]);
+
+        return $this->voltar($tenant)->with('success', "O domínio {$novo->dominio} é agora o principal.");
     }
 
     private function voltar(Tenant $tenant): RedirectResponse

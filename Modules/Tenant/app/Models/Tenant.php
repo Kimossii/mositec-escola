@@ -34,6 +34,7 @@ class Tenant extends Model
         'estado' => EstadoTenant::class,
         'suspenso_em' => 'datetime',
         'encerrado_em' => 'datetime',
+        'reactivado_em' => 'datetime',
     ];
 
     public function dominios(): HasMany

@@ -24,6 +24,7 @@ use Modules\Tenant\Actions\AdicionarDominioAction;
 use Modules\Tenant\Actions\EncerrarTenantAction;
 use Modules\Tenant\Actions\ReactivarTenantAction;
 use Modules\Tenant\Actions\RevogarAcessosAposSuspensaoAction;
+use Modules\Tenant\Actions\RevogarAcessosDeEscolaSuspensaAction;
 use Modules\Tenant\Actions\SuspenderTenantAction;
 use Modules\Tenant\Exceptions\OperacaoDeTenantRecusada;
 use Modules\Tenant\Models\Tenant;
@@ -76,9 +77,17 @@ class CicloDeVidaTest extends TestCase
         return $this->acao("/plataforma/escolas/{$escola->codigo}/reactivar");
     }
 
-    private function encerrar(Tenant $escola, ?string $confirmacao = null): TestResponse
+    private function encerrar(Tenant $escola, ?string $confirmacao = null, mixed $motivo = null): TestResponse
     {
-        return $this->acao("/plataforma/escolas/{$escola->codigo}/encerrar", ['confirmacao' => $confirmacao ?? $escola->codigo]);
+        return $this->acao("/plataforma/escolas/{$escola->codigo}/encerrar", [
+            'confirmacao' => $confirmacao ?? $escola->codigo,
+            ...($motivo === null ? [] : ['motivo' => $motivo]),
+        ]);
+    }
+
+    private function revogarAcessos(Tenant $escola): TestResponse
+    {
+        return $this->acao("/plataforma/escolas/{$escola->codigo}/revogar-acessos");
     }
 
     private function recarregar(Tenant $escola): Tenant
@@ -124,6 +133,8 @@ class CicloDeVidaTest extends TestCase
             'gerir_dominios' => fn (Tenant $t) => app(AdicionarDominioAction::class)->executar($t, 'teste-'.Str::random(6).'.mositec.test'),
             // O contrato recusa escolas não activas (RecuperacaoDeAdministradorRecusada); listar não altera nada.
             'recuperar_administrador' => fn (Tenant $t) => app(RecuperaAdministradorDoTenant::class)->administradores($t->paraTenantAtual()),
+            // Apaga sessões/tokens, mas dentro da transacção revertida.
+            'revogar_acessos' => fn (Tenant $t) => app(RevogarAcessosDeEscolaSuspensaAction::class)->executar($t),
         ];
 
         foreach ($tentativas as $nome => $tentativa) {
@@ -402,7 +413,7 @@ class CicloDeVidaTest extends TestCase
     {
         $esperado = [
             [EstadoTenant::ACTIVO, ['suspender', 'encerrar', 'gerir_dominios', 'recuperar_administrador']],
-            [EstadoTenant::SUSPENSO, ['reactivar', 'encerrar', 'gerir_dominios']],
+            [EstadoTenant::SUSPENSO, ['reactivar', 'encerrar', 'gerir_dominios', 'revogar_acessos']],
             [EstadoTenant::ENCERRADO, []],
         ];
 
@@ -414,7 +425,7 @@ class CicloDeVidaTest extends TestCase
             $props = $this->noPainel('GET', "/plataforma/escolas/{$escola->codigo}", $this->sessao, cabecalhos: $this->cabecalhosInertia())->json('props.escola.accoes_permitidas');
             $oferecidas = array_keys(array_filter($props));
             $this->assertEqualsCanonicalizing($permitidas, $oferecidas, "O detalhe oferece em {$estado->name}.");
-            $this->assertEqualsCanonicalizing(['suspender', 'reactivar', 'encerrar', 'gerir_dominios', 'recuperar_administrador'], array_keys($props), 'Chaves estáveis (sempre as cinco).');
+            $this->assertEqualsCanonicalizing(['suspender', 'reactivar', 'encerrar', 'gerir_dominios', 'recuperar_administrador', 'revogar_acessos'], array_keys($props), 'Chaves estáveis (sempre as seis).');
         }
     }
 
@@ -583,6 +594,182 @@ class CicloDeVidaTest extends TestCase
         $this->assertArrayNotHasKey('sessoes_revogadas', $detalhe);
     }
 
+    // --- Revogar acessos de uma escola já suspensa -------------------------------------------
+
+    public function test_revogar_acessos_de_escola_suspensa_apaga_so_os_da_escola_alvo_mostra_a_contagem_e_audita(): void
+    {
+        [$outra, $deA, $deB] = $this->duasEscolasComAcessos();
+        $this->suspender($this->tenant)->assertSessionHas('success');
+        $this->assertSame(2, $this->noTenant($this->tenant, fn () => TokenDeAcesso::count()), 'Pré-condição: suspender sem revogar não apaga nada.');
+
+        $resposta = $this->revogarAcessos($this->tenant);
+
+        $resposta->assertRedirect($this->urlDaEscola($this->tenant));
+        $resposta->assertSessionHas('success');
+        $resposta->assertSessionHasNoErrors();
+        $this->assertStringContainsString('2 sessão(ões) e 2 token(s) revogado(s)', session('success'));
+        $this->assertEqualsCanonicalizing(
+            ['anonima', 'plataforma-outro-operador', 'sb', $this->sessao],
+            SessaoDeUtilizador::pluck('id')->all(),
+            'Sessões da Plataforma (user_id nulo), da escola B e a anónima ficam.',
+        );
+        $this->assertSame(0, $this->noTenant($this->tenant, fn () => TokenDeAcesso::count()));
+        $this->assertSame(2, $this->noTenant($outra, fn () => TokenDeAcesso::count()));
+        $this->assertNotSame('lembrar-a', $this->noTenant($this->tenant, fn () => User::findOrFail($deA->id)->remember_token));
+        $this->assertSame('lembrar-b', $this->noTenant($outra, fn () => User::findOrFail($deB->id)->remember_token), 'remember_token só roda na escola alvo.');
+        $this->assertSame(EstadoTenant::SUSPENSO, $this->recarregar($this->tenant)->estado, 'O estado não muda.');
+
+        $linhas = $this->auditoria($this->tenant->codigo, 'escola.acessos_revogados');
+        $this->assertCount(1, $linhas);
+        $this->assertSame(['sessoes_revogadas' => 2, 'tokens_revogados' => 2], $linhas[0]->detalhe);
+        $this->assertSame($this->admin->id, $linhas[0]->super_admin_id);
+    }
+
+    public function test_revogar_acessos_numa_escola_activa_ou_encerrada_e_recusado_com_a_mensagem_da_action_e_nada_muda(): void
+    {
+        $this->duasEscolasComAcessos();
+        $encerrada = $this->escolaDeGestao('MOSI-000201', 'Alfa', 'alfa.mositec.test', EstadoTenant::ENCERRADO, ['encerrado_em' => now()->subDay()]);
+        $sessoesAntes = SessaoDeUtilizador::count();
+
+        foreach ([$this->tenant, $encerrada] as $escola) {
+            $esperada = null;
+            try {
+                app(RevogarAcessosDeEscolaSuspensaAction::class)->executar(Tenant::findOrFail($escola->id));
+            } catch (OperacaoDeTenantRecusada $e) {
+                $esperada = $e->getMessage();
+            }
+            $this->assertNotNull($esperada, 'Pré-condição: a Action recusa.');
+
+            $resposta = $this->revogarAcessos($escola);
+
+            $resposta->assertRedirect($this->urlDaEscola($escola));
+            $resposta->assertSessionHasErrors(['geral' => $esperada]);
+            $resposta->assertSessionMissing('success');
+            $this->assertCount(0, $this->auditoria($escola->codigo, 'escola.acessos_revogados'));
+        }
+
+        $this->assertSame($sessoesAntes, SessaoDeUtilizador::count());
+        $this->assertSame(2, $this->noTenant($this->tenant, fn () => TokenDeAcesso::count()));
+    }
+
+    public function test_revogar_acessos_corre_sem_contexto_de_tenant_no_controller(): void
+    {
+        $this->duasEscolasComAcessos();
+        $this->suspender($this->tenant);
+        app(TenantContext::class)->limpar();
+
+        $this->revogarAcessos($this->tenant)->assertSessionHas('success');
+        $this->assertFalse(app(TenantContext::class)->temTenant());
+
+        $this->revogarAcessos($this->escolaDeGestao('MOSI-000201', 'Alfa', 'alfa.mositec.test'))->assertSessionHasErrors('geral');
+        $this->assertFalse(app(TenantContext::class)->temTenant());
+    }
+
+    public function test_uma_falha_da_auditoria_ao_revogar_acessos_e_reportada_e_o_pedido_continua(): void
+    {
+        $this->duasEscolasComAcessos();
+        $this->suspender($this->tenant);
+        Exceptions::fake();
+        $this->mock(RegistarAuditoriaAction::class, fn (MockInterface $mock) => $mock->shouldReceive('executar')->andThrow(new RuntimeException('auditoria em baixo')));
+
+        $resposta = $this->revogarAcessos($this->tenant);
+
+        $resposta->assertSessionHas('success');
+        $this->assertSame(0, $this->noTenant($this->tenant, fn () => TokenDeAcesso::count()), 'A revogação não se desfaz.');
+        Exceptions::assertReported(fn (RuntimeException $e) => $e->getMessage() === 'auditoria em baixo');
+    }
+
+    public function test_o_detalhe_oferece_revogar_acessos_so_a_escolas_suspensas(): void
+    {
+        $this->suspender($this->tenant);
+        $suspensa = $this->noPainel('GET', "/plataforma/escolas/{$this->tenant->codigo}", $this->sessao, cabecalhos: $this->cabecalhosInertia())->json('props.escola.accoes_permitidas');
+        $this->reactivar($this->tenant);
+        $activa = $this->noPainel('GET', "/plataforma/escolas/{$this->tenant->codigo}", $this->sessao, cabecalhos: $this->cabecalhosInertia())->json('props.escola.accoes_permitidas');
+
+        $this->assertTrue($suspensa['revogar_acessos']);
+        $this->assertFalse($activa['revogar_acessos']);
+    }
+
+    public function test_sem_token_csrf_revogar_acessos_da_419_e_nada_muda(): void
+    {
+        $this->duasEscolasComAcessos();
+        $this->suspender($this->tenant);
+        $sessoesAntes = SessaoDeUtilizador::count();
+        $this->activarCsrfReal();
+
+        $this->revogarAcessos($this->tenant)->assertStatus(419);
+
+        $this->assertSame($sessoesAntes, SessaoDeUtilizador::count());
+        $this->assertSame(2, $this->noTenant($this->tenant, fn () => TokenDeAcesso::count()));
+        $this->assertCount(0, $this->auditoria($this->tenant->codigo, 'escola.acessos_revogados'));
+    }
+
+    // --- Motivo de encerramento e data de reactivação ----------------------------------------
+
+    public function test_encerrar_com_motivo_grava_audita_e_mostra_no_detalhe(): void
+    {
+        $escola = $this->escolaDeGestao('MOSI-000201', 'Alfa', 'alfa.mositec.test');
+
+        $this->encerrar($escola, null, '  Contrato terminado  ')->assertSessionHas('success');
+
+        $this->assertSame('Contrato terminado', $this->recarregar($escola)->motivo_encerramento);
+        $this->assertSame(['motivo' => 'Contrato terminado'], $this->auditoria($escola->codigo, 'escola.encerrada')[0]->detalhe);
+        $props = $this->noPainel('GET', "/plataforma/escolas/{$escola->codigo}", $this->sessao, cabecalhos: $this->cabecalhosInertia())->json('props.escola');
+        $this->assertSame('Contrato terminado', $props['motivo_encerramento']);
+        $this->assertNotNull($props['encerrado_em']);
+    }
+
+    public function test_encerrar_sem_motivo_ou_com_motivo_vazio_deixa_nulo_e_audita_o_motivo_nulo(): void
+    {
+        foreach ([null, '', '   '] as $i => $motivo) {
+            $escola = $this->escolaDeGestao(sprintf('MOSI-0002%02d', $i), "E{$i}", "e{$i}.mositec.test");
+
+            $this->encerrar($escola, null, $motivo)->assertSessionHas('success');
+
+            $this->assertNull($this->recarregar($escola)->motivo_encerramento);
+            $this->assertSame(['motivo' => null], $this->auditoria($escola->codigo, 'escola.encerrada')[0]->detalhe);
+        }
+    }
+
+    public function test_o_motivo_de_encerramento_longo_e_recusado_e_o_tecto_exacto_vem_da_action(): void
+    {
+        $escola = $this->escolaDeGestao('MOSI-000201', 'Alfa', 'alfa.mositec.test');
+
+        $this->encerrar($escola, null, str_repeat('m', 256))->assertSessionHasErrors('motivo');
+
+        $this->assertStringContainsString('255', session('errors')->first('motivo'), 'O texto "255" só existe na Action.');
+        $this->assertSame(EstadoTenant::ACTIVO, $this->recarregar($escola)->estado);
+        $this->assertCount(0, $this->auditoria($escola->codigo));
+        $this->encerrar($escola, null, str_repeat('m', 255))->assertSessionHas('success');
+    }
+
+    public function test_o_formato_do_motivo_de_encerramento_e_validado_pelo_pedido(): void
+    {
+        $escola = $this->escolaDeGestao('MOSI-000201', 'Alfa', 'alfa.mositec.test');
+
+        foreach ([['a', 'b'], str_repeat('m', 2001)] as $invalido) {
+            $this->encerrar($escola, null, $invalido)->assertSessionHasErrors('motivo');
+        }
+
+        $this->assertSame(EstadoTenant::ACTIVO, $this->recarregar($escola)->estado);
+    }
+
+    public function test_reactivar_grava_reactivado_em_audita_a_data_e_mostra_no_detalhe(): void
+    {
+        $escola = $this->escolaDeGestao('MOSI-000201', 'Alfa', 'alfa.mositec.test');
+        $this->suspender($escola);
+
+        $this->reactivar($escola)->assertSessionHas('success');
+
+        $depois = $this->recarregar($escola);
+        $this->assertNotNull($depois->reactivado_em);
+        $detalhe = $this->auditoria($escola->codigo, 'escola.reactivada')[0]->detalhe;
+        $this->assertSame($depois->reactivado_em->toIso8601String(), $detalhe['reactivado_em']);
+        $props = $this->noPainel('GET', "/plataforma/escolas/{$escola->codigo}", $this->sessao, cabecalhos: $this->cabecalhosInertia())->json('props.escola');
+        $this->assertNotNull($props['reactivado_em']);
+        $this->assertNull($props['motivo_encerramento']);
+    }
+
     // --- Auditoria ---------------------------------------------------------------------------
 
     public function test_uma_falha_da_auditoria_nao_desfaz_a_transicao(): void
@@ -633,6 +820,7 @@ class CicloDeVidaTest extends TestCase
             'suspender' => ['/plataforma/escolas/MOSI-000201/suspender', ['motivo' => 'x', 'revogar_acessos' => '1']],
             'reactivar' => ['/plataforma/escolas/MOSI-000201/reactivar', []],
             'encerrar' => ['/plataforma/escolas/MOSI-000201/encerrar', ['confirmacao' => 'MOSI-000201']],
+            'revogar acessos' => ['/plataforma/escolas/MOSI-000201/revogar-acessos', []],
         ];
     }
 
@@ -702,7 +890,7 @@ class CicloDeVidaTest extends TestCase
     {
         $controller = (string) file_get_contents(base_path('Modules/Plataforma/app/Http/Controllers/CicloDeVidaController.php'));
 
-        foreach (['SuspenderTenantAction', 'ReactivarTenantAction', 'EncerrarTenantAction', 'RevogarAcessosAposSuspensaoAction', 'RegistarAuditoriaAction'] as $esperado) {
+        foreach (['SuspenderTenantAction', 'ReactivarTenantAction', 'EncerrarTenantAction', 'RevogarAcessosAposSuspensaoAction', 'RevogarAcessosDeEscolaSuspensaAction', 'RegistarAuditoriaAction'] as $esperado) {
             $this->assertStringContainsString($esperado, $controller);
         }
         foreach (['executarComo', 'TenantContext', 'RevogaAcessosDoTenant', 'DB::', 'forceFill', '->update(', '->save(', 'EstadoTenant::', 'estado =', 'withoutGlobalScopes'] as $proibido) {

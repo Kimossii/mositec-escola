@@ -10,7 +10,8 @@ use Modules\Tenant\Models\Tenant;
 
 /**
  * Remove um domínio do tenant. Recusa o principal e o último: o tenant tem de continuar
- * acessível. (O spec não prevê trocar de principal, por isso o principal nunca sai.)
+ * acessível. O principal nunca sai: para remover o actual, primeiro troca-se de principal
+ * (DefinirDominioPrincipalAction) e só depois se remove o antigo.
  */
 class RemoverDominioAction
 {

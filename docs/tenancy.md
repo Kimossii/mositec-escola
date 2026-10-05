@@ -50,7 +50,7 @@ Números por escola e ano (`0001`...) vêm de `GeradorSequencia::gerar(Modelo::c
 - `mosi:tenant:create` corre `CriarTenantAction`: cria tenant, domínio e executa os `ProvisionaTenant` etiquetados (estabelecimento, perfis, tipos de documento, administrador) numa transacção; qualquer falha desfaz tudo. Um módulo novo com dados iniciais regista o seu provisionador com a etiqueta e acrescenta o FQCN a `tenancy.provisionadores_esperados`.
 - O administrador inicial recebe uma senha temporária mostrada uma vez, com troca obrigatória e configuração inicial do estabelecimento.
 - Estados: Activo → Suspenso → Activo; Activo/Suspenso → Encerrado (terminal). Suspenso: web com página de suspensão (403), API 403, login e tokens recusados. Encerrado: 404 como host desconhecido.
-- Operação: `mosi:tenant:suspend {codigo} --motivo= [--revogar-sessoes]`, `mosi:tenant:reactivate`, `mosi:tenant:close [--force]`, `mosi:tenant:domain:add|remove`, `mosi:tenant:admin:reset --tenant=`, `mosi:tenant:tokens:prune`, `mosi:tenant:sync-perfis`.
+- Operação: `mosi:tenant:suspend {codigo} --motivo= [--revogar-sessoes]`, `mosi:tenant:revogar-acessos {codigo}` (só escolas já Suspensas), `mosi:tenant:reactivate`, `mosi:tenant:close [--motivo=] [--force]`, `mosi:tenant:domain:add|remove|principal`, `mosi:tenant:admin:reset --tenant=`, `mosi:tenant:tokens:prune`, `mosi:tenant:sync-perfis`.
 
 ## Plataforma (Plano 13)
 

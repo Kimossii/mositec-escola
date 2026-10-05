@@ -4,7 +4,10 @@ namespace Tests\Feature\Tenancy;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +17,7 @@ use Modules\Aluno\DTO\AlunoDTO;
 use Modules\Aluno\Services\AlunoConsultaService;
 use Modules\AnoLectivo\Services\AnoLectivoConsultaService;
 use Modules\Core\Models\Horario;
+use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Core\Services\HorarioConsultaService;
 use Modules\Core\Tenancy\Enums\EstadoTenant;
 use Modules\Core\Tenancy\Exceptions\AlteracaoDeTenantProibida;
@@ -21,6 +25,12 @@ use Modules\Core\Tenancy\Exceptions\TenantNaoResolvido;
 use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Curso\Services\CursoConsultaService;
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
+use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Models\InscricaoDisciplina;
+use Modules\Matricula\Models\MatriculaHistorico;
+use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
 use Modules\Disciplina\Services\DisciplinaConsultaService;
 use Modules\Infraestrutura\Services\SalaConsultaService;
 use Modules\Matricula\Services\MatriculaConsultaService;
@@ -34,9 +44,14 @@ use Modules\Tenant\Models\Tenant;
 use Modules\Turma\Services\NivelAcademicoConsultaService;
 use Modules\Turma\Services\TurmaConsultaService;
 use Modules\Turma\Services\TurnoConsultaService;
+use Modules\Usuario\Models\DocumentoPessoa;
+use Modules\Usuario\Models\TipoDocumento;
+use Modules\Usuario\Services\GestaoDocumentoPessoaService;
 use Modules\Usuario\Models\User;
 use Modules\Usuario\Services\UsuarioConsultaService;
 use ReflectionClass;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Throwable;
 use Tests\Concerns\DescobreModels;
 use Tests\Concerns\PopulaDadosAcademicos;
 use Tests\TestCase;
@@ -85,7 +100,14 @@ class MatrizIsolamentoTest extends TestCase
             'Modules/Matricula/tests/Feature/MatriculaTenancyTest.php' => ['test_unique_e_por_tenant'],
         ],
         'Repository / Service' => [
-            'tests/Feature/Tenancy/MatrizIsolamentoTest.php' => ['test_os_servicos_de_consulta_no_contexto_de_a_nao_devolvem_dados_de_b'],
+            'tests/Feature/Tenancy/MatrizIsolamentoTest.php' => [
+                'test_os_servicos_de_consulta_no_contexto_de_a_nao_devolvem_dados_de_b',
+                'test_os_servicos_com_parametros_validos_de_a_nao_devolvem_dados_de_b',
+                'test_os_servicos_com_parametros_ou_modelos_de_b_no_contexto_de_a_nao_devolvem_dados_de_b',
+                'test_os_servicos_sem_parametros_ainda_nao_cobertos_so_devolvem_dados_do_proprio_tenant',
+                'test_os_dados_de_apoio_dos_perfis_so_tem_os_perfis_do_tenant',
+                'test_servir_foto_e_a_leitura_de_documentos_de_b_no_contexto_de_a_nao_servem_nada_de_b',
+            ],
             'Modules/Usuario/tests/Feature/UsuarioTenancyTest.php' => ['test_listagem_e_find_nao_devolvem_utilizadores_de_outro_tenant'],
         ],
         'Action' => [
@@ -443,6 +465,292 @@ class MatrizIsolamentoTest extends TestCase
                     if (! str_contains($json, $minha)) {
                         $this->fail("{$nome} no tenant {$tenant->codigo}: não devolveu os dados do próprio tenant (controlo positivo).");
                     }
+                }
+            });
+        }
+    }
+
+
+    // ----------------------------------- Repository / Service: métodos com parâmetros
+
+    /**
+     * Um mundo completo de uma escola (marcador `$m`), no contexto actual: dados académicos, utilizador com
+     * perfil, perfil personalizado, horário, histórico e inscrição de matrícula e uma turma ligada ao curso
+     * (para o plano curricular resolver). Devolve os modelos para usar como parâmetros.
+     *
+     * @return array<string, mixed>
+     */
+    private function mundoParaServicos(string $m): array
+    {
+        $this->seed(PermissaoDatabaseSeeder::class);
+        $d = $this->popularDadosAcademicos($m);
+
+        // A turma passa a ter o curso do plano: só assim o plano curricular da matrícula é resolvido.
+        $d['turma']->forceFill(['curso_id' => $d['curso']->id])->save();
+
+        // Relações carregadas já no mundo de origem: levadas para o contexto do outro tenant, chegam aos serviços tal como são.
+        $d['pessoa'] = $d['aluno']->dadosPessoa;
+        $d['matricula']->load('turma');
+
+        $d['utilizador'] = User::create(['name' => "Utilizador{$m}", 'email' => strtolower($m) . '@example.com', 'password' => Hash::make('x')]);
+        $d['utilizador']->roles()->attach(Role::where('nome', Perfil::ADMIN_ESCOLA->value)->firstOrFail()->id);
+        $d['perfil'] = Role::create(['nome' => Role::PERFIL_PERSONALIZADO, 'descricao' => "Perfil{$m}"]);
+        $d['horario'] = Horario::create(['nome' => "Horario{$m}", 'hora_inicio' => '08:00', 'hora_fim' => '09:00']);
+        $d['historico'] = MatriculaHistorico::create([
+            'matricula_id' => $d['matricula']->id, 'estado_anterior' => EstadoMatriculaEnum::PENDENTE,
+            'estado_novo' => EstadoMatriculaEnum::ACTIVA, 'utilizador_id' => $d['utilizador']->id,
+        ]);
+        // Desistida: aparece na lista da matrícula mas não tira a disciplina das "disponíveis para inscrição".
+        $d['inscricao'] = InscricaoDisciplina::create([
+            'matricula_id' => $d['matricula']->id,
+            'plano_curricular_disciplina_id' => PlanoCurricularDisciplina::query()->firstOrFail()->id,
+            'data_inscricao' => '2026-02-02', 'estado' => EstadoInscricaoDisciplinaEnum::DESISTIDA,
+        ]);
+
+        return $d;
+    }
+
+    /** @return array{0: array<string, mixed>, 1: array<string, mixed>} os mundos de A e de B */
+    private function doisMundosParaServicos(): array
+    {
+        $a = $this->mundoParaServicos('AAA');
+        $b = $this->noTenant($this->outro, fn () => $this->mundoParaServicos('BBB'));
+
+        return [$a, $b];
+    }
+
+    /**
+     * Métodos públicos de leitura dos *ConsultaService (e do GestaoDocumentoPessoaService) que recebem
+     * parâmetros. Cada entrada: [chamar(mundo), temDadosProprios(resultado)?, vazioComParametrosAlheios].
+     * `chamar` devolve só o que vem da base de dados (nunca o próprio modelo recebido), por isso um
+     * parâmetro de B no contexto de A tem de dar vazio. Sem `temDadosProprios`, o controlo positivo é
+     * "o resultado contém o marcador do tenant".
+     *
+     * @return array<string, array{0: callable, 1?: ?callable, 2?: bool}>
+     */
+    private function chamadasComParametros(): array
+    {
+        $curso = app(CursoConsultaService::class);
+        $disciplina = app(DisciplinaConsultaService::class);
+        $nivel = app(NivelAcademicoConsultaService::class);
+        $turno = app(TurnoConsultaService::class);
+        $turma = app(TurmaConsultaService::class);
+        $ano = app(AnoLectivoConsultaService::class);
+        $aluno = app(AlunoConsultaService::class);
+        $matricula = app(MatriculaConsultaService::class);
+        $usuario = app(UsuarioConsultaService::class);
+        $permissao = app(PermissaoConsultaService::class);
+        $documentos = app(GestaoDocumentoPessoaService::class);
+
+        return [
+            // Pesquisas por texto comum aos dois tenants ("Curso" casa CursoAAA e CursoBBB): só o próprio sai.
+            'Curso::listar(pesquisa)' => [fn (array $d) => $curso->listar(['pesquisa' => 'Curso']), null, false],
+            'Curso::listar(pesquisa+estado)' => [fn (array $d) => $curso->listar(['pesquisa' => 'Curso', 'estado' => '1']), null, false],
+            'Disciplina::listar(pesquisa)' => [fn (array $d) => $disciplina->listar(['pesquisa' => 'Disciplina']), null, false],
+            'NivelAcademico::listar(pesquisa+etapa)' => [fn (array $d) => $nivel->listar(['pesquisa' => 'Nivel', 'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO->value]), null, false],
+            'Turno::listar(pesquisa)' => [fn (array $d) => $turno->listar(['pesquisa' => 'Turno']), null, false],
+            'Turma::listar(pesquisa)' => [fn (array $d) => $turma->listar(['pesquisa' => 'Turma']), null, false],
+            // Filtros por id: com ids do próprio tenant devolvem o próprio; com ids de B, vazio.
+            'Turma::listar(ids)' => [fn (array $d) => $turma->listar([
+                'ano_lectivo_id' => $d['ano']->id, 'curso_id' => $d['curso']->id, 'nivel_academico_id' => $d['nivel']->id, 'turno_id' => $d['turno']->id,
+            ])],
+            'Aluno::listar(pesquisa)' => [fn (array $d) => $aluno->listar(['pesquisa' => 'Aluno']), null, false],
+            'Aluno::listar(ids)' => [fn (array $d) => $aluno->listar([
+                'ano_lectivo_id' => $d['ano']->id, 'turma_id' => $d['turma']->id, 'curso_id' => $d['curso']->id, 'nivel_academico_id' => $d['nivel']->id,
+            ])],
+            'Aluno::turmasDisponiveis(ano)' => [fn (array $d) => $aluno->turmasDisponiveis(['ano_lectivo_id' => $d['ano']->id])],
+            'Aluno::turmasDisponiveis()' => [fn (array $d) => $aluno->turmasDisponiveis([]), null, false],
+            'Matricula::listarTodas(pesquisa)' => [fn (array $d) => $matricula->listarTodas(['pesquisa' => 'Aluno']), null, false],
+            'Matricula::listarTodas(ids+estado)' => [fn (array $d) => $matricula->listarTodas([
+                'turma_id' => $d['turma']->id, 'ano_lectivo_id' => $d['ano']->id, 'estado' => EstadoMatriculaEnum::PENDENTE->value,
+            ])],
+            'Usuario::listar(pesquisa)' => [fn (array $d) => $usuario->listar(null, ['pesquisa' => 'Utilizador']), null, false],
+            'Usuario::listar(perfil)' => [fn (array $d) => $usuario->listar(Perfil::ADMIN_ESCOLA, ['estado' => '1']), null, false],
+
+            // Modelos como parâmetro: um modelo de B no contexto de A não pode carregar nada de B.
+            'Curso::comRelacoes' => [fn (array $d) => $curso->comRelacoes($d['curso'])->planosCurriculares],
+            'NivelAcademico::comRelacoes' => [fn (array $d) => $nivel->comRelacoes($d['nivel'])->planosCurriculares],
+            'Turno::comRelacoes' => [fn (array $d) => $turno->comRelacoes($d['turno'])->turmas],
+            'AnoLectivo::comRelacoes' => [fn (array $d) => $ano->comRelacoes($d['ano'])->periodos],
+            'Matricula::listarPorAluno' => [fn (array $d) => $matricula->listarPorAluno($d['aluno'], ['pesquisa' => 'REG', 'ano_lectivo_id' => $d['ano']->id])],
+            'Matricula::matriculasActivasNoAnoLectivo' => [fn (array $d) => $matricula->matriculasActivasNoAnoLectivo($d['aluno'])],
+            'Matricula::matriculaActual' => [fn (array $d) => $matricula->matriculaActual($d['aluno']), null],
+            'Matricula::ultimasMatriculas' => [fn (array $d) => $matricula->ultimasMatriculas($d['aluno'])],
+            'Matricula::anosLectivosComMatricula' => [fn (array $d) => $matricula->anosLectivosComMatricula($d['aluno'])],
+            'Matricula::historicoDaMatricula' => [
+                fn (array $d) => $matricula->historicoDaMatricula($d['matricula'])->map(fn (MatriculaHistorico $h) => $h->matricula->numero_registo_matricula),
+            ],
+            'Matricula::listarDisciplinasDaMatricula' => [fn (array $d) => $matricula->listarDisciplinasDaMatricula($d['matricula'])],
+            'Matricula::disciplinasDisponiveisParaInscricao' => [fn (array $d) => $matricula->disciplinasDisponiveisParaInscricao($d['matricula'])],
+            'Usuario::dadosParaEdicao' => [
+                fn (array $d) => Arr::only($usuario->dadosParaEdicao($d['utilizador']), ['perfil', 'celulas']),
+                fn ($r, array $d) => $r['perfil'] === Perfil::ADMIN_ESCOLA->slug(),
+            ],
+            'Permissao::dadosPermissoesDoPerfil' => [fn (array $d) => Arr::only($permissao->dadosPermissoesDoPerfil($d['perfil']), ['marcadas']), fn ($r, array $d) => true, true],
+            'Permissao::dadosPermissoesDoUtilizador(perfisAtribuidos)' => [
+                fn (array $d) => Arr::only($permissao->dadosPermissoesDoUtilizador($d['utilizador']), ['perfisAtribuidos', 'permitidasPeloPerfil', 'overrides']),
+                fn ($r, array $d) => $r['perfisAtribuidos']->contains(Role::where('nome', Perfil::ADMIN_ESCOLA->value)->value('id')),
+            ],
+            'Permissao::dadosPermissoesDoUtilizador(perfis)' => [fn (array $d) => Arr::only($permissao->dadosPermissoesDoUtilizador($d['utilizador']), ['perfis']), null, false],
+            'GestaoDocumentoPessoa::listar' => [fn (array $d) => $documentos->listar($d['pessoa'])],
+            'GestaoDocumentoPessoa::listarInativos' => [fn (array $d) => $documentos->listarInativos($d['pessoa'])],
+        ];
+    }
+
+    private function estaVazio(mixed $resultado): bool
+    {
+        return match (true) {
+            $resultado === null => true,
+            $resultado instanceof LengthAwarePaginator => $resultado->total() === 0,
+            $resultado instanceof Collection => $resultado->isEmpty(),
+            is_array($resultado) => collect($resultado)->every(fn ($valor) => $this->estaVazio($valor)),
+            default => false,
+        };
+    }
+
+    /** Documentos (um activo e um inactivo) com o marcador no nome, para o controlo positivo do GestaoDocumentoPessoaService. */
+    private function documentosDoMundo(array $d, string $m): void
+    {
+        $tipo = TipoDocumento::create(['nome' => "Tipo{$m}", 'slug' => 'tipo-' . strtolower($m)]);
+
+        foreach ([1 => 'Activo', 0 => 'Inactivo'] as $estado => $rotulo) {
+            DocumentoPessoa::create([
+                'dados_pessoa_id' => $d['aluno']->dados_pessoa_id, 'tipo_documento_id' => $tipo->id, 'numero_documento' => "N{$estado}{$m}",
+                'nome_original' => "Doc{$rotulo}{$m}.pdf", 'caminho' => CaminhoTenant::para("documentos/{$estado}-{$m}.pdf"), 'mime_type' => 'application/pdf', 'tamanho' => 1, 'estado' => $estado,
+            ]);
+        }
+    }
+
+    public function test_os_servicos_com_parametros_validos_de_a_nao_devolvem_dados_de_b(): void
+    {
+        [$a, $b] = $this->doisMundosParaServicos();
+        $this->documentosDoMundo($a, 'AAA');
+        $this->noTenant($this->outro, fn () => $this->documentosDoMundo($b, 'BBB'));
+        $chamadas = $this->chamadasComParametros();
+
+        foreach ([[$this->tenant, $a, 'AAA', 'BBB'], [$this->outro, $b, 'BBB', 'AAA']] as [$tenant, $mundo, $minha, $alheia]) {
+            $this->noTenant($tenant, function () use ($chamadas, $mundo, $minha, $alheia, $tenant) {
+                foreach ($chamadas as $nome => $entrada) {
+                    $resultado = $entrada[0]($mundo);
+                    $json = json_encode($resultado, JSON_THROW_ON_ERROR);
+
+                    $this->assertStringNotContainsString($alheia, $json, "{$nome} no tenant {$tenant->codigo}: apareceram dados do outro tenant.");
+
+                    $temProprios = ($entrada[1] ?? null) !== null
+                        ? $entrada[1]($resultado, $mundo)
+                        : str_contains($json, $minha);
+                    $this->assertTrue($temProprios, "{$nome} no tenant {$tenant->codigo}: não devolveu os dados do próprio tenant (controlo positivo).");
+                }
+            });
+        }
+    }
+
+    public function test_os_servicos_com_parametros_ou_modelos_de_b_no_contexto_de_a_nao_devolvem_dados_de_b(): void
+    {
+        [$a, $b] = $this->doisMundosParaServicos();
+        $this->documentosDoMundo($a, 'AAA');
+        $this->noTenant($this->outro, fn () => $this->documentosDoMundo($b, 'BBB'));
+        $chamadas = $this->chamadasComParametros();
+        $comExcepcao = [];
+
+        foreach ([[$this->tenant, $b, 'BBB', 'AAA'], [$this->outro, $a, 'AAA', 'BBB']] as [$tenant, $alheio, $alheia, $minha]) {
+            $this->noTenant($tenant, function () use ($chamadas, $alheio, $alheia, $tenant, &$comExcepcao) {
+                foreach ($chamadas as $nome => $entrada) {
+                    try {
+                        $resultado = $entrada[0]($alheio);
+                    } catch (Throwable $e) {
+                        // Uma excepção (404, tipo errado) é uma resposta aceitável: não devolveu dados do outro tenant.
+                        $comExcepcao[$nome] = $e::class;
+
+                        continue;
+                    }
+
+                    $this->assertStringNotContainsString($alheia, json_encode($resultado, JSON_THROW_ON_ERROR), "{$nome} no tenant {$tenant->codigo} com parâmetros do outro: vazaram dados.");
+
+                    if ($entrada[2] ?? true) {
+                        $this->assertTrue($this->estaVazio($resultado), "{$nome} no tenant {$tenant->codigo} com parâmetros do outro: devia dar vazio.");
+                    }
+                }
+            });
+        }
+
+        // Controlo: o cenário continua a exercitar os métodos (a maioria responde vazio, não com excepção).
+        $this->assertLessThan(count($chamadas), count($comExcepcao), 'Demasiadas chamadas a lançar: o cenário deixou de provar o "vazio".');
+    }
+
+    public function test_os_servicos_sem_parametros_ainda_nao_cobertos_so_devolvem_dados_do_proprio_tenant(): void
+    {
+        [$a, $b] = $this->doisMundosParaServicos();
+        $chamadas = [
+            'Turno::horariosDisponiveis' => fn () => app(TurnoConsultaService::class)->horariosDisponiveis(),
+            'Curso::niveisAcademicos' => fn () => app(CursoConsultaService::class)->niveisAcademicos(),
+            'Aluno::niveisAcademicosDisponiveis' => fn () => app(AlunoConsultaService::class)->niveisAcademicosDisponiveis(),
+            'Matricula::turmasDisponiveis' => fn () => app(MatriculaConsultaService::class)->turmasDisponiveis(),
+            'Permissao::listarPerfis' => fn () => app(PermissaoConsultaService::class)->listarPerfis(),
+        ];
+
+        foreach ([[$this->tenant, 'AAA', 'BBB'], [$this->outro, 'BBB', 'AAA']] as [$tenant, $minha, $alheia]) {
+            $this->noTenant($tenant, function () use ($chamadas, $minha, $alheia, $tenant) {
+                foreach ($chamadas as $nome => $chamar) {
+                    $json = json_encode($chamar(), JSON_THROW_ON_ERROR);
+
+                    $this->assertStringNotContainsString($alheia, $json, "{$nome} no tenant {$tenant->codigo}: apareceram dados do outro tenant.");
+                    $this->assertStringContainsString($minha, $json, "{$nome} no tenant {$tenant->codigo}: não devolveu os dados do próprio tenant (controlo positivo).");
+                }
+            });
+        }
+    }
+
+    public function test_os_dados_de_apoio_dos_perfis_so_tem_os_perfis_do_tenant(): void
+    {
+        $this->doisMundosParaServicos();
+        $idsDe = fn (Tenant $tenant) => $this->noTenant($tenant, fn () => Role::query()->pluck('id')->all());
+        $idsA = $idsDe($this->tenant);
+        $idsB = $idsDe($this->outro);
+        $this->assertNotEmpty($idsA);
+        $this->assertSame([], array_intersect($idsA, $idsB), 'Pré-condição: os perfis de cada tenant têm ids próprios.');
+
+        foreach ([[$this->tenant, $idsA, $idsB], [$this->outro, $idsB, $idsA]] as [$tenant, $meus, $alheios]) {
+            $this->noTenant($tenant, function () use ($meus, $alheios, $tenant) {
+                $apoio = app(UsuarioConsultaService::class)->dadosDeApoio();
+                $ids = collect($apoio['perfis'])->pluck('id')->filter()->all();
+
+                $this->assertCount(count(Perfil::cases()), $ids, "Tenant {$tenant->codigo}: um perfil do sistema ficou sem id (controlo positivo).");
+                $this->assertSame([], array_diff($ids, $meus), 'Só ids de perfis do próprio tenant.');
+                $this->assertSame([], array_intersect($ids, $alheios));
+                $this->assertSame([], array_diff(array_keys($apoio['permissoesPorPerfil']->all()), $meus), 'As permissões por perfil só dizem respeito a perfis do próprio tenant.');
+            });
+        }
+    }
+
+    public function test_servir_foto_e_a_leitura_de_documentos_de_b_no_contexto_de_a_nao_servem_nada_de_b(): void
+    {
+        Storage::fake('privado');
+        [$a, $b] = $this->doisMundosParaServicos();
+        $this->documentosDoMundo($a, 'AAA');
+        $this->noTenant($this->outro, fn () => $this->documentosDoMundo($b, 'BBB'));
+
+        foreach ([[$this->tenant, $a], [$this->outro, $b]] as [$tenant, $mundo]) {
+            $this->noTenant($tenant, function () use ($mundo) {
+                $caminho = CaminhoTenant::para('alunos/fotos/foto.jpg');
+                Storage::disk('privado')->put($caminho, 'conteudo');
+                $mundo['aluno']->forceFill(['foto_path' => $caminho])->save();
+            });
+        }
+
+        // Controlo positivo: cada um serve a sua foto no próprio contexto.
+        foreach ([[$this->tenant, $a], [$this->outro, $b]] as [$tenant, $mundo]) {
+            $this->noTenant($tenant, fn () => $this->assertSame(200, app(AlunoConsultaService::class)->servirFoto($mundo['aluno'])->getStatusCode()));
+        }
+
+        // Controlo negativo: o aluno de B no contexto de A (e vice-versa) é 404, mesmo com a foto de B no disco.
+        foreach ([[$this->tenant, $b], [$this->outro, $a]] as [$tenant, $alheio]) {
+            $this->noTenant($tenant, function () use ($alheio) {
+                try {
+                    app(AlunoConsultaService::class)->servirFoto($alheio['aluno']);
+                    $this->fail('Serviu a foto de outro tenant.');
+                } catch (HttpException $e) {
+                    $this->assertSame(404, $e->getStatusCode());
                 }
             });
         }

@@ -4,8 +4,9 @@ import { router } from '@inertiajs/vue3';
 import Loader from '@/Components/Shared/Loader.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 
-// Lista, adição e remoção de domínios. O que se oferece vem do backend: o botão Remover só aparece
-// quando o domínio é `removivel` (nunca o principal, nunca numa escola encerrada) e o formulário só
+// Lista, adição, remoção e troca de domínio principal. O que se oferece vem do backend: o botão Remover só aparece
+// quando o domínio é `removivel` (nunca o principal, nunca numa escola encerrada), o botão Tornar principal
+// quando é `definivel_como_principal` e o formulário só
 // quando `accoes_permitidas.gerir_dominios`. Erros e confirmações vêm do backend, sem textos de reserva.
 const props = defineProps({
     escola: { type: Object, required: true },
@@ -16,6 +17,7 @@ const aAdicionar = ref(false);
 const erros = ref({});
 const paraRemover = ref(null);
 const aRemover = ref(false);
+const aDefinir = ref(null); // domínio cujo pedido de "Tornar principal" está em curso
 
 function adicionar() {
     aAdicionar.value = true;
@@ -31,6 +33,17 @@ function adicionar() {
         },
         onFinish: () => {
             aAdicionar.value = false;
+        },
+    });
+}
+
+function tornarPrincipal(dominio) {
+    aDefinir.value = dominio;
+
+    router.post(`/plataforma/escolas/${props.escola.codigo}/dominios/${encodeURIComponent(dominio)}/principal`, {}, {
+        preserveScroll: true,
+        onFinish: () => {
+            aDefinir.value = null;
         },
     });
 }
@@ -68,6 +81,16 @@ function remover() {
                         </td>
                         <td>{{ dominio.tipo_descricao }}</td>
                         <td class="text-end">
+                            <button
+                                v-if="dominio.definivel_como_principal"
+                                type="button"
+                                class="btn btn-sm btn-light-primary me-2"
+                                :disabled="aDefinir !== null || aRemover"
+                                @click="tornarPrincipal(dominio.dominio)"
+                            >
+                                <span v-if="aDefinir !== dominio.dominio">Tornar principal</span>
+                                <span v-else>Aguarde... <Loader size="0.3px" class="align-middle ms-2" /></span>
+                            </button>
                             <button
                                 v-if="dominio.removivel"
                                 type="button"

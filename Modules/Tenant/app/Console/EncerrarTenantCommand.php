@@ -4,6 +4,7 @@ namespace Modules\Tenant\Console;
 
 use Illuminate\Console\Command;
 use Modules\Tenant\Actions\EncerrarTenantAction;
+use Modules\Tenant\Exceptions\DadosDeTenantInvalidos;
 use Modules\Tenant\Exceptions\OperacaoDeTenantRecusada;
 use Modules\Tenant\Services\TenantConsultaService;
 
@@ -12,6 +13,7 @@ class EncerrarTenantCommand extends Command
 {
     protected $signature = 'mosi:tenant:close
         {codigo : Código do tenant (MOSI-000000)}
+        {--motivo= : Motivo do encerramento (opcional, até 255 caracteres)}
         {--force : Encerra sem pedir confirmação}';
 
     protected $description = 'Encerra uma escola (tenant): estado terminal, os dados ficam retidos';
@@ -27,7 +29,13 @@ class EncerrarTenantCommand extends Command
                 return self::FAILURE;
             }
 
-            $action->executar($tenant);
+            $action->executar($tenant, (string) $this->option('motivo'));
+        } catch (DadosDeTenantInvalidos $e) {
+            foreach ($e->erros as $erro) {
+                $this->error($erro);
+            }
+
+            return self::FAILURE;
         } catch (OperacaoDeTenantRecusada $e) {
             $this->error($e->getMessage());
 

@@ -14,6 +14,7 @@ use Modules\Plataforma\Models\RegistoDeAuditoria;
 use Modules\Plataforma\Models\SuperAdmin;
 use Modules\Plataforma\Tests\Feature\Concerns\ComPainelDaPlataforma;
 use Modules\Tenant\Actions\AdicionarDominioAction;
+use Modules\Tenant\Actions\DefinirDominioPrincipalAction;
 use Modules\Tenant\Enums\TipoDominio;
 use Modules\Tenant\Exceptions\DadosDeTenantInvalidos;
 use Modules\Tenant\Exceptions\OperacaoDeTenantRecusada;
@@ -66,6 +67,18 @@ class DominiosTest extends TestCase
         $escola ??= $this->escola;
 
         return $this->noPainel('DELETE', "/plataforma/escolas/{$escola->codigo}/dominios/{$dominio}", $this->sessao);
+    }
+
+    private function tornarPrincipal(string $dominio, ?Tenant $escola = null): TestResponse
+    {
+        $escola ??= $this->escola;
+
+        return $this->noPainel('POST', "/plataforma/escolas/{$escola->codigo}/dominios/{$dominio}/principal", $this->sessao);
+    }
+
+    private function principalDe(Tenant $escola): array
+    {
+        return Domain::query()->where('tenant_id', $escola->id)->where('is_principal', true)->pluck('dominio')->all();
     }
 
     private function dominiosDe(Tenant $escola): array
@@ -360,7 +373,7 @@ class DominiosTest extends TestCase
         $deEncerrada = $this->dominiosDoDetalhe($encerrada);
         $this->assertFalse($deEncerrada['gama.mositec.test']['removivel']);
         $this->assertFalse($deEncerrada['gama-extra.mositec.test']['removivel'], 'Escola encerrada: nada se remove.');
-        $this->assertSame(['dominio', 'tipo_descricao', 'is_principal', 'removivel'], array_keys($activa['extra.mositec.test']));
+        $this->assertSame(['dominio', 'tipo_descricao', 'is_principal', 'removivel', 'definivel_como_principal'], array_keys($activa['extra.mositec.test']));
     }
 
     public function test_o_que_o_detalhe_marca_como_removivel_e_aceite_pela_action_e_o_resto_e_recusado(): void
@@ -377,6 +390,141 @@ class DominiosTest extends TestCase
                 $this->assertSame($marcados[$dominio]['removivel'], $aceite, "{$dominio}: a interface e a Action concordam.");
             }
         }
+    }
+
+    // --- Tornar principal --------------------------------------------------------------------
+
+    public function test_tornar_principal_troca_o_principal_e_audita_de_para(): void
+    {
+        $this->comSecundario('extra.mositec.test');
+
+        $resposta = $this->tornarPrincipal('extra.mositec.test');
+
+        $resposta->assertRedirect($this->urlDaEscola($this->escola));
+        $resposta->assertSessionHas('success');
+        $resposta->assertSessionHasNoErrors();
+        $this->assertSame(['extra.mositec.test'], $this->principalDe($this->escola));
+        $linhas = $this->auditoria();
+        $this->assertCount(1, $linhas);
+        $this->assertSame('dominio.principal_alterado', $linhas[0]->accao);
+        $this->assertSame('MOSI-000201', $linhas[0]->codigo_tenant);
+        $this->assertSame($this->admin->id, $linhas[0]->super_admin_id);
+        $this->assertSame(['de' => 'alfa.mositec.test', 'para' => 'extra.mositec.test'], $linhas[0]->detalhe);
+    }
+
+    public function test_tornar_principal_da_o_mesmo_resultado_que_a_action_e_o_host_do_caminho_e_normalizado(): void
+    {
+        $this->comSecundario('extra.mositec.test');
+        $gemea = $this->escolaDeGestao('MOSI-000202', 'Beta', 'beta.mositec.test');
+        $this->comSecundario('extra-b.mositec.test', $gemea);
+
+        app(DefinirDominioPrincipalAction::class)->executar($gemea, 'extra-b.mositec.test');
+        $this->tornarPrincipal('EXTRA.Mositec.Test')->assertSessionHas('success');
+
+        $this->assertSame(['extra.mositec.test'], $this->principalDe($this->escola));
+        $this->assertSame(['extra-b.mositec.test'], $this->principalDe($gemea));
+        $this->assertSame(2, Domain::where('tenant_id', $this->escola->id)->count());
+    }
+
+    public function test_tornar_principal_recusado_mostra_a_mensagem_da_action_e_nada_muda(): void
+    {
+        $this->comSecundario('extra.mositec.test');
+        $outra = $this->escolaDeGestao('MOSI-000202', 'Beta', 'beta.mositec.test');
+        $encerrada = $this->escolaDeGestao('MOSI-000203', 'Gama', 'gama.mositec.test', EstadoTenant::ENCERRADO);
+        $this->comSecundario('gama-extra.mositec.test', $encerrada);
+
+        foreach ([
+            ['alfa.mositec.test', $this->escola, 'já é o principal'],
+            ['nao-existe.mositec.test', $this->escola, 'não pertence'],
+            ['beta.mositec.test', $this->escola, 'não pertence'],
+            ['gama-extra.mositec.test', $encerrada, 'Encerrado'],
+        ] as [$dominio, $escola, $trecho]) {
+            $resposta = $this->tornarPrincipal($dominio, $escola);
+
+            $resposta->assertRedirect($this->urlDaEscola($escola));
+            $resposta->assertSessionHasErrors('geral');
+            $this->assertStringContainsString($trecho, session('errors')->first('geral'));
+            $resposta->assertSessionMissing('success');
+        }
+
+        $this->assertSame(['alfa.mositec.test'], $this->principalDe($this->escola));
+        $this->assertSame(['beta.mositec.test'], $this->principalDe($outra));
+        $this->assertSame(['gama.mositec.test'], $this->principalDe($encerrada));
+        $this->assertCount(0, $this->auditoria());
+    }
+
+    public function test_depois_de_trocar_o_principal_anterior_passa_a_ser_removivel(): void
+    {
+        $this->comSecundario('extra.mositec.test');
+        $this->assertFalse($this->dominiosDoDetalhe($this->escola)['alfa.mositec.test']['removivel']);
+
+        $this->tornarPrincipal('extra.mositec.test')->assertSessionHas('success');
+
+        $depois = $this->dominiosDoDetalhe($this->escola);
+        $this->assertTrue($depois['alfa.mositec.test']['removivel']);
+        $this->assertFalse($depois['extra.mositec.test']['removivel'], 'A regra "principal nunca se remove" mantém-se.');
+        $this->remover('extra.mositec.test')->assertSessionHasErrors('geral');
+        $this->remover('alfa.mositec.test')->assertSessionHas('success');
+        $this->assertSame(['extra.mositec.test'], $this->dominiosDe($this->escola));
+    }
+
+    public function test_o_detalhe_marca_definivel_como_principal_so_o_que_a_action_aceitaria(): void
+    {
+        $this->comSecundario('extra.mositec.test');
+        $suspensa = $this->escolaDeGestao('MOSI-000202', 'Beta', 'beta.mositec.test', EstadoTenant::SUSPENSO);
+        $this->comSecundario('beta-extra.mositec.test', $suspensa);
+        $encerrada = $this->escolaDeGestao('MOSI-000203', 'Gama', 'gama.mositec.test', EstadoTenant::ENCERRADO);
+        $this->comSecundario('gama-extra.mositec.test', $encerrada);
+
+        $activa = $this->dominiosDoDetalhe($this->escola);
+        $this->assertFalse($activa['alfa.mositec.test']['definivel_como_principal'], 'O principal actual não se redefine.');
+        $this->assertTrue($activa['extra.mositec.test']['definivel_como_principal']);
+        $this->assertTrue($this->dominiosDoDetalhe($suspensa)['beta-extra.mositec.test']['definivel_como_principal']);
+        $deEncerrada = $this->dominiosDoDetalhe($encerrada);
+        $this->assertFalse($deEncerrada['gama-extra.mositec.test']['definivel_como_principal']);
+        $this->assertFalse($deEncerrada['gama.mositec.test']['definivel_como_principal']);
+
+        // Paridade com a Action: o que o detalhe oferece é aceite, o resto é recusado.
+        foreach ([[$this->escola, ['alfa.mositec.test', 'extra.mositec.test']], [$encerrada, ['gama.mositec.test', 'gama-extra.mositec.test']]] as [$escola, $dominios]) {
+            $marcados = $this->dominiosDoDetalhe($escola);
+            foreach ($dominios as $dominio) {
+                $this->tornarPrincipal($dominio, $escola);
+                $this->assertSame($marcados[$dominio]['definivel_como_principal'], session('success') !== null, "{$dominio}: interface e Action concordam.");
+            }
+        }
+    }
+
+    public function test_o_novo_principal_resolve_e_o_antigo_continua_a_resolver(): void
+    {
+        $this->comSecundario('extra.mositec.test');
+
+        $this->tornarPrincipal('extra.mositec.test')->assertSessionHas('success');
+
+        $this->pedido('GET', 'http://extra.mositec.test/login')->assertOk();
+        $this->pedido('GET', 'http://alfa.mositec.test/login')->assertOk();
+    }
+
+    public function test_uma_falha_da_auditoria_ao_trocar_o_principal_e_reportada_e_a_troca_mantem_se(): void
+    {
+        $this->comSecundario('extra.mositec.test');
+        Exceptions::fake();
+        $this->mock(RegistarAuditoriaAction::class, fn (MockInterface $mock) => $mock->shouldReceive('executar')->andThrow(new RuntimeException('auditoria em baixo')));
+
+        $this->tornarPrincipal('extra.mositec.test')->assertSessionHas('success');
+
+        $this->assertSame(['extra.mositec.test'], $this->principalDe($this->escola));
+        Exceptions::assertReported(fn (RuntimeException $e) => $e->getMessage() === 'auditoria em baixo');
+    }
+
+    public function test_sem_token_csrf_tornar_principal_da_419_e_nada_muda(): void
+    {
+        $this->comSecundario('extra.mositec.test');
+        $this->activarCsrfReal();
+
+        $this->tornarPrincipal('extra.mositec.test')->assertStatus(419);
+
+        $this->assertSame(['alfa.mositec.test'], $this->principalDe($this->escola));
+        $this->assertCount(0, $this->auditoria());
     }
 
     // --- CSRF, acesso e contexto -------------------------------------------------------------
@@ -411,6 +559,7 @@ class DominiosTest extends TestCase
         return [
             'adicionar' => ['POST', '/plataforma/escolas/MOSI-000201/dominios', ['dominio' => 'novo.mositec.test']],
             'remover' => ['DELETE', '/plataforma/escolas/MOSI-000201/dominios/extra.mositec.test', []],
+            'tornar principal' => ['POST', '/plataforma/escolas/MOSI-000201/dominios/extra.mositec.test/principal', []],
         ];
     }
 
@@ -464,6 +613,8 @@ class DominiosTest extends TestCase
             fn () => $this->adicionar('www.mositec.test'),
             fn () => $this->remover('novo.mositec.test'),
             fn () => $this->remover('alfa.mositec.test'),
+            fn () => $this->tornarPrincipal('alfa.mositec.test'),
+            fn () => $this->tornarPrincipal('nao-existe.mositec.test'),
         ] as $i => $pedido) {
             $contexto->limpar();
             $pedido();
@@ -488,7 +639,7 @@ class DominiosTest extends TestCase
     {
         $controller = (string) file_get_contents(base_path('Modules/Plataforma/app/Http/Controllers/DominioController.php'));
 
-        foreach (['AdicionarDominioAction', 'RemoverDominioAction', 'RegistarAuditoriaAction'] as $esperado) {
+        foreach (['AdicionarDominioAction', 'RemoverDominioAction', 'DefinirDominioPrincipalAction', 'RegistarAuditoriaAction'] as $esperado) {
             $this->assertStringContainsString($esperado, $controller);
         }
         foreach (['ValidadorDominio', 'ClassificadorDominio', 'Domain::', 'dominios()', 'executarComo', 'TenantContext', 'DB::', 'hosts_centrais', 'HostsCentrais', 'TipoDominio', 'is_principal', 'withoutGlobalScopes'] as $proibido) {

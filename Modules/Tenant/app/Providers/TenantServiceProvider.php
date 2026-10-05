@@ -7,9 +7,11 @@ use Modules\Core\Tenancy\Contracts\CatalogoDeTenants;
 use Modules\Core\Tenancy\Contracts\ResolvedorTenant;
 use Modules\Tenant\Console\AdicionarDominioCommand;
 use Modules\Tenant\Console\CriarTenantCommand;
+use Modules\Tenant\Console\DefinirDominioPrincipalCommand;
 use Modules\Tenant\Console\EncerrarTenantCommand;
 use Modules\Tenant\Console\ReactivarTenantCommand;
 use Modules\Tenant\Console\RemoverDominioCommand;
+use Modules\Tenant\Console\RevogarAcessosCommand;
 use Modules\Tenant\Console\SuspenderTenantCommand;
 use Modules\Tenant\Services\CatalogoDeTenantsEloquent;
 use Modules\Tenant\Services\ResolvedorTenantPorDominio;
@@ -32,6 +34,8 @@ class TenantServiceProvider extends ModuleServiceProvider
         EncerrarTenantCommand::class,
         AdicionarDominioCommand::class,
         RemoverDominioCommand::class,
+        DefinirDominioPrincipalCommand::class,
+        RevogarAcessosCommand::class,
     ];
 
     public function register(): void

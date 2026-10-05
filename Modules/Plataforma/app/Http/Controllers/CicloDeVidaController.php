@@ -12,6 +12,7 @@ use Modules\Plataforma\Http\Requests\SuspenderEscolaRequest;
 use Modules\Tenant\Actions\EncerrarTenantAction;
 use Modules\Tenant\Actions\ReactivarTenantAction;
 use Modules\Tenant\Actions\RevogarAcessosAposSuspensaoAction;
+use Modules\Tenant\Actions\RevogarAcessosDeEscolaSuspensaAction;
 use Modules\Tenant\Actions\SuspenderTenantAction;
 use Modules\Tenant\Exceptions\DadosDeTenantInvalidos;
 use Modules\Tenant\Exceptions\OperacaoDeTenantRecusada;
@@ -75,12 +76,12 @@ class CicloDeVidaController extends Controller
     public function reactivar(Request $request, Tenant $tenant, ReactivarTenantAction $reactivar, RegistarAuditoriaAction $auditoria): RedirectResponse
     {
         try {
-            $reactivar->executar($tenant);
+            $reactivada = $reactivar->executar($tenant);
         } catch (OperacaoDeTenantRecusada $e) {
             return $this->voltar($tenant)->withErrors(['geral' => $e->getMessage()]);
         }
 
-        $this->auditar($auditoria, $request, 'escola.reactivada', $tenant->codigo);
+        $this->auditar($auditoria, $request, 'escola.reactivada', $tenant->codigo, ['reactivado_em' => $reactivada->reactivado_em->toIso8601String()]);
 
         return $this->voltar($tenant)->with('success', 'Escola reactivada.');
     }
@@ -88,14 +89,34 @@ class CicloDeVidaController extends Controller
     public function encerrar(EncerrarEscolaRequest $request, Tenant $tenant, EncerrarTenantAction $encerrar, RegistarAuditoriaAction $auditoria): RedirectResponse
     {
         try {
-            $encerrar->executar($tenant);
+            $encerrada = $encerrar->executar($tenant, $request->validated('motivo'));
+        } catch (DadosDeTenantInvalidos $e) {
+            return $this->voltar($tenant)->withErrors($e->erros);
         } catch (OperacaoDeTenantRecusada $e) {
             return $this->voltar($tenant)->withErrors(['geral' => $e->getMessage()]);
         }
 
-        $this->auditar($auditoria, $request, 'escola.encerrada', $tenant->codigo);
+        // O motivo auditado é o que a Action gravou (aparado; nulo se vazio).
+        $this->auditar($auditoria, $request, 'escola.encerrada', $tenant->codigo, ['motivo' => $encerrada->motivo_encerramento]);
 
         return $this->voltar($tenant)->with('success', 'Escola encerrada.');
+    }
+
+    /** Termina sessões e tokens de uma escola já suspensa: a Action recusa as outras e abre o contexto por dentro. */
+    public function revogarAcessos(Request $request, Tenant $tenant, RevogarAcessosDeEscolaSuspensaAction $revogar, RegistarAuditoriaAction $auditoria): RedirectResponse
+    {
+        try {
+            $revogados = $revogar->executar($tenant);
+        } catch (OperacaoDeTenantRecusada $e) {
+            return $this->voltar($tenant)->withErrors(['geral' => $e->getMessage()]);
+        }
+
+        $this->auditar($auditoria, $request, 'escola.acessos_revogados', $tenant->codigo, [
+            'sessoes_revogadas' => $revogados['sessoes'],
+            'tokens_revogados' => $revogados['tokens'],
+        ]);
+
+        return $this->voltar($tenant)->with('success', "{$revogados['sessoes']} sessão(ões) e {$revogados['tokens']} token(s) revogado(s).");
     }
 
     private function voltar(Tenant $tenant): RedirectResponse

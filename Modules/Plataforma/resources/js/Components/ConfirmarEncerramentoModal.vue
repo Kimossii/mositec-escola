@@ -11,19 +11,25 @@ const props = defineProps({
     processando: { type: Boolean, default: false },
     /** Mensagem de erro do backend para o campo de confirmação */
     erro: { type: String, default: '' },
+    /** Mensagem de erro do backend para o campo do motivo */
+    erroMotivo: { type: String, default: '' },
 });
 const emit = defineEmits(['confirmar', 'cancelar']);
 
 const escrito = ref('');
+const motivo = ref('');
 const coincide = computed(() => escrito.value === props.codigo);
 
 // Cada abertura começa com o campo vazio.
 watch(() => props.show, (aberto) => {
-    if (aberto) escrito.value = '';
+    if (aberto) {
+        escrito.value = '';
+        motivo.value = '';
+    }
 });
 
 function confirmar() {
-    if (coincide.value && !props.processando) emit('confirmar', escrito.value);
+    if (coincide.value && !props.processando) emit('confirmar', { confirmacao: escrito.value, motivo: motivo.value });
 }
 </script>
 
@@ -36,6 +42,18 @@ function confirmar() {
                     O encerramento é <strong>terminal</strong>: a escola deixa de ser acessível, os domínios ficam reservados
                     e <strong>não existe forma de a reactivar pelo painel</strong>. Reabrir é um procedimento manual.
                 </div>
+                <label class="fw-semibold fs-6 mb-2" for="motivo-encerramento">Motivo (opcional)</label>
+                <textarea
+                    id="motivo-encerramento"
+                    v-model="motivo"
+                    name="motivo"
+                    rows="2"
+                    maxlength="255"
+                    class="form-control form-control-solid mb-5"
+                    :class="{ 'is-invalid': erroMotivo }"
+                    :disabled="processando"
+                />
+                <div v-if="erroMotivo" class="text-danger fs-7 mb-3">{{ erroMotivo }}</div>
                 <label class="fw-semibold fs-6 mb-2" for="confirmacao-encerramento">
                     Para confirmar, escreva o código da escola: <code class="text-gray-800">{{ codigo }}</code>
                 </label>

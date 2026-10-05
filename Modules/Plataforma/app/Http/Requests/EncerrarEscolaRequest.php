@@ -10,9 +10,12 @@ use Illuminate\Validation\Validator;
  */
 class EncerrarEscolaRequest extends PedidoDeEscolaRequest
 {
+    /** Só o formato do motivo (opcional): o tecto exacto é da EncerrarTenantAction. */
     public function rules(): array
     {
-        return [];
+        return [
+            'motivo' => ['nullable', 'string', 'max:2000'],
+        ];
     }
 
     public function after(): array
