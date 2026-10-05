@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Inertia\Middleware;
+use Modules\Core\Support\HistoricoCifrado;
 
 /**
  * Inertia do painel. Props partilhadas mínimas: o Super Admin autenticado e as mensagens flash.
@@ -26,8 +27,10 @@ class HandleInertiaPlataforma extends Middleware
         // A resposta que transporta a senha temporária (flash) cifra o histórico do browser, para que
         // a senha em claro não fique legível em history.state. Só essa resposta; null repõe a config
         // (o ResponseFactory é singleton: sem isto o true vazaria para pedidos seguintes).
+        // Só com HTTPS: em HTTP o Inertia não consegue cifrar (sem `crypto.subtle`) e a visita fica
+        // pendurada; ver HistoricoCifrado.
         Inertia::encryptHistory(
-            $request->hasSession() && $request->session()->has('senha_temporaria') ? true : null,
+            $request->hasSession() && $request->session()->has('senha_temporaria') && HistoricoCifrado::possivel($request) ? true : null,
         );
 
         return parent::handle($request, $next);

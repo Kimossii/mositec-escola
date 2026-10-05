@@ -125,6 +125,9 @@ class RedefinirSenhaUsuarioTest extends TestCase
 
     public function test_so_a_resposta_com_a_senha_temporaria_cifra_o_historico(): void
     {
+        // O histórico só se cifra com HTTPS (ver HistoricoCifrado): os testes correm em HTTP.
+        config(['session.secure' => true]);
+
         $admin = $this->admin();
         $alvo = $this->utilizador('alvo@example.com');
 
@@ -448,5 +451,21 @@ class RedefinirSenhaUsuarioTest extends TestCase
 
         $this->actingAs($autor)->patch("/usuarios/{$alvo->id}/redefinir-senha")->assertRedirect();
         $this->assertTrue($alvo->fresh()->deve_alterar_senha);
+    }
+
+    public function test_em_http_a_resposta_com_a_senha_nao_pede_a_cifra_do_historico(): void
+    {
+        // Regressão: em HTTP o browser não tem `crypto.subtle`, o Inertia não consegue cifrar e a
+        // visita fica pendurada ("Aguarde..." para sempre). Sem HTTPS, não se pede a cifra.
+        config(['session.secure' => false]);
+
+        $admin = $this->admin();
+        $alvo = $this->utilizador('alvo-http@example.com');
+
+        $this->actingAs($admin)->patch("/usuarios/{$alvo->id}/redefinir-senha");
+
+        $resposta = $this->actingAs($admin)->withHeaders($this->cabecalhosInertia())->get('/usuarios');
+        $this->assertNotNull($resposta->json('props.flash.senha_temporaria'));
+        $this->assertNull($resposta->json('encryptHistory'));
     }
 }

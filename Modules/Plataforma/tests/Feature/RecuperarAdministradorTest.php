@@ -310,6 +310,9 @@ class RecuperarAdministradorTest extends TestCase
 
     public function test_a_senha_temporaria_aparece_uma_so_vez_e_nunca_em_claro_no_resto(): void
     {
+        // O histórico só se cifra com HTTPS (ver HistoricoCifrado): os testes correm em HTTP.
+        config(['session.secure' => true]);
+
         $logs = [];
         Log::listen(function ($m) use (&$logs) {
             $logs[] = $m->message.' '.json_encode($m->context);
@@ -632,5 +635,19 @@ class RecuperarAdministradorTest extends TestCase
         $this->assertStringNotContainsString('RecuperarAdministradorAction', $codigo);
         $this->assertStringNotContainsString('executarComo', $codigo);
         $this->assertStringNotContainsString('TenantContext', $codigo);
+    }
+
+    public function test_em_http_a_resposta_com_a_senha_nao_pede_a_cifra_do_historico(): void
+    {
+        // Regressão do "loop" no browser: em HTTP não há `crypto.subtle`, o Inertia não consegue cifrar
+        // o histórico e a visita nunca termina, embora a recuperação já esteja feita no servidor.
+        config(['session.secure' => false]);
+
+        $this->recuperar($this->a)->assertRedirect($this->urlDaEscola($this->a));
+
+        $resposta = $this->inertiaGet("/plataforma/escolas/{$this->a->codigo}");
+        $resposta->assertOk();
+        $this->assertNotNull($resposta->json('props.flash.senha_temporaria'));
+        $this->assertFalse((bool) $resposta->json('encryptHistory'));
     }
 }

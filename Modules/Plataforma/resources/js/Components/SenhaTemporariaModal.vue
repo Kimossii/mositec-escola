@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
+import { copiarParaAreaDeTransferencia } from '@/Composables/useCopiar';
 
 // Modal único das duas fases de uma operação que gera uma senha temporária (criar escola, recuperar
 // administrador): confirmação (`pedido` definido, sem resultado) e resultado (`resultado` com a senha).
@@ -19,11 +20,10 @@ const emit = defineEmits(['confirmar', 'fechar']);
 const copiado = ref(false);
 
 async function copiar(senha) {
-    try {
-        await navigator.clipboard.writeText(senha);
+    if (await copiarParaAreaDeTransferencia(senha)) {
         copiado.value = true;
         setTimeout(() => { copiado.value = false; }, 2000);
-    } catch {
+    } else {
         toast.error('Não foi possível copiar. Seleccione a senha e copie manualmente.');
     }
 }

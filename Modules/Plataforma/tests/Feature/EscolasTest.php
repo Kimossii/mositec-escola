@@ -495,6 +495,9 @@ class EscolasTest extends TestCase
 
     public function test_a_senha_temporaria_aparece_uma_so_vez_e_nunca_em_claro_no_resto(): void
     {
+        // O histórico só se cifra com HTTPS (ver HistoricoCifrado): os testes correm em HTTP.
+        config(['session.secure' => true]);
+
         $logs = [];
         Log::listen(function ($mensagem) use (&$logs) {
             $logs[] = $mensagem->message . ' ' . json_encode($mensagem->context);

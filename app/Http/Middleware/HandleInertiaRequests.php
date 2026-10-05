@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Inertia\Middleware;
+use Modules\Core\Support\HistoricoCifrado;
 use Modules\Permissao\Services\PermissionResolver;
 
 class HandleInertiaRequests extends Middleware
@@ -53,8 +54,10 @@ class HandleInertiaRequests extends Middleware
         // Só essa resposta; as restantes seguem config('inertia.history.encrypt').
         // null repõe o valor da config (o ResponseFactory é singleton: sem isto
         // o true vazaria para pedidos seguintes na mesma instância da app).
+        // Só com HTTPS: em HTTP o Inertia não consegue cifrar (sem `crypto.subtle`) e a visita fica
+        // pendurada; ver HistoricoCifrado.
         Inertia::encryptHistory(
-            $request->hasSession() && $request->session()->has('senha_temporaria') ? true : null,
+            $request->hasSession() && $request->session()->has('senha_temporaria') && HistoricoCifrado::possivel($request) ? true : null,
         );
 
         return parent::handle($request, $next);
