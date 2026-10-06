@@ -17,10 +17,9 @@ class CriarSalaActionTest extends TestCase
 
     public function test_cria_sala_associada_ao_estabelecimento_activo_com_estado_ativa_por_defeito(): void
     {
-        $estabelecimento = Estabelecimento::create([
+        $estabelecimento = $this->estabelecimentoDeTeste([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
 
         $sala = (new CriarSalaAction())->criar(new SalaDTO(

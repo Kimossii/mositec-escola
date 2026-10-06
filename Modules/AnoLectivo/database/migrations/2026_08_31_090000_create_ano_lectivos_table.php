@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('ano_lectivos', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('estabelecimento_id')->nullable()->constrained('estabelecimentos')->nullOnDelete();
             $table->string('nome');
             $table->date('data_inicio');
@@ -20,6 +21,11 @@ return new class extends Migration
             $table->foreignId('editado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->foreign(['tenant_id', 'estabelecimento_id'])
+                ->references(['tenant_id', 'id'])
+                ->on('estabelecimentos')
+                ->restrictOnDelete();
 
             $table->unique(['estabelecimento_id', 'nome']);
         });

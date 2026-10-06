@@ -37,10 +37,9 @@ class MatriculaActionTest extends TestCase
 
     private function criarEstabelecimento(?\Modules\Estabelecimento\Enums\TipoEnsinoEnum $tipoEnsino = null): Estabelecimento
     {
-        $estabelecimento = Estabelecimento::create([
+        $estabelecimento = $this->estabelecimentoDeTeste([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
 
         if ($tipoEnsino !== null) {

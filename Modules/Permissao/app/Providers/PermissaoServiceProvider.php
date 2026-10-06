@@ -2,6 +2,8 @@
 
 namespace Modules\Permissao\Providers;
 
+use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
+use Modules\Permissao\Provisioning\ProvisionarPerfis;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Gate;
@@ -41,7 +43,9 @@ class PermissaoServiceProvider extends ModuleServiceProvider
     {
         parent::register();
 
-        $this->app->singleton(PermissionResolver::class);
+        $this->app->tag([ProvisionarPerfis::class], ProvisionaTenant::ETIQUETA);
+
+        $this->app->scoped(PermissionResolver::class);
     }
 
     public function boot(): void

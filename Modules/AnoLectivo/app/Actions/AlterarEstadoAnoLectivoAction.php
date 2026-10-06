@@ -28,7 +28,7 @@ class AlterarEstadoAnoLectivoAction
         ?int $utilizadorId = null,
     ): AnoLectivo {
         return DB::transaction(function () use ($anoLectivo, $novoEstado, $confirmarEncerramentoMatriculas, $utilizadorId) {
-            $estabelecimentoId = Estabelecimento::current()?->id ?? $anoLectivo->estabelecimento_id;
+            $estabelecimentoId = Estabelecimento::current()->id;
 
             if ($novoEstado === EstadoAnoLectivo::ATIVO) {
                 $this->garantirUnicoAtivo($estabelecimentoId, $anoLectivo->id);

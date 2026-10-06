@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\AnoLectivo\Enums\TipoPeriodo;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 
@@ -14,6 +15,7 @@ class Periodo extends Model
     use HasFactory;
     use SincronizaEstadoDescricao;
     use RegistaAutoria;
+    use PertenceAoTenant;
 
     protected $table = 'periodos';
 

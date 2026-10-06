@@ -16,10 +16,9 @@ class CriarDisciplinaActionTest extends TestCase
 
     public function test_cria_disciplina_associado_ao_estabelecimento_activo_com_estado_ativo_por_defeito(): void
     {
-        $estabelecimento = Estabelecimento::create([
+        $estabelecimento = $this->estabelecimentoDeTeste([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
 
         $disciplina = (new CriarDisciplinaAction())->executar(new DisciplinaDTO(

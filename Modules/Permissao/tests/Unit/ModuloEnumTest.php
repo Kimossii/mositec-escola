@@ -47,4 +47,11 @@ class ModuloEnumTest extends TestCase
         $this->assertSame('Documento Pessoa', Modulo::DOCUMENTO_PESSOA->label());
         $this->assertSame(Modulo::DOCUMENTO_PESSOA, Modulo::fromSlug('documento-pessoa'));
     }
+
+    public function test_senha_utilizador_slug_e_label(): void
+    {
+        $this->assertSame('senha-utilizador', Modulo::SENHA_UTILIZADOR->slug());
+        $this->assertSame('Senha de Utilizador', Modulo::SENHA_UTILIZADOR->label());
+        $this->assertSame(Modulo::SENHA_UTILIZADOR, Modulo::fromSlug('senha-utilizador'));
+    }
 }

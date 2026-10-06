@@ -45,10 +45,9 @@ class CriarSalaRequestTest extends TestCase
 
     public function test_codigo_duplicado_no_mesmo_estabelecimento_falha(): void
     {
-        $estabelecimento = Estabelecimento::create([
+        $estabelecimento = $this->estabelecimentoDeTeste([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
 
         Sala::create([
@@ -70,22 +69,20 @@ class CriarSalaRequestTest extends TestCase
 
     public function test_mesmo_codigo_em_estabelecimentos_diferentes_e_permitido(): void
     {
-        $estabelecimentoA = Estabelecimento::create([
+        $estabelecimentoA = $this->estabelecimentoDeOutroTenant([
             'nome' => 'Escola A',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => false,
         ]);
-        Sala::create([
+        $this->noTenantDe($estabelecimentoA, fn () => Sala::create([
             'estabelecimento_id' => $estabelecimentoA->id,
             'codigo' => 'A101',
             'nome' => 'Sala 101',
             'tipo' => TipoSala::SALA_AULA->value,
-        ]);
+        ]));
 
-        $estabelecimentoB = Estabelecimento::create([
+        $estabelecimentoB = $this->estabelecimentoDeTeste([
             'nome' => 'Escola B',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
 
         $validador = $this->validar([

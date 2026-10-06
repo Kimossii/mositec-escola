@@ -6,12 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 
 class DocumentoPessoa extends Model
 {
-    use HasFactory, RegistaAutoria, SincronizaEstadoDescricao, SoftDeletes;
+    use HasFactory, PertenceAoTenant, RegistaAutoria, SincronizaEstadoDescricao, SoftDeletes;
 
     protected $table = 'documentos_pessoas';
 

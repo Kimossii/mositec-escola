@@ -142,7 +142,7 @@ class DocumentoPessoaHttpTest extends TestCase
         $this->actingAsAdmin();
         $pessoa = $this->criarPessoa();
         $tipo = TipoDocumento::where('slug', 'bi')->firstOrFail();
-        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store('documentos-pessoas/' . $pessoa->id, 'documentos');
+        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store("tenants/{$this->tenant->id}/documentos-pessoas/{$pessoa->id}", 'documentos');
         $documento = DocumentoPessoa::create([
             'dados_pessoa_id' => $pessoa->id,
             'tipo_documento_id' => $tipo->id,
@@ -163,7 +163,7 @@ class DocumentoPessoaHttpTest extends TestCase
         $semPermissao = User::create(['name' => 'Sem Permissao', 'email' => 'sem.permissao@example.com', 'password' => Hash::make('segredo123')]);
         $pessoa = $this->criarPessoa();
         $tipo = TipoDocumento::where('slug', 'bi')->firstOrFail();
-        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store('documentos-pessoas/' . $pessoa->id, 'documentos');
+        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store("tenants/{$this->tenant->id}/documentos-pessoas/{$pessoa->id}", 'documentos');
         $documento = DocumentoPessoa::create([
             'dados_pessoa_id' => $pessoa->id,
             'tipo_documento_id' => $tipo->id,
@@ -225,7 +225,7 @@ class DocumentoPessoaHttpTest extends TestCase
         $this->actingAsAdmin();
         $pessoa = $this->criarPessoa();
         $tipo = TipoDocumento::where('slug', 'bi')->firstOrFail();
-        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store('documentos-pessoas/' . $pessoa->id, 'documentos');
+        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store("tenants/{$this->tenant->id}/documentos-pessoas/{$pessoa->id}", 'documentos');
         $documento = DocumentoPessoa::create([
             'dados_pessoa_id' => $pessoa->id,
             'tipo_documento_id' => $tipo->id,
@@ -248,7 +248,7 @@ class DocumentoPessoaHttpTest extends TestCase
         $semPermissao = User::create(['name' => 'Sem Permissao', 'email' => 'sem.permissao3@example.com', 'password' => Hash::make('segredo123')]);
         $pessoa = $this->criarPessoa();
         $tipo = TipoDocumento::where('slug', 'bi')->firstOrFail();
-        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store('documentos-pessoas/' . $pessoa->id, 'documentos');
+        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store("tenants/{$this->tenant->id}/documentos-pessoas/{$pessoa->id}", 'documentos');
         $documento = DocumentoPessoa::create([
             'dados_pessoa_id' => $pessoa->id,
             'tipo_documento_id' => $tipo->id,

@@ -10,6 +10,7 @@ export const ACOES_LISTA = Object.freeze({
     visualizar: { icone: 'ki-eye', paths: 3, cor: 'info', texto: 'Visualizar' },
     editar: { icone: 'ki-user-edit', paths: 3, cor: 'primary', texto: 'Editar' },
     permissoes: { icone: 'ki-shield-tick', paths: 2, cor: 'success', texto: 'Permissões' },
+    redefinirSenha: { icone: 'ki-key', paths: 2, cor: 'warning', texto: 'Redefinir senha' },
     eliminar: { icone: 'ki-trash', paths: 5, cor: 'danger', texto: 'Eliminar' },
     ativar: { icone: 'ki-toggle-on-circle', paths: 2, cor: 'success', texto: 'Ativar' },
     desativar: { icone: 'ki-toggle-off-circle', paths: 2, cor: 'muted', texto: 'Desativar' },

@@ -64,7 +64,7 @@ class MatriculaHttpTest extends TestCase
 
     private function criarEstabelecimento(): Estabelecimento
     {
-        return Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        return $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
     }
 
     private function criarAnoLectivo(Estabelecimento $estabelecimento): AnoLectivo

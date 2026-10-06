@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('cursos', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('estabelecimento_id')->constrained('estabelecimentos')->restrictOnDelete();
             $table->string('codigo');
             $table->string('nome');
@@ -19,6 +20,11 @@ return new class extends Migration
             $table->foreignId('criado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('editado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
+
+            $table->foreign(['tenant_id', 'estabelecimento_id'])
+                ->references(['tenant_id', 'id'])
+                ->on('estabelecimentos')
+                ->restrictOnDelete();
 
             $table->unique(['estabelecimento_id', 'codigo']);
             $table->unique(['estabelecimento_id', 'nome']);

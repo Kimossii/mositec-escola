@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Usuario\Models\User;
 
 class PlanoCurricularAnoLectivo extends Model
 {
+    use PertenceAoTenant;
     use SincronizaEstadoDescricao;
 
     protected $table = 'plano_curricular_anos_lectivos';

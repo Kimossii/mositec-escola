@@ -9,6 +9,7 @@ return new class extends Migration {
     {
         Schema::create('turno_horarios', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('turno_id')->constrained('turnos')->cascadeOnDelete();
             $table->foreignId('horario_id')->constrained('horarios')->restrictOnDelete();
             $table->unsignedInteger('ordem');

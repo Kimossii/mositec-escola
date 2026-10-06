@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -73,9 +73,10 @@ watch(() => form.tipo_ensino, (novo) => {
     if (novo === TIPO_ENSINO_UNIVERSITARIO) form.etapas_ensino = [ETAPA_SUPERIOR];
 });
 
-// Sem estabelecimento ainda (1º acesso) só entra logo em edição se o
-// utilizador já tiver o direito — senão fica só a ver o formulário vazio.
-const editando = ref(!props.estabelecimento && can('estabelecimento.editar'));
+// Enquanto a configuração inicial não foi feita (configurado_em nulo) entra logo em edição
+// quem pode editar; o estabelecimento mínimo já existe, só falta completá-lo.
+const naoConfigurado = computed(() => !props.estabelecimento?.configurado_em);
+const editando = ref(naoConfigurado.value && can('estabelecimento.editar'));
 const processing = ref(false);
 const errors = ref({});
 
@@ -115,6 +116,12 @@ function submeter() {
 <template>
     <div class="app-container container-xxl py-6">
         <EstabelecimentoCabecalho :estabelecimento="estabelecimento" />
+
+        <div v-if="naoConfigurado" class="alert alert-warning d-flex align-items-center">
+            <i class="ki-duotone ki-information-5 fs-2 me-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+            <div>Complete os dados da escola para começar a usar o sistema.</div>
+        </div>
+
         <EstabelecimentoTabs atual="dados" />
 
         <div class="d-flex justify-content-between align-items-start mb-2">

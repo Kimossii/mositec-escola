@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('encarregados_alunos', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('encarregado_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('aluno_id')->constrained('users')->onDelete('cascade');
             $table->string('parentesco')->nullable();

@@ -8,12 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
+use Modules\Core\Tenancy\PertenceAoTenant;
+use Modules\Core\Tenancy\TenantContext;
 use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 
 class Estabelecimento extends Model
 {
     use HasFactory;
+    use PertenceAoTenant;
     use SoftDeletes;
 
     protected $table = 'estabelecimentos';
@@ -47,6 +50,7 @@ class Estabelecimento extends Model
         'tipo_ensino' => TipoEnsinoEnum::class,
         'ano_fundacao' => 'integer',
         'is_active' => 'boolean',
+        'configurado_em' => 'datetime',
     ];
 
     protected $appends = ['logotipo_url'];
@@ -64,15 +68,24 @@ class Estabelecimento extends Model
     }
 
     /**
-     * Devolve o estabelecimento actualmente activo.
+     * O perfil institucional do tenant corrente.
      *
-     * Preparado para um futuro cenário multi-estabelecimento (tenancy):
-     * cada estabelecimento é um registo independente e `current()` apenas
-     * resolve qual deles está activo no contexto actual.
+     * Não é mecanismo de isolamento (isso é o scope do tenant). Lê com scope e
+     * guarda o resultado no contexto, por isso custa uma consulta por pedido.
+     * Sem tenant resolvido lança TenantNaoResolvido; dentro de um tenant nunca
+     * é nulo, porque o estabelecimento nasce no provisioning.
      */
-    public static function current(): ?self
+    public static function current(): self
     {
-        return static::where('is_active', true)->first();
+        return app(TenantContext::class)->lembrar(
+            'estabelecimento.actual',
+            fn () => static::query()->firstOrFail(),
+        );
+    }
+
+    public function estaConfigurado(): bool
+    {
+        return $this->configurado_em !== null;
     }
 
     protected static function booted(): void

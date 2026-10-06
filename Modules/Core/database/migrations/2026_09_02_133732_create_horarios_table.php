@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::create('horarios', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->string('nome');
             $table->time('hora_inicio');
             $table->time('hora_fim');

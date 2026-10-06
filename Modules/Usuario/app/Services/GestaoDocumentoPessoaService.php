@@ -5,7 +5,9 @@ namespace Modules\Usuario\Services;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
 use Modules\Core\Enums\Estado;
+use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Usuario\Actions\AlternarEstadoDocumentoPessoaAction;
 use Modules\Usuario\Actions\CriarDocumentoPessoaAction;
 use Modules\Usuario\Actions\RemoverDocumentoPessoaAction;
@@ -61,23 +63,34 @@ class GestaoDocumentoPessoaService
 
     public function download(DocumentoPessoa $documento): StreamedResponse
     {
-        return Storage::disk('documentos')->download($documento->caminho, $documento->nome_original);
+        return Storage::disk('documentos')->download($this->caminhoSeguro($documento), $documento->nome_original);
     }
 
     public function visualizar(DocumentoPessoa $documento): StreamedResponse
     {
         $disco = Storage::disk('documentos');
-        $mimeReal = $disco->mimeType($documento->caminho);
+        $caminho = $this->caminhoSeguro($documento);
+        $mimeReal = $disco->mimeType($caminho);
 
         if (! in_array($mimeReal, self::MIME_TYPES_SEGUROS_PARA_VISUALIZACAO, true)) {
             return $this->download($documento);
         }
 
-        return $disco->response($documento->caminho, $documento->nome_original, [
+        return $disco->response($caminho, $documento->nome_original, [
             'Content-Type' => $mimeReal,
             'X-Content-Type-Options' => 'nosniff',
             'Content-Security-Policy' => "default-src 'none'; sandbox",
         ]);
+    }
+
+    /** 404 se o caminho guardado não estiver sob o prefixo do tenant corrente. */
+    private function caminhoSeguro(DocumentoPessoa $documento): string
+    {
+        try {
+            return CaminhoTenant::garantir($documento->caminho);
+        } catch (InvalidArgumentException) {
+            abort(404);
+        }
     }
 
     public function tiposDisponiveis(): Collection

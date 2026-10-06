@@ -65,7 +65,7 @@ class TurmaHttpTest extends TestCase
 
     private function criarEstabelecimento(): Estabelecimento
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => 1, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => 1]);
 
         foreach ([EtapaEnsinoEnum::PRIMARIO, EtapaEnsinoEnum::SECUNDARIO] as $etapa) {
             EstabelecimentoEtapaEnsino::create(['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => $etapa]);
@@ -200,11 +200,11 @@ class TurmaHttpTest extends TestCase
 
     public function test_turno_com_mesmo_nome_e_permitido_em_estabelecimentos_diferentes(): void
     {
-        $estabelecimentoA = Estabelecimento::create(['nome' => 'Escola A', 'tipo' => 1, 'is_active' => true]);
+        $estabelecimentoA = $this->estabelecimentoDeTeste(['nome' => 'Escola A', 'tipo' => 1]);
         $turnoA = Turno::create(['estabelecimento_id' => $estabelecimentoA->id, 'nome' => 'Manhã']);
 
-        $estabelecimentoB = Estabelecimento::create(['nome' => 'Escola B', 'tipo' => 1, 'is_active' => false]);
-        $turnoB = Turno::create(['estabelecimento_id' => $estabelecimentoB->id, 'nome' => 'Manhã']);
+        $estabelecimentoB = $this->estabelecimentoDeOutroTenant(['nome' => 'Escola B', 'tipo' => 1]);
+        $turnoB = $this->noTenantDe($estabelecimentoB, fn () => Turno::create(['estabelecimento_id' => $estabelecimentoB->id, 'nome' => 'Manhã']));
 
         $this->assertNotSame($turnoA->id, $turnoB->id);
         $this->assertDatabaseHas('turnos', ['id' => $turnoA->id, 'nome' => 'Manhã']);

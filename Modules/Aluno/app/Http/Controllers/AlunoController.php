@@ -76,6 +76,13 @@ class AlunoController extends Controller
         ]);
     }
 
+    public function foto(Aluno $aluno)
+    {
+        $this->authorize('aluno.ver');
+
+        return $this->consulta->servirFoto($aluno);
+    }
+
     public function resumoAcademico(Aluno $aluno)
     {
         $this->authorize('aluno.ver');

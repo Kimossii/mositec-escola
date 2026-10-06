@@ -4,22 +4,28 @@ namespace Modules\Core\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
-use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Tenant\Models\Tenant;
 use Tests\TestCase;
 
 class PesquisaTextoTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function criar(string $nome): void
+    private int $n = 0;
+
+    private function criar(string $nome, ?string $codigo = null): void
     {
-        Estabelecimento::create(['nome' => $nome, 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => false]);
+        Tenant::create(['codigo' => $codigo ?? sprintf('MOSI-%06d', 800000 + ++$this->n), 'nome' => $nome]);
     }
 
     private function buscar(string $termo): array
     {
-        return Estabelecimento::query()->whereContem('nome', $termo)->orderBy('nome')->pluck('nome')->all();
+        return Tenant::query()
+            ->whereKeyNot($this->tenant->id)
+            ->whereContem('nome', $termo)
+            ->orderBy('nome')
+            ->pluck('nome')
+            ->all();
     }
 
     public function test_ignora_maiusculas_e_minusculas(): void
@@ -73,11 +79,12 @@ class PesquisaTextoTest extends TestCase
     public function test_or_where_contem_combina_colunas_dentro_de_um_grupo(): void
     {
         $this->criar('Escola Norte');
-        Estabelecimento::create(['nome' => 'Outra', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => false, 'nome_abreviado' => 'NRT']);
+        $this->criar('Outra', 'MOSI-NRT001');
         $this->criar('Sul');
 
-        $resultado = Estabelecimento::query()
-            ->where(fn ($q) => $q->whereContem('nome', 'norte')->orWhereContem('nome_abreviado', 'nrt'))
+        $resultado = Tenant::query()
+            ->whereKeyNot($this->tenant->id)
+            ->where(fn ($q) => $q->whereContem('nome', 'norte')->orWhereContem('codigo', 'nrt'))
             ->orderBy('nome')->pluck('nome')->all();
 
         $this->assertSame(['Escola Norte', 'Outra'], $resultado);
@@ -88,7 +95,7 @@ class PesquisaTextoTest extends TestCase
         $sql = DB::connection('pgsql')->table('estabelecimentos')->whereContem('nome', 'joão')->toSql();
 
         $this->assertStringContainsString('ilike', $sql);
-        $this->assertStringContainsString("escape '\\'", $sql);
+        $this->assertStringContainsString("escape '!'", $sql);
     }
 
     public function test_noutros_motores_gera_like_com_escape(): void
@@ -96,6 +103,29 @@ class PesquisaTextoTest extends TestCase
         $sql = DB::table('estabelecimentos')->whereContem('nome', 'joão')->toSql();
 
         $this->assertStringNotContainsString('ilike', $sql);
-        $this->assertStringContainsString("like ? escape '\\'", $sql);
+        $this->assertStringContainsString("like ? escape '!'", $sql);
+    }
+
+    public function test_ponto_de_exclamacao_e_tratado_como_texto(): void
+    {
+        $this->criar('Aviso! Escola');
+        $this->criar('Aviso Escola');
+
+        $this->assertSame(['Aviso! Escola'], $this->buscar('!'));
+        $this->assertSame(['Aviso! Escola'], $this->buscar('o! e'));
+    }
+
+    public function test_o_sql_nunca_leva_a_barra_invertida_como_escape(): void
+    {
+        // Regressão: `escape '\'` faz o PDO do PostgreSQL tratar `\'` como aspa escapada e o literal
+        // engole os `?` seguintes, rebentando qualquer pesquisa por duas ou mais colunas
+        // ("Invalid parameter number: parameter was not defined").
+        $sql = Tenant::query()
+            ->where(fn ($q) => $q->whereContem('nome', 'x')->orWhereContem('codigo', 'x'))
+            ->toSql();
+
+        $this->assertStringNotContainsString("'\\'", $sql);
+        $this->assertSame(2, substr_count($sql, '?'));
+        $this->assertSame(2, substr_count($sql, "escape '!'"));
     }
 }

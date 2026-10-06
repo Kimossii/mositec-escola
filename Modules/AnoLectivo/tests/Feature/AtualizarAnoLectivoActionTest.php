@@ -33,10 +33,9 @@ class AtualizarAnoLectivoActionTest extends TestCase
         $staff->roles()->syncWithoutDetaching([Role::where('nome', Perfil::ADMIN_ESCOLA->value)->first()->id]);
         $this->actingAs($staff);
 
-        Estabelecimento::create([
+        $this->estabelecimentoDeTeste([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
     }
 

@@ -1,11 +1,12 @@
 <script setup>
-import { ref } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { onBeforeUnmount, ref } from 'vue';
+import { router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import { ESTADO } from '../Models/Usuario';
+import RedefinirSenhaModal from './Usuarios/RedefinirSenhaModal.vue';
 import UsuarioAvatar from './UsuarioAvatar.vue';
 import UsuarioStatusBadge from './UsuarioStatusBadge.vue';
 
@@ -16,6 +17,7 @@ defineProps({
     },
 });
 const emit = defineEmits(['editar', 'visualizar']);
+const pagina = usePage();
 
 // Mexer num utilizador com perfil Admin Escola é sempre autorizacao.*, nunca
 // usuario.* sozinho — mesma fronteira usada no backend (UserPolicy).
@@ -24,6 +26,15 @@ function podeEditar(usuario) {
 }
 function podeEliminar(usuario) {
     return can(usuario.perfis.includes('Admin escola') ? 'autorizacao.eliminar' : 'usuario.eliminar');
+}
+
+// Redefinir a senha de outra conta: nunca a própria, e contas Admin escola só a
+// quem também gere administradores (autorizacao.editar). O backend (UserPolicy)
+// é a fonte de verdade e devolve 403 de qualquer forma.
+function podeRedefinirSenha(usuario) {
+    if (!can('senha-utilizador.editar')) return false;
+    if (usuario.id === pagina.props.auth.user?.id) return false;
+    return !usuario.perfis.includes('Admin escola') || can('autorizacao.editar');
 }
 
 async function editar(usuario) {
@@ -41,6 +52,47 @@ function alternarEstado(usuario) {
             usuario.estado === ESTADO.ATIVO ? 'Utilizador desativado.' : 'Utilizador ativado.',
         ),
         onError: (erros) => toast.error(Object.values(erros)[0]),
+    });
+}
+
+const usuarioParaRedefinir = ref(null);
+const senhaTemporaria = ref(null); // { nome, senha } — só em memória, descartada ao fechar
+const redefinindo = ref(false);
+
+function pedirRedefinicao(usuario) {
+    usuarioParaRedefinir.value = usuario;
+}
+
+function fecharRedefinicao() {
+    const tinhaSenha = senhaTemporaria.value !== null;
+    usuarioParaRedefinir.value = null;
+    senhaTemporaria.value = null;
+    // roda a chave do histórico: entradas antigas (com a senha cifrada) ficam ilegíveis
+    if (tinhaSenha) router.clearHistory();
+}
+
+onBeforeUnmount(() => {
+    if (senhaTemporaria.value !== null) router.clearHistory();
+});
+
+function confirmarRedefinicao() {
+    redefinindo.value = true;
+    router.patch(`/usuarios/${usuarioParaRedefinir.value.id}/redefinir-senha`, {}, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            const flash = page.props.flash?.senha_temporaria;
+            usuarioParaRedefinir.value = null;
+            if (flash) {
+                senhaTemporaria.value = { nome: flash.nome, senha: flash.senha };
+            } else {
+                toast.error('Não foi possível obter a senha temporária. Tente novamente.');
+            }
+        },
+        onError: (erros) => {
+            usuarioParaRedefinir.value = null;
+            toast.error(Object.values(erros)[0]);
+        },
+        onFinish: () => { redefinindo.value = false; },
     });
 }
 
@@ -159,6 +211,15 @@ function confirmarEliminacao() {
                         <!--end::Menu item-->
 
                         <!--begin::Menu item-->
+                        <div v-if="podeRedefinirSenha(usuario)" class="menu-item px-3">
+                            <a href="#" class="menu-link px-3" @click.prevent="pedirRedefinicao(usuario)">
+                                <AcaoIcone acao="redefinirSenha" class="me-2" />
+                                Redefinir senha
+                            </a>
+                        </div>
+                        <!--end::Menu item-->
+
+                        <!--begin::Menu item-->
                         <div v-if="podeEliminar(usuario)" class="menu-item px-3">
                             <a href="#" class="menu-link px-3 text-danger" @click.prevent="pedirEliminacao(usuario)">
                                 <AcaoIcone acao="eliminar" class="me-2" />
@@ -173,6 +234,14 @@ function confirmarEliminacao() {
         </tbody>
     </table>
     <!--end::Table-->
+
+    <RedefinirSenhaModal
+        :usuario="usuarioParaRedefinir"
+        :resultado="senhaTemporaria"
+        :processando="redefinindo"
+        @confirmar="confirmarRedefinicao"
+        @fechar="fecharRedefinicao"
+    />
 
     <ConfirmModal
         :show="!!usuarioParaEliminar"

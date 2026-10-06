@@ -4,10 +4,13 @@ namespace Modules\Estabelecimento\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 
 class EstabelecimentoEtapaEnsino extends Model
 {
+    use PertenceAoTenant;
+
     protected $table = 'estabelecimento_etapas_ensino';
 
     protected $fillable = [

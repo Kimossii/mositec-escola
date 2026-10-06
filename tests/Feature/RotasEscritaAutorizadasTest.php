@@ -31,10 +31,10 @@ class RotasEscritaAutorizadasTest extends TestCase
      */
     private const ISENTAS = [
         'logout',
+        'alterar-senha',
         'api/v1/autenticacaoApi/api/logout',
         'api/v1/autenticacaoApi/api/logout-all-devices',
         'user/profile-information',
-        'user/password',
         'user/confirm-password',
         'user/two-factor-authentication',
         'user/confirmed-two-factor-authentication',

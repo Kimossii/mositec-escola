@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('documentos_pessoas', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('dados_pessoa_id')->constrained('dados_pessoas')->cascadeOnDelete();
             $table->foreignId('tipo_documento_id')->constrained('tipos_documentos')->restrictOnDelete();
             $table->string('numero_documento')->nullable();

@@ -37,10 +37,9 @@ class AlterarEstadoAnoLectivoActionTest extends TestCase
         $staff->roles()->syncWithoutDetaching([Role::where('nome', Perfil::ADMIN_ESCOLA->value)->first()->id]);
         $this->actingAs($staff);
 
-        Estabelecimento::create([
+        $this->estabelecimentoDeTeste([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
     }
 
@@ -103,7 +102,7 @@ class AlterarEstadoAnoLectivoActionTest extends TestCase
 
     private function criarMatriculaNoAnoLectivo(AnoLectivo $anoLectivo, EstadoMatriculaEnum $estado, int $sufixo): Matricula
     {
-        $estabelecimento = Estabelecimento::where('is_active', true)->first();
+        $estabelecimento = $this->estabelecimentoDeTeste();
         $nivel = NivelAcademico::firstOrCreate(
             ['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C'],
             ['nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 1],

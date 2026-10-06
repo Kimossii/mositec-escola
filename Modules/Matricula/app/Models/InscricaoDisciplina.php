@@ -5,12 +5,14 @@ namespace Modules\Matricula\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
 use Modules\Usuario\Models\User;
 
 class InscricaoDisciplina extends Model
 {
+    use PertenceAoTenant;
     use SoftDeletes;
 
     protected $table = 'inscricoes_disciplinas';

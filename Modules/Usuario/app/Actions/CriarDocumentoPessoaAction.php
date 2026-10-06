@@ -5,6 +5,7 @@ namespace Modules\Usuario\Actions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Enums\Estado;
+use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Usuario\DTO\DocumentoPessoaDTO;
 use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\DocumentoPessoa;
@@ -23,7 +24,7 @@ class CriarDocumentoPessoaAction
                 ->get()
                 ->each(fn (DocumentoPessoa $anterior) => $anterior->update(['estado' => Estado::INATIVO->value]));
 
-            $caminho = $ficheiro->store('documentos-pessoas/' . $pessoa->id, 'documentos');
+            $caminho = $ficheiro->store(CaminhoTenant::para('documentos-pessoas/' . $pessoa->id), 'documentos');
 
             return DocumentoPessoa::create([
                 'dados_pessoa_id' => $pessoa->id,

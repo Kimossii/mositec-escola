@@ -15,6 +15,8 @@ Route::middleware(['auth'])->prefix('usuarios')->group(function () {
     Route::put('/{user}', [UsuarioController::class, 'update'])->name('usuario.update');
     Route::delete('/{user}', [UsuarioController::class, 'destroy'])->name('usuario.destroy');
     Route::patch('/{user}/estado', [UsuarioController::class, 'alternarEstado'])->name('usuario.alternarEstado');
+    Route::patch('/{user}/redefinir-senha', [UsuarioController::class, 'redefinirSenha'])
+        ->middleware('can:senha-utilizador.editar')->name('usuario.redefinirSenha');
 
     Route::group(['prefix' => 'alunos'], function () {
         Route::get('/', [UsuarioController::class, 'alunos'])->middleware('can:usuario.ver')->name('usuario.alunos');

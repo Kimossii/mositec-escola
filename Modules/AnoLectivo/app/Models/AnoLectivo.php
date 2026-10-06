@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Usuario\Models\User;
@@ -17,6 +18,7 @@ class AnoLectivo extends Model
     use HasFactory;
     use SoftDeletes;
     use RegistaAutoria;
+    use PertenceAoTenant;
 
     protected $table = 'ano_lectivos';
 

@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('inscricoes_disciplinas', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('matricula_id')->constrained('matriculas')->restrictOnDelete();
             $table->foreignId('plano_curricular_disciplina_id')->constrained('plano_curricular_disciplinas')->restrictOnDelete();
             $table->date('data_inscricao');

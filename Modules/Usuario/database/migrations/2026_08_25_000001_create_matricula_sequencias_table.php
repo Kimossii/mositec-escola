@@ -10,9 +10,12 @@ return new class extends Migration
     {
         Schema::create('matricula_sequencias', function (Blueprint $table) {
             $table->id();
-            $table->unsignedSmallInteger('ano')->unique();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
+            $table->unsignedSmallInteger('ano');
             $table->unsignedInteger('ultimo_numero')->default(0);
             $table->timestamps();
+
+            $table->unique(['tenant_id', 'ano']);
         });
     }
 

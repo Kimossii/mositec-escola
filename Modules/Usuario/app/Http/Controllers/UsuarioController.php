@@ -5,8 +5,10 @@ namespace Modules\Usuario\Http\Controllers;
 use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Modules\Permissao\Enums\Perfil;
+use Modules\Usuario\Actions\RedefinirSenhaUsuarioAction;
 use Modules\Usuario\Http\Requests\AtualizarUsuarioRequest;
 use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
 use Modules\Usuario\Models\User;
@@ -108,5 +110,18 @@ class UsuarioController extends Controller
         $this->service->alternarEstado($user);
 
         return redirect()->back()->with('success', 'Estado do utilizador atualizado.');
+    }
+
+    public function redefinirSenha(Request $request, User $user, RedefinirSenhaUsuarioAction $action)
+    {
+        $this->authorize('redefinirSenha', $user);
+        $senha = $action->executar($user, $request->user());
+
+        return back()->with('senha_temporaria', [
+            'user_id' => $user->id,
+            'nome' => $user->name,
+            // Cifrada: o payload da sessão (driver database) nunca guarda a senha em claro.
+            'senha' => Crypt::encryptString($senha),
+        ]);
     }
 }

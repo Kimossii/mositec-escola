@@ -2,26 +2,17 @@
 
 namespace Modules\Matricula\Services;
 
-use Illuminate\Support\Facades\DB;
+use Modules\Core\Services\GeradorSequencia;
 use Modules\Matricula\Models\MatriculaRegistoSequencia;
 
 class GeradorNumeroRegistoMatriculaService
 {
+    public function __construct(private ?GeradorSequencia $gerador = null)
+    {
+    }
+
     public function gerar(): string
     {
-        return DB::transaction(function () {
-            $ano = now()->year;
-
-            DB::table('matricula_registo_sequencias')->upsert(
-                [['ano' => $ano, 'ultimo_numero' => 0, 'created_at' => now(), 'updated_at' => now()]],
-                ['ano'],
-                ['updated_at']
-            );
-
-            $sequencia = MatriculaRegistoSequencia::where('ano', $ano)->lockForUpdate()->first();
-            $sequencia->increment('ultimo_numero');
-
-            return sprintf('%d-%04d', $ano, $sequencia->ultimo_numero);
-        });
+        return ($this->gerador ?? app(GeradorSequencia::class))->gerar(MatriculaRegistoSequencia::class);
     }
 }
