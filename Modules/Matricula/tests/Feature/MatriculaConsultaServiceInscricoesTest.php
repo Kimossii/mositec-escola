@@ -32,7 +32,7 @@ class MatriculaConsultaServiceInscricoesTest extends TestCase
     // verifica só a consulta, sem depender de currículo confirmado.
     public function test_lista_disciplinas_da_matricula_com_nome_da_disciplina_carregado(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         $anoLectivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026', 'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO]);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 1]);
         $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
@@ -62,7 +62,7 @@ class MatriculaConsultaServiceInscricoesTest extends TestCase
 
     public function test_disciplinas_disponiveis_para_inscricao_devolve_as_do_plano_da_matricula_excluindo_ja_inscritas(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         $anoLectivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026', 'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO]);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1C', 'nome' => '1ª Classe', 'ordem' => 1, 'etapa_ensino' => 1]);
         $turma = Turma::create(['ano_lectivo_id' => $anoLectivo->id, 'nivel_academico_id' => $nivel->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
@@ -96,7 +96,7 @@ class MatriculaConsultaServiceInscricoesTest extends TestCase
 
     public function test_disciplinas_disponiveis_para_inscricao_devolve_vazio_sem_plano_curricular_confirmado(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Universidade Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true, 'tipo_ensino' => TipoEnsinoEnum::UNIVERSITARIO->value]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Universidade Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,'tipo_ensino' => TipoEnsinoEnum::UNIVERSITARIO->value]);
         $anoLectivo = AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026', 'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => EstadoAnoLectivo::ATIVO]);
         $curso = Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => '1A', 'nome' => '1º Ano', 'ordem' => 1, 'etapa_ensino' => 5]);

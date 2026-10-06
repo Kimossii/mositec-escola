@@ -12,10 +12,11 @@ return new class extends Migration {
     {
         Schema::create('matriculas', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('aluno_id')->constrained('alunos');
             $table->foreignId('turma_id')->constrained('turmas');
             $table->foreignId('ano_lectivo_id')->constrained('ano_lectivos');
-            $table->string('numero_registo_matricula')->unique();
+            $table->string('numero_registo_matricula');
             $table->date('data_matricula');
             $table->unsignedTinyInteger('estado');
             $table->text('observacoes')->nullable();
@@ -25,6 +26,7 @@ return new class extends Migration {
             $table->timestamps();
             $table->softDeletes();
 
+            $table->unique(['tenant_id', 'numero_registo_matricula']);
             $table->index(['aluno_id', 'ano_lectivo_id']);
             $table->index(['turma_id', 'ano_lectivo_id']);
         });

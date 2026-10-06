@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Core\Enums\TipoHorarioEnum;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Usuario\Models\User;
@@ -15,6 +16,7 @@ class Horario extends Model
     use HasFactory;
     use SincronizaEstadoDescricao;
     use RegistaAutoria;
+    use PertenceAoTenant;
 
     protected $fillable = [
         'nome',

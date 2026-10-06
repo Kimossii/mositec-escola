@@ -9,6 +9,7 @@ return new class extends Migration {
     {
         Schema::create('turmas', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('ano_lectivo_id')->constrained('ano_lectivos')->restrictOnDelete();
             $table->foreignId('nivel_academico_id')->constrained('niveis_academicos')->restrictOnDelete();
             $table->string('codigo');

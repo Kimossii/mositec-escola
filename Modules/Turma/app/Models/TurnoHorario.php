@@ -4,10 +4,13 @@ namespace Modules\Turma\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Models\Horario;
 
 class TurnoHorario extends Model
 {
+    use PertenceAoTenant;
+
     protected $table = 'turno_horarios';
 
     protected $fillable = [

@@ -20,6 +20,7 @@ enum Modulo: int
     case CURSO = 13;
     case PLANO_CURRICULAR = 14;
     case DOCUMENTO_PESSOA = 15;
+    case SENHA_UTILIZADOR = 16;
 
     public function slug(): string
     {
@@ -40,6 +41,7 @@ enum Modulo: int
             self::CURSO => 'curso',
             self::PLANO_CURRICULAR => 'plano-curricular',
             self::DOCUMENTO_PESSOA => 'documento-pessoa',
+            self::SENHA_UTILIZADOR => 'senha-utilizador',
         };
     }
 
@@ -73,6 +75,7 @@ enum Modulo: int
             self::CURSO => 'Curso',
             self::PLANO_CURRICULAR => 'Plano Curricular',
             self::DOCUMENTO_PESSOA => 'Documento Pessoa',
+            self::SENHA_UTILIZADOR => 'Senha de Utilizador',
         };
     }
 }

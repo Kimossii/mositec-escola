@@ -4,7 +4,10 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
+use Inertia\Inertia;
 use Inertia\Middleware;
+use Modules\Core\Support\HistoricoCifrado;
 use Modules\Permissao\Services\PermissionResolver;
 
 class HandleInertiaRequests extends Middleware
@@ -46,6 +49,17 @@ class HandleInertiaRequests extends Middleware
             $request->session()->setPreviousUrl($request->fullUrl());
         }
 
+        // A resposta que transporta a senha temporária (flash) cifra o histórico do
+        // browser, para que a senha em claro não fique legível em history.state.
+        // Só essa resposta; as restantes seguem config('inertia.history.encrypt').
+        // null repõe o valor da config (o ResponseFactory é singleton: sem isto
+        // o true vazaria para pedidos seguintes na mesma instância da app).
+        // Só com HTTPS: em HTTP o Inertia não consegue cifrar (sem `crypto.subtle`) e a visita fica
+        // pendurada; ver HistoricoCifrado.
+        Inertia::encryptHistory(
+            $request->hasSession() && $request->session()->has('senha_temporaria') && HistoricoCifrado::possivel($request) ? true : null,
+        );
+
         return parent::handle($request, $next);
     }
 
@@ -76,6 +90,12 @@ class HandleInertiaRequests extends Middleware
             // precisa de poder mandar a mensagem exacta.
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
+                // Senha temporária de uma redefinição manual: aparece uma só vez.
+                'senha_temporaria' => function () use ($request) {
+                    $flash = $request->session()->get('senha_temporaria');
+
+                    return $flash ? [...$flash, 'senha' => Crypt::decryptString($flash['senha'])] : null;
+                },
             ],
         ];
     }

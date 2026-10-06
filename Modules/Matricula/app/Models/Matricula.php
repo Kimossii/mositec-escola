@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Turma\Models\Turma;
 use Modules\Usuario\Models\User;
@@ -15,6 +16,7 @@ use Modules\Usuario\Models\User;
 
 class Matricula extends Model
 {
+    use PertenceAoTenant;
     use SoftDeletes;
 
     protected $table = 'matriculas';

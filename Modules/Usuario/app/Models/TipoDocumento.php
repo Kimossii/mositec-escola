@@ -5,11 +5,12 @@ namespace Modules\Usuario\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 
 class TipoDocumento extends Model
 {
-    use HasFactory, SincronizaEstadoDescricao;
+    use HasFactory, PertenceAoTenant, SincronizaEstadoDescricao;
 
     protected $table = 'tipos_documentos';
 

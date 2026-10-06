@@ -5,6 +5,7 @@ namespace Modules\Autenticacao\Service;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Core\Tenancy\TenantContext;
 
 /**
  * Limita tentativas de login falhadas através do limiter nomeado "autenticacao.login"
@@ -30,10 +31,12 @@ class LimitadorLogin
             $conta = hash('sha256', $identificador);
             $ip = (string) $request->ip();
 
+            $tenant = app(TenantContext::class)->id();
+
             return [
-                Limit::perMinute(5)->by("conta-ip:{$conta}|{$ip}"),
-                Limit::perMinutes(15, 20)->by("conta:{$conta}"),
-                Limit::perMinute(30)->by("ip:{$ip}"),
+                Limit::perMinute(5)->by("t{$tenant}|conta-ip:{$conta}|{$ip}"),
+                Limit::perMinutes(15, 20)->by("t{$tenant}|conta:{$conta}"),
+                Limit::perMinute(30)->by("t{$tenant}|ip:{$ip}"),
             ];
         });
     }

@@ -11,5 +11,7 @@
     "Disciplina": true,
     "Aluno": true,
     "PlanoCurricular": true,
-    "Matricula": true
+    "Matricula": true,
+    "Tenant": true,
+    "Plataforma": true
 }

@@ -144,7 +144,7 @@ class GestaoDocumentoPessoaServiceTest extends TestCase
         $this->seed(TipoDocumentoSeeder::class);
         $pessoa = $this->criarPessoa();
         $tipo = TipoDocumento::where('slug', 'bi')->firstOrFail();
-        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store('documentos-pessoas/' . $pessoa->id, 'documentos');
+        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store("tenants/{$this->tenant->id}/documentos-pessoas/{$pessoa->id}", 'documentos');
         $documento = DocumentoPessoa::create([
             'dados_pessoa_id' => $pessoa->id,
             'tipo_documento_id' => $tipo->id,
@@ -165,7 +165,7 @@ class GestaoDocumentoPessoaServiceTest extends TestCase
         $this->seed(TipoDocumentoSeeder::class);
         $pessoa = $this->criarPessoa();
         $tipo = TipoDocumento::where('slug', 'bi')->firstOrFail();
-        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store('documentos-pessoas/' . $pessoa->id, 'documentos');
+        $caminho = UploadedFile::fake()->create('bi.pdf', 100, 'application/pdf')->store("tenants/{$this->tenant->id}/documentos-pessoas/{$pessoa->id}", 'documentos');
         $documento = DocumentoPessoa::create([
             'dados_pessoa_id' => $pessoa->id,
             'tipo_documento_id' => $tipo->id,
@@ -187,7 +187,7 @@ class GestaoDocumentoPessoaServiceTest extends TestCase
     {
         Storage::fake('documentos');
         Storage::disk('documentos')->put(
-            'documentos-pessoas/1/disfarcado.pdf',
+            "tenants/{$this->tenant->id}/documentos-pessoas/1/disfarcado.pdf",
             '<html><body><script>alert(document.cookie)</script></body></html>',
         );
         $this->seed(TipoDocumentoSeeder::class);
@@ -197,7 +197,7 @@ class GestaoDocumentoPessoaServiceTest extends TestCase
             'dados_pessoa_id' => $pessoa->id,
             'tipo_documento_id' => $tipo->id,
             'nome_original' => 'disfarcado.pdf',
-            'caminho' => 'documentos-pessoas/1/disfarcado.pdf',
+            'caminho' => "tenants/{$this->tenant->id}/documentos-pessoas/1/disfarcado.pdf",
             'mime_type' => 'application/pdf',
             'tamanho' => 10,
         ]);

@@ -4,6 +4,8 @@ namespace Modules\Permissao\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\Core\Tenancy\PertenceAoTenant;
+use Modules\Core\Tenancy\TenantContext;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Usuario\Models\User;
 // use Modules\Permissao\Database\Factories\RoleFactory;
@@ -12,6 +14,7 @@ class Role extends Model
 {
     use HasFactory;
     use SincronizaEstadoDescricao;
+    use PertenceAoTenant;
 
     protected $table = 'roles';
 
@@ -41,7 +44,9 @@ class Role extends Model
 
     public function users()
     {
-        return $this->belongsToMany(User::class, 'user_roles', 'role_id', 'users_id');
+        return $this->belongsToMany(User::class, 'user_roles', 'role_id', 'users_id')
+            ->withPivot('tenant_id')
+            ->withPivotValue('tenant_id', app(TenantContext::class)->id());
     }
     public function permissoes()
     {

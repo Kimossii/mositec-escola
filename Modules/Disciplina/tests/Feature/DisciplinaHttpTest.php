@@ -54,7 +54,7 @@ class DisciplinaHttpTest extends TestCase
 
     private function criarEstabelecimento(): Estabelecimento
     {
-        return Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        return $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
     }
 
     public function test_cria_disciplina_via_http_infere_estabelecimento_actual_e_regista_autoria(): void
@@ -143,8 +143,8 @@ class DisciplinaHttpTest extends TestCase
         $estabelecimentoActual = $this->criarEstabelecimento();
         Disciplina::create(['estabelecimento_id' => $estabelecimentoActual->id, 'codigo' => 'INF', 'nome' => 'Informática']);
 
-        $outroEstabelecimento = Estabelecimento::create(['nome' => 'Outra Escola', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => false]);
-        Disciplina::create(['estabelecimento_id' => $outroEstabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade']);
+        $outroEstabelecimento = $this->estabelecimentoDeOutroTenant(['nome' => 'Outra Escola', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
+        $this->noTenantDe($outroEstabelecimento, fn () => Disciplina::create(['estabelecimento_id' => $outroEstabelecimento->id, 'codigo' => 'CONT', 'nome' => 'Contabilidade']));
 
         $this->get(route('disciplinas.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Disciplina/Index')

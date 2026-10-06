@@ -3,6 +3,7 @@
 namespace Modules\Permissao\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Modules\Core\Tenancy\TenantContext;
 use Modules\Permissao\Models\UserPermissao;
 use Modules\Permissao\Support\PermissaoCache;
 use Modules\Usuario\Models\User;
@@ -20,7 +21,10 @@ class SincronizarPermissoesUtilizadorAction
         DB::transaction(function () use ($user, $celulas) {
             UserPermissao::where('users_id', $user->id)->delete();
 
+            $tenantId = app(TenantContext::class)->id();
+
             $linhas = collect($celulas)->map(fn (array $celula) => [
+                'tenant_id' => $tenantId,
                 'users_id' => $user->id,
                 'modulo_id' => $celula['modulo_id'],
                 'acao_id' => $celula['acao_id'],

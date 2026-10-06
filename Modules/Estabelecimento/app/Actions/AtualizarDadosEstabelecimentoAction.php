@@ -15,7 +15,7 @@ class AtualizarDadosEstabelecimentoAction
     public function executar(EstabelecimentoDTO $dto): Estabelecimento
     {
         return DB::transaction(function () use ($dto) {
-            $estabelecimento = Estabelecimento::current() ?? new Estabelecimento(['is_active' => true]);
+            $estabelecimento = Estabelecimento::current();
 
             $estabelecimento->fill([
                 'nome' => $dto->nome,
@@ -38,6 +38,10 @@ class AtualizarDadosEstabelecimentoAction
                 'ano_fundacao' => $dto->ano_fundacao,
                 'observacoes' => $dto->observacoes,
             ]);
+
+            // Primeira gravação válida dos dados institucionais: a configuração inicial está feita.
+            // Nunca volta a nulo.
+            $estabelecimento->configurado_em ??= now();
 
             $estabelecimento->save();
 

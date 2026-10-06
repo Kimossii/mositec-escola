@@ -24,8 +24,8 @@
             <div class="d-flex align-items-center flex-grow-1 flex-lg-grow-0">
                 <Link href="/" class="d-lg-none">
                     <img
-                        alt="Logo"
-                        :src="asset('themes/metronic/assets/media/logos/default-small.svg')"
+                        alt="MosiTec"
+                        :src="asset('themes/metronic/assets/media/logos/mosi-logo-azul.png')"
                         class="h-30px"
                     />
                 </Link>

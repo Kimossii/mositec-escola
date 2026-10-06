@@ -4,11 +4,14 @@ namespace Modules\Matricula\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Usuario\Models\User;
 
 class MatriculaHistorico extends Model
 {
+    use PertenceAoTenant;
+
     public $timestamps = false;
 
     protected $table = 'matricula_historicos';

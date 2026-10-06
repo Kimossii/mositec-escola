@@ -18,7 +18,7 @@ class PlanoCurricularModelTest extends TestCase
 
     private function estabelecimento(): Estabelecimento
     {
-        return Estabelecimento::create(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
+        return $this->estabelecimentoDeTeste(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1]);
     }
 
     public function test_cria_plano_pertencente_a_curso_e_estabelecimento(): void
@@ -74,15 +74,14 @@ class PlanoCurricularModelTest extends TestCase
     public function test_mesmo_codigo_em_estabelecimentos_diferentes_e_permitido(): void
     {
         $estabelecimentoA = $this->estabelecimento();
-        Estabelecimento::where('id', $estabelecimentoA->id)->update(['is_active' => false]);
-        $estabelecimentoB = Estabelecimento::create(['nome' => 'Escola B', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
+        $estabelecimentoB = $this->estabelecimentoDeOutroTenant(['nome' => 'Escola B', 'tipo' => 1, 'tipo_ensino' => 1]);
         $cursoA = Curso::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'C1', 'nome' => 'Curso A']);
-        $cursoB = Curso::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'C1', 'nome' => 'Curso B']);
+        $cursoB = $this->noTenantDe($estabelecimentoB, fn () => Curso::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'C1', 'nome' => 'Curso B']));
         $nivelA = NivelAcademico::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
-        $nivelB = NivelAcademico::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
+        $nivelB = $this->noTenantDe($estabelecimentoB, fn () => NivelAcademico::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]));
 
         PlanoCurricular::create(['estabelecimento_id' => $estabelecimentoA->id, 'nivel_academico_id' => $nivelA->id, 'curso_id' => $cursoA->id, 'codigo' => 'PC-2026', 'nome' => 'Plano A']);
-        $plano = PlanoCurricular::create(['estabelecimento_id' => $estabelecimentoB->id, 'nivel_academico_id' => $nivelB->id, 'curso_id' => $cursoB->id, 'codigo' => 'PC-2026', 'nome' => 'Plano B']);
+        $plano = $this->noTenantDe($estabelecimentoB, fn () => PlanoCurricular::create(['estabelecimento_id' => $estabelecimentoB->id, 'nivel_academico_id' => $nivelB->id, 'curso_id' => $cursoB->id, 'codigo' => 'PC-2026', 'nome' => 'Plano B']));
 
         $this->assertNotNull($plano->id);
     }

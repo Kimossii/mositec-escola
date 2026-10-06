@@ -10,11 +10,14 @@ return new class extends Migration
     {
         Schema::create('tipos_documentos', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->string('nome');
-            $table->string('slug')->unique();
+            $table->string('slug');
             $table->unsignedTinyInteger('estado')->default(1);
             $table->string('estado_descricao')->default('Ativo');
             $table->timestamps();
+
+            $table->unique(['tenant_id', 'slug']);
         });
     }
 

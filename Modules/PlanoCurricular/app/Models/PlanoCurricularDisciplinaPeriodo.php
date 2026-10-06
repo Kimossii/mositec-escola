@@ -5,9 +5,11 @@ namespace Modules\PlanoCurricular\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\AnoLectivo\Models\Periodo;
+use Modules\Core\Tenancy\PertenceAoTenant;
 
 class PlanoCurricularDisciplinaPeriodo extends Model
 {
+    use PertenceAoTenant;
     protected $table = 'plano_curricular_disciplina_periodos';
 
     protected $fillable = [

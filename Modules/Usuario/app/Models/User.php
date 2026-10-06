@@ -6,6 +6,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Modules\Core\Tenancy\PertenceAoTenant;
+use Modules\Core\Tenancy\TenantContext;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\UserPermissao;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
@@ -14,6 +16,7 @@ use Modules\Usuario\Enums\TipoLogin;
 class User extends Authenticatable
 {
     use HasFactory;
+    use PertenceAoTenant;
     use HasApiTokens, Notifiable;
     use SincronizaEstadoDescricao;
 
@@ -39,6 +42,8 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'tipo_login' => TipoLogin::class,
+        'deve_alterar_senha' => 'boolean',
+        'senha_redefinida_em' => 'datetime',
     ];
 
     // =========================
@@ -60,6 +65,11 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'editado_por');
     }
 
+    public function senhaRedefinidaPor()
+    {
+        return $this->belongsTo(User::class, 'senha_redefinida_por');
+    }
+
     public function usuariosCriados()
     {
         return $this->hasMany(User::class, 'criado_por');
@@ -73,20 +83,24 @@ class User extends Authenticatable
     public function educandos()
     {
         return $this->belongsToMany(User::class, 'encarregados_alunos', 'encarregado_id', 'aluno_id')
-            ->withPivot('parentesco')
+            ->withPivot('parentesco', 'tenant_id')
+            ->withPivotValue('tenant_id', app(TenantContext::class)->id())
             ->withTimestamps();
     }
 
     public function encarregados()
     {
         return $this->belongsToMany(User::class, 'encarregados_alunos', 'aluno_id', 'encarregado_id')
-            ->withPivot('parentesco')
+            ->withPivot('parentesco', 'tenant_id')
+            ->withPivotValue('tenant_id', app(TenantContext::class)->id())
             ->withTimestamps();
     }
 
     public function roles()
     {
-        return $this->belongsToMany(Role::class, 'user_roles', 'users_id', 'role_id');
+        return $this->belongsToMany(Role::class, 'user_roles', 'users_id', 'role_id')
+            ->withPivot('tenant_id')
+            ->withPivotValue('tenant_id', app(TenantContext::class)->id());
     }
     public function permissoes()
     {

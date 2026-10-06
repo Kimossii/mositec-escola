@@ -25,7 +25,7 @@ class AlunoConsultaServiceTest extends TestCase
 
     private function criarEstabelecimento(): Estabelecimento
     {
-        return Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        return $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
     }
 
     private function criarAluno(Estabelecimento $estabelecimento, string $nome, string $numeroIdentificacao, string $numeroMatricula): Aluno
@@ -39,13 +39,13 @@ class AlunoConsultaServiceTest extends TestCase
     {
         $sufixo = uniqid();
 
-        return NivelAcademico::create([
+        return $this->noTenantDe($estabelecimento, fn () => NivelAcademico::create([
             'estabelecimento_id' => $estabelecimento->id,
             'codigo' => "N{$sufixo}",
             'nome' => "Nível Teste {$sufixo}",
             'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO,
             'ordem' => 1,
-        ]);
+        ]));
     }
 
     private function criarTurma(Estabelecimento $estabelecimento, AnoLectivo $anoLectivo, ?Curso $curso = null, ?NivelAcademico $nivelAcademico = null): Turma
@@ -88,14 +88,16 @@ class AlunoConsultaServiceTest extends TestCase
 
     public function test_lista_apenas_alunos_do_estabelecimento_actual(): void
     {
-        $actual = Estabelecimento::create(['nome' => 'Escola Actual', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
-        $outra = Estabelecimento::create(['nome' => 'Outra Escola', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => false]);
+        $actual = $this->estabelecimentoDeTeste(['nome' => 'Escola Actual', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
+        $outra = $this->estabelecimentoDeOutroTenant(['nome' => 'Outra Escola', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
 
         $pessoa1 = DadosPessoa::create(['nome_completo' => 'Ana', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
-        $pessoa2 = DadosPessoa::create(['nome_completo' => 'Bruno', 'numero_identificacao' => 'BI0002', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
 
         Aluno::create(['estabelecimento_id' => $actual->id, 'dados_pessoa_id' => $pessoa1->id, 'numero_matricula' => '2026-0001']);
-        Aluno::create(['estabelecimento_id' => $outra->id, 'dados_pessoa_id' => $pessoa2->id, 'numero_matricula' => '2026-0002']);
+        $this->noTenantDe($outra, function () use ($outra) {
+            $pessoa2 = DadosPessoa::create(['nome_completo' => 'Bruno', 'numero_identificacao' => 'BI0002', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+            Aluno::create(['estabelecimento_id' => $outra->id, 'dados_pessoa_id' => $pessoa2->id, 'numero_matricula' => '2026-0002']);
+        });
 
         $alunos = (new AlunoConsultaService())->listar();
 
@@ -235,9 +237,9 @@ class AlunoConsultaServiceTest extends TestCase
     public function test_anos_lectivos_disponiveis_devolve_apenas_do_estabelecimento_actual(): void
     {
         $actual = $this->criarEstabelecimento();
-        $outra = Estabelecimento::create(['nome' => 'Outra Escola', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => false]);
+        $outra = $this->estabelecimentoDeOutroTenant(['nome' => 'Outra Escola', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         AnoLectivo::create(['estabelecimento_id' => $actual->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
-        AnoLectivo::create(['estabelecimento_id' => $outra->id, 'nome' => '2026/2027 (outra)', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $this->noTenantDe($outra, fn () => AnoLectivo::create(['estabelecimento_id' => $outra->id, 'nome' => '2026/2027 (outra)', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]));
 
         $resultado = (new AlunoConsultaService())->anosLectivosDisponiveis();
 
@@ -273,9 +275,9 @@ class AlunoConsultaServiceTest extends TestCase
     public function test_turmas_disponiveis_devolve_apenas_do_estabelecimento_actual(): void
     {
         $actual = $this->criarEstabelecimento();
-        $outra = Estabelecimento::create(['nome' => 'Outra Escola', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => false]);
+        $outra = $this->estabelecimentoDeOutroTenant(['nome' => 'Outra Escola', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         $anoActual = AnoLectivo::create(['estabelecimento_id' => $actual->id, 'nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
-        $anoOutra = AnoLectivo::create(['estabelecimento_id' => $outra->id, 'nome' => '2026/2027 (outra)', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]);
+        $anoOutra = $this->noTenantDe($outra, fn () => AnoLectivo::create(['estabelecimento_id' => $outra->id, 'nome' => '2026/2027 (outra)', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO]));
         $turmaActual = $this->criarTurma($actual, $anoActual);
         $this->criarTurma($outra, $anoOutra);
 

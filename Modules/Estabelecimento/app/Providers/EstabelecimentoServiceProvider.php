@@ -2,6 +2,8 @@
 
 namespace Modules\Estabelecimento\Providers;
 
+use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
+use Modules\Estabelecimento\Provisioning\ProvisionarEstabelecimento;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 
@@ -33,6 +35,13 @@ class EstabelecimentoServiceProvider extends ModuleServiceProvider
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->tag([ProvisionarEstabelecimento::class], ProvisionaTenant::ETIQUETA);
+    }
+
     public function boot(): void
     {
         parent::boot();

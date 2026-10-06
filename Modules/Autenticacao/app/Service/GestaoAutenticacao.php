@@ -5,6 +5,7 @@ namespace Modules\Autenticacao\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use SensitiveParameter;
 
 class GestaoAutenticacao
 {
@@ -12,7 +13,7 @@ class GestaoAutenticacao
     {
     }
 
-    public function login(Request $request, $identificador, $password, $remember = false)
+    public function login(Request $request, $identificador, #[SensitiveParameter] $password, $remember = false)
     {
         $limiterResponse = $this->checkLoginAttempts($request, $identificador, $password, $remember);
         if ($limiterResponse !== true) {
@@ -32,7 +33,7 @@ class GestaoAutenticacao
         ];
     }
 
-    private function checkLoginAttempts(Request $request, $identificador, $password, $remember = false)
+    private function checkLoginAttempts(Request $request, $identificador, #[SensitiveParameter] $password, $remember = false)
     {
         $segundos = $this->limitador->segundosDeBloqueio($request);
         if ($segundos !== null) {

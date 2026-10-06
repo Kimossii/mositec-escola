@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('aluno_enquadramentos_academicos', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('aluno_id')->constrained('alunos');
             $table->foreignId('curso_id')->nullable()->constrained('cursos');
             $table->foreignId('nivel_academico_id')->nullable()->constrained('niveis_academicos');

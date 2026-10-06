@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('periodos', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('ano_lectivo_id')->constrained('ano_lectivos')->cascadeOnDelete();
             $table->string('nome');
             $table->unsignedTinyInteger('tipo')->default(0); // 0: trimestre | 1: semestre | 2: outro

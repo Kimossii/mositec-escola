@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('plano_curricular_anos_lectivos', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('plano_curricular_id')->constrained('planos_curriculares')->restrictOnDelete();
             $table->foreignId('ano_lectivo_id')->constrained('ano_lectivos')->restrictOnDelete();
             $table->unsignedTinyInteger('estado')->default(1);

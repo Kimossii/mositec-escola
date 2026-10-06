@@ -16,9 +16,9 @@ class CriarPlanoCurricularRequestTest extends TestCase
 
     public function test_rejeita_curso_de_outro_estabelecimento(): void
     {
-        $estabelecimentoA = Estabelecimento::create(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
-        $estabelecimentoB = Estabelecimento::create(['nome' => 'Escola B', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => false]);
-        $cursoDeOutroEstabelecimento = Curso::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'C1', 'nome' => 'Curso B']);
+        $estabelecimentoA = $this->estabelecimentoDeTeste(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1]);
+        $estabelecimentoB = $this->estabelecimentoDeOutroTenant(['nome' => 'Escola B', 'tipo' => 1, 'tipo_ensino' => 1]);
+        $cursoDeOutroEstabelecimento = $this->noTenantDe($estabelecimentoB, fn () => Curso::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'C1', 'nome' => 'Curso B']));
         $nivel = NivelAcademico::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
 
         $validator = Validator::make(
@@ -32,7 +32,7 @@ class CriarPlanoCurricularRequestTest extends TestCase
 
     public function test_mesmo_codigo_em_estabelecimentos_diferentes_e_permitido(): void
     {
-        Estabelecimento::create(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
+        $this->estabelecimentoDeTeste(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1]);
         $curso = Curso::create(['estabelecimento_id' => Estabelecimento::current()->id, 'codigo' => 'C1', 'nome' => 'Curso A']);
         $nivel = NivelAcademico::create(['estabelecimento_id' => Estabelecimento::current()->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
 
@@ -46,7 +46,7 @@ class CriarPlanoCurricularRequestTest extends TestCase
 
     public function test_aceita_sem_curso_id(): void
     {
-        Estabelecimento::create(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
+        $this->estabelecimentoDeTeste(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1]);
         $nivel = NivelAcademico::create(['estabelecimento_id' => Estabelecimento::current()->id, 'codigo' => 'CR', 'nome' => 'Creche I', 'ordem' => 1, 'etapa_ensino' => 1]);
 
         $validator = Validator::make(
@@ -59,7 +59,7 @@ class CriarPlanoCurricularRequestTest extends TestCase
 
     public function test_rejeita_sem_nivel_academico_id(): void
     {
-        Estabelecimento::create(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
+        $this->estabelecimentoDeTeste(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1]);
         $curso = Curso::create(['estabelecimento_id' => Estabelecimento::current()->id, 'codigo' => 'C1', 'nome' => 'Curso A']);
 
         $validator = Validator::make(
@@ -73,9 +73,9 @@ class CriarPlanoCurricularRequestTest extends TestCase
 
     public function test_rejeita_nivel_academico_de_outro_estabelecimento(): void
     {
-        $estabelecimentoA = Estabelecimento::create(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => true]);
-        $estabelecimentoB = Estabelecimento::create(['nome' => 'Escola B', 'tipo' => 1, 'tipo_ensino' => 1, 'is_active' => false]);
-        $nivelDeOutroEstabelecimento = NivelAcademico::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]);
+        $estabelecimentoA = $this->estabelecimentoDeTeste(['nome' => 'Escola A', 'tipo' => 1, 'tipo_ensino' => 1]);
+        $estabelecimentoB = $this->estabelecimentoDeOutroTenant(['nome' => 'Escola B', 'tipo' => 1, 'tipo_ensino' => 1]);
+        $nivelDeOutroEstabelecimento = $this->noTenantDe($estabelecimentoB, fn () => NivelAcademico::create(['estabelecimento_id' => $estabelecimentoB->id, 'codigo' => 'N10', 'nome' => '10ª Classe', 'ordem' => 1, 'etapa_ensino' => 4]));
 
         $validator = Validator::make(
             ['nivel_academico_id' => $nivelDeOutroEstabelecimento->id, 'codigo' => 'PC1', 'nome' => 'Plano 1'],

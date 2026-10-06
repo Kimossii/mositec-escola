@@ -44,7 +44,7 @@ class CriarCursoRequestTest extends TestCase
 
     public function test_codigo_duplicado_no_mesmo_estabelecimento_falha(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
 
         $validador = $this->validar(['codigo' => 'INF', 'nome' => 'Outro Nome']);
@@ -55,7 +55,7 @@ class CriarCursoRequestTest extends TestCase
 
     public function test_nome_duplicado_no_mesmo_estabelecimento_falha(): void
     {
-        $estabelecimento = Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'INF', 'nome' => 'Informática']);
 
         $validador = $this->validar(['codigo' => 'OUTRO', 'nome' => 'Informática']);
@@ -66,10 +66,10 @@ class CriarCursoRequestTest extends TestCase
 
     public function test_mesmo_codigo_em_estabelecimentos_diferentes_e_permitido(): void
     {
-        $estabelecimentoA = Estabelecimento::create(['nome' => 'Escola A', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => false]);
-        Curso::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'INF', 'nome' => 'Informática']);
+        $estabelecimentoA = $this->estabelecimentoDeOutroTenant(['nome' => 'Escola A', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
+        $this->noTenantDe($estabelecimentoA, fn () => Curso::create(['estabelecimento_id' => $estabelecimentoA->id, 'codigo' => 'INF', 'nome' => 'Informática']));
 
-        Estabelecimento::create(['nome' => 'Escola B', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => true]);
+        $this->estabelecimentoDeTeste(['nome' => 'Escola B', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
 
         $validador = $this->validar(['codigo' => 'INF', 'nome' => 'Informática (outra escola)']);
 

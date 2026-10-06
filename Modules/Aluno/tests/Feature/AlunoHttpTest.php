@@ -63,7 +63,7 @@ class AlunoHttpTest extends TestCase
 
     private function criarEstabelecimento(bool $activo = true): Estabelecimento
     {
-        return Estabelecimento::create(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value, 'is_active' => $activo]);
+        return $activo ? $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]) : $this->estabelecimentoDeOutroTenant(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
     }
 
     public function test_cria_aluno_via_http_infere_estabelecimento_actual_e_regista_autoria(): void
@@ -87,7 +87,7 @@ class AlunoHttpTest extends TestCase
 
     public function test_cria_aluno_via_http_com_foto(): void
     {
-        Storage::fake('public');
+        Storage::fake('privado');
         $this->actingAsStaff();
         $this->criarEstabelecimento();
 
@@ -100,7 +100,7 @@ class AlunoHttpTest extends TestCase
 
         $aluno = Aluno::firstWhere('dados_pessoa_id', DadosPessoa::firstWhere('numero_identificacao', 'BI0001')?->id);
         $this->assertNotNull($aluno->foto_path);
-        Storage::disk('public')->assertExists($aluno->foto_path);
+        Storage::disk('privado')->assertExists($aluno->foto_path);
     }
 
     public function test_actualiza_aluno_via_http(): void
@@ -186,8 +186,10 @@ class AlunoHttpTest extends TestCase
         Aluno::create(['estabelecimento_id' => $actual->id, 'dados_pessoa_id' => $pessoa1->id, 'numero_matricula' => '2026-0001']);
 
         $outra = $this->criarEstabelecimento(false);
-        $pessoa2 = DadosPessoa::create(['nome_completo' => 'Bruno', 'numero_identificacao' => 'BI0002', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
-        Aluno::create(['estabelecimento_id' => $outra->id, 'dados_pessoa_id' => $pessoa2->id, 'numero_matricula' => '2026-0002']);
+        $this->noTenantDe($outra, function () use ($outra) {
+            $pessoa2 = DadosPessoa::create(['nome_completo' => 'Bruno', 'numero_identificacao' => 'BI0002', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+            Aluno::create(['estabelecimento_id' => $outra->id, 'dados_pessoa_id' => $pessoa2->id, 'numero_matricula' => '2026-0002']);
+        });
 
         $this->get(route('alunos.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Aluno/Index')

@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('matricula_historicos', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('matricula_id')->constrained('matriculas')->cascadeOnDelete();
             $table->unsignedTinyInteger('estado_anterior')->nullable();
             $table->unsignedTinyInteger('estado_novo');

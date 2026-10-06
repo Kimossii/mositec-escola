@@ -16,10 +16,9 @@ class SalaModelTest extends TestCase
 
     public function test_cria_sala_com_casts_e_relacao_com_estabelecimento(): void
     {
-        $estabelecimento = Estabelecimento::create([
+        $estabelecimento = $this->estabelecimentoDeTeste([
             'nome' => 'Escola Teste',
             'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
         ]);
 
         $sala = Sala::create([

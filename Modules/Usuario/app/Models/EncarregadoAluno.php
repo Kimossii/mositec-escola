@@ -3,9 +3,12 @@
 namespace Modules\Usuario\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Modules\Core\Tenancy\PertenceAoTenant;
 
 class EncarregadoAluno extends Model
 {
+    use PertenceAoTenant;
+
     protected $table = 'encarregados_alunos';
 
     protected $fillable = ['encarregado_id', 'aluno_id', 'parentesco'];
