@@ -5,6 +5,9 @@ namespace Modules\Usuario\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Modules\Aluno\Models\Aluno;
+use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
@@ -66,14 +69,14 @@ class CriarUsuarioTest extends TestCase
         ]);
     }
 
-    public function test_cria_aluno_com_matricula_gerada(): void
+    public function test_cria_aluno_a_partir_do_registo_do_aluno(): void
     {
         $this->actingAsStaff();
+        $registo = $this->registarAluno('2026-0005', 'Aluno Novo');
 
         $response = $this->post('/usuarios/alunos/cadastrar', [
-            'name' => 'Aluno Novo',
             'perfil' => 'aluno',
-            'tipo_login' => 'matricula',
+            'numero_matricula' => '2026-0005',
             'password' => 'segredo123',
             'password_confirmation' => 'segredo123',
             'estado' => 1,
@@ -84,8 +87,20 @@ class CriarUsuarioTest extends TestCase
 
         $this->assertNotNull($aluno);
         $this->assertNull($aluno->email);
-        $this->assertMatchesRegularExpression('/^\d{4}-\d{4}$/', $aluno->numero_matricula);
+        $this->assertSame('2026-0005', $aluno->numero_matricula);
+        $this->assertSame($registo->dados_pessoa_id, $aluno->dados_pessoa_id);
         $this->assertTrue($aluno->roles->contains('nome', Perfil::ALUNO->value));
+    }
+
+    private function registarAluno(string $matricula, string $nome): Aluno
+    {
+        $pessoa = DadosPessoa::create(['nome_completo' => $nome, 'numero_identificacao' => 'BI' . $matricula, 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+
+        return Aluno::create([
+            'estabelecimento_id' => Estabelecimento::current()->id,
+            'dados_pessoa_id' => $pessoa->id,
+            'numero_matricula' => $matricula,
+        ]);
     }
 
     public function test_email_e_obrigatorio_quando_tipo_login_e_email(): void
@@ -131,14 +146,14 @@ class CriarUsuarioTest extends TestCase
         $this->assertTrue($encarregado->roles->contains('nome', Perfil::ENCARREGADO->value));
     }
 
-    public function test_aluno_criado_pelo_endpoint_consegue_entrar_com_a_matricula_gerada(): void
+    public function test_aluno_criado_pelo_endpoint_consegue_entrar_com_a_matricula_oficial(): void
     {
         $this->actingAsStaff();
+        $this->registarAluno('2026-0006', 'Aluno Fluxo Completo');
 
         $this->post('/usuarios/alunos/cadastrar', [
-            'name' => 'Aluno Fluxo Completo',
             'perfil' => 'aluno',
-            'tipo_login' => 'matricula',
+            'numero_matricula' => '2026-0006',
             'password' => 'segredo123',
             'password_confirmation' => 'segredo123',
             'estado' => 1,

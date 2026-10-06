@@ -2,6 +2,8 @@
 
 namespace Modules\Aluno\Providers;
 
+use Modules\Aluno\Services\ProcuraAlunoParaContaService;
+use Modules\Core\Contracts\ProcuraAlunoParaConta;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class AlunoServiceProvider extends ModuleServiceProvider
@@ -14,6 +16,13 @@ class AlunoServiceProvider extends ModuleServiceProvider
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
+
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->bind(ProcuraAlunoParaConta::class, ProcuraAlunoParaContaService::class);
+    }
 
     public function boot(): void
     {

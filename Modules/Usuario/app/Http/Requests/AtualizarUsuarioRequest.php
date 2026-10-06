@@ -24,12 +24,26 @@ class AtualizarUsuarioRequest extends BaseRequest
         return $this->user()?->can($precisaAutorizacao ? 'autorizacao.editar' : 'usuario.editar') ?? false;
     }
 
+    /**
+     * Utilizador aluno (já é, ou o pedido o torna aluno): o nome vem do registo do aluno e o email não
+     * se usa. Esses campos ficam fora das regras, logo nunca chegam a validated().
+     */
+    private function eAluno(): bool
+    {
+        return $this->input('perfil') === Perfil::ALUNO->slug()
+            || ($this->route('user')?->roles->contains('nome', Perfil::ALUNO->value) ?? false);
+    }
+
     public function rules(): array
     {
-        return [
+        $identidade = $this->eAluno() ? [] : [
             'name' => 'required|string|max:255',
-            'perfil' => 'required|in:admin_escola,funcionario,professor,aluno,encarregado',
             'email' => ['nullable', 'email', Rule::unique('users', 'email')->ignore($this->route('user'))],
+        ];
+
+        return [
+            ...$identidade,
+            'perfil' => 'required|in:admin_escola,funcionario,professor,aluno,encarregado',
             'password' => 'nullable|min:6|confirmed',
             'celulas' => 'nullable|array',
             'celulas.*.modulo_id' => 'required_with:celulas|integer|exists:modulos,id',

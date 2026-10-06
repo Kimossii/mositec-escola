@@ -11,7 +11,9 @@ use Modules\Permissao\Enums\Perfil;
 use Modules\Usuario\Actions\RedefinirSenhaUsuarioAction;
 use Modules\Usuario\Http\Requests\AtualizarUsuarioRequest;
 use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
+use Modules\Usuario\Http\Requests\ProcurarAlunoPorMatriculaRequest;
 use Modules\Usuario\Models\User;
+use Modules\Usuario\Services\AlunoParaContaConsultaService;
 use Modules\Usuario\Services\GestaoUsuarioService;
 use Modules\Usuario\Services\UsuarioConsultaService;
 
@@ -82,6 +84,25 @@ class UsuarioController extends Controller
         $this->service->criar($request);
 
         return redirect()->back()->with('success', 'Utilizador criado com sucesso.');
+    }
+
+    /**
+     * Pesquisa (correspondência exacta) do aluno cuja conta se vai criar. Devolve só o que o ecrã
+     * mostra; aluno inexistente e aluno de outra escola dão exactamente o mesmo 404.
+     */
+    public function procurarAluno(ProcurarAlunoPorMatriculaRequest $request, AlunoParaContaConsultaService $alunos)
+    {
+        $resumo = $alunos->resumo(
+            trim($request->validated('matricula')),
+            // Nascimento, identificação, curso e turma exigem também aluno.ver (decidido aqui, nunca pelo cliente).
+            $request->user()->can('aluno.ver'),
+        );
+
+        if ($resumo === null) {
+            return response()->json(['message' => 'Não foi encontrado nenhum aluno com este número de matrícula.'], 404);
+        }
+
+        return response()->json($resumo);
     }
 
     public function edit(User $user)

@@ -4,6 +4,7 @@ import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import AlunoMatriculaLookup from './AlunoMatriculaLookup.vue';
 import UsuarioFormFields from './UsuarioFormFields.vue';
 
 const props = defineProps({
@@ -37,6 +38,14 @@ const form = reactive({
 });
 
 const perfilSelecionado = ref(props.perfilFixo ?? props.utilizador?.perfil ?? props.perfis[0]?.slug ?? '');
+
+// Cadastro de aluno: login = número de matrícula oficial; o nome vem do servidor (só leitura).
+const matriculaAluno = ref('');
+const alunoEncontrado = ref(null);
+const cadastroDeAluno = computed(() => !props.utilizador && perfilSelecionado.value === 'aluno');
+// Só se avança/guarda com o aluno encontrado, activo e sem conta (o servidor volta a validar tudo).
+const alunoPronto = computed(() => !cadastroDeAluno.value
+    || (alunoEncontrado.value !== null && alunoEncontrado.value.estado === 1 && !alunoEncontrado.value.ja_tem_conta));
 
 const matriculaEducando = ref('');
 const matriculasEducandos = ref([]);
@@ -112,6 +121,9 @@ function alternarLinha(moduloId) {
 }
 
 function validarAntesDeAvancar() {
+    if (!alunoPronto.value) {
+        return false;
+    }
     if (form.password && form.password !== form.passwordConfirmation) {
         errorMessage.value = 'As senhas não coincidem.';
         return false;
@@ -149,6 +161,11 @@ function fecharModal() {
 function guardar() {
     errors.value = {};
 
+    if (!alunoPronto.value) {
+        passo.value = 1;
+        return;
+    }
+
     if (form.password && form.password !== form.passwordConfirmation) {
         errors.value = { password_confirmation: ['As senhas não coincidem.'] };
         passo.value = 1;
@@ -163,17 +180,24 @@ function guardar() {
         return { modulo_id, acao_id, permitido: valor === 1 };
     });
 
-    const payload = {
-        name: form.name,
-        email: tipoLogin.value === 'email' ? form.email : undefined,
-        perfil: perfilSelecionado.value,
-        celulas,
-    };
+    // Aluno: nunca se envia nome, email, tipo de login nem dados pessoais (vêm do registo do aluno).
+    const payload = perfilSelecionado.value === 'aluno'
+        ? { perfil: perfilSelecionado.value, celulas }
+        : {
+            name: form.name,
+            email: tipoLogin.value === 'email' ? form.email : undefined,
+            perfil: perfilSelecionado.value,
+            celulas,
+        };
 
     if (!props.utilizador) {
         payload.password = form.password;
         payload.password_confirmation = form.passwordConfirmation;
-        payload.tipo_login = tipoLogin.value;
+        if (cadastroDeAluno.value) {
+            payload.numero_matricula = matriculaAluno.value.trim();
+        } else {
+            payload.tipo_login = tipoLogin.value;
+        }
         if (perfilSelecionado.value === 'encarregado') {
             payload.matriculas_educandos = matriculasEducandos.value;
         }
@@ -188,6 +212,8 @@ function guardar() {
     router[metodo](url, payload, {
         preserveScroll: true,
         onSuccess: () => {
+            matriculaAluno.value = '';
+            alunoEncontrado.value = null;
             toast.success(props.utilizador ? 'Utilizador atualizado com sucesso.' : 'Utilizador criado com sucesso.');
             fecharModal();
             emit('fechado');
@@ -223,7 +249,12 @@ function guardar() {
         <div v-if="passo === 1">
             <UsuarioFormFields v-model:name="form.name" v-model:email="form.email" v-model:password="form.password"
                 v-model:password-confirmation="form.passwordConfirmation" :tipo-login="tipoLogin" :errors="errors"
-                :edicao="!!props.utilizador" />
+                :edicao="!!props.utilizador" :matricula="props.utilizador?.matricula ?? ''">
+                <template #identidade>
+                    <AlunoMatriculaLookup v-model:matricula="matriculaAluno" v-model:aluno="alunoEncontrado"
+                        :erro="errors.numero_matricula?.[0] ?? ''" />
+                </template>
+            </UsuarioFormFields>
 
             <div class="fv-row mb-7">
                 <label class="required fw-semibold fs-6 mb-2">Perfil</label>
@@ -260,7 +291,7 @@ function guardar() {
                     </i>
                     Cancelar
                 </button>
-                <button type="button" class="btn btn-primary" @click="avancar">Seguinte</button>
+                <button type="button" class="btn btn-primary" :disabled="!alunoPronto" @click="avancar">Seguinte</button>
             </div>
         </div>
 
@@ -333,7 +364,7 @@ function guardar() {
                         </i>
                         Cancelar
                     </button>
-                    <button type="button" class="btn btn-primary" :disabled="processing" @click="guardar">
+                    <button type="button" class="btn btn-primary" :disabled="processing || !alunoPronto" @click="guardar">
                         <span v-if="!processing">Guardar</span>
                         <span v-else>Aguarde... <Loader size="0.3px" class="align-middle ms-2" /></span>
                     </button>

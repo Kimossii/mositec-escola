@@ -2,6 +2,8 @@
 
 namespace Modules\Matricula\Providers;
 
+use Modules\Core\Contracts\ProcuraSituacaoAcademicaDoAluno;
+use Modules\Matricula\Services\SituacaoAcademicaDoAlunoService;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 
@@ -33,6 +35,13 @@ class MatriculaServiceProvider extends ModuleServiceProvider
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
+
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->bind(ProcuraSituacaoAcademicaDoAluno::class, SituacaoAcademicaDoAlunoService::class);
+    }
 
     /**
      * Define module schedules.
