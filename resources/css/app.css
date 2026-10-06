@@ -264,3 +264,40 @@ html[data-bs-theme='light'] .btn-permissao-concedido {
     margin-top: auto;
     flex-shrink: 0;
 }
+
+/* Divisões no tema claro.
+   No Metronic claro as linhas das tabelas e dos separadores são #F4F4F4 e o contorno dos campos
+   `form-control-solid` é #F9F9F9: contraste de 1,10:1 e 1,05:1 sobre o branco, quase invisíveis (no
+   tema escuro, #2B2B40 sobre #1E1E2D já se distingue). Só se reforça o tema claro, por variáveis, sem
+   mexer em `--bs-gray-*` (que também pintam fundos de botões e badges). Contrastes sobre branco:
+   divisor ≈ 1,4:1, contorno de campo ≈ 1,6:1, contorno de cartão ≈ 1,2:1. */
+html[data-bs-theme='light'] {
+    --mosi-divisor: #D5D9E3;
+    --mosi-contorno-campo: #C8CEDA;
+    --mosi-contorno-cartao: #E2E5ED;
+}
+
+/* Linhas de tabelas (corpo, cabeçalho) e separadores. A última linha continua sem borda inferior
+   (regra própria do tema, mais acima neste ficheiro). */
+html[data-bs-theme='light'] .table:not(.table-bordered).table-row-dashed tr,
+html[data-bs-theme='light'] .table:not(.table-bordered) thead tr,
+html[data-bs-theme='light'] .table:not(.table-bordered) th,
+html[data-bs-theme='light'] .table:not(.table-bordered) td {
+    border-bottom-color: var(--mosi-divisor);
+}
+
+html[data-bs-theme='light'] .separator.border-gray-200 {
+    border-bottom-color: var(--mosi-divisor) !important;
+}
+
+/* Campos dos filtros. `:not(:focus)` e `:not(:disabled)` preservam os estados do tema. */
+html[data-bs-theme='light'] .form-control.form-control-solid:not(:focus):not(:disabled),
+html[data-bs-theme='light'] .form-select.form-select-solid:not(:focus):not(:disabled) {
+    border-color: var(--mosi-contorno-campo);
+}
+
+/* Cartões das páginas da aplicação: contorno em `box-shadow` (não muda o tamanho nem desloca o
+   conteúdo) somado à sombra que o tema já traz. Branco sobre branco deixava os blocos sem limite. */
+html[data-bs-theme='light'] .app-wrapper .card {
+    box-shadow: 0 0 0 1px var(--mosi-contorno-cartao), 0 0 20px 0 rgba(76, 87, 125, 0.02);
+}
