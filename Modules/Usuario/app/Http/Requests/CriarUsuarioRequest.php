@@ -15,15 +15,6 @@ class CriarUsuarioRequest extends BaseRequest
             return $this->user()?->can('autorizacao.criar') ?? false;
         }
 
-        // Definir overrides individuais (celulas) — mesmo ao criar um
-        // utilizador comum — é sempre autorizacao.editar, nunca
-        // usuario.criar sozinho. Sem isto, quem só gere contas (ex:
-        // Funcionário) podia esconder num "cadastro" a concessão de
-        // qualquer permissão, incluindo autorizacao.editar, a quem quisesse.
-        if (!empty($this->input('celulas'))) {
-            return $this->user()?->can('autorizacao.editar') ?? false;
-        }
-
         return $this->user()?->can('usuario.criar') ?? false;
     }
 
@@ -37,10 +28,6 @@ class CriarUsuarioRequest extends BaseRequest
                 'numero_matricula' => ['required', 'string', 'max:30', 'regex:/^[A-Za-z0-9\-\/.]+$/'],
                 'password' => 'required|min:6|confirmed',
                 'estado' => 'nullable|in:1,0',
-                'celulas' => 'nullable|array',
-                'celulas.*.modulo_id' => 'required_with:celulas|integer|exists:modulos,id',
-                'celulas.*.acao_id' => 'required_with:celulas|integer|exists:acoes,id',
-                'celulas.*.permitido' => 'required_with:celulas|boolean',
             ];
         }
 
@@ -54,10 +41,6 @@ class CriarUsuarioRequest extends BaseRequest
             'estado' => 'nullable|in:1,0',
             'matriculas_educandos' => 'nullable|array',
             'matriculas_educandos.*' => 'string|exists:users,numero_matricula',
-            'celulas' => 'nullable|array',
-            'celulas.*.modulo_id' => 'required_with:celulas|integer|exists:modulos,id',
-            'celulas.*.acao_id' => 'required_with:celulas|integer|exists:acoes,id',
-            'celulas.*.permitido' => 'required_with:celulas|boolean',
         ];
     }
 

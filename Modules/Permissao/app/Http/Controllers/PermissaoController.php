@@ -5,6 +5,7 @@ namespace Modules\Permissao\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Modules\Permissao\Exceptions\PerfilDeAlunoFixo;
 use Modules\Permissao\Http\Requests\CriarPerfilRequest;
 use Modules\Permissao\Http\Requests\SincronizarPermissoesPerfilRequest;
 use Modules\Permissao\Http\Requests\SincronizarPermissoesUtilizadorRequest;
@@ -70,12 +71,18 @@ class PermissaoController extends Controller
 
     public function permissoesDoUtilizador(User $user)
     {
+        abort_if($user->ePerfilAluno(), 403, PerfilDeAlunoFixo::semPermissoesPersonalizadas()->getMessage());
+
         return Inertia::render('Permissao/UtilizadorPermissoes', $this->consulta->dadosPermissoesDoUtilizador($user));
     }
 
     public function sincronizarPermissoesDoUtilizador(SincronizarPermissoesUtilizadorRequest $request, User $user)
     {
-        $this->gestao->sincronizarPermissoesDoUtilizador($user, $request->celulas);
+        try {
+            $this->gestao->sincronizarPermissoesDoUtilizador($user, $request->celulas);
+        } catch (PerfilDeAlunoFixo $e) {
+            return redirect()->back()->withErrors(['celulas' => $e->getMessage()]);
+        }
 
         return redirect()->back()->with('success', 'Permissões do utilizador atualizadas.');
     }
@@ -84,7 +91,11 @@ class PermissaoController extends Controller
     {
         $request->validate(['role_id' => 'required|exists:roles,id']);
 
-        $this->gestao->atribuirPerfil($user, $request->role_id);
+        try {
+            $this->gestao->atribuirPerfil($user, $request->role_id);
+        } catch (PerfilDeAlunoFixo $e) {
+            return redirect()->back()->withErrors(['role_id' => $e->getMessage()]);
+        }
 
         return redirect()->back()->with('success', 'Perfil atribuído.');
     }

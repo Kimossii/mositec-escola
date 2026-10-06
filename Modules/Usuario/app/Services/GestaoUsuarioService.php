@@ -33,7 +33,6 @@ class GestaoUsuarioService
                 $dados['numero_matricula'],
                 $dados['password'],
                 isset($dados['estado']) ? Estado::from((int) $dados['estado']) : Estado::ATIVO,
-                $dados['celulas'] ?? [],
             );
         }
 

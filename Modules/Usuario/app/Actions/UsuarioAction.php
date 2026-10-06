@@ -4,7 +4,6 @@ namespace Modules\Usuario\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Modules\Permissao\Actions\SincronizarPermissoesUtilizadorAction;
 use Modules\Permissao\Models\Role;
 use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Enums\TipoLogin;
@@ -15,7 +14,6 @@ class UsuarioAction
 {
     public function __construct(
         private GeradorMatriculaService $geradorMatricula,
-        private SincronizarPermissoesUtilizadorAction $sincronizarPermissoes,
     ) {}
 
     public function criar(UsuarioDTO $dto): User
@@ -35,8 +33,6 @@ class UsuarioAction
 
             $role = Role::where('nome', $dto->perfil->value)->firstOrFail();
             $user->roles()->attach($role->id);
-
-            $this->sincronizarPermissoes->executar($user, $dto->celulas);
 
             if (! empty($dto->matriculasEducandos)) {
                 $alunosIds = User::whereIn('numero_matricula', $dto->matriculasEducandos)->pluck('id');

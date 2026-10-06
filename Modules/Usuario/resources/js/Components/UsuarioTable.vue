@@ -193,7 +193,7 @@ function confirmarEliminacao() {
                         <!--end::Menu item-->
 
                         <!--begin::Menu item-->
-                        <div v-if="can('autorizacao.ver')" class="menu-item px-3">
+                        <div v-if="can('autorizacao.ver') && !usuario.e_aluno" class="menu-item px-3">
                             <a :href="`/permissoes/utilizadores/${usuario.id}/permissoes`" class="menu-link px-3">
                                 <AcaoIcone acao="permissoes" class="me-2" />
                                 Permissões

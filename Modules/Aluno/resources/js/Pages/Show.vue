@@ -18,6 +18,8 @@ import { ESTADO_MATRICULA, estadoMatriculaBadgeClass, estadoMatriculaLabel, esta
 
 const props = defineProps({
     aluno: { type: Object, required: true },
+    contaUtilizador: { type: Object, default: null },
+    podeVerContas: { type: Boolean, default: false },
     matriculas: { type: Object, default: () => ({ data: [], links: [] }) }, // paginator
     matriculaActual: { type: Object, default: null },
     outrasMatriculasActivas: { type: Array, default: () => [] },
@@ -431,6 +433,32 @@ function confirmarEliminacao() {
             <div class="d-flex gap-2">
                 <button v-if="can('documento-pessoa.ver')" class="btn btn-light-primary" @click="abrirDocumentos">Documentos</button>
                 <button v-if="can('aluno.editar')" class="btn btn-primary" @click="abrirEdicao">Editar</button>
+            </div>
+        </div>
+
+        <div v-if="podeVerContas" class="card mb-6">
+            <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3 py-4">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="ki-duotone ki-profile-circle fs-2x text-primary">
+                        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                    </i>
+                    <div>
+                        <div class="fw-bold">Conta de utilizador</div>
+                        <div v-if="contaUtilizador" class="text-muted fs-7">
+                            Login: {{ contaUtilizador.login }} · criada em {{ contaUtilizador.criada_em }}
+                        </div>
+                        <div v-else class="text-muted fs-7">Este aluno ainda não tem conta para entrar no sistema.</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <span v-if="contaUtilizador" class="badge fw-bold" :class="contaUtilizador.estado === 1 ? 'badge-light-success' : 'badge-light-danger'">
+                        {{ contaUtilizador.estado_descricao }}
+                    </span>
+                    <span v-else class="badge badge-light-warning fw-bold">Sem conta</span>
+                    <a href="/usuarios/alunos" class="btn btn-sm btn-light-primary">
+                        {{ contaUtilizador ? 'Ver utilizadores alunos' : 'Registar utilizador' }}
+                    </a>
+                </div>
             </div>
         </div>
 

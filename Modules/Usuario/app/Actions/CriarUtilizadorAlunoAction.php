@@ -24,11 +24,9 @@ class CriarUtilizadorAlunoAction
     ) {}
 
     /**
-     * @param  array<int, array{modulo_id: int, acao_id: int, permitido: bool}>  $celulas
-     *
      * @throws ContaDeAlunoRecusada
      */
-    public function executar(string $numeroMatricula, string $password, Estado $estado = Estado::ATIVO, array $celulas = []): User
+    public function executar(string $numeroMatricula, string $password, Estado $estado = Estado::ATIVO): User
     {
         $aluno = $this->consulta->procurar(trim($numeroMatricula)) ?? throw ContaDeAlunoRecusada::naoEncontrado();
 
@@ -48,7 +46,6 @@ class CriarUtilizadorAlunoAction
             email: null,
             dados_pessoa_id: $aluno->dadosPessoaId,
             estado: $estado,
-            celulas: $celulas,
             numeroMatricula: $aluno->numeroMatricula,
         );
 

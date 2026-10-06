@@ -66,59 +66,17 @@ function removerEducando(matricula) {
 // vez de confiar no tipo_login gravado (pode estar errado em registos antigos).
 const tipoLogin = computed(() => (perfilSelecionado.value === 'aluno' ? 'matricula' : 'email'));
 
-const chave = (moduloId, acaoId) => `${moduloId}-${acaoId}`;
-
-// overridesEstado só guarda as células que o admin decidiu explicitamente
-// (tocou nesta sessão, ou já vinham gravadas como override do utilizador).
-// 1 = concedido, 0 = negado — só estes dois valores, nunca "herda" nem null.
-// Uma célula sem entrada aqui usa o que o perfil seleccionado já dá por
-// padrão (ver permiteDefault) — é assim que "o perfil vence por defeito,
-// overrides são só a excepção" continua verdadeiro depois de guardar.
-const overridesEstado = reactive(
-    Object.fromEntries(
-        (props.utilizador?.celulas ?? []).map((o) => [chave(o.modulo_id, o.acao_id), o.permitido ? 1 : 0]),
-    ),
-);
-
 const roleIdDoPerfilSelecionado = computed(() => props.perfis.find((p) => p.slug === perfilSelecionado.value)?.id);
 
-function permiteDefault(moduloId, acaoId) {
-    const permissoes = props.permissoesPorPerfil[roleIdDoPerfilSelecionado.value] ?? [];
-    return permissoes.some((p) => p.modulo_id === moduloId && p.acao_id === acaoId);
-}
-
-function estadoCelula(moduloId, acaoId) {
-    const k = chave(moduloId, acaoId);
-    if (k in overridesEstado) return overridesEstado[k];
-    return permiteDefault(moduloId, acaoId) ? 1 : 0;
-}
-
-function proximoEstado(moduloId, acaoId) {
-    const k = chave(moduloId, acaoId);
-    overridesEstado[k] = estadoCelula(moduloId, acaoId) === 1 ? 0 : 1;
-}
-
-function todosConcedidosNaColuna(acaoId) {
-    return props.modulos.every((modulo) => estadoCelula(modulo.id, acaoId) === 1);
-}
-
-function alternarColuna(acaoId) {
-    const marcar = todosConcedidosNaColuna(acaoId) ? 0 : 1;
-    props.modulos.forEach((modulo) => {
-        overridesEstado[chave(modulo.id, acaoId)] = marcar;
-    });
-}
-
-function todosConcedidosNaLinha(moduloId) {
-    return props.acoes.every((acao) => estadoCelula(moduloId, acao.id) === 1);
-}
-
-function alternarLinha(moduloId) {
-    const marcar = todosConcedidosNaLinha(moduloId) ? 0 : 1;
-    props.acoes.forEach((acao) => {
-        overridesEstado[chave(moduloId, acao.id)] = marcar;
-    });
-}
+// Passo 2 é só leitura: mostra o que o perfil escolhido já concede. Permissões
+// personalizadas fazem-se depois do cadastro, na tela de Permissões do utilizador.
+const permissoesDoPerfil = computed(() => {
+    const concedidas = props.permissoesPorPerfil[roleIdDoPerfilSelecionado.value] ?? [];
+    return props.modulos.map((modulo) => ({
+        modulo,
+        acoes: props.acoes.filter((acao) => concedidas.some((p) => p.modulo_id === modulo.id && p.acao_id === acao.id)),
+    }));
+});
 
 function validarAntesDeAvancar() {
     if (!alunoPronto.value) {
@@ -175,19 +133,13 @@ function guardar() {
 
     processing.value = true;
 
-    const celulas = Object.entries(overridesEstado).map(([k, valor]) => {
-        const [modulo_id, acao_id] = k.split('-').map(Number);
-        return { modulo_id, acao_id, permitido: valor === 1 };
-    });
-
     // Aluno: nunca se envia nome, email, tipo de login nem dados pessoais (vêm do registo do aluno).
     const payload = perfilSelecionado.value === 'aluno'
-        ? { perfil: perfilSelecionado.value, celulas }
+        ? { perfil: perfilSelecionado.value }
         : {
             name: form.name,
             email: tipoLogin.value === 'email' ? form.email : undefined,
             perfil: perfilSelecionado.value,
-            celulas,
         };
 
     if (!props.utilizador) {
@@ -297,56 +249,27 @@ function guardar() {
 
         <div v-else>
             <p class="text-muted fs-7">
-                Clique numa célula para alternar entre Concedido (verde) e Negado (vermelho).
+                Permissões do perfil escolhido (só leitura). Podem ser personalizadas depois do cadastro, na tela de Permissões do utilizador.
             </p>
-            <table class="table align-middle table-row-dashed table-hover fs-6 gy-5">
-                <thead>
-                    <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                        <th class="min-w-200px">Módulo</th>
-                        <th v-for="acao in acoes" :key="acao.id" class="text-center text-capitalize">
-                            <div class="d-flex flex-column align-items-center gap-1">
-                                <span>{{ acao.nome }}</span>
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input"
-                                    title="Marcar/desmarcar toda a coluna"
-                                    :checked="todosConcedidosNaColuna(acao.id)"
-                                    @change="alternarColuna(acao.id)"
-                                />
-                            </div>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="modulo in modulos" :key="modulo.id">
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input"
-                                    title="Marcar/desmarcar toda a linha"
-                                    :checked="todosConcedidosNaLinha(modulo.id)"
-                                    @change="alternarLinha(modulo.id)"
-                                />
-                                <span>{{ modulo.descricao }}</span>
-                            </div>
-                        </td>
-                        <td v-for="acao in acoes" :key="acao.id" class="text-center">
-                            <button
-                                type="button"
-                                class="btn btn-sm min-w-100px"
-                                :class="{
-                                    'btn-light-success btn-permissao-concedido': estadoCelula(modulo.id, acao.id) === 1,
-                                    'btn-light-danger': estadoCelula(modulo.id, acao.id) === 0,
-                                }"
-                                @click="proximoEstado(modulo.id, acao.id)"
-                            >
-                                {{ estadoCelula(modulo.id, acao.id) === 1 ? 'Concedido' : 'Negado' }}
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="border rounded overflow-auto" style="max-height: 340px">
+                <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                    <thead class="position-sticky top-0 bg-body-secondary" style="z-index: 1">
+                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                            <th class="min-w-200px">Módulo</th>
+                            <th>Ações permitidas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in permissoesDoPerfil" :key="item.modulo.id">
+                            <td>{{ item.modulo.descricao }}</td>
+                            <td>
+                                <span v-for="acao in item.acoes" :key="acao.id" class="badge badge-light-success text-capitalize me-1">{{ acao.nome }}</span>
+                                <span v-if="!item.acoes.length" class="text-muted fs-7">Sem acesso</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
             <div class="d-flex justify-content-between pt-5">
                 <button type="button" class="btn btn-light-primary" :disabled="processing" @click="voltar">

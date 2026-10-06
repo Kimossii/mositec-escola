@@ -12,14 +12,11 @@ class AtualizarUsuarioRequest extends BaseRequest
     {
         // Autorizacao.editar é exigido sempre que o pedido toca em algo que
         // usuario.editar sozinho nunca devia poder mexer: o alvo já é (ou
-        // vai passar a ser, via troca de perfil) Admin Escola, ou o pedido
-        // traz overrides individuais (celulas) — sem isto, quem só gere
-        // contas (ex: Funcionário) podia esconder num "editar" a concessão
-        // de qualquer permissão, incluindo autorizacao.editar, a quem quisesse.
+        // vai passar a ser, via troca de perfil) Admin Escola. Permissões
+        // individuais não se definem aqui: só na tela de Permissões do utilizador.
         $eraAdmin = $this->route('user')?->roles->contains('nome', Perfil::ADMIN_ESCOLA->value) ?? false;
         $vaiSerAdmin = $this->input('perfil') === Perfil::ADMIN_ESCOLA->slug();
-        $temOverrides = !empty($this->input('celulas'));
-        $precisaAutorizacao = $eraAdmin || $vaiSerAdmin || $temOverrides;
+        $precisaAutorizacao = $eraAdmin || $vaiSerAdmin;
 
         return $this->user()?->can($precisaAutorizacao ? 'autorizacao.editar' : 'usuario.editar') ?? false;
     }
@@ -28,6 +25,11 @@ class AtualizarUsuarioRequest extends BaseRequest
      * Utilizador aluno (já é, ou o pedido o torna aluno): o nome vem do registo do aluno e o email não
      * se usa. Esses campos ficam fora das regras, logo nunca chegam a validated().
      */
+    private function eAlunoJa(): bool
+    {
+        return $this->route('user')?->ePerfilAluno() ?? false;
+    }
+
     private function eAluno(): bool
     {
         return $this->input('perfil') === Perfil::ALUNO->slug()
@@ -43,12 +45,9 @@ class AtualizarUsuarioRequest extends BaseRequest
 
         return [
             ...$identidade,
-            'perfil' => 'required|in:admin_escola,funcionario,professor,aluno,encarregado',
+            // Conta de aluno não ganha perfis extra: mantém-se aluno.
+            'perfil' => ['required', $this->eAlunoJa() ? 'in:aluno' : 'in:admin_escola,funcionario,professor,aluno,encarregado'],
             'password' => 'nullable|min:6|confirmed',
-            'celulas' => 'nullable|array',
-            'celulas.*.modulo_id' => 'required_with:celulas|integer|exists:modulos,id',
-            'celulas.*.acao_id' => 'required_with:celulas|integer|exists:acoes,id',
-            'celulas.*.permitido' => 'required_with:celulas|boolean',
         ];
     }
 

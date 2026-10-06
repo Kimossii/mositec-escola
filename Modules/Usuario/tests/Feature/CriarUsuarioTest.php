@@ -190,7 +190,7 @@ class CriarUsuarioTest extends TestCase
         $this->assertTrue($encarregado->educandos->contains($aluno));
     }
 
-    public function test_cria_utilizador_com_permissao_extra_alem_do_perfil(): void
+    public function test_celulas_enviadas_no_cadastro_sao_ignoradas(): void
     {
         $this->actingAsStaff();
 
@@ -211,15 +211,10 @@ class CriarUsuarioTest extends TestCase
 
         $response->assertRedirect();
         $user = User::where('email', 'professor.extra@example.com')->first();
-        $this->assertDatabaseHas('user_permissoes', [
-            'users_id' => $user->id,
-            'modulo_id' => $modulo->id,
-            'acao_id' => $acao->id,
-            'permitido' => true,
-        ]);
+        $this->assertDatabaseMissing('user_permissoes', ['users_id' => $user->id]);
     }
 
-    public function test_funcionario_nao_consegue_esconder_uma_concessao_de_autorizacao_no_cadastro(): void
+    public function test_funcionario_nao_concede_autorizacao_via_celulas_no_cadastro(): void
     {
         $funcionario = User::create(['name' => 'Funcionário', 'email' => 'funcionario@example.com', 'password' => Hash::make('x')]);
         $funcionario->roles()->attach(Role::where('nome', Perfil::FUNCIONARIO->value)->first()->id);
@@ -244,7 +239,8 @@ class CriarUsuarioTest extends TestCase
             ],
         ]);
 
-        $response->assertForbidden();
-        $this->assertDatabaseMissing('users', ['email' => 'professor.escalado@example.com']);
+        $response->assertRedirect();
+        $user = User::where('email', 'professor.escalado@example.com')->firstOrFail();
+        $this->assertDatabaseMissing('user_permissoes', ['users_id' => $user->id]);
     }
 }

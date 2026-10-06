@@ -260,6 +260,27 @@ class AlunoHttpTest extends TestCase
         );
     }
 
+    public function test_show_expoe_a_conta_de_utilizador_do_aluno(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
+
+        $this->get(route('alunos.show', $aluno))->assertInertia(fn (Assert $page) => $page
+            ->where('podeVerContas', true)
+            ->where('contaUtilizador', null)
+        );
+
+        \Modules\Usuario\Models\User::create(['name' => 'Ana Silva', 'numero_matricula' => '2026-0001', 'password' => 'x', 'tipo_login' => \Modules\Usuario\Enums\TipoLogin::MATRICULA, 'dados_pessoa_id' => $pessoa->id]);
+
+        $this->get(route('alunos.show', $aluno))->assertInertia(fn (Assert $page) => $page
+            ->where('contaUtilizador.login', '2026-0001')
+            ->where('contaUtilizador.estado', 1)
+            ->missing('contaUtilizador.password')
+        );
+    }
+
     public function test_show_expoe_o_aluno(): void
     {
         $this->actingAsStaff();
