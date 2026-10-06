@@ -6,7 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta name="robots" content="noindex, nofollow"/>
     <title>MosiTec | Plataforma</title>
-    <link rel="shortcut icon" href="{{ asset('themes/metronic/assets/media/logos/favicon.ico') }}"/>
+    <link rel="shortcut icon" href="{{ asset('themes/metronic/assets/media/logos/favicon.ico') }}?v=mosi"/>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('themes/metronic/assets/media/logos/mosi-favicon-32.png') }}?v=mosi"/>
+    <link rel="apple-touch-icon" href="{{ asset('themes/metronic/assets/media/logos/mosi-apple-touch-icon.png') }}?v=mosi"/>
 
     {{-- Só o tema: o painel não leva analytics, Sidebar, Header nem menu da escola. --}}
     <link href="{{ asset('themes/metronic/assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css"/>

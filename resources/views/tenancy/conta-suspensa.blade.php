@@ -7,7 +7,9 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta name="robots" content="noindex, nofollow"/>
-    <link rel="shortcut icon" href="{{ asset('themes/metronic/assets/media/logos/favicon.ico') }}"/>
+    <link rel="shortcut icon" href="{{ asset('themes/metronic/assets/media/logos/favicon.ico') }}?v=mosi"/>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('themes/metronic/assets/media/logos/mosi-favicon-32.png') }}?v=mosi"/>
+    <link rel="apple-touch-icon" href="{{ asset('themes/metronic/assets/media/logos/mosi-apple-touch-icon.png') }}?v=mosi"/>
     <link href="{{ asset('themes/metronic/assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css"/>
     <link href="{{ asset('themes/metronic/assets/css/style.bundle.css') }}" rel="stylesheet" type="text/css"/>
 </head>
@@ -31,7 +33,7 @@
 
     <div class="d-flex flex-lg-row-fluid w-lg-50 order-1 order-lg-2" style="background-color: #0F172A;">
         <div class="d-flex flex-column flex-center py-15 px-10 w-100">
-            <img alt="Logo" src="/themes/metronic/assets/media/logos/default-small.svg" class="h-30px mb-10"/>
+            <img alt="MosiTec" src="/themes/metronic/assets/media/logos/mosi-logo-completo-branco.png" class="h-60px mb-10"/>
             <h2 class="d-none d-lg-block text-white fs-2qx fw-bolder text-center mb-7">
                 Gestão Acadêmica MosiTec
             </h2>

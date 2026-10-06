@@ -139,7 +139,7 @@ function confirmar() {
                         </label>
                     </div>
                     <div v-if="erros.email" class="text-danger fs-7 mb-3">{{ erros.email }}</div>
-                    <div class="alert alert-warning mb-0" role="alert">
+                    <div class="bg-body-secondary text-body border border-primary rounded p-4 mb-0" role="alert">
                         Isto invalida a palavra-passe e as sessões actuais deste administrador. Será gerada uma
                         senha temporária, mostrada uma única vez.
                     </div>
@@ -147,7 +147,7 @@ function confirmar() {
 
                 <div class="text-end mt-6">
                     <button type="button" class="btn btn-light-primary me-2" :disabled="processando" @click="fechar">Cancelar</button>
-                    <button v-if="administradores.length > 0" type="submit" class="btn btn-warning" :disabled="!podeConfirmar">
+                    <button v-if="administradores.length > 0" type="submit" class="btn btn-primary" :disabled="!podeConfirmar">
                         <span v-if="!processando">Recuperar acesso</span>
                         <span v-else>Aguarde... <Loader size="0.3px" class="align-middle ms-2" /></span>
                     </button>

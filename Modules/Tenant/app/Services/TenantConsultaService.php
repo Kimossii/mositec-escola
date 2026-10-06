@@ -39,13 +39,12 @@ class TenantConsultaService
             ->with('dominioPrincipal')
             ->when($estadoFiltro !== null, fn (Builder $q) => $q->where('estado', $estadoFiltro->value))
             ->when($termo !== '', function (Builder $q) use ($termo) {
-                $padrao = '%'.mb_strtolower($this->escaparLike($termo)).'%';
-
-                // `exists` em vez de join: uma escola com dois domínios a coincidir não duplica a linha.
+                // Pesquisa partilhada (ignora maiusculas e trata `%`, `_` como texto). `exists` em vez de
+                // join: uma escola com dois dominios a coincidir nao duplica a linha.
                 $q->where(fn (Builder $q) => $q
-                    ->whereRaw("LOWER(nome) LIKE ? ESCAPE '\\'", [$padrao])
-                    ->orWhereRaw("LOWER(codigo) LIKE ? ESCAPE '\\'", [$padrao])
-                    ->orWhereHas('dominios', fn (Builder $d) => $d->whereRaw("LOWER(dominio) LIKE ? ESCAPE '\\'", [$padrao])));
+                    ->whereContem('nome', $termo)
+                    ->orWhereContem('codigo', $termo)
+                    ->orWhereHas('dominios', fn (Builder $d) => $d->whereContem('dominio', $termo)));
             })
             ->orderByDesc('id')
             ->paginate($porPagina)
@@ -80,11 +79,5 @@ class TenantConsultaService
             // Mesma regra da RevogarAcessosDeEscolaSuspensaAction: só escolas já Suspensas.
             'revogar_acessos' => $estado === EstadoTenant::SUSPENSO,
         ];
-    }
-
-    /** Os curingas do LIKE (`%`, `_`) e a própria barra são texto literal numa pesquisa. */
-    private function escaparLike(string $termo): string
-    {
-        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $termo);
     }
 }

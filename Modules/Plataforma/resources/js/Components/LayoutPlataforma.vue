@@ -38,8 +38,8 @@ function terminarSessao() {
         >
             <div class="d-flex align-items-center gap-4">
                 <img
-                    alt="Logo"
-                    src="/themes/metronic/assets/media/logos/default-small.svg"
+                    alt="MosiTec"
+                    src="/themes/metronic/assets/media/logos/mosi-logo-branco.png"
                     class="h-30px"
                 />
                 <span class="text-white fw-bold fs-5">Plataforma</span>

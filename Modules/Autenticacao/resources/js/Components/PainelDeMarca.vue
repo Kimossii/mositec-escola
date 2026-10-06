@@ -13,9 +13,9 @@ defineProps({
     >
         <div class="d-flex flex-column flex-center py-15 px-10 w-100">
             <img
-                alt="Logo"
-                src="/themes/metronic/assets/media/logos/default-small.svg"
-                class="h-30px mb-10"
+                alt="MosiTec"
+                src="/themes/metronic/assets/media/logos/mosi-logo-completo-branco.png"
+                class="h-60px mb-10"
             />
             <h1 class="d-none d-lg-block text-white fs-2qx fw-bolder text-center mb-7">
                 {{ titulo }}

@@ -248,3 +248,19 @@ html[data-bs-theme='light'] .btn-permissao-concedido {
     background-color: #800000;
     color: #ffffff;
 }
+
+/* Rodapé na base do ecrã quando o conteúdo é curto (sticky footer).
+   O Inertia monta a página e o rodapé dentro de `#app`, filho do `.app-wrapper` (coluna flex que já
+   ocupa a altura do ecrã). Sem isto, `#app` só tem a altura do conteúdo e o rodapé fica a meio da
+   página, com espaço vazio por baixo. Com conteúdo longo nada muda: o rodapé segue o conteúdo, sem
+   espaço extra nem sobreposição, e a página rola normalmente. */
+.app-wrapper > #app {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-wrapper > #app > .app-footer {
+    margin-top: auto;
+    flex-shrink: 0;
+}

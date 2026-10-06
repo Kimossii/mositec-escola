@@ -95,7 +95,7 @@ class PesquisaTextoTest extends TestCase
         $sql = DB::connection('pgsql')->table('estabelecimentos')->whereContem('nome', 'joão')->toSql();
 
         $this->assertStringContainsString('ilike', $sql);
-        $this->assertStringContainsString("escape '\\'", $sql);
+        $this->assertStringContainsString("escape '!'", $sql);
     }
 
     public function test_noutros_motores_gera_like_com_escape(): void
@@ -103,6 +103,29 @@ class PesquisaTextoTest extends TestCase
         $sql = DB::table('estabelecimentos')->whereContem('nome', 'joão')->toSql();
 
         $this->assertStringNotContainsString('ilike', $sql);
-        $this->assertStringContainsString("like ? escape '\\'", $sql);
+        $this->assertStringContainsString("like ? escape '!'", $sql);
+    }
+
+    public function test_ponto_de_exclamacao_e_tratado_como_texto(): void
+    {
+        $this->criar('Aviso! Escola');
+        $this->criar('Aviso Escola');
+
+        $this->assertSame(['Aviso! Escola'], $this->buscar('!'));
+        $this->assertSame(['Aviso! Escola'], $this->buscar('o! e'));
+    }
+
+    public function test_o_sql_nunca_leva_a_barra_invertida_como_escape(): void
+    {
+        // Regressão: `escape '\'` faz o PDO do PostgreSQL tratar `\'` como aspa escapada e o literal
+        // engole os `?` seguintes, rebentando qualquer pesquisa por duas ou mais colunas
+        // ("Invalid parameter number: parameter was not defined").
+        $sql = Tenant::query()
+            ->where(fn ($q) => $q->whereContem('nome', 'x')->orWhereContem('codigo', 'x'))
+            ->toSql();
+
+        $this->assertStringNotContainsString("'\\'", $sql);
+        $this->assertSame(2, substr_count($sql, '?'));
+        $this->assertSame(2, substr_count($sql, "escape '!'"));
     }
 }
