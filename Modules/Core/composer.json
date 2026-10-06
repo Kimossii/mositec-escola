@@ -2,7 +2,9 @@
     "name": "nwidart/core",
     "autoload": {
         "psr-4": {
-            "Modules\\Core\\": "app/"
+            "Modules\\Core\\": "app/",
+            "Modules\\Core\\Database\\Factories\\": "database/factories/",
+            "Modules\\Core\\Database\\Seeders\\": "database/seeders/"
         }
     },
     "autoload-dev": {

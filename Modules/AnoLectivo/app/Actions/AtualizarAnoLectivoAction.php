@@ -18,7 +18,7 @@ class AtualizarAnoLectivoAction
     public function atualizar(AnoLectivo $anoLectivo, AnoLectivoDTO $dto): AnoLectivo
     {
         return DB::transaction(function () use ($anoLectivo, $dto) {
-            $estabelecimentoId = Estabelecimento::current()?->id ?? $anoLectivo->estabelecimento_id;
+            $estabelecimentoId = Estabelecimento::current()->id;
 
             if ($dto->estado === EstadoAnoLectivo::ATIVO) {
                 $this->garantirUnicoAtivo($estabelecimentoId, $anoLectivo->id);

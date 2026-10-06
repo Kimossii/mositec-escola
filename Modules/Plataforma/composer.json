@@ -1,0 +1,22 @@
+{
+    "name": "nwidart/plataforma",
+    "description": "",
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Plataforma\\": "app/",
+            "Modules\\Plataforma\\Database\\Factories\\": "database/factories/",
+            "Modules\\Plataforma\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Plataforma\\Tests\\": "tests/"
+        }
+    }
+}

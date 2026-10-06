@@ -1,0 +1,22 @@
+{
+    "name": "nwidart/tenant",
+    "description": "",
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Tenant\\": "app/",
+            "Modules\\Tenant\\Database\\Factories\\": "database/factories/",
+            "Modules\\Tenant\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Tenant\\Tests\\": "tests/"
+        }
+    }
+}

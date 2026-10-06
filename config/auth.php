@@ -1,7 +1,5 @@
 <?php
 
-use App\Models\User;
-
 return [
 
     /*
@@ -42,6 +40,13 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Plataforma MosiTec (Super Admin). O guard por omissão continua `web` (D5): assim as sessões
+        // da Plataforma ficam com sessions.user_id nulo e não colidem com ids de utilizadores de escola.
+        'plataforma' => [
+            'driver' => 'session',
+            'provider' => 'super_admins',
+        ],
     ],
 
     /*
@@ -65,6 +70,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => Modules\Usuario\Models\User::class,
+        ],
+
+        'super_admins' => [
+            'driver' => 'eloquent',
+            'model' => Modules\Plataforma\Models\SuperAdmin::class,
         ],
 
         // 'users' => [

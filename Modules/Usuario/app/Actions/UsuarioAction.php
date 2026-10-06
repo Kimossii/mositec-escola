@@ -25,7 +25,7 @@ class UsuarioAction
                 'name' => $dto->name,
                 'email' => $dto->tipoLogin === TipoLogin::EMAIL ? $dto->email : null,
                 'numero_matricula' => $dto->tipoLogin === TipoLogin::MATRICULA
-                    ? $this->geradorMatricula->gerar()
+                    ? ($dto->numeroMatricula ?? $this->geradorMatricula->gerar())
                     : null,
                 'tipo_login' => $dto->tipoLogin,
                 'password' => Hash::make($dto->password),

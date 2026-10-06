@@ -54,13 +54,16 @@
             </div>
 
             <!-- ── Section: Académico (por implementar) ───────────────── -->
-            <!-- <SidebarAccordion :item="academico" heading="Académico" /> -->
+            <SidebarAccordion :item="academico" heading="Académico" />
 
             <!-- ── Section: Pedagogia ─────────────────────────────────── -->
             <SidebarAccordion :item="pedagogico" heading="Pedagogia" />
 
+            <!-- ── Section: Infraestrutura ─────────────────────────────── -->
+            <SidebarAccordion :item="infraestrutura" heading="Infraestrutura" />
+
             <!-- ── Sections por implementar: Frequência, Pessoal, Financeiro,
-                 Comunicação, Documentos, Biblioteca, Infraestrutura, Relatórios.
+                 Comunicação, Documentos, Biblioteca, Relatórios.
                  Descomentar uma a uma, sequencialmente, à medida que cada
                  módulo for implementado — cabeçalho e acordeão já vêm juntos
                  num só <SidebarAccordion>, controlados pelo mesmo v-if. -->
@@ -71,7 +74,6 @@
             <SidebarAccordion :item="comunicacao" heading="Comunicação" />
             <SidebarAccordion :item="documentos" heading="Documentos" />
             <SidebarAccordion :item="biblioteca" heading="Biblioteca" />
-            <SidebarAccordion :item="infraestrutura" heading="Infraestrutura" />
             <SidebarAccordion :item="relatorios" heading="Relatórios" />
             -->
 
@@ -458,20 +460,21 @@ const dashboards = {
 const dashboardsActive = computed(() => isGroupActive(dashboards.items))
 
 // ── Academico (por implementar — descomentar junto com a secção no template) ──
-// const academico = {
-//     title: 'Académico',
-//     icon: 'ki-profile-user',
-//     paths: 3,
-//     items: [
-//         { href: '#', title: 'Alunos' },
-//         { href: '#', title: 'Encarregados de Educação' },
-//         { href: '#', title: 'Turmas' },
-//         { href: '#', title: 'Matrículas' },
-//         { href: '#', title: 'Transferências' },
-//         { href: '#', title: 'Histórico Escolar' },
-//         { href: '#', title: 'Ficha do Aluno' },
-//     ],
-// }
+const academico = {
+    title: 'Académico',
+    icon: 'ki-profile-user',
+    paths: 3,
+    items: [
+        { href: '/alunos', title: 'Alunos', permissao: 'aluno.ver' },
+        // { href: '#', title: 'Encarregados de Educação' },
+        { href: '/cursos', title: 'Cursos', permissao: 'curso.ver' },
+        { href: '/turmas', title: 'Turmas', permissao: 'turmas.ver' },
+        { href: '/matriculas', title: 'Matrículas', permissao: 'matricula.ver' },
+        // { href: '#', title: 'Transferências' },
+        // { href: '#', title: 'Histórico Escolar' },
+        // { href: '#', title: 'Ficha do Aluno' },
+    ],
+}
 
 // ── Pedagogico ────────────────────────────────────────────────────────────────────
 const pedagogico = {
@@ -479,13 +482,13 @@ const pedagogico = {
     icon: 'ki-address-book',
     paths: 3,
     items: [
-        { href: '#', title: 'Disciplinas' },
+        { href: '/disciplinas', title: 'Disciplinas', permissao: 'disciplina.ver' },
         { href: '/horarios', title: 'Horários', permissao: 'horario.ver' },
-        { href: '#', title: 'Planos de Aula' },
-        { href: '#', title: 'Avaliações / Notas' },
-        { href: '#', title: 'Pautas' },
-        { href: '#', title: 'Conselho de Turma' },
-        { href: '#', title: 'Exames / Recuperações' },
+        // { href: '#', title: 'Planos de Aula' },
+        // { href: '#', title: 'Avaliações / Notas' },
+        // { href: '#', title: 'Pautas' },
+        // { href: '#', title: 'Conselho de Turma' },
+        // { href: '#', title: 'Exames / Recuperações' },
     ],
 }
 
@@ -564,17 +567,17 @@ const pedagogico = {
 //     ],
 // }
 //
-// const infraestrutura = {
-//     title: 'Infraestrutura',
-//     icon: 'ki-bank',
-//     paths: 2,
-//     items: [
-//         { href: '#', title: 'Salas' },
-//         { href: '#', title: 'Equipamentos' },
-//         { href: '#', title: 'Inventário' },
-//         { href: '#', title: 'Manutenção' },
-//     ],
-// }
+const infraestrutura = {
+    title: 'Infraestrutura',
+    icon: 'ki-bank',
+    paths: 2,
+    items: [
+        { href: '/salas', title: 'Salas', permissao: 'infraestrutura.ver' },
+       // { href: '#', title: 'Equipamentos' },
+        //{ href: '#', title: 'Inventário' },
+        //{ href: '#', title: 'Manutenção' },
+    ],
+}
 //
 // const relatorios = {
 //     title: 'Relatórios',

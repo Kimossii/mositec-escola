@@ -4,5 +4,14 @@
     "Permissao": true,
     "Estabelecimento": true,
     "Core": true,
-    "AnoLectivo": true
+    "AnoLectivo": true,
+    "Infraestrutura": true,
+    "Turma": true,
+    "Curso": true,
+    "Disciplina": true,
+    "Aluno": true,
+    "PlanoCurricular": true,
+    "Matricula": true,
+    "Tenant": true,
+    "Plataforma": true
 }

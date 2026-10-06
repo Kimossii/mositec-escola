@@ -42,6 +42,12 @@ class CriarHorarioRequest extends FormRequest
                 'integer',
                 'in:0,1',
             ],
+
+            'tipo' => [
+                'sometimes',
+                'integer',
+                'in:1,2',
+            ],
         ];
     }
 
@@ -62,6 +68,8 @@ class CriarHorarioRequest extends FormRequest
             'hora_fim.after' => 'A hora de fim deve ser posterior à hora de início.',
 
             'estado.in' => 'O estado informado é inválido.',
+
+            'tipo.in' => 'O tipo de horário informado é inválido.',
         ];
     }
 }

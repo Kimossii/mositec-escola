@@ -29,21 +29,22 @@ Este projeto é **apenas para estudo e aprendizado**.
 | Usuário      | Cadastro e gerenciamento de usuários             | --------                 | Base para autenticação e permissões                      | 1          | Em Execução |
 | Autenticação | Login, logout, reset de senha, segurança         | Usuário                  | Núcleo do sistema                                        | 1          | Em Execução |
 | Permissões   | Controle de papéis e acessos                     | Usuário                  | Usado por todos os módulos                               | 1          | Em Execução |
-| AnoLectivo   | Define períodos escolares                        | --------                 | Necessário para Matrícula, Notas, Frequência e Turmas    | 1          | Pendente |
+| AnoLectivo   | Define períodos escolares                        | --------                 | Necessário para Matrícula, Notas, Frequência e Turmas    | 1          | feito |
 | Licença      | Validação do uso do sistema e limite de usuários | Usuário                  | Discreto, backend-only                                   | 1          | Pendente |
-| Aluno        | Cadastro de estudantes                           | AnoLectivo               | Necessário para Matrícula, Notas, Frequência, Financeiro | 1          | Pendente |
+| Aluno        | Cadastro de estudantes                           | AnoLectivo               | Necessário para Matrícula, Notas, Frequência, Financeiro | 1          | Em Execução |
 | Professor    | Cadastro de professores                          | -----                    | Necessário para Turmas, Disciplinas e Horários           | 1          | Pendente |
-| Turmas       | Agrupamento de alunos                            | Professor, AnoLectivo    | Usado por Matrícula e Horário                            | 1          | Pendente |
+| Turmas       | Agrupamento de alunos                            | Professor, AnoLectivo    | Usado por Matrícula e Horário                            | 1          | Em Execução |
 | Matricula    | Registrar alunos em turmas/disciplinas           | Aluno, Turma, AnoLectivo | --------                                                 | 1          | Pendente |
+| Plano Curricular    | -----/---           | Curso, AnoLectivo | --------                                                 | 1          | Em Execução |
 
 ## Secundários
 
 | Módulo              | Função                           | Depende de                               | Observações                       | Prioridade | Estado   |
 | ------------------- | -------------------------------- | ---------------------------------------- | --------------------------------- | ---------- | -------- |
-| Disciplina          | Cadastro de matérias             | Professor, Turmas                        | Usado por Notas e Horários        | 2          | Pendente |
+| Disciplina          | Cadastro de matérias             | Professor, Turmas                        | Usado por Notas e Horários        | 2          | Em Execução |
 | Nota                | Registro e cálculo de notas      | Aluno, Disciplina, AnoLectivo            | -----                             | 2          | Pendente |
 | Frequência          | Controle de presença             | Aluno, Turma, AnoLectivo                 | -----                             | 2          | Pendente |
-| Horário             | Planejamento de aulas            | Turma, Disciplinas, Professor            | ------                            | 2          | Pendente |
+| Horário             | Planejamento de aulas            | Turma, Disciplinas, Professor            | ------                            | 2          | Em Execução |
 | MaterialDidatico    | Controle de livros e recursos    | Disciplina, Turma, Usuário               | Integrável com módulos acadêmicos | 2          | Pendente |
 | Financeiro          | Gestão de pagamentos             | Aluno, AnoLectivo                        |                                   | 2          | Pendente |
 | Relatório           | Extração de dados                | Financeiro, Notas, Frequência, Matricula | Pode gerar relatórios combinados  | 2          | Pendente |
@@ -73,6 +74,7 @@ Este projeto é **apenas para estudo e aprendizado**.
 │    └── Dashboard Principal
 │
 ├── 👥  Académico
+│    ├── Cursos
 │    ├── Alunos
 │    ├── Encarregados de Educação
 │    ├── Turmas
@@ -150,16 +152,14 @@ Este projeto é **apenas para estudo e aprendizado**.
      │    └── Administradores
      │
      ├── 🔐  Perfis & Permissões
-     │    ├── Perfis de Acesso
-     │    └── Regras & Restrições
+     │    ├── Perfis e Permissões
      │
      ├── 🏫  Estabelecimento
      │    ├── Dados da Escola
      │    └── Logótipo & Aparência
      │
      ├── 📅  Ano Lectivo
-     │    ├── Períodos / Trimestres
-     │    └── Calendário Escolar
+     │    └── Ano Lectivo
      │
      └── 🔧  Sistema
           ├── Parâmetros Gerais
@@ -170,4 +170,14 @@ Este projeto é **apenas para estudo e aprendizado**.
     ```
 
 > 🔐 **Acesso:** A área de **Configurações** está disponível apenas para utilizadores com permissões administrativas.
+
+# 1. Recria a BD do zero (dropa todas as tabelas e corre as migrações)
+php artisan migrate:fresh
+
+# 2. Semeia os dados (roles, permissões, utilizador admin, etc.)
+php artisan db:seed
+
+
+ #Tudo de uma vez
+ php artisan migrate:fresh --seed
 

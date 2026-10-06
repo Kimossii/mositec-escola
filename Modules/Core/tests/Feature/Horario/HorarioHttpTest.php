@@ -43,6 +43,32 @@ class HorarioHttpTest extends TestCase
         $this->assertDatabaseHas('horarios', ['nome' => 'Manhã']);
     }
 
+    public function test_admin_escola_cria_horario_com_tipo_periodo(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->post('/horarios', [
+            'nome' => 'Recreio',
+            'hora_inicio' => '10:00',
+            'hora_fim' => '10:30',
+            'tipo' => 1,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('horarios', ['nome' => 'Recreio', 'tipo' => 1, 'tipo_descricao' => 'Período']);
+    }
+
+    public function test_tipo_invalido_e_rejeitado(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->post('/horarios', [
+            'nome' => 'Manhã',
+            'hora_inicio' => '08:00',
+            'hora_fim' => '09:00',
+            'tipo' => 99,
+        ])->assertSessionHasErrors('tipo');
+    }
+
     public function test_hora_fim_deve_ser_posterior_a_hora_inicio(): void
     {
         $this->actingAsAdmin();

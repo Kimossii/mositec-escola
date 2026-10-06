@@ -14,8 +14,7 @@ class AutenticacaoAPIController extends Controller
      */
     public function login(ValidarUsuarioApiRequest $request)
     {
-        $key = 'login-attempts:' . $request->ip();
-        $resposta = app(GestaoAutenticacaoAPI::class)->login($request->email, $request->password, $key);
+        $resposta = app(GestaoAutenticacaoAPI::class)->login($request, $request->email, $request->password);
         return response()->json($resposta, $resposta['code'] ?? 200);
     }
 

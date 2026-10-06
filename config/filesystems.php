@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Sem rota storage/{path}: nada neste disco se serve por URL (só por rotas autenticadas).
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
@@ -43,6 +44,22 @@ return [
             'root' => storage_path('app/public'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        // Disco privado para ficheiros que só se servem por rota autenticada (ex.: fotos de
+        // alunos). Fora de storage/app/public e sem 'url': nunca é exposto por public/storage.
+        'privado' => [
+            'driver' => 'local',
+            'root' => storage_path('app/privado'),
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'documentos' => [
+            'driver' => 'local',
+            'root' => storage_path('app/documentos'),
             'throw' => false,
             'report' => false,
         ],

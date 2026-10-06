@@ -1,7 +1,7 @@
 <script setup>
 import { reactive, watch } from 'vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
-import { ESTADO, ESTADO_OPCOES } from '../Models/Horario';
+import { ESTADO, ESTADO_OPCOES, TIPO, TIPO_OPCOES } from '../Models/Horario';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -16,6 +16,7 @@ const form = reactive({
     hora_inicio: '',
     hora_fim: '',
     estado: ESTADO.ATIVO,
+    tipo: TIPO.TEMPO,
 });
 
 watch(() => props.show, (show) => {
@@ -24,6 +25,7 @@ watch(() => props.show, (show) => {
     form.hora_inicio = props.horario?.hora_inicio ?? '';
     form.hora_fim = props.horario?.hora_fim ?? '';
     form.estado = props.horario?.estado ?? ESTADO.ATIVO;
+    form.tipo = props.horario?.tipo ?? TIPO.TEMPO;
 });
 
 function submeter() {
@@ -56,10 +58,17 @@ function submeter() {
                         </div>
                     </div>
 
-                    <div class="fv-row mb-7">
-                        <label class="required fw-semibold fs-6 mb-2">Estado</label>
-                        <SelectSolid v-model="form.estado" :options="ESTADO_OPCOES" />
-                        <div class="text-danger fs-7 mt-1" v-if="errors.estado">{{ errors.estado }}</div>
+                    <div class="row">
+                        <div class="col-md-6 fv-row mb-7">
+                            <label class="required fw-semibold fs-6 mb-2">Tipo</label>
+                            <SelectSolid v-model="form.tipo" :options="TIPO_OPCOES" />
+                            <div class="text-danger fs-7 mt-1" v-if="errors.tipo">{{ errors.tipo }}</div>
+                        </div>
+                        <div class="col-md-6 fv-row mb-7">
+                            <label class="required fw-semibold fs-6 mb-2">Estado</label>
+                            <SelectSolid v-model="form.estado" :options="ESTADO_OPCOES" />
+                            <div class="text-danger fs-7 mt-1" v-if="errors.estado">{{ errors.estado }}</div>
+                        </div>
                     </div>
 
                     <div class="text-end">

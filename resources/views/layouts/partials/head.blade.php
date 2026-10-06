@@ -14,7 +14,9 @@
         <meta property="og:title" content="MosiTec | Sistema de Gestão Acadêmica" />
         <meta property="og:site_name" content="MosiTec" />
         <!-- og:url e canonical ficam pendentes até termos domínio público -->
-        <link rel="shortcut icon" href="{{ asset('themes/metronic/assets/media/logos/favicon.ico') }}"/>
+        <link rel="shortcut icon" href="{{ asset('themes/metronic/assets/media/logos/favicon.ico') }}?v=mosi"/>
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('themes/metronic/assets/media/logos/mosi-favicon-32.png') }}?v=mosi"/>
+        <link rel="apple-touch-icon" href="{{ asset('themes/metronic/assets/media/logos/mosi-apple-touch-icon.png') }}?v=mosi"/>
 
         <!--begin::Fonts(mandatory for all pages)-->
         <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700"/> -->        <!--end::Fonts-->

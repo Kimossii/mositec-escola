@@ -1,0 +1,43 @@
+<?php
+
+namespace Modules\Matricula\Actions;
+
+use Illuminate\Validation\ValidationException;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Models\Matricula;
+
+class AlterarEstadoMatriculaAction
+{
+    public function __construct(
+        private RegistarHistoricoMatriculaAction $registarHistorico,
+    ) {
+    }
+
+    public function executar(
+        Matricula $matricula,
+        EstadoMatriculaEnum $novoEstado,
+        ?int $utilizadorId = null,
+        ?string $dataFim = null,
+    ): Matricula {
+        $estadoActual = $matricula->estado;
+
+        if (! $estadoActual->podeTransitarPara($novoEstado)) {
+            throw ValidationException::withMessages([
+                'estado' => "Não é possível alterar o estado de {$estadoActual->label()} para {$novoEstado->label()}.",
+            ]);
+        }
+
+        $matricula->estado = $novoEstado;
+        $matricula->editado_por = $utilizadorId;
+
+        if ($novoEstado->eTerminal()) {
+            $matricula->data_fim = $dataFim ?? now()->toDateString();
+        }
+
+        $matricula->save();
+
+        $this->registarHistorico->executar($matricula, $estadoActual, $novoEstado, $utilizadorId);
+
+        return $matricula->fresh();
+    }
+}

@@ -52,34 +52,56 @@ function criar(payload) {
 const anoLectivoParaAlterarEstado = ref(null);
 const novoEstado = ref(null);
 const alterandoEstado = ref(false);
+// Encerrar com matrículas Activa/Pendente por resolver exige um segundo
+// clique de confirmação — o backend recusa da primeira vez e devolve a
+// contagem; mostramos essa mensagem e só no clique seguinte é que enviamos
+// confirmar_encerramento_matriculas=true.
+const confirmarEncerramentoMatriculas = ref(false);
+const mensagemAlterarEstado = ref('');
 
 function pedirActivacao(anoLectivo) {
     anoLectivoParaAlterarEstado.value = anoLectivo;
     novoEstado.value = ESTADO_ANO_LECTIVO.ATIVO;
+    confirmarEncerramentoMatriculas.value = false;
+    mensagemAlterarEstado.value = `Activar o Ano Lectivo ${anoLectivo.nome}?`;
 }
 
 function pedirEncerramento(anoLectivo) {
     anoLectivoParaAlterarEstado.value = anoLectivo;
     novoEstado.value = ESTADO_ANO_LECTIVO.ENCERRADO;
+    confirmarEncerramentoMatriculas.value = false;
+    mensagemAlterarEstado.value = `Encerrar o Ano Lectivo ${anoLectivo.nome}?`;
 }
 
 function cancelarAlteracaoEstado() {
     anoLectivoParaAlterarEstado.value = null;
     novoEstado.value = null;
+    confirmarEncerramentoMatriculas.value = false;
+    mensagemAlterarEstado.value = '';
 }
 
 function confirmarAlteracaoEstado() {
     alterandoEstado.value = true;
-    router.patch(`/ano-lectivos/${anoLectivoParaAlterarEstado.value.id}/estado`, { estado: novoEstado.value }, {
+    router.patch(`/ano-lectivos/${anoLectivoParaAlterarEstado.value.id}/estado`, {
+        estado: novoEstado.value,
+        confirmar_encerramento_matriculas: confirmarEncerramentoMatriculas.value,
+    }, {
         preserveScroll: true,
-        onSuccess: () => toast.success(
-            novoEstado.value === ESTADO_ANO_LECTIVO.ATIVO ? 'Ano Lectivo activado.' : 'Ano Lectivo encerrado.',
-        ),
-        onError: (erros) => toast.error(Object.values(erros)[0]),
+        onSuccess: () => {
+            toast.success(novoEstado.value === ESTADO_ANO_LECTIVO.ATIVO ? 'Ano Lectivo activado.' : 'Ano Lectivo encerrado.');
+            cancelarAlteracaoEstado();
+        },
+        onError: (erros) => {
+            if (erros.ano_lectivo && !confirmarEncerramentoMatriculas.value) {
+                mensagemAlterarEstado.value = erros.ano_lectivo;
+                confirmarEncerramentoMatriculas.value = true;
+                return;
+            }
+            toast.error(erros.ano_lectivo ?? Object.values(erros)[0]);
+            cancelarAlteracaoEstado();
+        },
         onFinish: () => {
             alterandoEstado.value = false;
-            anoLectivoParaAlterarEstado.value = null;
-            novoEstado.value = null;
         },
     });
 }
@@ -187,10 +209,8 @@ function confirmarEliminacao() {
         <ConfirmModal
             :show="!!anoLectivoParaAlterarEstado"
             titulo="Alterar estado"
-            :mensagem="novoEstado === 1
-                ? `Activar o Ano Lectivo ${anoLectivoParaAlterarEstado?.nome}?`
-                : `Encerrar o Ano Lectivo ${anoLectivoParaAlterarEstado?.nome}?`"
-            texto-confirmar="Confirmar"
+            :mensagem="mensagemAlterarEstado"
+            :texto-confirmar="confirmarEncerramentoMatriculas ? 'Confirmar Encerramento' : 'Confirmar'"
             :processando="alterandoEstado"
             @confirmar="confirmarAlteracaoEstado"
             @cancelar="cancelarAlteracaoEstado"

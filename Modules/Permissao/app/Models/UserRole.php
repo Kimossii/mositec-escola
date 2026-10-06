@@ -4,12 +4,14 @@ namespace Modules\Permissao\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Usuario\Models\User;
 // use Modules\Permissao\Database\Factories\UserRoleFactory;
 
 class UserRole extends Model
 {
     use HasFactory;
+    use PertenceAoTenant;
     protected $table = 'user_roles';
 
     /**

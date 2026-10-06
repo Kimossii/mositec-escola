@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::create('user_permissoes', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->foreignId('users_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('modulo_id')->constrained('modulos')->onDelete('cascade');
             $table->foreignId('acao_id')->constrained('acoes')->onDelete('cascade');

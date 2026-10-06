@@ -33,15 +33,16 @@ class AnoLectivoEstabelecimentoConsistenciaTest extends TestCase
     }
 
     /**
-     * Cenário real: um Ano Lectivo é criado ATIVO antes de existir qualquer
-     * Estabelecimento (estabelecimento_id fica NULL). Mais tarde cria-se o
-     * primeiro Estabelecimento. Um simples toque de rotina no ano antigo
-     * (ex.: reconfirmar o mesmo estado) deve fazer o backfill do
-     * estabelecimento_id — e a partir daí já não deve ser possível activar
+     * Existe sempre um estabelecimento (o do tenant). Um Ano Lectivo criado ATIVO
+     * nasce já com estabelecimento_id e, a partir daí, não é possível activar
      * um segundo Ano Lectivo no mesmo estabelecimento.
+     * (O antigo cenário de backfill, com o ano criado antes de existir
+     * estabelecimento, deixou de ser possível.)
      */
-    public function test_backfill_do_estabelecimento_impede_dois_anos_activos_apos_criacao_tardia_do_estabelecimento(): void
+    public function test_ano_activo_nasce_com_estabelecimento_e_impede_segundo_ano_activo(): void
     {
+        $estabelecimento = $this->estabelecimentoDeTeste();
+
         $anoA = (new CriarAnoLectivoAction())->criar(new AnoLectivoDTO(
             nome: '2026/2027',
             dataInicio: '2026-09-01',
@@ -49,19 +50,8 @@ class AnoLectivoEstabelecimentoConsistenciaTest extends TestCase
             estado: EstadoAnoLectivo::ATIVO,
         ));
 
-        $this->assertNull($anoA->estabelecimento_id);
-        $this->assertSame(EstadoAnoLectivo::ATIVO, $anoA->estado);
-
-        $estabelecimento = Estabelecimento::create([
-            'nome' => 'Escola Teste',
-            'tipo' => TipoEstabelecimentoEnum::PUBLICO->value,
-            'is_active' => true,
-        ]);
-
-        // Toque de rotina em anoA (mesma acção/estado) deve fazer o backfill
-        // do estabelecimento_id, autocorrigindo o registo.
-        $anoA = (new AlterarEstadoAnoLectivoAction())->alterar($anoA, EstadoAnoLectivo::ATIVO);
         $this->assertSame($estabelecimento->id, $anoA->estabelecimento_id);
+        $this->assertSame(EstadoAnoLectivo::ATIVO, $anoA->estado);
 
         $this->expectException(ValidationException::class);
 

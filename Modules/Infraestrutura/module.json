@@ -1,0 +1,11 @@
+{
+    "name": "Infraestrutura",
+    "alias": "infraestrutura",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Infraestrutura\\Providers\\InfraestruturaServiceProvider"
+    ],
+    "files": []
+}

@@ -1,0 +1,117 @@
+<?php
+
+namespace Modules\Aluno\Services;
+
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\Facades\Storage;
+use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Aluno\Models\Aluno;
+use InvalidArgumentException;
+use Modules\Core\Enums\Estado;
+use Modules\Core\Tenancy\CaminhoTenant;
+use Modules\Curso\Models\Curso;
+use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Turma\Models\NivelAcademico;
+use Modules\Turma\Models\Turma;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+class AlunoConsultaService
+{
+    /**
+     * Serve a foto do aluno a partir do model (já filtrado por tenant), nunca de um
+     * caminho recebido do cliente. 404 se não houver foto registada ou ficheiro.
+     */
+    public function servirFoto(Aluno $aluno): StreamedResponse
+    {
+        $disco = Storage::disk('privado');
+
+        // Um caminho guardado que não esteja sob o prefixo do tenant trata-se como foto inexistente.
+        try {
+            $caminho = $aluno->foto_path ? CaminhoTenant::garantir($aluno->foto_path) : null;
+        } catch (InvalidArgumentException) {
+            $caminho = null;
+        }
+
+        abort_if($caminho === null || ! $disco->exists($caminho), 404);
+
+        return $disco->response($caminho, null, [
+            'Cache-Control' => 'private, max-age=0, must-revalidate',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    {
+        return Aluno::with('dadosPessoa')
+            ->where('estabelecimento_id', Estabelecimento::current()?->id)
+            ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
+                $query->where(function ($query) use ($pesquisa) {
+                    $query->whereContem('numero_matricula', $pesquisa)
+                        ->orWhereHas('dadosPessoa', function ($query) use ($pesquisa) {
+                            $query->whereContem('nome_completo', $pesquisa)
+                                ->orWhereContem('numero_identificacao', $pesquisa);
+                        });
+                });
+            })
+            ->when(
+                ($filtros['ano_lectivo_id'] ?? null) || ($filtros['turma_id'] ?? null) || ($filtros['curso_id'] ?? null) || ($filtros['nivel_academico_id'] ?? null),
+                function ($query) use ($filtros) {
+                    $query->whereHas('matriculas', function ($query) use ($filtros) {
+                        $query->when($filtros['ano_lectivo_id'] ?? null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))
+                            ->when($filtros['turma_id'] ?? null, fn ($query, $turmaId) => $query->where('turma_id', $turmaId))
+                            ->when($filtros['curso_id'] ?? null, function ($query, $cursoId) {
+                                $query->whereHas('turma', fn ($query) => $query->where('curso_id', $cursoId));
+                            })
+                            ->when($filtros['nivel_academico_id'] ?? null, function ($query, $nivelAcademicoId) {
+                                $query->whereHas('turma', fn ($query) => $query->where('nivel_academico_id', $nivelAcademicoId));
+                            });
+                    });
+                },
+            )
+            ->orderByDesc('numero_matricula')
+            ->paginate($porPagina)
+            ->withQueryString();
+    }
+
+    public function anosLectivosDisponiveis(): SupportCollection
+    {
+        return AnoLectivo::where('estabelecimento_id', Estabelecimento::current()?->id)
+            ->orderByDesc('data_inicio')
+            ->get(['id', 'nome']);
+    }
+
+    /**
+     * Opções do filtro de turma. Com um ano lectivo seleccionado no filtro
+     * só traz as turmas desse ano — a lista não cresce com os anos, já que
+     * uma turma de outro ano nunca daria resultados ao combinar-se com ele.
+     * Sem ano ("todos os anos lectivos") traz todas.
+     *
+     * @param  array{ano_lectivo_id?: int|string|null}  $filtros
+     */
+    public function turmasDisponiveis(array $filtros = []): SupportCollection
+    {
+        return Turma::with(['anoLectivo', 'curso', 'nivelAcademico'])
+            ->when($filtros['ano_lectivo_id'] ?? null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))
+            ->whereHas('anoLectivo', fn ($query) => $query->where('estabelecimento_id', Estabelecimento::current()?->id))
+            ->orderByDesc('ano_lectivo_id')
+            ->orderBy('codigo')
+            ->get();
+    }
+
+    public function cursosDisponiveis(): SupportCollection
+    {
+        return Curso::where('estabelecimento_id', Estabelecimento::current()?->id)
+            ->where('estado', Estado::ATIVO->value)
+            ->orderBy('nome')
+            ->get(['id', 'nome']);
+    }
+
+    public function niveisAcademicosDisponiveis(): SupportCollection
+    {
+        return NivelAcademico::where('estabelecimento_id', Estabelecimento::current()?->id)
+            ->where('estado', Estado::ATIVO->value)
+            ->orderBy('ordem')
+            ->get(['id', 'nome']);
+    }
+}

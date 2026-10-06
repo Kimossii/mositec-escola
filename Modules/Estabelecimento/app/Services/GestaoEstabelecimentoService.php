@@ -3,10 +3,10 @@
 namespace Modules\Estabelecimento\Services;
 
 use Illuminate\Http\UploadedFile;
-use Illuminate\Validation\ValidationException;
 use Modules\Estabelecimento\Actions\AtualizarDadosEstabelecimentoAction;
 use Modules\Estabelecimento\Actions\AtualizarLogotipoEstabelecimentoAction;
 use Modules\Estabelecimento\DTO\EstabelecimentoDTO;
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Http\Requests\AtualizarDadosRequest;
 use Modules\Estabelecimento\Models\Estabelecimento;
 
@@ -18,9 +18,15 @@ class GestaoEstabelecimentoService
     ) {
     }
 
-    public function obterAtual(): ?Estabelecimento
+    public function obterAtual(): Estabelecimento
     {
         return Estabelecimento::current();
+    }
+
+    public function etapasEnsinoConfiguradas(): array
+    {
+        return Estabelecimento::current()->etapasEnsino()
+            ->pluck('etapa_ensino')->map(fn (EtapaEnsinoEnum $e) => $e->value)->all();
     }
 
     public function atualizarDados(AtualizarDadosRequest $request): Estabelecimento
@@ -32,14 +38,6 @@ class GestaoEstabelecimentoService
 
     public function atualizarLogotipo(UploadedFile $logotipo): Estabelecimento
     {
-        $estabelecimento = Estabelecimento::current();
-
-        if (!$estabelecimento) {
-            throw ValidationException::withMessages([
-                'estabelecimento' => 'É necessário cadastrar os dados do estabelecimento antes de definir o logótipo.',
-            ]);
-        }
-
-        return $this->atualizarLogotipoAction->executar($estabelecimento, $logotipo);
+        return $this->atualizarLogotipoAction->executar(Estabelecimento::current(), $logotipo);
     }
 }

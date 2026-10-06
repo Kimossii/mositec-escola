@@ -1,0 +1,11 @@
+{
+    "name": "Plataforma",
+    "alias": "plataforma",
+    "description": "Plataforma MosiTec: Super Admin, auditoria e gestão central das escolas.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Plataforma\\Providers\\PlataformaServiceProvider"
+    ],
+    "files": []
+}

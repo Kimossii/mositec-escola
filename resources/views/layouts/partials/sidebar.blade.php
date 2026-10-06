@@ -7,10 +7,9 @@
 <!--begin::Logo-->
 <div class="app-sidebar-logo px-6" id="kt_app_sidebar_logo">
     <!--begin::Logo image-->
-    <a href="index-2.html">
-                    <img alt="Logo" src="{{ asset('themes/metronic/assets/media/logos/default-dark.svg') }}" class="h-25px app-sidebar-logo-default"/>
-
-        <img alt="Logo" src="{{ asset('themes/metronic/assets/media/logos/default-small.svg') }}" class="h-20px app-sidebar-logo-minimize"/>
+    <a href="{{ url('/') }}">
+        <img alt="MosiTec" src="{{ asset('themes/metronic/assets/media/logos/mosi-logo-branco.png') }}" class="h-25px app-sidebar-logo-default"/>
+        <img alt="MosiTec" src="{{ asset('themes/metronic/assets/media/logos/mosi-marca.png') }}" class="h-20px app-sidebar-logo-minimize"/>
     </a>
     <!--end::Logo image-->
 

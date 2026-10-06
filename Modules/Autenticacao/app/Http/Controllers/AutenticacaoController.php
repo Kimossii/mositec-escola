@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Modules\Autenticacao\Http\Requests\LoginRequest;
 use Modules\Autenticacao\Service\GestaoAutenticacao;
+use Modules\Core\Tenancy\TenantContext;
 
 class AutenticacaoController extends Controller
 {
@@ -21,13 +22,11 @@ class AutenticacaoController extends Controller
 
     public function store(LoginRequest $request, GestaoAutenticacao $gestaoAutenticacao)
     {
-        $key = 'login-attempts:' . $request->ip();
-
         $resposta = $gestaoAutenticacao->login(
+            $request,
             $request->login,
             $request->password,
-            $request->boolean('remember'),
-            $key
+            $request->boolean('remember')
         );
 
         if (!$resposta['success']) {
@@ -35,6 +34,7 @@ class AutenticacaoController extends Controller
         }
 
         $request->session()->regenerate();
+        $request->session()->put('tenant_id', app(TenantContext::class)->id());
 
         // Full page visit: the guest/login shell and the authenticated app
         // shell are different root Blade views (the header/sidebar mount
