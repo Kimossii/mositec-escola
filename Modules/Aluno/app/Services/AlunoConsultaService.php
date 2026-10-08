@@ -14,10 +14,32 @@ use Modules\Curso\Models\Curso;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
+use Modules\Usuario\Models\User;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AlunoConsultaService
 {
+    /**
+     * Conta de utilizador (login) deste aluno, se existir: a mesma ligação que o cadastro usa
+     * (matrícula oficial ou pessoa). Só o que a ficha mostra — nunca senha nem ids de outros registos.
+     *
+     * @return array{id: int, login: ?string, estado: int, estado_descricao: ?string, criada_em: string}|null
+     */
+    public function contaDeUtilizador(Aluno $aluno): ?array
+    {
+        $conta = User::where('numero_matricula', $aluno->numero_matricula)
+            ->orWhere('dados_pessoa_id', $aluno->dados_pessoa_id)
+            ->first();
+
+        return $conta === null ? null : [
+            'id' => $conta->id,
+            'login' => $conta->numero_matricula,
+            'estado' => $conta->estado,
+            'estado_descricao' => $conta->estado_descricao,
+            'criada_em' => $conta->created_at->format('d/m/Y'),
+        ];
+    }
+
     /**
      * Serve a foto do aluno a partir do model (já filtrado por tenant), nunca de um
      * caminho recebido do cliente. 404 se não houver foto registada ou ficheiro.

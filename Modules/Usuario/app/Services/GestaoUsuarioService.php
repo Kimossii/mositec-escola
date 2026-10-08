@@ -3,7 +3,10 @@
 namespace Modules\Usuario\Services;
 
 use Modules\Usuario\Actions\AlternarEstadoUsuarioAction;
+use Modules\Core\Enums\Estado;
+use Modules\Permissao\Enums\Perfil;
 use Modules\Usuario\Actions\AtualizarUsuarioAction;
+use Modules\Usuario\Actions\CriarUtilizadorAlunoAction;
 use Modules\Usuario\Actions\EliminarUsuarioAction;
 use Modules\Usuario\Actions\UsuarioAction;
 use Modules\Usuario\DTO\UsuarioDTO;
@@ -14,6 +17,7 @@ class GestaoUsuarioService
 {
     public function __construct(
         private UsuarioAction $criarAction,
+        private CriarUtilizadorAlunoAction $criarAlunoAction,
         private AtualizarUsuarioAction $atualizarAction,
         private EliminarUsuarioAction $eliminarAction,
         private AlternarEstadoUsuarioAction $alternarEstadoAction,
@@ -21,7 +25,18 @@ class GestaoUsuarioService
 
     public function criar(CriarUsuarioRequest $request): User
     {
-        $dto = UsuarioDTO::fromArray($request->validated());
+        $dados = $request->validated();
+
+        // Aluno: nome, dados pessoais e login vêm do registo do aluno, nunca do pedido.
+        if (Perfil::fromSlug($dados['perfil']) === Perfil::ALUNO) {
+            return $this->criarAlunoAction->executar(
+                $dados['numero_matricula'],
+                $dados['password'],
+                isset($dados['estado']) ? Estado::from((int) $dados['estado']) : Estado::ATIVO,
+            );
+        }
+
+        $dto = UsuarioDTO::fromArray($dados);
 
         return $this->criarAction->criar($dto);
     }

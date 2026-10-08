@@ -192,4 +192,22 @@ class AlunoFotoTest extends TestCase
 
         Storage::disk('privado')->assertExists('tenants/999/alunos/fotos/alheia.jpg');
     }
+
+    public function test_a_lista_de_utilizadores_alunos_mostra_a_foto_do_aluno_so_com_aluno_ver(): void
+    {
+        $aluno = $this->alunoComFoto();
+        User::create([
+            'name' => 'Ana Silva', 'numero_matricula' => $aluno->numero_matricula, 'password' => Hash::make('x'),
+            'tipo_login' => \Modules\Usuario\Enums\TipoLogin::MATRICULA, 'dados_pessoa_id' => $aluno->dados_pessoa_id,
+        ])->roles()->attach(Role::where('nome', Perfil::ALUNO->value)->firstOrFail()->id);
+
+        $this->actingAs($this->utilizador(Perfil::ADMIN_ESCOLA));
+        $this->get('/usuarios/alunos')->assertInertia(fn ($page) => $page
+            ->where('usuarios.data.0.avatar', route('alunos.foto', $aluno)));
+
+        // Funcionário vê utilizadores mas não tem aluno.ver: sem foto (a rota da foto recusaria).
+        $this->actingAs($this->utilizador(Perfil::FUNCIONARIO, 'f@example.com'));
+        $this->get('/usuarios/alunos')->assertInertia(fn ($page) => $page
+            ->where('usuarios.data.0.avatar', null));
+    }
 }

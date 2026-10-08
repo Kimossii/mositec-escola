@@ -11,7 +11,7 @@ defineProps({
     <div class="symbol symbol-circle symbol-50px overflow-hidden me-3">
         <a href="#">
             <div v-if="usuario.avatar" class="symbol-label">
-                <img :src="usuario.avatar" :alt="usuario.name" class="w-100" />
+                <img :src="usuario.avatar" :alt="usuario.name" class="w-100 h-100 object-fit-cover" />
             </div>
             <div v-else class="symbol-label fs-3" :class="`bg-light-${usuario.avatarColor} text-${usuario.avatarColor}`">
                 {{ usuario.name.charAt(0) }}

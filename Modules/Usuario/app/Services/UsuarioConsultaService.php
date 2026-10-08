@@ -3,6 +3,7 @@
 namespace Modules\Usuario\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Modules\Core\Contracts\ProcuraFotosDeAlunos;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo;
@@ -40,7 +41,26 @@ class UsuarioConsultaService
             ->orderBy('id')
             ->paginate($porPagina)
             ->withQueryString()
-            ->through(fn (User $user) => $this->serializar($user));
+            ->through(fn (User $user) => $this->serializar($user))
+            ->tap(fn (LengthAwarePaginator $pagina) => $this->juntarFotosDeAlunos($pagina));
+    }
+
+    /**
+     * Contas de aluno mostram a foto do registo do aluno. Só com `aluno.ver` (a rota da foto exige-a:
+     * sem isso o ecrã ficaria com imagens partidas) e numa só consulta por página.
+     */
+    private function juntarFotosDeAlunos(LengthAwarePaginator $pagina): void
+    {
+        if (! auth()->user()?->can('aluno.ver')) {
+            return;
+        }
+
+        $matriculas = $pagina->getCollection()->where('e_aluno', true)->pluck('matricula')->filter()->values()->all();
+        $fotos = app(ProcuraFotosDeAlunos::class)->urlsPorMatricula($matriculas);
+
+        $pagina->setCollection($pagina->getCollection()->map(
+            fn (array $linha) => isset($fotos[$linha['matricula']]) ? [...$linha, 'avatar' => $fotos[$linha['matricula']]] : $linha,
+        ));
     }
 
     public function dadosDeApoio(): array
@@ -79,7 +99,6 @@ class UsuarioConsultaService
             'tipo_login' => $user->tipo_login === TipoLogin::MATRICULA ? 'matricula' : 'email',
             'matricula' => $user->numero_matricula,
             'perfil' => $roleSistema ? Perfil::from($roleSistema->nome)->slug() : null,
-            'celulas' => $user->permissoes()->get(['modulo_id', 'acao_id', 'permitido']),
         ];
     }
 
@@ -93,6 +112,7 @@ class UsuarioConsultaService
             'avatarColor' => 'primary',
             'matricula' => $user->numero_matricula,
             'perfis' => $user->roles->pluck('descricao')->all(),
+            'e_aluno' => $user->roles->contains('nome', Perfil::ALUNO->value),
             'estado' => $user->estado,
             'ultimo_acesso' => 'Nunca',
             'created_at' => $user->created_at->format('d M Y, H:i'),

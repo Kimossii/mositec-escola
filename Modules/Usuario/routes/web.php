@@ -21,6 +21,10 @@ Route::middleware(['auth'])->prefix('usuarios')->group(function () {
     Route::group(['prefix' => 'alunos'], function () {
         Route::get('/', [UsuarioController::class, 'alunos'])->middleware('can:usuario.ver')->name('usuario.alunos');
         Route::post('/cadastrar', [UsuarioController::class, 'store'])->name('usuario.alunos.store');
+        // Mesma permissão de quem cria utilizadores (usuario.criar: é o que CriarUsuarioRequest exige para um
+        // aluno). Throttle contra enumeração de matrículas.
+        Route::get('/procurar-matricula', [UsuarioController::class, 'procurarAluno'])
+            ->middleware(['can:usuario.criar', 'throttle:30,1'])->name('usuario.alunos.procurar');
     });
 
     Route::group(['prefix' => 'professores'], function () {

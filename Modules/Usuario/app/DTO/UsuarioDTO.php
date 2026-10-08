@@ -17,7 +17,6 @@ class UsuarioDTO
         public ?int $dados_pessoa_id = null,
         public Estado $estado = Estado::ATIVO,
         public array $matriculasEducandos = [],
-        public array $celulas = [],
         public ?string $numeroMatricula = null,
     ) {
     }
@@ -35,7 +34,6 @@ class UsuarioDTO
                 ? Estado::from($data['estado'])
                 : Estado::ATIVO,
             matriculasEducandos: $data['matriculas_educandos'] ?? [],
-            celulas: $data['celulas'] ?? [],
         );
     }
 }

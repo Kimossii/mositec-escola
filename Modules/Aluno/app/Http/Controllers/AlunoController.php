@@ -67,6 +67,9 @@ class AlunoController extends Controller
 
         return Inertia::render('Aluno/Show', [
             'aluno' => $aluno->load('dadosPessoa'),
+            // Só quem pode ver utilizadores sabe se o aluno tem conta.
+            'contaUtilizador' => $request->user()->can('usuario.ver') ? $this->consulta->contaDeUtilizador($aluno) : null,
+            'podeVerContas' => $request->user()->can('usuario.ver'),
             'matriculas' => $this->matriculaConsulta->listarPorAluno($aluno, $filtrosMatricula),
             'matriculaActual' => $matriculasActivas->first(),
             'outrasMatriculasActivas' => $matriculasActivas->slice(1)->values(),

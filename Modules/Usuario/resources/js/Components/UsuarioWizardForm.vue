@@ -4,6 +4,7 @@ import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import AlunoMatriculaLookup from './AlunoMatriculaLookup.vue';
 import UsuarioFormFields from './UsuarioFormFields.vue';
 
 const props = defineProps({
@@ -38,6 +39,14 @@ const form = reactive({
 
 const perfilSelecionado = ref(props.perfilFixo ?? props.utilizador?.perfil ?? props.perfis[0]?.slug ?? '');
 
+// Cadastro de aluno: login = número de matrícula oficial; o nome vem do servidor (só leitura).
+const matriculaAluno = ref('');
+const alunoEncontrado = ref(null);
+const cadastroDeAluno = computed(() => !props.utilizador && perfilSelecionado.value === 'aluno');
+// Só se avança/guarda com o aluno encontrado, activo e sem conta (o servidor volta a validar tudo).
+const alunoPronto = computed(() => !cadastroDeAluno.value
+    || (alunoEncontrado.value !== null && alunoEncontrado.value.estado === 1 && !alunoEncontrado.value.ja_tem_conta));
+
 const matriculaEducando = ref('');
 const matriculasEducandos = ref([]);
 
@@ -57,61 +66,29 @@ function removerEducando(matricula) {
 // vez de confiar no tipo_login gravado (pode estar errado em registos antigos).
 const tipoLogin = computed(() => (perfilSelecionado.value === 'aluno' ? 'matricula' : 'email'));
 
-const chave = (moduloId, acaoId) => `${moduloId}-${acaoId}`;
-
-// overridesEstado só guarda as células que o admin decidiu explicitamente
-// (tocou nesta sessão, ou já vinham gravadas como override do utilizador).
-// 1 = concedido, 0 = negado — só estes dois valores, nunca "herda" nem null.
-// Uma célula sem entrada aqui usa o que o perfil seleccionado já dá por
-// padrão (ver permiteDefault) — é assim que "o perfil vence por defeito,
-// overrides são só a excepção" continua verdadeiro depois de guardar.
-const overridesEstado = reactive(
-    Object.fromEntries(
-        (props.utilizador?.celulas ?? []).map((o) => [chave(o.modulo_id, o.acao_id), o.permitido ? 1 : 0]),
-    ),
-);
-
 const roleIdDoPerfilSelecionado = computed(() => props.perfis.find((p) => p.slug === perfilSelecionado.value)?.id);
 
-function permiteDefault(moduloId, acaoId) {
-    const permissoes = props.permissoesPorPerfil[roleIdDoPerfilSelecionado.value] ?? [];
-    return permissoes.some((p) => p.modulo_id === moduloId && p.acao_id === acaoId);
-}
-
-function estadoCelula(moduloId, acaoId) {
-    const k = chave(moduloId, acaoId);
-    if (k in overridesEstado) return overridesEstado[k];
-    return permiteDefault(moduloId, acaoId) ? 1 : 0;
-}
-
-function proximoEstado(moduloId, acaoId) {
-    const k = chave(moduloId, acaoId);
-    overridesEstado[k] = estadoCelula(moduloId, acaoId) === 1 ? 0 : 1;
-}
-
-function todosConcedidosNaColuna(acaoId) {
-    return props.modulos.every((modulo) => estadoCelula(modulo.id, acaoId) === 1);
-}
-
-function alternarColuna(acaoId) {
-    const marcar = todosConcedidosNaColuna(acaoId) ? 0 : 1;
-    props.modulos.forEach((modulo) => {
-        overridesEstado[chave(modulo.id, acaoId)] = marcar;
+// Passo 2 é só leitura: mostra o que o perfil escolhido já concede. Permissões
+// personalizadas fazem-se depois do cadastro, na tela de Permissões do utilizador.
+const permissoesDoPerfil = computed(() => {
+    const concedidas = props.permissoesPorPerfil[roleIdDoPerfilSelecionado.value] ?? [];
+    return props.modulos.map((modulo) => {
+        // Todas as ações do catálogo, cada uma marcada como concedida ou não pelo perfil.
+        const acoes = props.acoes.map((acao) => ({
+            ...acao,
+            concedida: concedidas.some((p) => p.modulo_id === modulo.id && p.acao_id === acao.id),
+        }));
+        return { modulo, acoes, total: acoes.filter((a) => a.concedida).length };
     });
-}
+});
 
-function todosConcedidosNaLinha(moduloId) {
-    return props.acoes.every((acao) => estadoCelula(moduloId, acao.id) === 1);
-}
-
-function alternarLinha(moduloId) {
-    const marcar = todosConcedidosNaLinha(moduloId) ? 0 : 1;
-    props.acoes.forEach((acao) => {
-        overridesEstado[chave(moduloId, acao.id)] = marcar;
-    });
-}
+const descricaoDoPerfil = computed(() => props.perfis.find((p) => p.slug === perfilSelecionado.value)?.descricao ?? '');
+const modulosComAcesso = computed(() => permissoesDoPerfil.value.filter((m) => m.total > 0).length);
 
 function validarAntesDeAvancar() {
+    if (!alunoPronto.value) {
+        return false;
+    }
     if (form.password && form.password !== form.passwordConfirmation) {
         errorMessage.value = 'As senhas não coincidem.';
         return false;
@@ -149,6 +126,11 @@ function fecharModal() {
 function guardar() {
     errors.value = {};
 
+    if (!alunoPronto.value) {
+        passo.value = 1;
+        return;
+    }
+
     if (form.password && form.password !== form.passwordConfirmation) {
         errors.value = { password_confirmation: ['As senhas não coincidem.'] };
         passo.value = 1;
@@ -158,22 +140,23 @@ function guardar() {
 
     processing.value = true;
 
-    const celulas = Object.entries(overridesEstado).map(([k, valor]) => {
-        const [modulo_id, acao_id] = k.split('-').map(Number);
-        return { modulo_id, acao_id, permitido: valor === 1 };
-    });
-
-    const payload = {
-        name: form.name,
-        email: tipoLogin.value === 'email' ? form.email : undefined,
-        perfil: perfilSelecionado.value,
-        celulas,
-    };
+    // Aluno: nunca se envia nome, email, tipo de login nem dados pessoais (vêm do registo do aluno).
+    const payload = perfilSelecionado.value === 'aluno'
+        ? { perfil: perfilSelecionado.value }
+        : {
+            name: form.name,
+            email: tipoLogin.value === 'email' ? form.email : undefined,
+            perfil: perfilSelecionado.value,
+        };
 
     if (!props.utilizador) {
         payload.password = form.password;
         payload.password_confirmation = form.passwordConfirmation;
-        payload.tipo_login = tipoLogin.value;
+        if (cadastroDeAluno.value) {
+            payload.numero_matricula = matriculaAluno.value.trim();
+        } else {
+            payload.tipo_login = tipoLogin.value;
+        }
         if (perfilSelecionado.value === 'encarregado') {
             payload.matriculas_educandos = matriculasEducandos.value;
         }
@@ -188,6 +171,8 @@ function guardar() {
     router[metodo](url, payload, {
         preserveScroll: true,
         onSuccess: () => {
+            matriculaAluno.value = '';
+            alunoEncontrado.value = null;
             toast.success(props.utilizador ? 'Utilizador atualizado com sucesso.' : 'Utilizador criado com sucesso.');
             fecharModal();
             emit('fechado');
@@ -223,7 +208,12 @@ function guardar() {
         <div v-if="passo === 1">
             <UsuarioFormFields v-model:name="form.name" v-model:email="form.email" v-model:password="form.password"
                 v-model:password-confirmation="form.passwordConfirmation" :tipo-login="tipoLogin" :errors="errors"
-                :edicao="!!props.utilizador" />
+                :edicao="!!props.utilizador" :matricula="props.utilizador?.matricula ?? ''">
+                <template #identidade>
+                    <AlunoMatriculaLookup v-model:matricula="matriculaAluno" v-model:aluno="alunoEncontrado"
+                        :erro="errors.numero_matricula?.[0] ?? ''" />
+                </template>
+            </UsuarioFormFields>
 
             <div class="fv-row mb-7">
                 <label class="required fw-semibold fs-6 mb-2">Perfil</label>
@@ -260,62 +250,62 @@ function guardar() {
                     </i>
                     Cancelar
                 </button>
-                <button type="button" class="btn btn-primary" @click="avancar">Seguinte</button>
+                <button type="button" class="btn btn-primary" :disabled="!alunoPronto" @click="avancar">Seguinte</button>
             </div>
         </div>
 
         <div v-else>
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted fs-7 fw-semibold text-uppercase">Perfil</span>
+                    <span class="badge badge-light-primary fs-7 fw-bold">{{ descricaoDoPerfil }}</span>
+                </div>
+                <div class="fs-7 text-muted">
+                    <span class="text-success fw-bold">{{ modulosComAcesso }}</span> {{ modulosComAcesso === 1 ? 'módulo com acesso' : 'módulos com acesso' }} ·
+                    <span class="text-danger fw-bold">{{ permissoesDoPerfil.length - modulosComAcesso }}</span> sem acesso
+                </div>
+            </div>
             <p class="text-muted fs-7">
-                Clique numa célula para alternar entre Concedido (verde) e Negado (vermelho).
+                Permissões do perfil escolhido (só leitura). Podem ser personalizadas depois do cadastro, na tela de Permissões do utilizador.
             </p>
-            <table class="table align-middle table-row-dashed table-hover fs-6 gy-5">
-                <thead>
-                    <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                        <th class="min-w-200px">Módulo</th>
-                        <th v-for="acao in acoes" :key="acao.id" class="text-center text-capitalize">
-                            <div class="d-flex flex-column align-items-center gap-1">
-                                <span>{{ acao.nome }}</span>
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input"
-                                    title="Marcar/desmarcar toda a coluna"
-                                    :checked="todosConcedidosNaColuna(acao.id)"
-                                    @change="alternarColuna(acao.id)"
-                                />
+            <div class="overflow-auto pe-1" style="max-height: 420px">
+                <div class="row g-4">
+                    <div v-for="item in permissoesDoPerfil" :key="item.modulo.id" class="col-12 col-md-6 col-xl-4">
+                        <div class="card h-100 bg-body-secondary border" :class="item.total === 0 ? 'border-danger' : ''">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <div class="d-flex align-items-center gap-2 fw-bold fs-6 text-gray-800">
+                                        <i class="ki-duotone ki-shield-tick fs-3 text-primary"><span class="path1"></span><span class="path2"></span></i>
+                                        {{ item.modulo.descricao }}
+                                    </div>
+                                    <span
+                                        class="badge fw-bold"
+                                        :class="item.total === acoes.length ? 'badge-light-success' : item.total === 0 ? 'badge-light-danger' : 'badge-light-primary'"
+                                    >{{ item.total }}/{{ acoes.length }}</span>
+                                </div>
+                                <ul class="list-unstyled mb-0">
+                                    <li
+                                        v-for="acao in item.acoes"
+                                        :key="acao.id"
+                                        class="d-flex align-items-center justify-content-between py-2 border-top border-gray-300"
+                                    >
+                                        <span class="text-capitalize fw-semibold" :class="acao.concedida ? 'text-gray-800' : 'text-muted'">{{ acao.nome }}</span>
+                                        <span class="d-flex align-items-center gap-2">
+                                            <span class="fs-8" :class="acao.concedida ? 'text-success' : 'text-danger'">{{ acao.concedida ? 'Permitido' : 'Sem permissão' }}</span>
+                                            <span
+                                                class="d-inline-flex align-items-center justify-content-center rounded text-white fw-bold"
+                                                :class="acao.concedida ? 'bg-success' : 'bg-danger'"
+                                                style="width: 20px; height: 20px; font-size: 13px; line-height: 1"
+                                                :aria-label="acao.concedida ? 'Permitido' : 'Sem permissão'"
+                                            >{{ acao.concedida ? '✓' : '✕' }}</span>
+                                        </span>
+                                    </li>
+                                </ul>
                             </div>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="modulo in modulos" :key="modulo.id">
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input"
-                                    title="Marcar/desmarcar toda a linha"
-                                    :checked="todosConcedidosNaLinha(modulo.id)"
-                                    @change="alternarLinha(modulo.id)"
-                                />
-                                <span>{{ modulo.descricao }}</span>
-                            </div>
-                        </td>
-                        <td v-for="acao in acoes" :key="acao.id" class="text-center">
-                            <button
-                                type="button"
-                                class="btn btn-sm min-w-100px"
-                                :class="{
-                                    'btn-light-success btn-permissao-concedido': estadoCelula(modulo.id, acao.id) === 1,
-                                    'btn-light-danger': estadoCelula(modulo.id, acao.id) === 0,
-                                }"
-                                @click="proximoEstado(modulo.id, acao.id)"
-                            >
-                                {{ estadoCelula(modulo.id, acao.id) === 1 ? 'Concedido' : 'Negado' }}
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div class="d-flex justify-content-between pt-5">
                 <button type="button" class="btn btn-light-primary" :disabled="processing" @click="voltar">
@@ -333,7 +323,7 @@ function guardar() {
                         </i>
                         Cancelar
                     </button>
-                    <button type="button" class="btn btn-primary" :disabled="processing" @click="guardar">
+                    <button type="button" class="btn btn-primary" :disabled="processing || !alunoPronto" @click="guardar">
                         <span v-if="!processing">Guardar</span>
                         <span v-else>Aguarde... <Loader size="0.3px" class="align-middle ms-2" /></span>
                     </button>

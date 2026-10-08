@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Permissao\Models\UserPermissao;
 use Modules\Permissao\Support\PermissaoCache;
+use Modules\Permissao\Exceptions\PerfilDeAlunoFixo;
 use Modules\Usuario\Models\User;
 
 class SincronizarPermissoesUtilizadorAction
@@ -18,6 +19,10 @@ class SincronizarPermissoesUtilizadorAction
 
     public function executar(User $user, array $celulas): void
     {
+        if ($user->ePerfilAluno()) {
+            throw PerfilDeAlunoFixo::semPermissoesPersonalizadas();
+        }
+
         DB::transaction(function () use ($user, $celulas) {
             UserPermissao::where('users_id', $user->id)->delete();
 
