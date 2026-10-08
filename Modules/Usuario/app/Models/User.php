@@ -8,6 +8,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Tenancy\TenantContext;
+use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\UserPermissao;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
@@ -102,6 +103,16 @@ class User extends Authenticatable
             ->withPivot('tenant_id')
             ->withPivotValue('tenant_id', app(TenantContext::class)->id());
     }
+
+    /**
+     * Conta de aluno: só usa as permissões do perfil — nunca overrides nem perfis extra.
+     * Consulta a BD (não a relação carregada) para não decidir com dados desactualizados.
+     */
+    public function ePerfilAluno(): bool
+    {
+        return $this->roles()->where('nome', Perfil::ALUNO->value)->exists();
+    }
+
     public function permissoes()
     {
         return $this->hasMany(UserPermissao::class, 'users_id');

@@ -111,7 +111,10 @@ class PermissionResolver
             ->filter()
             ->toBase();
 
-        $overrides = UserPermissao::where('users_id', $user->id)->get(['modulo_id', 'acao_id', 'permitido']);
+        // Conta de aluno: só vale o perfil. Overrides que existam (registos antigos) não têm efeito.
+        $overrides = $user->ePerfilAluno()
+            ? collect()
+            : UserPermissao::where('users_id', $user->id)->get(['modulo_id', 'acao_id', 'permitido']);
 
         $concedidos = $overrides->filter(fn (UserPermissao $linha) => $linha->permitido === true)
             ->map(fn (UserPermissao $linha) => $this->paraString($linha->modulo_id, $linha->acao_id, $moduloNomesPorId, $acaoNomesPorId))

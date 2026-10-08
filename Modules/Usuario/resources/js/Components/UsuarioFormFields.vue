@@ -29,10 +29,18 @@ defineProps({
         type: Boolean,
         default: false,
     },
+    // Matrícula oficial do aluno (só leitura, na edição).
+    matricula: {
+        type: String,
+        default: '',
+    },
 });
 </script>
 
 <template>
+    <!-- Aluno (criação): o slot "identidade" substitui nome/email/matrícula (lookup por matrícula). -->
+    <slot v-if="tipoLogin === 'matricula' && !edicao" name="identidade" />
+    <template v-else>
     <!--begin::Input group-->
     <div class="fv-row mb-7">
         <!--begin::Label-->
@@ -40,7 +48,9 @@ defineProps({
         <!--end::Label-->
 
         <!--begin::Input-->
-        <input v-model="name" type="text" name="user_name" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="Nome completo" />
+        <input v-model="name" type="text" name="user_name" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="Nome completo"
+            :disabled="tipoLogin === 'matricula'" />
+        <div class="form-text" v-if="tipoLogin === 'matricula'">O nome vem do registo do aluno e não se altera aqui.</div>
         <!--end::Input-->
 
         <div class="text-danger fs-7 mt-1" v-if="errors.name">{{ errors.name[0] }}</div>
@@ -67,9 +77,11 @@ defineProps({
         <label class="fw-semibold fs-6 mb-2">Matrícula</label>
         <!--end::Label-->
 
-        <div class="form-text">Será gerada automaticamente ao guardar.</div>
+        <input :value="matricula" type="text" class="form-control form-control-solid" disabled />
     </div>
     <!--end::Input group-->
+
+    </template>
 
     <!--begin::Input group-->
     <div class="fv-row mb-7">

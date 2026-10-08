@@ -54,10 +54,10 @@ class AtualizarUsuarioTest extends TestCase
             'tipo_login' => 'email',
             'perfil' => 'professor',
         ]);
-        $response->assertJsonFragment(['modulo_id' => $modulo->id, 'acao_id' => $acao->id, 'permitido' => false]);
+        $response->assertJsonMissing(['celulas']);
     }
 
-    public function test_atualiza_nome_email_perfil_e_overrides(): void
+    public function test_atualiza_nome_email_e_perfil_sem_tocar_nos_overrides(): void
     {
         $this->actingAsStaff();
 
@@ -67,14 +67,12 @@ class AtualizarUsuarioTest extends TestCase
 
         $modulo = Modulo::where('nome', 0)->first();
         $acao = Acao::where('nome', 'eliminar')->first();
+        $professor->permissoes()->create(['modulo_id' => $modulo->id, 'acao_id' => $acao->id, 'permitido' => true]);
 
         $response = $this->put("/usuarios/{$professor->id}", [
             'name' => 'Prof Atualizado',
             'email' => 'prof2@example.com',
             'perfil' => 'funcionario',
-            'celulas' => [
-                ['modulo_id' => $modulo->id, 'acao_id' => $acao->id, 'permitido' => true],
-            ],
         ]);
 
         $response->assertRedirect();
@@ -85,6 +83,7 @@ class AtualizarUsuarioTest extends TestCase
         $this->assertTrue($professor->roles->contains($roleFuncionario));
         $this->assertTrue($professor->roles->contains($roleProfessor), 'não deve remover o perfil anterior');
 
+        // Editar não mexe nas permissões personalizadas (só a tela de Permissões o faz).
         $this->assertDatabaseHas('user_permissoes', [
             'users_id' => $professor->id,
             'modulo_id' => $modulo->id,
@@ -93,7 +92,7 @@ class AtualizarUsuarioTest extends TestCase
         ]);
     }
 
-    public function test_funcionario_nao_consegue_esconder_uma_concessao_de_autorizacao_ao_editar(): void
+    public function test_celulas_enviadas_ao_editar_sao_ignoradas(): void
     {
         $funcionario = User::create(['name' => 'Funcionário', 'email' => 'funcionario@example.com', 'password' => Hash::make('x')]);
         $funcionario->roles()->attach(Role::where('nome', Perfil::FUNCIONARIO->value)->first()->id);
@@ -117,7 +116,8 @@ class AtualizarUsuarioTest extends TestCase
             ],
         ]);
 
-        $response->assertForbidden();
+        // As celulas são ignoradas: nada é concedido por este caminho.
+        $response->assertRedirect();
         $this->assertDatabaseMissing('user_permissoes', [
             'users_id' => $professor->id,
             'modulo_id' => $moduloAutorizacao->id,
