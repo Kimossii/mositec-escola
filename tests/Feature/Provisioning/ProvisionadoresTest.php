@@ -11,6 +11,7 @@ use Modules\Core\Tenancy\Provisioning\ColectorDeCredenciais;
 use Modules\Core\Tenancy\Provisioning\DadosProvisionamento;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Estabelecimento\Provisioning\ProvisionarEstabelecimento;
+use Modules\Financeiro\Provisioning\ProvisionarRegrasCobranca;
 use Modules\Permissao\Database\Seeders\AcaoSeeder;
 use Modules\Permissao\Database\Seeders\ModuloSeeder;
 use Modules\Permissao\Enums\Perfil;
@@ -47,12 +48,13 @@ class ProvisionadoresTest extends TestCase
         $this->noTenant($this->b, fn () => $provisionador->provisionar($this->b->paraTenantAtual(), $this->dados));
     }
 
-    public function test_as_ordens_sao_10_20_30_40(): void
+    public function test_as_ordens_sao_10_20_30_40_50(): void
     {
         $this->assertSame(10, app(ProvisionarEstabelecimento::class)->ordem());
         $this->assertSame(20, app(ProvisionarPerfis::class)->ordem());
         $this->assertSame(30, app(ProvisionarTiposDocumento::class)->ordem());
         $this->assertSame(40, app(ProvisionarAdministradorInicial::class)->ordem());
+        $this->assertSame(50, app(ProvisionarRegrasCobranca::class)->ordem());
     }
 
     public function test_estabelecimento_minimo_so_com_o_nome_e_nao_configurado(): void

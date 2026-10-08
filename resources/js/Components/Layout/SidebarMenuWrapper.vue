@@ -898,6 +898,12 @@ const configuracoesMenu = [
             { href: '/ano-lectivos', title: 'Anos Lectivos', permissao: 'ano-lectivo.ver' },
         ],
     },
+    {
+        title: 'Financeiro',
+        items: [
+            { href: '/financeiro/configuracao/regras-cobranca', title: 'Regras de Cobrança', permissao: 'regra-cobranca.ver' },
+        ],
+    },
     // Por implementar — descomentar quando o módulo Sistema existir:
     // {
     //     title: 'Sistema',

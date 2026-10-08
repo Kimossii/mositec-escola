@@ -21,6 +21,7 @@ enum Modulo: int
     case PLANO_CURRICULAR = 14;
     case DOCUMENTO_PESSOA = 15;
     case SENHA_UTILIZADOR = 16;
+    case REGRA_COBRANCA = 17;
 
     public function slug(): string
     {
@@ -42,6 +43,7 @@ enum Modulo: int
             self::PLANO_CURRICULAR => 'plano-curricular',
             self::DOCUMENTO_PESSOA => 'documento-pessoa',
             self::SENHA_UTILIZADOR => 'senha-utilizador',
+            self::REGRA_COBRANCA => 'regra-cobranca',
         };
     }
 
@@ -76,6 +78,7 @@ enum Modulo: int
             self::PLANO_CURRICULAR => 'Plano Curricular',
             self::DOCUMENTO_PESSOA => 'Documento Pessoa',
             self::SENHA_UTILIZADOR => 'Senha de Utilizador',
+            self::REGRA_COBRANCA => 'Regra de Cobrança',
         };
     }
 }

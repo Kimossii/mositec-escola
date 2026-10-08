@@ -3,6 +3,7 @@
 namespace Modules\Permissao\Actions;
 
 use RuntimeException;
+use Modules\Permissao\Support\PermissaoCache;
 use Modules\Permissao\Enums\Modulo;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
@@ -41,6 +42,7 @@ class SincronizarPerfisDeSistemaAction
             Modulo::DISCIPLINA->value => ['ver', 'criar', 'editar'],
             Modulo::ALUNO->value => ['ver', 'criar', 'editar'],
             Modulo::MATRICULA->value => ['ver', 'criar', 'editar', 'eliminar'],
+            Modulo::REGRA_COBRANCA->value => ['ver', 'editar'],
         ],
         Perfil::FUNCIONARIO->value => [
             Modulo::USUARIO->value => ['ver', 'criar', 'editar'],
@@ -65,6 +67,8 @@ class SincronizarPerfisDeSistemaAction
 
     public function concederPermissoes(): void
     {
+        $concedeuNovas = false;
+
         foreach (self::PERMISSOES_POR_PERFIL as $roleNome => $mapa) {
             $role = Role::where('nome', $roleNome)->first()
                 ?? throw new RuntimeException('Perfil de sistema ' . Perfil::from($roleNome)->name . ' inexistente: crie os perfis antes de conceder permissões.');
@@ -77,13 +81,20 @@ class SincronizarPerfisDeSistemaAction
                     $acao = Acao::where('nome', $acaoNome)->first()
                         ?? throw new RuntimeException("Acção '{$acaoNome}' em falta no catálogo global: corra `php artisan db:seed --force` (ModuloSeeder/AcaoSeeder) antes de criar tenants.");
 
-                    RolePermissao::firstOrCreate([
+                    $permissao = RolePermissao::firstOrCreate([
                         'role_id' => $role->id,
                         'modulo_id' => $modulo->id,
                         'acao_id' => $acao->id,
                     ]);
+
+                    $concedeuNovas = $concedeuNovas || $permissao->wasRecentlyCreated;
                 }
             }
+        }
+
+        // Utilizadores que já iniciaram sessão têm o conjunto de permissões em cache.
+        if ($concedeuNovas) {
+            app(PermissaoCache::class)->invalidarTudo();
         }
     }
 }

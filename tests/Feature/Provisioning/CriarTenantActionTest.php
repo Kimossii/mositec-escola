@@ -68,6 +68,7 @@ class CriarTenantActionTest extends TestCase
             'role_permissoes' => DB::table('role_permissoes')->count(),
             'users' => DB::table('users')->count(),
             'tipos_documentos' => DB::table('tipos_documentos')->count(),
+            'regras_cobranca' => DB::table('regras_cobranca')->count(),
         ];
     }
 
@@ -266,7 +267,7 @@ class CriarTenantActionTest extends TestCase
         $this->app->bind('prov.cred', fn () => new class implements ProvisionaTenant {
             public function ordem(): int
             {
-                return 50;
+                return 90;
             }
 
             public function provisionar(TenantAtual $tenant, DadosProvisionamento $dados): void

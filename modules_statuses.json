@@ -13,5 +13,6 @@
     "PlanoCurricular": true,
     "Matricula": true,
     "Tenant": true,
-    "Plataforma": true
+    "Plataforma": true,
+    "Financeiro": true
 }

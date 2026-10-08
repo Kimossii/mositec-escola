@@ -37,6 +37,12 @@ const gruposConfiguracoes = [
             { href: '/ano-lectivos', label: 'Anos Lectivos', permissao: 'ano-lectivo.ver' },
         ],
     },
+    {
+        title: 'Financeiro',
+        links: [
+            { href: '/financeiro/configuracao/regras-cobranca', label: 'Regras de Cobrança', permissao: 'regra-cobranca.ver' },
+        ],
+    },
     // Por implementar — descomentar quando o módulo Sistema existir:
     // {
     //     title: 'Sistema',
