@@ -8,6 +8,7 @@ use Modules\Core\Database\Seeders\HorarioSeeder;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Curso\Database\Seeders\CursoSeeder;
 use Modules\Disciplina\Database\Seeders\DisciplinaSeeder;
+use Modules\Financeiro\Database\Seeders\CambioPlataformaSeeder;
 use Modules\Infraestrutura\Database\Seeders\SalaSeeder;
 use Modules\Permissao\Actions\SincronizarPerfisDeSistemaAction;
 use Modules\Permissao\Database\Seeders\AcaoSeeder;
@@ -35,6 +36,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ModuloSeeder::class,
             AcaoSeeder::class,
+            CambioPlataformaSeeder::class,
         ]);
 
         if (! app()->environment('local', 'testing')) {

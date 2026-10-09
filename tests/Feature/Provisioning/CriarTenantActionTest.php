@@ -69,6 +69,7 @@ class CriarTenantActionTest extends TestCase
             'users' => DB::table('users')->count(),
             'tipos_documentos' => DB::table('tipos_documentos')->count(),
             'regras_cobranca' => DB::table('regras_cobranca')->count(),
+            'configuracoes_monetarias' => DB::table('configuracoes_monetarias')->count(),
         ];
     }
 

@@ -27,17 +27,17 @@ class ServicoTest extends TestCase
 
     private function servico(string $nome = 'Emissão de Certificado', ?string $codigo = 'SER-001', int $centimos = 2_500_000): Servico
     {
-        return Servico::create(['nome' => $nome, 'codigo' => $codigo, 'preco' => Dinheiro::deCentimos($centimos)]);
+        return Servico::create(['nome' => $nome, 'codigo' => $codigo, 'preco' => Dinheiro::deUnidadesMenores($centimos)]);
     }
 
     private function servicoNoutroTenant(string $nome = 'Do Outro', ?string $codigo = 'SER-001'): Servico
     {
         $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
 
-        return $this->noTenant($outro, fn () => Servico::create(['nome' => $nome, 'codigo' => $codigo, 'preco' => Dinheiro::deCentimos(100)]));
+        return $this->noTenant($outro, fn () => Servico::create(['nome' => $nome, 'codigo' => $codigo, 'preco' => Dinheiro::deUnidadesMenores(100)]));
     }
 
-    public function test_cria_servico_com_preco_em_centimos_estado_activo_e_autoria(): void
+    public function test_cria_servico_com_preco_em_unidades_menores_estado_activo_e_autoria(): void
     {
         $admin = $this->adminEscola();
 
@@ -50,7 +50,7 @@ class ServicoTest extends TestCase
 
         $servico = Servico::firstWhere('codigo', 'SER-001');
         $this->assertNotNull($servico);
-        $this->assertSame(2_500_000, $servico->preco->centimos());
+        $this->assertSame(2_500_000, $servico->preco->unidadesMenores());
         $this->assertSame(2_500_000, (int) DB::table('servicos')->where('id', $servico->id)->value('preco'));
         $this->assertSame('Certificado com selo', $servico->descricao);
         $this->assertSame('Ativo', $servico->estado_descricao);
@@ -69,13 +69,13 @@ class ServicoTest extends TestCase
     }
 
     #[DataProvider('precosAceites')]
-    public function test_precos_validos_sao_gravados_em_centimos_exactos(string $entrada, int $centimos): void
+    public function test_precos_validos_sao_gravados_em_unidades_menores_exactas(string $entrada, int $centimos): void
     {
         $this->actingAs($this->adminEscola())
             ->post(route('financeiro.configuracao.servicos.store'), ['nome' => 'Item', 'preco' => $entrada])
             ->assertSessionHasNoErrors();
 
-        $this->assertSame($centimos, Servico::firstWhere('nome', 'Item')->preco->centimos());
+        $this->assertSame($centimos, Servico::firstWhere('nome', 'Item')->preco->unidadesMenores());
     }
 
     public static function precosAceites(): array
@@ -144,7 +144,7 @@ class ServicoTest extends TestCase
 
         $servico->refresh();
         $this->assertSame('Certificado Novo', $servico->nome);
-        $this->assertSame(3_000_000, $servico->preco->centimos());
+        $this->assertSame(3_000_000, $servico->preco->unidadesMenores());
     }
 
     public function test_actualizar_com_codigo_de_outro_servico_do_tenant_falha(): void
@@ -273,7 +273,7 @@ class ServicoTest extends TestCase
         $this->assertSame($this->tenant->id, Servico::firstWhere('nome', 'Forjado')->tenant_id);
     }
 
-    public function test_preco_serializa_como_inteiro_em_centimos(): void
+    public function test_preco_serializa_como_inteiro_em_unidades_menores(): void
     {
         $this->assertSame(2_500_000, $this->servico()->toArray()['preco']);
     }

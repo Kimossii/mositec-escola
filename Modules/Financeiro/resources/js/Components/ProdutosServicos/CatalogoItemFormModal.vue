@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, watch } from 'vue';
-import { centimosParaKz } from '../../Support/dinheiro';
+import { unidadesMenoresParaDecimal } from '../../Support/dinheiro';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -8,18 +8,22 @@ const props = defineProps({
     item: { type: Object, default: null },
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
+    moeda: { type: Object, required: true },
 });
 const emit = defineEmits(['submit', 'cancelar']);
 
 const rotulo = computed(() => (props.tipo === 'produto' ? 'Produto' : 'Serviço'));
 const form = reactive({ nome: '', codigo: '', descricao: '', preco: '' });
+const placeholderPreco = computed(() => props.moeda.decimais === 0
+    ? 'ex: 25000'
+    : 'ex: 25000 ou 25000,' + '50'.padEnd(props.moeda.decimais, '0').slice(0, props.moeda.decimais));
 
 watch(() => props.show, (show) => {
     if (!show) return;
     form.nome = props.item?.nome ?? '';
     form.codigo = props.item?.codigo ?? '';
     form.descricao = props.item?.descricao ?? '';
-    form.preco = props.item ? centimosParaKz(props.item.preco) : '';
+    form.preco = props.item ? unidadesMenoresParaDecimal(props.item.preco, props.moeda) : '';
 });
 </script>
 
@@ -41,8 +45,8 @@ watch(() => props.show, (show) => {
                             <div class="text-danger fs-7 mt-1" v-if="errors.codigo">{{ errors.codigo }}</div>
                         </div>
                         <div class="col-md-6 fv-row mb-7">
-                            <label class="required fw-semibold fs-6 mb-2">Preço (Kz)</label>
-                            <input v-model="form.preco" type="text" inputmode="decimal" class="form-control form-control-solid" placeholder="ex: 25000 ou 25000,50" />
+                            <label class="required fw-semibold fs-6 mb-2">Preço ({{ moeda.simbolo }})</label>
+                            <input v-model="form.preco" type="text" inputmode="decimal" class="form-control form-control-solid" :placeholder="placeholderPreco" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.preco">{{ errors.preco }}</div>
                         </div>
                     </div>

@@ -11,7 +11,7 @@ import Pagination from '@/Components/Shared/Pagination.vue';
 import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
 import CatalogoItemFormModal from '../../Components/ProdutosServicos/CatalogoItemFormModal.vue';
 import { ESTADO } from '../../Models/Estado';
-import { formatKz } from '../../Support/dinheiro';
+import { formatarDinheiro } from '../../Support/dinheiro';
 
 const LISTA = '/financeiro/configuracao/produtos-servicos';
 const BASE = { produto: '/financeiro/configuracao/produtos', servico: '/financeiro/configuracao/servicos' };
@@ -24,6 +24,7 @@ const MENSAGEM_GUARDAR = {
 const props = defineProps({
     itens: { type: Object, required: true }, // paginador: { data, links, ... }
     filtros: { type: Object, default: () => ({}) },
+    moeda: { type: Object, required: true },
 });
 defineOptions({ layout: AppLayout });
 
@@ -189,7 +190,7 @@ function confirmarEliminacao() {
                             <td>
                                 <span class="badge" :class="item.tipo === 'produto' ? 'badge-light-primary' : 'badge-light-info'">{{ ROTULO[item.tipo] }}</span>
                             </td>
-                            <td class="text-end">{{ formatKz(item.preco) }}</td>
+                            <td class="text-end">{{ formatarDinheiro(item.preco, moeda) }}</td>
                             <td><EstadoBadge :estado="item.estado" :estado-descricao="item.estado_descricao" /></td>
                             <td class="text-end">
                                 <a href="#" class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
@@ -234,6 +235,7 @@ function confirmarEliminacao() {
             :item="itemEmEdicao"
             :processing="processing"
             :errors="errors"
+            :moeda="moeda"
             @submit="guardar"
             @cancelar="modalAberto = false"
         />

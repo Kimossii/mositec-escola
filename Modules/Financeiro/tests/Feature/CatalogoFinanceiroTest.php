@@ -4,6 +4,7 @@ namespace Modules\Financeiro\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Modules\Financeiro\Models\ConfiguracaoMonetaria;
 use Modules\Financeiro\Models\Produto;
 use Modules\Financeiro\Models\Servico;
 use Modules\Financeiro\Support\Dinheiro;
@@ -24,12 +25,12 @@ class CatalogoFinanceiroTest extends TestCase
 
     private function produto(string $nome, int $centimos = 100, ?string $codigo = null): Produto
     {
-        return Produto::create(['nome' => $nome, 'codigo' => $codigo, 'preco' => Dinheiro::deCentimos($centimos)]);
+        return Produto::create(['nome' => $nome, 'codigo' => $codigo, 'preco' => Dinheiro::deUnidadesMenores($centimos)]);
     }
 
     private function servico(string $nome, int $centimos = 100, ?string $codigo = null): Servico
     {
-        return Servico::create(['nome' => $nome, 'codigo' => $codigo, 'preco' => Dinheiro::deCentimos($centimos)]);
+        return Servico::create(['nome' => $nome, 'codigo' => $codigo, 'preco' => Dinheiro::deUnidadesMenores($centimos)]);
     }
 
     private function url(array $filtros = []): string
@@ -154,5 +155,19 @@ class CatalogoFinanceiroTest extends TestCase
         $this->actingAs($this->adminEscola())->get($this->url(['pesquisa' => ['x']]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->has('itens.data', 2));
+    }
+
+    public function test_expoe_a_moeda_da_escola(): void
+    {
+        $this->actingAs($this->adminEscola())->get($this->url())
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('moeda.codigo', 'AOA')
+                ->where('moeda.simbolo', 'Kz')
+                ->where('moeda.decimais', 2));
+
+        ConfiguracaoMonetaria::doTenant()->update(['moeda' => 'JPY']);
+
+        $this->get($this->url())
+            ->assertInertia(fn (Assert $page) => $page->where('moeda.codigo', 'JPY')->where('moeda.decimais', 0));
     }
 }

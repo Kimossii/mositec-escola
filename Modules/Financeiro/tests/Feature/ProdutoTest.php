@@ -27,17 +27,17 @@ class ProdutoTest extends TestCase
 
     private function produto(string $nome = 'Uniforme Escolar', ?string $codigo = 'UNI-001', int $centimos = 2_500_000): Produto
     {
-        return Produto::create(['nome' => $nome, 'codigo' => $codigo, 'preco' => Dinheiro::deCentimos($centimos)]);
+        return Produto::create(['nome' => $nome, 'codigo' => $codigo, 'preco' => Dinheiro::deUnidadesMenores($centimos)]);
     }
 
     private function produtoNoutroTenant(string $nome = 'Do Outro', ?string $codigo = 'UNI-001'): Produto
     {
         $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
 
-        return $this->noTenant($outro, fn () => Produto::create(['nome' => $nome, 'codigo' => $codigo, 'preco' => Dinheiro::deCentimos(100)]));
+        return $this->noTenant($outro, fn () => Produto::create(['nome' => $nome, 'codigo' => $codigo, 'preco' => Dinheiro::deUnidadesMenores(100)]));
     }
 
-    public function test_cria_produto_com_preco_em_centimos_estado_activo_e_autoria(): void
+    public function test_cria_produto_com_preco_em_unidades_menores_estado_activo_e_autoria(): void
     {
         $admin = $this->adminEscola();
 
@@ -50,12 +50,24 @@ class ProdutoTest extends TestCase
 
         $produto = Produto::firstWhere('codigo', 'UNI-001');
         $this->assertNotNull($produto);
-        $this->assertSame(2_500_000, $produto->preco->centimos());
+        $this->assertSame(2_500_000, $produto->preco->unidadesMenores());
         $this->assertSame(2_500_000, (int) DB::table('produtos')->where('id', $produto->id)->value('preco'));
         $this->assertSame('Camisa e calças', $produto->descricao);
         $this->assertSame('Ativo', $produto->estado_descricao);
         $this->assertSame($this->tenant->id, $produto->tenant_id);
         $this->assertSame($admin->id, $produto->criado_por);
+    }
+
+    public function test_preco_inteiro_gigante_em_json_da_erro_de_validacao_e_nao_500(): void
+    {
+        $this->actingAs($this->adminEscola());
+
+        $this->postJson(route('financeiro.configuracao.produtos.store'), ['nome' => 'Gigante', 'preco' => 99999999999999999999])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('preco');
+        $this->postJson(route('financeiro.configuracao.produtos.store'), ['nome' => 'Gigante', 'preco' => PHP_INT_MAX])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('preco');
     }
 
     public function test_codigo_e_descricao_sao_opcionais(): void
@@ -69,13 +81,13 @@ class ProdutoTest extends TestCase
     }
 
     #[DataProvider('precosAceites')]
-    public function test_precos_validos_sao_gravados_em_centimos_exactos(string $entrada, int $centimos): void
+    public function test_precos_validos_sao_gravados_em_unidades_menores_exactas(string $entrada, int $centimos): void
     {
         $this->actingAs($this->adminEscola())
             ->post(route('financeiro.configuracao.produtos.store'), ['nome' => 'Item', 'preco' => $entrada])
             ->assertSessionHasNoErrors();
 
-        $this->assertSame($centimos, Produto::firstWhere('nome', 'Item')->preco->centimos());
+        $this->assertSame($centimos, Produto::firstWhere('nome', 'Item')->preco->unidadesMenores());
     }
 
     public static function precosAceites(): array
@@ -144,7 +156,7 @@ class ProdutoTest extends TestCase
 
         $produto->refresh();
         $this->assertSame('Uniforme Novo', $produto->nome);
-        $this->assertSame(3_000_000, $produto->preco->centimos());
+        $this->assertSame(3_000_000, $produto->preco->unidadesMenores());
     }
 
     public function test_actualizar_com_codigo_de_outro_produto_do_tenant_falha(): void
@@ -239,7 +251,7 @@ class ProdutoTest extends TestCase
         $this->assertSame($this->tenant->id, Produto::firstWhere('nome', 'Forjado')->tenant_id);
     }
 
-    public function test_preco_serializa_como_inteiro_em_centimos(): void
+    public function test_preco_serializa_como_inteiro_em_unidades_menores(): void
     {
         $this->assertSame(2_500_000, $this->produto()->toArray()['preco']);
     }

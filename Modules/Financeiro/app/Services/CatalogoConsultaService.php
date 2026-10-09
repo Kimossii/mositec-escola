@@ -62,7 +62,7 @@ class CatalogoConsultaService
                 'codigo' => $item->codigo,
                 'nome' => $item->nome,
                 'descricao' => $item->descricao,
-                'preco' => $item->preco->centimos(),
+                'preco' => $item->preco->unidadesMenores(),
                 'estado' => $item->estado,
                 'estado_descricao' => $item->estado_descricao,
             ]);

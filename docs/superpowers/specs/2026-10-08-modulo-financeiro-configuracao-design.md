@@ -15,8 +15,8 @@ Permitir que cada Tenant configure **como a escola cobra**: planos de propina, r
 3. Estado: `estado` + `estado_descricao` (`SincronizaEstadoDescricao`) e `RegistaAutoria`. Não se usa `activo`.
 4. Tenancy: só `tenant_id`, via `PertenceAoTenant`. Não há `estabelecimento_id`.
 5. Enums inteiros têm sempre a coluna irmã `*_descricao`.
-6. Dinheiro: `bigInteger` em **cêntimos** (1 Kz = 100). Razões: descontos percentuais e divisão em parcelas geram fracções, e a fiscalidade futura (facturas) trabalha com 2 casas decimais, por isso migrar mais tarde seria caro. Value object `Modules\Financeiro\Support\Dinheiro` + cast `Modules\Financeiro\Casts\DinheiroCast` (int ≥ 0, nunca float). Não há coluna de moeda. A formatação `25.000,00 Kz` é um helper de frontend, e os formulários recebem e mostram Kz.
-   - **Arredondamento (regra única do sistema):** percentagens arredondam para baixo ao cêntimo (`intdiv`). Em divisões por N parcelas, as primeiras N-1 usam `intdiv` e a última absorve o resto, de modo que a soma é sempre exacta. Implementado em `Dinheiro::percentagem()` e `Dinheiro::dividir()`, com testes.
+6. Dinheiro e moeda: o sistema **não assume uma moeda nem um número de casas decimais**. Os valores guardam-se como `bigInteger` em **unidades menores** da moeda (para o AOA, cêntimos; para o XOF, que não tem casas, a própria unidade). Razões: descontos percentuais e divisão em parcelas geram fracções, e a fiscalidade futura trabalha em unidades menores. Value object `Modules\Financeiro\Support\Dinheiro` (sem moeda embutida) + cast `Modules\Financeiro\Casts\DinheiroCast` (int ≥ 0, nunca float). A **moeda é da escola** (código ISO 4217, ver "Moeda e Câmbio"); o número de casas, o símbolo e o nome vêm de um registo de moedas (`Support\Moeda`), nunca de constantes espalhadas. Parsing e formatação recebem a moeda: `Dinheiro::deDecimal(valor, Moeda)` e `formatar(Moeda)`.
+   - **Arredondamento (regra única do sistema):** percentagens arredondam para baixo à unidade menor (`intdiv`). Em divisões por N parcelas, as primeiras N-1 usam `intdiv` e a última absorve o resto, de modo que a soma é sempre exacta. Implementado em `Dinheiro::percentagem()` e `Dinheiro::dividir()`, com testes.
 7. `PlanoPropina` pertence a um `AnoLectivo` (`ano_lectivo_id` obrigatório).
 8. Sem soft delete. Eliminar é permitido enquanto não houver referências. O módulo operacional bloqueia a eliminação quando houver (padrão Curso/Nível/Turma).
 
@@ -42,19 +42,52 @@ Todas as tabelas têm `tenant_id` (FK + índice), `estado`, `estado_descricao`, 
 - Valor 0 não é permitido. Isenções e bolsas totais pertencem a Descontos/Bolsas (fora de âmbito).
 
 ### `plano_propina_alvos` (aplicabilidade do plano)
-Define a que matrículas o plano se aplica, resolvido pela turma da matrícula.
+Define a que turmas o plano se aplica. Cada linha é um alvo com campos opcionais:
 
 | Coluna | Regra |
 |---|---|
 | plano_propina_id | FK obrigatória (`cascadeOnDelete`) |
 | nivel_academico_id | FK nula |
 | curso_id | FK nula |
+| turno_id | FK nula |
+| turma_id | FK nula |
 
-- Um plano **sem alvos** aplica-se a todas as matrículas do seu ano lectivo.
-- Resolução (`ResolvePlanoAplicavel`, ponto único, usado por Propinas): ganha o plano de maior especificidade entre os que correspondem à matrícula (curso+nível > nível ou curso > sem alvo).
-- **Empate:** um plano só de nível e outro só de curso têm a mesma especificidade e podem corresponder à mesma matrícula. Nesse caso a resolução devolve um *conflito*, a propina não é gerada e o conflito aparece no resultado da geração. Não se escolhe um vencedor arbitrário.
-- Validação ao gravar: apenas rejeita o mesmo par (nível, curso) em dois planos do mesmo ano lectivo. Os restantes empates dependem das turmas existentes e só se detectam na resolução.
-- `nivel_academico_id` e `curso_id` têm de pertencer ao tenant. `unique(plano_propina_id, nivel_academico_id, curso_id)`.
+- Um plano **sem alvos** é o plano **geral**: aplica-se a todas as turmas do seu ano lectivo.
+- Todos os FKs pertencem ao tenant (e não estão apagados). Uma turma sem turno nunca casa um alvo de turno.
+- **`turma_id` é exclusivo**: se definido, nível, curso e turno têm de ser nulos, e a turma tem de pertencer ao **ano lectivo do plano**.
+- Linhas de alvo totalmente vazias são ignoradas. Um plano pode ter vários alvos (cada um com o mesmo preço).
+
+**Precedência (ordem total).** Entre os planos que correspondem à turma, ganha o de maior especificidade: **(a)** turma específica; **(b)** maior número de dimensões casadas (curso, nível, turno); **(c)** desempate fixo entre dimensões: **curso > nível > turno**.
+
+| # | Alvo | Exemplo |
+|---|---|---|
+| 1 | Turma específica | 11.ª-A Informática |
+| 2 | Curso + Nível + Turno | Informática, 11.ª, Noite |
+| 3 | Curso + Nível | Informática, 11.ª |
+| 4 | Curso + Turno | Informática, Noite |
+| 5 | Nível + Turno | 11.ª, Noite |
+| 6 | Só curso | Informática |
+| 7 | Só nível | 11.ª |
+| 8 | Só turno | Noite |
+| 9 | Geral | sem alvos |
+
+- Num plano com vários alvos conta o alvo que casa com maior precedência.
+- **A regra "curso vence nível" é uma decisão de negócio** (o curso define a família de preço e o nível refina), documentada e testada. Está visível na interface (coluna "Precedência").
+- **Conflito:** só quando dois planos distintos têm exactamente a mesma precedência para a turma. A validação ao gravar impede-o; a resolução mantém a deteção como rede de segurança (por exemplo, ao reactivar um plano). Nesse caso devolve *conflito*, sem escolher vencedor.
+- **Colisão ao gravar** = mesmos alvos **e** competências sobrepostas no mesmo ano lectivo. Alvos iguais com períodos disjuntos coexistem (fases de preço: Set–Dez a um valor, Jan–Jun a outro). Planos inactivos contam.
+- **Resolução por competência:** `ResolvePlanoAplicavel::paraTurma(Turma, ?competência)`. Com competência (`['ano' => 2027, 'mes' => 2]`) só entram planos cujo período a contém; sem ela o tempo é ignorado (serve a validação e a interface; com fases de preço o resultado é conflito).
+- Cada alvo tem uma descrição de precedência ("Curso + Nível", "Geral"…), usada na interface.
+
+#### Copiar planos de outro ano
+- Acção `POST /financeiro/configuracao/planos-propina/copiar` (permissão `plano-propina.criar`) com `ano_origem_id` e `ano_destino_id`: ambos do tenant, não apagados e diferentes. Corre numa única transacção.
+- Copia, dos planos **activos** da origem (por ordem de id): nome, descrição, periodicidade, intervalo, valor, período e alvos de nível, curso e turno. O novo plano fica no ano de destino e **inactivo**, para a escola o rever e activar.
+- Um plano é **ignorado** (sem falhar a operação, com motivo) se: está inactivo na origem; o nome já existe no destino; colide com um plano do destino ou com outro copiado antes (mesma lógica de `colisaoDeAlvos`, com as competências do calendário do **destino**); tem alvo de turma (as turmas pertencem ao ano de origem); ou um alvo aponta para nível, curso ou turno eliminado.
+- O resumo (`copiados` e `ignorados`) segue como flash `copia_planos` e é mostrado na interface. Repetir a operação não copia nada e reporta os conflitos de nome.
+
+#### Edição do valor de um plano (desenho)
+- **Hoje (sem propinas):** editar o `valor` apenas actualiza o plano. O ano lectivo continua imutável.
+- **Quando o plano já tem propinas geradas** (módulo de Propinas, ainda não implementado): alterar o `valor` abre um passo de decisão com **actualizar o preço e reajustar as dívidas** ou **manter o preço antigo para as dívidas existentes** (cria automaticamente um plano novo com os mesmos alvos a partir de `mes_efeito`), pré-visualização dos efeitos e confirmação com motivo. Pagas, canceladas e anuladas nunca mudam; pagamentos parciais preservam o valor recebido. Regra completa, tabelas (`alteracoes_preco_plano`, `propina_ajustes`) e invariantes: spec de Propinas, secção 14.
+- O módulo de Planos de Propina fornece apenas o gancho: a Action de edição do plano delega no módulo de Propinas (através de um contrato a definir) quando existirem propinas do plano; sem módulo de Propinas, o comportamento é o simples.
 
 ### `regras_cobranca` (1:1 com o tenant)
 | Coluna | Regra |
@@ -70,6 +103,27 @@ Define a que matrículas o plano se aplica, resolvido pela turma da matrícula.
 - **Semântica:** `dias_tolerancia` são dias corridos. Uma cobrança está em atraso quando `hoje > data_vencimento + dias_tolerancia` e ainda tem saldo.
 - `unique(tenant_id)`. O registo é criado com defaults no provisioning do tenant (provisionador `ProvisionarRegrasCobranca`, ordem 50), de forma **idempotente** (`firstOrCreate`). Os tenants existentes são postos em dia pelo comando `financeiro:sincronizar --todos` (convenção `ParaTodosOsTenants` do projecto, no lugar de uma migração). Como rede de segurança, o `show` usa `firstOrCreate`, para a tela nunca rebentar. A tela é só `show`/`update`, sem CRUD.
 - Se `permite_negociacao` for false, `desconto_maximo_negociacao` é forçado a 0 no servidor.
+
+### Moeda e Câmbio (configuração monetária da escola)
+
+**`configuracoes_monetarias`** (1:1 com o tenant, `unique(tenant_id)`):
+
+| Coluna | Regra |
+|---|---|
+| moeda | ISO 4217 (3 letras), tem de existir no registo `Moeda`; default `AOA` |
+| cambio_manual | bool, default false: usa o câmbio da própria escola em vez do da plataforma |
+
+- Criada com os defaults no provisioning e, para tenants existentes, por `financeiro:sincronizar`.
+- **A moeda só pode mudar enquanto não existirem preços configurados nem registos financeiros** (produtos, serviços, planos, e tudo o que os módulos operacionais declararem). Trocar a moeda reinterpretaria os valores sem os converter. O bloqueio usa os contratos `FonteDePrecos` (preços de configuração) e `ReferenciaFinanceira` (registos operacionais).
+
+**Câmbio de referência.** Cotação entre a moeda **base** (USD) e a moeda **cotada** (a da escola), no sentido **1 USD = X unidades da moeda cotada** (ex.: 1 USD = 910,00 AOA), guardada como inteiro escalado (6 casas, `taxa × 1.000.000`), nunca float. As colunas chamam-se `moeda_base` (USD na interface; genérica para o futuro) e `moeda_cotada`.
+
+- **`cambios_plataforma`** (global, sem tenant): `moeda_cotada`, `moeda_base`, `data`, `taxa`, `fonte` (`padrao` | `manual` | `api`). `unique(moeda_cotada, moeda_base, data)`: no máximo uma linha por dia por par. É o câmbio **por defeito**, alimentado hoje por comando (`financeiro:cambio-plataforma`) e, no futuro, por uma API agendada. Vem com um valor padrão (AOA: 1 USD = 910,00, `fonte = padrao`, com data antiga para valer em qualquer data): é configurável e **não é um câmbio de mercado**.
+- **`cambios`** (por escola): `tenant_id`, `moeda_cotada`, `moeda_base`, `data`, `taxa`, autoria. `unique(tenant_id, moeda_cotada, moeda_base, data)`. Só conta se `cambio_manual = true`.
+- **Pesquisa `CambioDoDia::para(data)`:** moeda da escola = USD → taxa 1; modo manual → o último câmbio da escola até à data; senão → o último da plataforma até à data; nada encontrado → **nulo**. Nunca bloqueia.
+- **Conversão (definição; implementada no plano operacional, que declara `ext-bcmath`):** `valor_usd = valor_cotada ÷ taxa` e `valor_cotada = valor_usd × taxa`, em aritmética de precisão arbitrária sobre unidades menores, escalando pelas casas de cada moeda e pelo `ESCALA` da taxa, com arredondamento **para o mais próximo, metade para cima**, uma única função no sistema. Nunca float. O resultado nunca substitui o valor original.
+- **Snapshot (contrato para os módulos operacionais):** cada registo operacional (propina, pagamento, recibo…) guarda o **valor original em unidades menores da moeda da escola**, a `moeda` e o `cambio_usd` (nulo se não houver câmbio) no momento da criação. O valor original **nunca é substituído** por um valor convertido: o equivalente em USD calcula-se a partir de `valor` e `cambio_usd` do próprio registo. Mudanças posteriores de moeda ou de câmbio nunca alteram registos existentes.
+- Não há conversão nem facturação em várias moedas neste spec: só moeda por escola + câmbio guardado.
 
 ### `metodos_pagamento`
 - `nome` (obrigatório), `tipo` (+descricao) com o enum `TipoMetodoPagamento`: Numerário, Transferência Bancária, TPA, Multicaixa, Outro.
@@ -96,7 +150,7 @@ O enum expõe `transicoesPermitidas()` (apenas estados persistidos), com testes 
 
 ## 5. Contratos para o módulo operacional (não implementar aqui)
 
-1. **Snapshot.** Ao criar uma cobrança, o módulo operacional copia vencimento, tolerância, valor e `ano_lectivo_id`. Mudanças posteriores de plano, regra ou preço nunca alteram cobranças existentes.
+1. **Snapshot.** Ao criar uma cobrança, o módulo operacional copia vencimento, tolerância, valor e `ano_lectivo_id`. Mudanças posteriores de plano, regra ou preço nunca alteram cobranças existentes. A cobrança copia também a **moeda** e o **câmbio** (`cambio_usd`) vigentes, ver "Moeda e Câmbio".
 2. **Dívidas de anos anteriores.** Ficam sempre pagáveis. Planos de anos lectivos encerrados continuam legíveis. `estado = inactivo` bloqueia apenas novas gerações. Métodos inactivos continuam referenciáveis por recibos antigos.
 3. **Negociação.** Só é possível se `permite_negociacao` for true. O desconto não pode exceder `desconto_maximo_negociacao`. Negociar **nunca edita** a cobrança original: cria um *acordo* ligado a ela, com parcelas e desconto próprios, e a original fica intacta para auditoria. A acção de permissão `negociar` será acrescentada no spec de Dívidas.
 4. **Estado da matrícula.** A geração considera apenas matrículas **Activa**. O estado "Trancada" não existe hoje em `EstadoMatriculaEnum` e fica fora deste trabalho. Cobranças já geradas permanecem como dívida. As regras de Cancelada e Transferida estão no spec de Propinas.
@@ -111,6 +165,7 @@ Granularidade por recurso, como já existe para `documento-pessoa` e `senha-util
 | Caso | Slug | Cobre |
 |---|---|---|
 | PLANO_PROPINA | `plano-propina` | Planos de Propina |
+| MOEDA_CAMBIO | `moeda-cambio` | Moeda da escola e câmbio |
 | REGRA_COBRANCA | `regra-cobranca` | Regras de Cobrança (só ver/editar) |
 | METODO_PAGAMENTO | `metodo-pagamento` | Métodos de Pagamento |
 | CATALOGO_FINANCEIRO | `catalogo-financeiro` | Produtos e Serviços |

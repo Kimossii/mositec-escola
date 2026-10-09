@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Financeiro\Http\Controllers\CatalogoFinanceiroController;
 use Modules\Financeiro\Http\Controllers\MetodoPagamentoController;
+use Modules\Financeiro\Http\Controllers\MoedaCambioController;
+use Modules\Financeiro\Http\Controllers\PlanoPropinaController;
 use Modules\Financeiro\Http\Controllers\ProdutoController;
 use Modules\Financeiro\Http\Controllers\RegraCobrancaController;
 use Modules\Financeiro\Http\Controllers\ServicoController;
@@ -34,4 +36,20 @@ Route::middleware(['auth'])->prefix('financeiro/configuracao')->name('financeiro
     });
 
     Route::get('/produtos-servicos', [CatalogoFinanceiroController::class, 'index'])->middleware('can:catalogo-financeiro.ver')->name('produtos-servicos.index');
+
+    Route::prefix('planos-propina')->name('planos-propina.')->group(function () {
+        Route::get('/', [PlanoPropinaController::class, 'index'])->middleware('can:plano-propina.ver')->name('index');
+        Route::post('/', [PlanoPropinaController::class, 'store'])->middleware('can:plano-propina.criar')->name('store');
+        Route::post('/copiar', [PlanoPropinaController::class, 'copiar'])->middleware('can:plano-propina.criar')->name('copiar');
+        Route::put('/{plano}', [PlanoPropinaController::class, 'update'])->middleware('can:plano-propina.editar')->name('update');
+        Route::patch('/{plano}/estado', [PlanoPropinaController::class, 'alterarEstado'])->middleware('can:plano-propina.editar')->name('alterar-estado');
+        Route::delete('/{plano}', [PlanoPropinaController::class, 'destroy'])->middleware('can:plano-propina.eliminar')->name('destroy');
+    });
+
+    Route::prefix('moeda-cambio')->name('moeda-cambio.')->group(function () {
+        Route::get('/', [MoedaCambioController::class, 'show'])->middleware('can:moeda-cambio.ver')->name('show');
+        Route::put('/', [MoedaCambioController::class, 'atualizar'])->middleware('can:moeda-cambio.editar')->name('atualizar');
+        Route::post('/cambios', [MoedaCambioController::class, 'registarCambio'])->middleware('can:moeda-cambio.criar')->name('cambios.store');
+        Route::delete('/cambios/{cambio}', [MoedaCambioController::class, 'eliminarCambio'])->middleware('can:moeda-cambio.eliminar')->name('cambios.destroy');
+    });
 });

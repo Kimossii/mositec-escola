@@ -42,7 +42,7 @@ class ProvisioningArquitecturaTest extends TestCase
     {
         $provisionadores = $this->ficheiros('Modules/*/app/Provisioning/*.php');
 
-        $this->assertCount(5, $provisionadores);
+        $this->assertCount(6, $provisionadores);
 
         foreach ($provisionadores as $caminho => $conteudo) {
             $this->assertStringContainsString('implements ProvisionaTenant', $conteudo, $caminho);

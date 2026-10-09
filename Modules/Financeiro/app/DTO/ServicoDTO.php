@@ -3,6 +3,7 @@
 namespace Modules\Financeiro\DTO;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Support\Dinheiro;
 
 class ServicoDTO
@@ -21,7 +22,7 @@ class ServicoDTO
 
         return new self(
             nome: $dados['nome'],
-            preco: Dinheiro::deKwanzas((string) $dados['preco']),
+            preco: Dinheiro::deDecimal((string) $dados['preco'], app(MoedaDoTenant::class)->atual()),
             codigo: ($dados['codigo'] ?? null) !== '' ? ($dados['codigo'] ?? null) : null,
             descricao: ($dados['descricao'] ?? null) !== '' ? ($dados['descricao'] ?? null) : null,
         );

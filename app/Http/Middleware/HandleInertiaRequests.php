@@ -90,6 +90,8 @@ class HandleInertiaRequests extends Middleware
             // precisa de poder mandar a mensagem exacta.
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
+                // Resumo da cópia de planos de propina entre anos lectivos (copiados/ignorados).
+                'copia_planos' => fn () => $request->session()->get('copia_planos'),
                 // Senha temporária de uma redefinição manual: aparece uma só vez.
                 'senha_temporaria' => function () use ($request) {
                     $flash = $request->session()->get('senha_temporaria');

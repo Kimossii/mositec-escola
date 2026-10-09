@@ -40,6 +40,8 @@ const gruposConfiguracoes = [
     {
         title: 'Financeiro',
         links: [
+            { href: '/financeiro/configuracao/moeda-cambio', label: 'Moeda e Câmbio', permissao: 'moeda-cambio.ver' },
+            { href: '/financeiro/configuracao/planos-propina', label: 'Planos de Propina', permissao: 'plano-propina.ver' },
             { href: '/financeiro/configuracao/regras-cobranca', label: 'Regras de Cobrança', permissao: 'regra-cobranca.ver' },
             { href: '/financeiro/configuracao/metodos-pagamento', label: 'Métodos de Pagamento', permissao: 'metodo-pagamento.ver' },
             { href: '/financeiro/configuracao/produtos-servicos', label: 'Produtos / Serviços', permissao: 'catalogo-financeiro.ver' },

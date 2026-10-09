@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Financeiro\Services\CatalogoConsultaService;
+use Modules\Financeiro\Services\MoedaDoTenant;
 
 class CatalogoFinanceiroController extends Controller
 {
     public function __construct(
         private CatalogoConsultaService $consulta,
+        private MoedaDoTenant $moedaDoTenant,
     ) {
     }
 
@@ -23,6 +25,7 @@ class CatalogoFinanceiroController extends Controller
         return Inertia::render('Financeiro/ProdutosServicos/Index', [
             'itens' => $this->consulta->listar($filtros),
             'filtros' => $filtros,
+            'moeda' => $this->moedaDoTenant->atual()->paraFrontend(),
         ]);
     }
 }

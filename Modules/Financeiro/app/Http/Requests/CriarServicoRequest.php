@@ -5,6 +5,7 @@ namespace Modules\Financeiro\Http\Requests;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 use Modules\Core\Tenancy\TenantContext;
+use Modules\Financeiro\Rules\ValorMonetario;
 
 class CriarServicoRequest extends BaseRequest
 {
@@ -25,7 +26,7 @@ class CriarServicoRequest extends BaseRequest
                 Rule::unique('servicos', 'codigo')
                     ->where(fn ($query) => $query->where('tenant_id', app(TenantContext::class)->id())),
             ],
-            'preco' => ['required', 'regex:/^\d{1,12}([.,]\d{1,2})?$/D'],
+            'preco' => ['required', new ValorMonetario()],
         ];
     }
 
@@ -37,7 +38,6 @@ class CriarServicoRequest extends BaseRequest
             'codigo.unique' => 'Já existe um serviço com este código.',
             'codigo.max' => 'O código do serviço não pode ultrapassar 50 caracteres.',
             'preco.required' => 'O preço do serviço é obrigatório.',
-            'preco.regex' => 'O preço é inválido: use dígitos com até duas casas decimais (ex.: 25000 ou 25000,50).',
         ];
     }
 }

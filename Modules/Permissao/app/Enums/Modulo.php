@@ -24,6 +24,8 @@ enum Modulo: int
     case REGRA_COBRANCA = 17;
     case METODO_PAGAMENTO = 18;
     case CATALOGO_FINANCEIRO = 19;
+    case PLANO_PROPINA = 20;
+    case MOEDA_CAMBIO = 21;
 
     public function slug(): string
     {
@@ -48,6 +50,8 @@ enum Modulo: int
             self::REGRA_COBRANCA => 'regra-cobranca',
             self::METODO_PAGAMENTO => 'metodo-pagamento',
             self::CATALOGO_FINANCEIRO => 'catalogo-financeiro',
+            self::PLANO_PROPINA => 'plano-propina',
+            self::MOEDA_CAMBIO => 'moeda-cambio',
         };
     }
 
@@ -85,6 +89,8 @@ enum Modulo: int
             self::REGRA_COBRANCA => 'Regra de Cobrança',
             self::METODO_PAGAMENTO => 'Método de Pagamento',
             self::CATALOGO_FINANCEIRO => 'Catálogo Financeiro',
+            self::PLANO_PROPINA => 'Plano de Propina',
+            self::MOEDA_CAMBIO => 'Moeda e Câmbio',
         };
     }
 }

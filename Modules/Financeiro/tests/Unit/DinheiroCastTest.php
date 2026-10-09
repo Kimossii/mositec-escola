@@ -20,7 +20,7 @@ class DinheiroCastTest extends TestCase
         $valor = (new DinheiroCast())->get($this->modelo(), 'valor', '2500000', []);
 
         $this->assertInstanceOf(Dinheiro::class, $valor);
-        $this->assertSame(2_500_000, $valor->centimos());
+        $this->assertSame(2_500_000, $valor->unidadesMenores());
     }
 
     public function test_get_e_set_aceitam_null(): void
@@ -35,7 +35,7 @@ class DinheiroCastTest extends TestCase
     {
         $cast = new DinheiroCast();
 
-        $this->assertSame(500, $cast->set($this->modelo(), 'valor', Dinheiro::deCentimos(500), []));
+        $this->assertSame(500, $cast->set($this->modelo(), 'valor', Dinheiro::deUnidadesMenores(500), []));
         $this->assertSame(500, $cast->set($this->modelo(), 'valor', 500, []));
     }
 
@@ -53,12 +53,12 @@ class DinheiroCastTest extends TestCase
         }
     }
 
-    public function test_serializacao_emite_o_inteiro_em_centimos(): void
+    public function test_serializacao_emite_o_inteiro_em_unidades_menores(): void
     {
         $modelo = new class extends Model {
             protected $casts = ['valor' => DinheiroCast::class];
         };
-        $modelo->valor = Dinheiro::deCentimos(2_500_000);
+        $modelo->valor = Dinheiro::deUnidadesMenores(2_500_000);
 
         $this->assertSame(2_500_000, $modelo->toArray()['valor']);
         $this->assertStringContainsString('"valor":2500000', json_encode($modelo));

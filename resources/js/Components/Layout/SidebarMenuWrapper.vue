@@ -901,6 +901,8 @@ const configuracoesMenu = [
     {
         title: 'Financeiro',
         items: [
+            { href: '/financeiro/configuracao/moeda-cambio', title: 'Moeda e Câmbio', permissao: 'moeda-cambio.ver' },
+            { href: '/financeiro/configuracao/planos-propina', title: 'Planos de Propina', permissao: 'plano-propina.ver' },
             { href: '/financeiro/configuracao/regras-cobranca', title: 'Regras de Cobrança', permissao: 'regra-cobranca.ver' },
             { href: '/financeiro/configuracao/metodos-pagamento', title: 'Métodos de Pagamento', permissao: 'metodo-pagamento.ver' },
             { href: '/financeiro/configuracao/produtos-servicos', title: 'Produtos / Serviços', permissao: 'catalogo-financeiro.ver' },

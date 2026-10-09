@@ -3,8 +3,13 @@
 namespace Modules\Financeiro\Providers;
 
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
+use Modules\Financeiro\Console\CambioPlataformaCommand;
 use Modules\Financeiro\Console\SincronizarFinanceiroCommand;
+use Modules\Financeiro\Provisioning\ProvisionarConfiguracaoMonetaria;
 use Modules\Financeiro\Provisioning\ProvisionarRegrasCobranca;
+use Modules\Financeiro\Support\FontesDePrecos;
+use Modules\Financeiro\Support\PrecosDoCatalogo;
+use Modules\Financeiro\Support\PrecosDosPlanos;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class FinanceiroServiceProvider extends ModuleServiceProvider
@@ -24,6 +29,7 @@ class FinanceiroServiceProvider extends ModuleServiceProvider
      * @var string[]
      */
     protected array $commands = [
+        CambioPlataformaCommand::class,
         SincronizarFinanceiroCommand::class,
     ];
 
@@ -31,6 +37,10 @@ class FinanceiroServiceProvider extends ModuleServiceProvider
     {
         parent::register();
 
-        $this->app->tag([ProvisionarRegrasCobranca::class], ProvisionaTenant::ETIQUETA);
+        $this->app->tag([
+            ProvisionarRegrasCobranca::class,
+            ProvisionarConfiguracaoMonetaria::class,
+        ], ProvisionaTenant::ETIQUETA);
+        $this->app->tag([PrecosDoCatalogo::class, PrecosDosPlanos::class], FontesDePrecos::ETIQUETA);
     }
 }

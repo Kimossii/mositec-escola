@@ -417,6 +417,7 @@ class TenancyArquitecturaTest extends TestCase
     private const COMANDOS_DA_PLATAFORMA = [
         'Modules/Plataforma/app/Console/CriarSuperAdminCommand.php',
         'Modules/Plataforma/app/Console/RedefinirSuperAdminCommand.php',
+        'Modules/Financeiro/app/Console/CambioPlataformaCommand.php',
     ];
 
     private function declaraClasse(string $conteudo, string $padraoHerancaOuInterface): bool

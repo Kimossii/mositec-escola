@@ -12,24 +12,24 @@ class DinheiroCast implements CastsAttributes, SerializesCastableAttributes
 {
     public function get(Model $model, string $key, mixed $value, array $attributes): ?Dinheiro
     {
-        return $value === null ? null : Dinheiro::deCentimos((int) $value);
+        return $value === null ? null : Dinheiro::deUnidadesMenores((int) $value);
     }
 
     public function set(Model $model, string $key, mixed $value, array $attributes): ?int
     {
         return match (true) {
             $value === null => null,
-            $value instanceof Dinheiro => $value->centimos(),
-            is_int($value) => Dinheiro::deCentimos($value)->centimos(),
-            default => throw new InvalidArgumentException('O valor monetário tem de ser Dinheiro ou um inteiro em cêntimos.'),
+            $value instanceof Dinheiro => $value->unidadesMenores(),
+            is_int($value) => Dinheiro::deUnidadesMenores($value)->unidadesMenores(),
+            default => throw new InvalidArgumentException('O valor monetário tem de ser Dinheiro ou um inteiro em unidades menores.'),
         };
     }
 
     /**
-     * Na serialização (toArray/JSON/Inertia) o dinheiro sai como inteiro em cêntimos.
+     * Na serialização (toArray/JSON/Inertia) o dinheiro sai como inteiro em unidades menores.
      */
     public function serialize(Model $model, string $key, mixed $value, array $attributes): ?int
     {
-        return $value?->centimos();
+        return $value?->unidadesMenores();
     }
 }

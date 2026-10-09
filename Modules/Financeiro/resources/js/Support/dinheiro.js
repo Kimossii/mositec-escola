@@ -1,18 +1,31 @@
 /**
- * Valores monetários chegam do backend em cêntimos (inteiro). Estes helpers só apresentam
- * ou preenchem inputs: a conversão autoritativa é Dinheiro::deKwanzas no backend.
+ * Valores monetários chegam do backend em unidades menores da moeda (inteiro). `moeda` é o objeto
+ * que o backend envia: { codigo, nome, simbolo, decimais }. Estes helpers só apresentam ou
+ * preenchem inputs: a conversão autoritativa é Dinheiro::deDecimal no backend.
  */
-export function formatKz(centimos) {
-    const valor = Math.abs(Number(centimos ?? 0));
-    const inteira = Math.trunc(valor / 100);
-    const fraccao = String(valor % 100).padStart(2, '0');
+export function formatarDinheiro(unidadesMenores, moeda) {
+    const fator = 10 ** moeda.decimais;
+    const valor = Math.abs(Number(unidadesMenores ?? 0));
+    const inteira = Math.trunc(valor / fator);
     const milhares = String(inteira).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-    return `${milhares},${fraccao} Kz`;
+    if (moeda.decimais === 0) {
+        return `${milhares} ${moeda.simbolo}`;
+    }
+
+    const fraccao = String(valor % fator).padStart(moeda.decimais, '0');
+
+    return `${milhares},${fraccao} ${moeda.simbolo}`;
 }
 
-export function centimosParaKz(centimos) {
-    const valor = Math.abs(Number(centimos ?? 0));
+export function unidadesMenoresParaDecimal(unidadesMenores, moeda) {
+    const fator = 10 ** moeda.decimais;
+    const valor = Math.abs(Number(unidadesMenores ?? 0));
+    const inteira = Math.trunc(valor / fator);
 
-    return `${Math.trunc(valor / 100)}.${String(valor % 100).padStart(2, '0')}`;
+    if (moeda.decimais === 0) {
+        return String(inteira);
+    }
+
+    return `${inteira}.${String(valor % fator).padStart(moeda.decimais, '0')}`;
 }
