@@ -43,6 +43,8 @@ class SincronizarPerfisDeSistemaAction
             Modulo::ALUNO->value => ['ver', 'criar', 'editar'],
             Modulo::MATRICULA->value => ['ver', 'criar', 'editar', 'eliminar'],
             Modulo::REGRA_COBRANCA->value => ['ver', 'editar'],
+            Modulo::METODO_PAGAMENTO->value => ['ver', 'criar', 'editar', 'eliminar'],
+            Modulo::CATALOGO_FINANCEIRO->value => ['ver', 'criar', 'editar', 'eliminar'],
         ],
         Perfil::FUNCIONARIO->value => [
             Modulo::USUARIO->value => ['ver', 'criar', 'editar'],

@@ -902,6 +902,8 @@ const configuracoesMenu = [
         title: 'Financeiro',
         items: [
             { href: '/financeiro/configuracao/regras-cobranca', title: 'Regras de Cobrança', permissao: 'regra-cobranca.ver' },
+            { href: '/financeiro/configuracao/metodos-pagamento', title: 'Métodos de Pagamento', permissao: 'metodo-pagamento.ver' },
+            { href: '/financeiro/configuracao/produtos-servicos', title: 'Produtos / Serviços', permissao: 'catalogo-financeiro.ver' },
         ],
     },
     // Por implementar — descomentar quando o módulo Sistema existir:

@@ -4,6 +4,7 @@ namespace Modules\Financeiro\Tests\Unit;
 
 use InvalidArgumentException;
 use Modules\Financeiro\Support\Dinheiro;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class DinheiroTest extends TestCase
@@ -67,5 +68,40 @@ class DinheiroTest extends TestCase
         $this->assertSame('25.000,00 Kz', Dinheiro::deCentimos(2_500_000)->formatar());
         $this->assertSame('0,05 Kz', Dinheiro::deCentimos(5)->formatar());
         $this->assertSame('1.234.567,89 Kz', Dinheiro::deCentimos(123_456_789)->formatar());
+    }
+
+    public function test_de_kwanzas_converte_inteiros_e_texto_para_centimos(): void
+    {
+        $this->assertSame(2_500_000, Dinheiro::deKwanzas(25_000)->centimos());
+        $this->assertSame(2_500_000, Dinheiro::deKwanzas('25000')->centimos());
+        $this->assertSame(2_500_050, Dinheiro::deKwanzas('25000.5')->centimos());
+        $this->assertSame(2_500_050, Dinheiro::deKwanzas('25000,50')->centimos());
+        $this->assertSame(5, Dinheiro::deKwanzas('0.05')->centimos());
+        $this->assertSame(0, Dinheiro::deKwanzas('0')->centimos());
+        $this->assertSame(0, Dinheiro::deKwanzas(0)->centimos());
+    }
+
+    #[DataProvider('kwanzasInvalidos')]
+    public function test_de_kwanzas_rejeita_valores_invalidos(int|string $valor): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        Dinheiro::deKwanzas($valor);
+    }
+
+    public static function kwanzasInvalidos(): array
+    {
+        return [
+            'vazio' => [''],
+            'negativo texto' => ['-1'],
+            'negativo inteiro' => [-1],
+            'letras' => ['abc'],
+            'três casas decimais' => ['12.345'],
+            'milhares com ponto' => ['25.000,50'],
+            'notação científica' => ['1e3'],
+            'espaços' => ['25 000'],
+            'quebra de linha final' => ["25000\n"],
+            'demasiado grande' => ['1234567890123'],
+        ];
     }
 }

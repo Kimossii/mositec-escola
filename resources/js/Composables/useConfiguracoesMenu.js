@@ -41,6 +41,8 @@ const gruposConfiguracoes = [
         title: 'Financeiro',
         links: [
             { href: '/financeiro/configuracao/regras-cobranca', label: 'Regras de Cobrança', permissao: 'regra-cobranca.ver' },
+            { href: '/financeiro/configuracao/metodos-pagamento', label: 'Métodos de Pagamento', permissao: 'metodo-pagamento.ver' },
+            { href: '/financeiro/configuracao/produtos-servicos', label: 'Produtos / Serviços', permissao: 'catalogo-financeiro.ver' },
         ],
     },
     // Por implementar — descomentar quando o módulo Sistema existir:

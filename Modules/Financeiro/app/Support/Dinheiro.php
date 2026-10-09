@@ -24,6 +24,25 @@ final class Dinheiro
         return new self($centimos);
     }
 
+    /**
+     * Converte kwanzas (inteiro ou texto com até 2 casas decimais, "." ou ",") em cêntimos,
+     * sem passar por float. Sem separador de milhares.
+     */
+    public static function deKwanzas(int|string $kwanzas): self
+    {
+        if (is_int($kwanzas)) {
+            return self::deCentimos($kwanzas * 100);
+        }
+
+        if (! preg_match('/^(\d{1,12})(?:[.,](\d{1,2}))?$/D', $kwanzas, $partes)) {
+            throw new InvalidArgumentException('Valor em kwanzas inválido: use dígitos com até duas casas decimais.');
+        }
+
+        $fraccao = isset($partes[2]) ? (int) str_pad($partes[2], 2, '0') : 0;
+
+        return self::deCentimos(((int) $partes[1]) * 100 + $fraccao);
+    }
+
     public function centimos(): int
     {
         return $this->centimos;

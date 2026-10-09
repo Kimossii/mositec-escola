@@ -22,6 +22,8 @@ enum Modulo: int
     case DOCUMENTO_PESSOA = 15;
     case SENHA_UTILIZADOR = 16;
     case REGRA_COBRANCA = 17;
+    case METODO_PAGAMENTO = 18;
+    case CATALOGO_FINANCEIRO = 19;
 
     public function slug(): string
     {
@@ -44,6 +46,8 @@ enum Modulo: int
             self::DOCUMENTO_PESSOA => 'documento-pessoa',
             self::SENHA_UTILIZADOR => 'senha-utilizador',
             self::REGRA_COBRANCA => 'regra-cobranca',
+            self::METODO_PAGAMENTO => 'metodo-pagamento',
+            self::CATALOGO_FINANCEIRO => 'catalogo-financeiro',
         };
     }
 
@@ -79,6 +83,8 @@ enum Modulo: int
             self::DOCUMENTO_PESSOA => 'Documento Pessoa',
             self::SENHA_UTILIZADOR => 'Senha de Utilizador',
             self::REGRA_COBRANCA => 'Regra de Cobrança',
+            self::METODO_PAGAMENTO => 'Método de Pagamento',
+            self::CATALOGO_FINANCEIRO => 'Catálogo Financeiro',
         };
     }
 }
