@@ -103,6 +103,21 @@ Define a que turmas o plano se aplica. Cada linha é um alvo com campos opcionai
 - **Semântica:** `dias_tolerancia` são dias corridos. Uma cobrança está em atraso quando `hoje > data_vencimento + dias_tolerancia` e ainda tem saldo.
 - `unique(tenant_id)`. O registo é criado com defaults no provisioning do tenant (provisionador `ProvisionarRegrasCobranca`, ordem 50), de forma **idempotente** (`firstOrCreate`). Os tenants existentes são postos em dia pelo comando `financeiro:sincronizar --todos` (convenção `ParaTodosOsTenants` do projecto, no lugar de uma migração). Como rede de segurança, o `show` usa `firstOrCreate`, para a tela nunca rebentar. A tela é só `show`/`update`, sem CRUD.
 - Se `permite_negociacao` for false, `desconto_maximo_negociacao` é forçado a 0 no servidor.
+- **Multas por atraso (configuração; a aplicação pertence ao módulo de Propinas, spec de Propinas secção 15):** `regras_cobranca` ganha `multa_activa` (bool, default false). Desactivar interrompe só as **novas** aplicações; multas já aplicadas mantêm-se.
+
+#### `escaloes_multa` (até 3 por regra)
+| Coluna | Regra |
+|---|---|
+| tenant_id, regra_cobranca_id | FK (cascata na regra) |
+| ordem | tinyint 1–3, `unique(regra_cobranca_id, ordem)` |
+| dias_atraso | smallint ≥ 1: dia de atraso em que o escalão passa a vigorar (1 = primeiro dia em atraso, i.e. `vencimento + tolerância + 1`), `unique(regra_cobranca_id, dias_atraso)` |
+| tipo (+ `tipo_descricao`) | enum inteiro: PERCENTAGEM = 0, VALOR_FIXO = 1 |
+| valor | bigint > 0. PERCENTAGEM: **pontos-base** (100 = 1%, máx. 10000 = 100%). VALOR_FIXO: unidades menores da moeda da escola |
+
+- **Validações (servidor):** com `multa_activa` há pelo menos 1 escalão e no máximo `Multa::MAX_ESCALOES` (3, constante de validação — o esquema não limita); `ordem` contígua a partir de 1; `dias_atraso` estritamente crescentes com a `ordem`; valor fixo validado por `ValorMonetario` na moeda do tenant. Os valores podem ser iguais ou diferentes de escalão para escalão (a multa nunca baixa sozinha, ver Propinas §15).
+- **Escrita:** a tela de Regras de Cobrança guarda regra + escalões num só pedido; a Action guarda regra e escalões numa transacção, e só substitui os escalões quando `multa_activa` está a true e a lista vem validada; com a multa desligada (ou sem os campos no pedido) os escalões gravados ficam intactos, para poderem ser reactivados. Sem menu novo: nova secção **Multas por atraso** (interruptor + lista de escalões, máx. 3) na página existente. Permissão existente `regra-cobranca.editar`.
+- **Sem FK de multas aplicadas para `escaloes_multa`:** cada multa aplicada guarda o seu snapshot (Propinas §15), por isso editar ou apagar escalões nunca altera nem bloqueia multas antigas.
+- **Moeda:** escalões VALOR_FIXO contêm montantes; `PrecosDasMultas` implementa `FonteDePrecos` (existe qualquer escalão VALOR_FIXO) e bloqueia a troca de moeda. Os de percentagem não dependem da moeda.
 
 ### Moeda e Câmbio (configuração monetária da escola)
 
@@ -195,7 +210,7 @@ Seguir a camada fina: Controller → Service (leitura) / Action (escrita), com D
 - A suite existente continua verde e o build frontend funciona.
 
 ## 9. Fora de âmbito
-Propinas operacionais, pagamentos, recibos, dívidas e acordos de negociação, descontos/bolsas/isenções (incluindo plano com valor 0, que não é um bug mas um caso de Descontos/Bolsas), multas e juros de mora, vendas, stock, fiscalidade, e qualquer FK para `matriculas`.
+Propinas operacionais, pagamentos, recibos, dívidas e acordos de negociação, descontos/bolsas/isenções (incluindo plano com valor 0, que não é um bug mas um caso de Descontos/Bolsas), aplicação de multas (spec de Propinas §15) e juros de mora, vendas, stock, fiscalidade, e qualquer FK para `matriculas`.
 
 ## 10. Entrega em 3 planos
 1. **Fundação:** módulo, permissões, menu, `Dinheiro` (value object `Support\Dinheiro` + cast `Casts\DinheiroCast`), `EstadoCobranca` e Regras de Cobrança. O plano detalhado está em `docs/superpowers/plans/2026-10-08-financeiro-fundacao-regras-cobranca.md`.

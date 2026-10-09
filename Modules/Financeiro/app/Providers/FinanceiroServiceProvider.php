@@ -8,6 +8,7 @@ use Modules\Financeiro\Console\SincronizarFinanceiroCommand;
 use Modules\Financeiro\Provisioning\ProvisionarConfiguracaoMonetaria;
 use Modules\Financeiro\Provisioning\ProvisionarRegrasCobranca;
 use Modules\Financeiro\Support\FontesDePrecos;
+use Modules\Financeiro\Support\PrecosDasMultas;
 use Modules\Financeiro\Support\PrecosDoCatalogo;
 use Modules\Financeiro\Support\PrecosDosPlanos;
 use Nwidart\Modules\Support\ModuleServiceProvider;
@@ -41,6 +42,6 @@ class FinanceiroServiceProvider extends ModuleServiceProvider
             ProvisionarRegrasCobranca::class,
             ProvisionarConfiguracaoMonetaria::class,
         ], ProvisionaTenant::ETIQUETA);
-        $this->app->tag([PrecosDoCatalogo::class, PrecosDosPlanos::class], FontesDePrecos::ETIQUETA);
+        $this->app->tag([PrecosDoCatalogo::class, PrecosDosPlanos::class, PrecosDasMultas::class], FontesDePrecos::ETIQUETA);
     }
 }

@@ -3,6 +3,7 @@
 namespace Modules\Financeiro\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 
@@ -19,6 +20,7 @@ class RegraCobranca extends Model
         'gerar_automaticamente' => false,
         'permite_negociacao' => false,
         'desconto_maximo_negociacao' => 0,
+        'multa_activa' => false,
     ];
 
     protected $table = 'regras_cobranca';
@@ -31,6 +33,7 @@ class RegraCobranca extends Model
         'gerar_automaticamente',
         'permite_negociacao',
         'desconto_maximo_negociacao',
+        'multa_activa',
     ];
 
     protected $hidden = ['tenant_id', 'criado_por', 'editado_por'];
@@ -43,6 +46,7 @@ class RegraCobranca extends Model
         'gerar_automaticamente' => 'boolean',
         'permite_negociacao' => 'boolean',
         'desconto_maximo_negociacao' => 'integer',
+        'multa_activa' => 'boolean',
     ];
 
     protected static function booted(): void
@@ -53,6 +57,11 @@ class RegraCobranca extends Model
                 $regra->desconto_maximo_negociacao = 0;
             }
         });
+    }
+
+    public function escaloes(): HasMany
+    {
+        return $this->hasMany(EscalaoMulta::class, 'regra_cobranca_id')->orderBy('ordem');
     }
 
     /**

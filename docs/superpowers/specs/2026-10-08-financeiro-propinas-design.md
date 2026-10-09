@@ -12,7 +12,7 @@ Gerir a propina operacional: a obrigação financeira concreta de uma **matrícu
 ## 2. Decisões fechadas
 
 1. A propina pertence sempre a uma matrícula (`matricula_id` obrigatório) e referencia o plano que a originou.
-2. Dinheiro em cêntimos (`Dinheiro`). Estado com `estado` + `estado_descricao`. Tenancy via `PertenceAoTenant`.
+2. Dinheiro em unidades menores da moeda da escola (`Dinheiro`). Estado com `estado` + `estado_descricao`. Tenancy via `PertenceAoTenant`.
 3. **Pendente e Em Atraso são derivados.** Os estados persistidos são cinco: Em Aberto, Parcialmente Paga, Paga, Cancelada e Anulada.
 4. A propina guarda um **snapshot** do plano e das regras no momento da geração. Alterações posteriores nunca a afectam.
 5. `saldo` não é coluna: é `valor - valor_pago`. `valor_pago` é um cache mantido apenas por `RecalcularPropina` (secção 6).
@@ -29,6 +29,7 @@ Gerir a propina operacional: a obrigação financeira concreta de uma **matrícu
 | periodo_inicio, periodo_fim | date: primeiro e último dia dos meses cobertos, vindos de `competencias()` |
 | valor | `Dinheiro`, snapshot do valor do plano |
 | valor_pago | `Dinheiro`, cache, `0 ≤ valor_pago ≤ valor` (CHECK) |
+| capital_liquidado_em | date nulo, cache mantido só por `RecalcularPropina`: `data_pagamento` do pagamento (ou utilização de crédito) que levou o saldo de capital a 0; nulo enquanto `saldo > 0` (volta a nulo se o pagamento for anulado ou o valor reajustado) |
 | data_vencimento | date, snapshot (secção 5) |
 | dias_tolerancia | tinyint, snapshot de `regras_cobranca` |
 | estado (+descricao) | enum persistido de 5 valores |
@@ -63,6 +64,7 @@ Quando uma propina em atraso já tem pagamentos, o estado mostrado é Em Atraso 
 - `valor_pago` = soma das distribuições de pagamentos **Confirmado** + soma das utilizações de crédito **Activa**.
 - Ajusta o estado persistido entre Em Aberto, Parcialmente Paga e Paga. Nunca altera Cancelada ou Anulada.
 - Falha se o resultado violar `0 ≤ valor_pago ≤ valor`.
+- Actualiza `capital_liquidado_em` e, se existir multa, delega em `RecalcularMulta` (Propinas §15) para o seu `valor_pago`.
 
 Mais nenhum código escreve `valor_pago` ou `estado`. Pagamentos chama este serviço, e é esta a "estrutura para integração" exigida.
 
@@ -80,6 +82,7 @@ Mais nenhum código escreve `valor_pago` ou `estado`. Pagamentos chama este serv
 ## 8. Cancelar e anular
 - **Cancelar** (permissão `cancelar`, motivo obrigatório): só Em Aberto, sem `valor_pago` e sem histórico de pagamentos confirmados.
 - **Anular** (permissão `anular`, motivo obrigatório): só com `valor_pago = 0` mas com histórico (todos os pagamentos que a tocaram já anulados).
+- Se a propina tem multa: sem pagamentos de multa, a multa passa a ANULADA com a propina; com pagamentos de multa Confirmados, cancelar/anular é bloqueado até se anularem esses pagamentos.
 - Nenhuma propina é apagada fisicamente. Eliminar não existe.
 
 ## 9. Eventos de matrícula
@@ -101,7 +104,7 @@ Novo caso `Modulo::PROPINA` (slug `propina`) com ver, listar, criar (gerar), can
 - Isolamento de tenant (A não vê, não gera e não cancela as de B) e permissões por acção.
 
 ## 13. Fora de âmbito
-Registo e distribuição de pagamentos, crédito, acordos de pagamento (prazos e prestações), descontos individuais e bolsas, recibos, relatórios, multas e juros, e o estado de matrícula "Trancada".
+Registo e distribuição de pagamentos, crédito, acordos de pagamento (prazos e prestações), descontos individuais e bolsas, recibos, relatórios, juros de mora e o estado de matrícula "Trancada".
 
 ## 14. Alteração de preço de um plano e tratamento das propinas em aberto (módulo de Propinas; decisão registada, ainda não implementada)
 
@@ -142,4 +145,52 @@ Registo e distribuição de pagamentos, crédito, acordos de pagamento (prazos e
 - `propina_ajustes`: `tenant_id`, `alteracao_preco_id` (FK), `propina_id` (FK), `valor_anterior`, `valor_novo`, `valor_pago_no_momento`, `plano_anterior_id`, `plano_novo_id` (quando há reassociação), `motivo`, `criado_por`, `created_at`.
 - `propinas` ganha `valor_original` (imutável).
 
-Fora de âmbito: acordos de prazo/prestações, multas e juros (plano de Dívidas e Negociação) e desconto individual por aluno (Descontos e Bolsas).
+Fora de âmbito: acordos de prazo/prestações e juros de mora (plano de Dívidas e Negociação) e desconto individual por aluno (Descontos e Bolsas).
+
+## 15. Multas por atraso (decisão fechada; ainda não implementada)
+
+Configuração: spec de Configurações (`regras_cobranca.multa_activa` + `escaloes_multa`). Aqui definem-se o modelo, a aplicação e a isenção.
+
+### 15.1 Decisões
+1. **Base:** saldo de **capital** em dívida, **congelado** no registo da multa (nunca inclui multas).
+2. **Imputação:** primeiro o capital da propina, depois a sua multa. O capital pode ficar Pago com multa pendente; o **estado da propina depende só do capital** e a multa pendente é mostrada à parte.
+3. **Aplicação:** automática, por comando diário idempotente `financeiro:aplicar-multas` (convenção `ParaTodosOsTenants`). **Isenção ou redução:** manual, permissão própria `propina.isentar-multa`, motivo obrigatório, com histórico.
+4. **Tipo por escalão:** percentagem (pontos-base) ou valor fixo.
+5. **Uma única multa por propina.** Quando o escalão sobe, o `valor` da multa passa ao novo valor e só é exigida a **diferença** para o já pago.
+6. **Histórico:** multas aplicadas não são alteradas por mudanças nas Regras de Cobrança.
+7. Os juros de mora continuam fora de âmbito.
+
+### 15.2 Tabelas
+**`propina_multas`** (1:1 com `propinas`) — `tenant_id`, `propina_id` (**`unique(tenant_id, propina_id)`**), `escalao_ordem` (último escalão aplicado), `tipo` e `valor_regra` (snapshot do escalão: pontos-base ou unidades menores), `base_capital` (congelada em L₁, ver 15.3), `valor` (multa vigente), `valor_pago` (cache, `0 ≤ valor_pago ≤ valor`, CHECK), `estado` (+ `estado_descricao`: ACTIVA, REDUZIDA, ISENTA, ANULADA), `bloqueada_automatico` (bool: true após qualquer revisão manual), `criado_por`/`editado_por` (nulos quando criada pelo comando), timestamps. Sem FK para `escaloes_multa`.
+**`propina_multa_revisoes`** (N:1 com `propina_multas`; **só acrescenta**, o model recusa `update`/`delete`) — `tenant_id`, `propina_multa_id`, `origem` (AUTOMATICA | MANUAL), `escalao_ordem` (nulo se manual), `valor_anterior`, `valor_novo`, `data_referencia` (L_k, para as automáticas), `motivo` (obrigatório se manual), `criado_por` (nulo se automática), `created_at`. **`unique(propina_multa_id, escalao_ordem)` onde `origem = AUTOMATICA`** (índice parcial, SQL cru).
+**`pagamento_multas`** (Pagamentos): distribui parte de um pagamento para uma multa.
+
+### 15.3 Cálculo (determinístico, independente do dia em que o comando corre)
+Para cada propina com `multa_activa`, não Cancelada nem Anulada (inclui as já Pagas: o atraso pode ter existido antes de o capital ser pago), e cada escalão k da regra em vigor:
+- `L_k = data_vencimento + dias_tolerancia + dias_atraso_k` (dias corridos; datas da propina, snapshot).
+- `saldo_em(d) = valor − Σ(distribuições Confirmadas e utilizações de crédito Activas com data_pagamento < d)`. O escalão k **aplica-se** se `L_k ≤ hoje` e `saldo_em(L_k) > 0`, i.e. o capital ainda estava em dívida no início do dia L_k.
+- `base_capital = saldo_em(L₁)`, **fixada ao criar a multa e nunca recalculada**. Valor do escalão: PERCENTAGEM → `base_capital × pontos_base / 10000` (arredondado para baixo, como `Dinheiro::percentagem`); VALOR_FIXO → o próprio valor.
+- `valor_novo = max(valor_actual, valor_k)`: **a multa nunca baixa automaticamente** (mesmo se um escalão fixo for menor que o anterior).
+- Se o capital foi liquidado antes de L_k (`saldo_em(L_k) = 0`), os escalões seguintes **não se aplicam**: a multa congela no valor vigente à data em que o capital foi pago.
+- **Decisão explícita (confirmada pelo dono):** um pagamento registado com atraso, mas com `data_pagamento` efectiva anterior a um L_k cujo escalão já foi aplicado, **não reverte automaticamente** a multa. A multa mantém-se e a correcção é uma **redução ou isenção manual** (`propina.isentar-multa`, motivo obrigatório, registada em `propina_multa_revisoes`). Razão: reverter automaticamente permitiria alterar multas já aplicadas, e possivelmente já cobradas e recibadas, por um registo tardio; a decisão de perdoar é humana e auditável.
+- Se o capital reabre (pagamento anulado, ou reajuste que cria saldo), o comando retoma na execução seguinte, aplicando em atraso os escalões cujo L_k já passou com `saldo_em(L_k) > 0`.
+
+### 15.4 Subida de escalão, com capital já pago, e cálculo da diferença
+- **Capital totalmente pago antes de L_k:** o escalão k **não sobe** a multa (ver acima). Capital pago só **depois** de L_k: o escalão k aplicou-se (o aluno esteve em dívida nesse dia) e a multa fica no valor k, mesmo que o capital já esteja pago quando o comando corre (catch-up por L_k, não pela data de execução).
+- **Diferença exigida** = `valor_vigente − valor_pago_da_multa` (nunca negativa, porque `valor` só sobe e a redução manual não desce abaixo de `valor_pago`). Exemplo: base 20 000; escalão 1 = 5 % → multa 1 000, paga na íntegra; escalão 2 = 10 % → `valor = 2 000`, `valor_pago = 1 000` → exigido 1 000. Se o escalão 1 estiver só parcialmente pago (400), o saldo da multa passa a 1 600.
+- A multa vigente só sobe por escalões; isenção/redução manual define `valor` (≥ `valor_pago`), passa a REDUZIDA (ou ISENTA se `valor = valor_pago`) e põe `bloqueada_automatico = true`: o comando deixa de a alterar.
+
+### 15.5 Prevenção de aplicação duplicada (4 camadas)
+1. **Esquema:** `unique(tenant_id, propina_id)` em `propina_multas` (uma só multa) e `unique(propina_multa_id, escalao_ordem)` parcial nas revisões automáticas.
+2. **Escrita condicional:** criação por `INSERT … ON CONFLICT DO NOTHING` (`insertOrIgnore`, sem apanhar excepções, para não abortar a transacção em PostgreSQL); subida por `UPDATE propina_multas SET escalao_ordem = k, valor = … WHERE id = ? AND escalao_ordem < k AND NOT bloqueada_automatico` e só se `affected = 1` se escreve a revisão. Duas execuções simultâneas: a segunda afecta 0 linhas e não faz nada.
+3. **Concorrência:** uma transacção por propina, com a propina bloqueada (`lockForUpdate`, mesma ordem do `RecalcularPropina`); comando com `withoutOverlapping` e *lock* por tenant.
+4. **Idempotência por construção:** o comando só avalia escalões com `ordem > escalao_ordem` da multa; correr 2× no mesmo dia ou reprocessar um período não produz efeitos novos. Teste obrigatório.
+
+### 15.6 Regras de interacção
+- **Reajuste de preço (§14):** multas aplicadas não se recalculam; a pré-visualização lista-as como "não alteradas".
+- **Regras de Cobrança alteradas:** só afectam escalões ainda não atingidos; multas e snapshots existentes mantêm-se. Desactivar `multa_activa` pára novas aplicações.
+- **Estado resolvido (§4):** inalterado, depende do capital. A UI mostra "multa pendente" = `valor − valor_pago` por propina e no total do aluno.
+- **Permissões:** `propina.isentar-multa` (acção nova no catálogo `Acao`, dívida já conhecida) para isentar/reduzir; ver multas segue `propina.ver`.
+
+### 15.7 Testes obrigatórios
+Percentagem e valor fixo; arredondamento; moeda sem decimais; base congelada (pagamento parcial depois de L₁ não altera a base); `max()` nunca baixa; capital pago antes de L₂ congela; capital pago depois de L₂ aplica; catch-up com comando parado vários dias; diferença com multa parcialmente paga; isenção/redução bloqueia o automático; revisões imutáveis; comando 2× e concorrente sem duplicar (a concorrência real só se valida em PostgreSQL); regras alteradas não mexem em multas existentes; `multa_activa` desligada; cancelar propina com e sem multa paga; reconciliação `valor_pago` da multa = Σ `pagamento_multas`; isolamento de tenant.

@@ -4,8 +4,10 @@ namespace Modules\Financeiro\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Inertia\Inertia;
+use Modules\Financeiro\Enums\TipoMulta;
 use Modules\Financeiro\Http\Requests\AtualizarRegraCobrancaRequest;
 use Modules\Financeiro\Services\GestaoRegraCobrancaService;
+use Modules\Financeiro\Support\Multa;
 
 class RegraCobrancaController extends Controller
 {
@@ -18,8 +20,14 @@ class RegraCobrancaController extends Controller
     {
         $this->authorize('regra-cobranca.ver');
 
+        $regra = $this->service->obterAtual();
+
         return Inertia::render('Financeiro/RegrasCobranca/Edit', [
-            'regra' => $this->service->obterAtual(),
+            'regra' => $regra,
+            'escaloes' => $this->service->escaloesParaEdicao($regra),
+            'moeda' => $this->service->moeda(),
+            'tiposMulta' => TipoMulta::opcoes(),
+            'maxEscaloes' => Multa::MAX_ESCALOES,
         ]);
     }
 

@@ -12,6 +12,8 @@ class AtualizarRegraCobrancaAction
     {
         return DB::transaction(function () use ($dto) {
             $regra = RegraCobranca::doTenant();
+            // Serializa edições concorrentes da mesma regra (regra + escalões).
+            $regra = RegraCobranca::query()->lockForUpdate()->findOrFail($regra->id);
 
             $regra->fill([
                 'dia_vencimento' => $dto->dia_vencimento,
@@ -21,7 +23,24 @@ class AtualizarRegraCobrancaAction
                 'gerar_automaticamente' => $dto->gerar_automaticamente,
                 'permite_negociacao' => $dto->permite_negociacao,
                 'desconto_maximo_negociacao' => $dto->desconto_maximo_negociacao,
-            ])->save();
+            ]);
+            if ($dto->multa_activa !== null) {
+                $regra->multa_activa = $dto->multa_activa;
+            }
+            $regra->save();
+
+            // Regra e escalões num só passo: qualquer falha reverte tudo (sem apanhar excepções aqui).
+            if ($dto->escaloes !== null) {
+                $regra->escaloes()->delete();
+            }
+            foreach ($dto->escaloes ?? [] as $escalao) {
+                $regra->escaloes()->create([
+                    'ordem' => $escalao->ordem,
+                    'dias_atraso' => $escalao->dias_atraso,
+                    'tipo' => $escalao->tipo,
+                    'valor' => $escalao->valor,
+                ]);
+            }
 
             return $regra->fresh();
         });
