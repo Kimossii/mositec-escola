@@ -50,6 +50,14 @@ const opcoesTurma = computed(() => [
     ...props.turmas.filter((t) => t.ano_lectivo_id === form.ano_lectivo_id).map((t) => ({ value: t.id, label: t.nome })),
 ]);
 
+function textoDoAlvo(a) {
+    if (a.turma_id) return `Turma ${a.turma_nome}`;
+
+    return [a.curso_nome, a.nivel_nome, a.turno_nome].filter(Boolean).join(' · ');
+}
+
+const alvosEliminados = computed(() => form.alvos.filter((a) => a.eliminado));
+
 watch(() => props.show, (show) => {
     if (!show) return;
     form.ano_lectivo_id = props.plano?.ano_lectivo_id ?? props.anosLectivos[0]?.id ?? '';
@@ -61,6 +69,8 @@ watch(() => props.show, (show) => {
     form.mes_inicio = props.plano?.mes_inicio ?? 9;
     form.mes_fim = props.plano?.mes_fim ?? 6;
     form.alvos = (props.plano?.alvos ?? []).map((a) => ({
+        eliminado: a.eliminado === true,
+        descricao: textoDoAlvo(a),
         nivel_academico_id: a.nivel_academico_id ?? '',
         curso_id: a.curso_id ?? '',
         turno_id: a.turno_id ?? '',
@@ -84,7 +94,7 @@ const erroAlvos = computed(() => {
 });
 
 function adicionarAlvo() {
-    form.alvos.push({ nivel_academico_id: '', curso_id: '', turno_id: '', turma_id: '' });
+    form.alvos.push({ eliminado: false, nivel_academico_id: '', curso_id: '', turno_id: '', turma_id: '' });
 }
 
 function removerAlvo(indice) {
@@ -206,7 +216,20 @@ function submeter() {
                         <div v-else class="text-muted fs-7 mb-2">
                             Vence o alvo mais específico: turma &gt; mais campos preenchidos &gt; curso &gt; nível &gt; turno. Uma turma específica não se combina com os outros campos.
                         </div>
+                        <div v-if="alvosEliminados.length" class="alert alert-warning d-flex flex-column fs-7 py-3 mb-3">
+                            <span>
+                                {{ alvosEliminados.length === 1 ? 'Um alvo deste plano foi eliminado' : alvosEliminados.length + ' alvos deste plano foram eliminados' }}
+                                e será removido ao guardar. Se todos os alvos tiverem sido eliminados, escolha novos alvos ou desactive o plano.
+                            </span>
+                        </div>
                         <div v-for="(alvo, indice) in form.alvos" :key="indice" class="row g-3 align-items-center mb-2">
+                          <template v-if="alvo.eliminado">
+                            <div class="col-md-10">
+                                <div class="form-control form-control-solid bg-body-secondary text-muted text-decoration-line-through">{{ alvo.descricao }}</div>
+                            </div>
+                            <div class="col-md-2 text-end"><span class="badge badge-light-warning">Eliminado</span></div>
+                          </template>
+                          <template v-else>
                             <div class="col-md-2"><SelectSolid :model-value="alvo.nivel_academico_id" :options="opcoesNivel" @update:model-value="(v) => definirCampo(alvo, 'nivel_academico_id', v)" /></div>
                             <div class="col-md-3"><SelectSolid :model-value="alvo.curso_id" :options="opcoesCurso" @update:model-value="(v) => definirCampo(alvo, 'curso_id', v)" /></div>
                             <div class="col-md-2"><SelectSolid :model-value="alvo.turno_id" :options="opcoesTurno" @update:model-value="(v) => definirCampo(alvo, 'turno_id', v)" /></div>
@@ -214,6 +237,7 @@ function submeter() {
                             <div class="col-md-2 text-end">
                                 <button type="button" class="btn btn-sm btn-light-danger" @click="removerAlvo(indice)">Remover</button>
                             </div>
+                          </template>
                         </div>
                         <div class="text-danger fs-7 mt-1" v-if="erroAlvos">{{ erroAlvos }}</div>
                     </div>

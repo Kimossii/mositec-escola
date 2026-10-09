@@ -16,6 +16,13 @@ defineOptions({ layout: AppLayout });
 
 const chave = (moduloId, acaoId) => `${moduloId}-${acaoId}`;
 
+// Cada módulo traz os ids das acções que lhe são aplicáveis (modulo.acoes);
+// as restantes células nem se mostram nem entram nos totais de linha/coluna.
+const aplicavel = (modulo, acaoId) => modulo.acoes.includes(acaoId);
+const acoesDe = (modulo) => props.acoes.filter((acao) => aplicavel(modulo, acao.id));
+const modulosDa = (acaoId) => props.modulos.filter((modulo) => aplicavel(modulo, acaoId));
+const moduloPorId = (moduloId) => props.modulos.find((m) => m.id === moduloId);
+
 const estado = reactive(
     Object.fromEntries(
         props.marcadas.map((m) => [chave(m.modulo_id, m.acao_id), true]),
@@ -28,23 +35,23 @@ function alternar(moduloId, acaoId) {
 }
 
 function todosMarcadosNaColuna(acaoId) {
-    return props.modulos.every((modulo) => !!estado[chave(modulo.id, acaoId)]);
+    return modulosDa(acaoId).every((modulo) => !!estado[chave(modulo.id, acaoId)]);
 }
 
 function alternarColuna(acaoId) {
     const marcar = !todosMarcadosNaColuna(acaoId);
-    props.modulos.forEach((modulo) => {
+    modulosDa(acaoId).forEach((modulo) => {
         estado[chave(modulo.id, acaoId)] = marcar;
     });
 }
 
 function todosMarcadosNaLinha(moduloId) {
-    return props.acoes.every((acao) => !!estado[chave(moduloId, acao.id)]);
+    return acoesDe(moduloPorId(moduloId)).every((acao) => !!estado[chave(moduloId, acao.id)]);
 }
 
 function alternarLinha(moduloId) {
     const marcar = !todosMarcadosNaLinha(moduloId);
-    props.acoes.forEach((acao) => {
+    acoesDe(moduloPorId(moduloId)).forEach((acao) => {
         estado[chave(moduloId, acao.id)] = marcar;
     });
 }
@@ -55,7 +62,9 @@ function guardar() {
         .map(([k]) => {
             const [modulo_id, acao_id] = k.split('-').map(Number);
             return { modulo_id, acao_id };
-        });
+        })
+        // Pares inaplicáveis (ocultos na grelha) não se reenviam: ao guardar, o servidor substitui tudo e limpa-os.
+        .filter(({ modulo_id, acao_id }) => aplicavel(moduloPorId(modulo_id), acao_id));
 
     router.put(`/permissoes/perfis/${props.perfil.id}/permissoes`, { celulas }, {
         preserveScroll: true,
@@ -107,13 +116,16 @@ function guardar() {
                                 </div>
                             </td>
                             <td v-for="acao in acoes" :key="acao.id" class="text-center">
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input"
-                                    :checked="!!estado[`${modulo.id}-${acao.id}`]"
-                                    :disabled="!can('autorizacao.editar')"
-                                    @change="alternar(modulo.id, acao.id)"
-                                />
+                                <template v-if="aplicavel(modulo, acao.id)">
+                                    <input
+                                        type="checkbox"
+                                        class="form-check-input"
+                                        :checked="!!estado[`${modulo.id}-${acao.id}`]"
+                                        :disabled="!can('autorizacao.editar')"
+                                        @change="alternar(modulo.id, acao.id)"
+                                    />
+                                </template>
+                                <span v-else class="text-muted">&mdash;</span>
                             </td>
                         </tr>
                     </tbody>

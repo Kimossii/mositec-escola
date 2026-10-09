@@ -25,7 +25,7 @@ class ResolvePlanoAplicavel
         $planos = PlanoPropina::query()
             ->activos()
             ->where('ano_lectivo_id', $turma->ano_lectivo_id)
-            ->with(['alvos', 'anoLectivo'])
+            ->with(['alvos.nivelAcademico', 'alvos.turno', 'alvos.turma', 'anoLectivo'])
             ->get();
 
         foreach ($planos as $plano) {
@@ -75,6 +75,11 @@ class ResolvePlanoAplicavel
         $melhor = null;
 
         foreach ($plano->alvos as $alvo) {
+            // Alvo cujo nível/turno/turma foi eliminado: nunca casa (o plano não passa a "geral").
+            if ($alvo->obsoleto()) {
+                continue;
+            }
+
             if (! $this->casa($alvo->nivel_academico_id, $turma->nivel_academico_id)
                 || ! $this->casa($alvo->curso_id, $turma->curso_id)
                 || ! $this->casa($alvo->turno_id, $turma->turno_id)

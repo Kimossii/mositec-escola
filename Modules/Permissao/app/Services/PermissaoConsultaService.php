@@ -6,11 +6,16 @@ use Illuminate\Support\Collection;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo;
 use Modules\Permissao\Models\Role;
+use Modules\Permissao\Support\AcoesAplicaveis;
 use Modules\Permissao\Models\RolePermissao;
 use Modules\Usuario\Models\User;
 
 class PermissaoConsultaService
 {
+    public function __construct(private AcoesAplicaveis $aplicaveis)
+    {
+    }
+
     public function listarPerfis(): Collection
     {
         return Role::withCount('users')
@@ -38,8 +43,8 @@ class PermissaoConsultaService
     {
         return [
             'perfil' => ['id' => $role->id, 'descricao' => $role->descricao],
-            'modulos' => Modulo::orderBy('nome')->get(['id', 'nome', 'descricao']),
-            'acoes' => Acao::orderBy('numero')->get(['id', 'nome']),
+            'modulos' => $this->modulosComAcoes(),
+            'acoes' => $this->colunasDaGrelha(),
             'marcadas' => $role->permissoes()->get(['modulo_id', 'acao_id']),
         ];
     }
@@ -50,8 +55,8 @@ class PermissaoConsultaService
             'utilizador' => ['id' => $user->id, 'name' => $user->name],
             'perfis' => Role::get(['id', 'descricao']),
             'perfisAtribuidos' => $user->roles()->pluck('roles.id'),
-            'modulos' => Modulo::orderBy('nome')->get(['id', 'nome', 'descricao']),
-            'acoes' => Acao::orderBy('numero')->get(['id', 'nome']),
+            'modulos' => $this->modulosComAcoes(),
+            'acoes' => $this->colunasDaGrelha(),
             // União do que os perfis atribuídos já concedem — só para pintar
             // a grelha com o estado correcto (célula que o perfil já dá
             // arranca Concedida, não Negada). Não é guardado nem é um 3º
@@ -74,5 +79,31 @@ class PermissaoConsultaService
                 'acao_id' => $permissao->acao_id,
             ])
             ->all();
+    }
+
+    /**
+     * Colunas da grelha: só as acções aplicáveis a pelo menos um módulo.
+     */
+    private function colunasDaGrelha(): Collection
+    {
+        return Acao::whereIn('nome', $this->aplicaveis->emUso())->orderBy('numero')->get(['id', 'nome']);
+    }
+
+    /**
+     * Módulos com os ids das acções que lhes são aplicáveis (`acoes`).
+     */
+    private function modulosComAcoes(): Collection
+    {
+        $idsPorNome = Acao::pluck('id', 'nome');
+
+        return Modulo::orderBy('nome')->get(['id', 'nome', 'descricao'])->map(function (Modulo $modulo) use ($idsPorNome) {
+            $modulo->setAttribute('acoes', collect($this->aplicaveis->doRegistro($modulo))
+                ->map(fn (string $nome) => $idsPorNome[$nome] ?? null)
+                ->filter()
+                ->values()
+                ->all());
+
+            return $modulo;
+        });
     }
 }

@@ -19,6 +19,13 @@ defineOptions({ layout: AppLayout });
 
 const chave = (moduloId, acaoId) => `${moduloId}-${acaoId}`;
 
+// Cada módulo traz os ids das acções que lhe são aplicáveis (modulo.acoes);
+// as restantes células nem se mostram nem entram nos totais de linha/coluna.
+const aplicavel = (modulo, acaoId) => modulo.acoes.includes(acaoId);
+const acoesDe = (modulo) => props.acoes.filter((acao) => aplicavel(modulo, acao.id));
+const modulosDa = (acaoId) => props.modulos.filter((modulo) => aplicavel(modulo, acaoId));
+const moduloPorId = (moduloId) => props.modulos.find((m) => m.id === moduloId);
+
 // overridesEstado só guarda as células que o admin decidiu explicitamente
 // (já eram override do utilizador, ou tocadas nesta sessão). 1 = concedido,
 // 0 = negado — só estes dois valores, nunca "herda" nem null. Uma célula sem
@@ -47,23 +54,23 @@ function proximoEstado(moduloId, acaoId) {
 }
 
 function todosConcedidosNaColuna(acaoId) {
-    return props.modulos.every((modulo) => estadoCelula(modulo.id, acaoId) === 1);
+    return modulosDa(acaoId).every((modulo) => estadoCelula(modulo.id, acaoId) === 1);
 }
 
 function alternarColuna(acaoId) {
     const marcar = todosConcedidosNaColuna(acaoId) ? 0 : 1;
-    props.modulos.forEach((modulo) => {
+    modulosDa(acaoId).forEach((modulo) => {
         overridesEstado[chave(modulo.id, acaoId)] = marcar;
     });
 }
 
 function todosConcedidosNaLinha(moduloId) {
-    return props.acoes.every((acao) => estadoCelula(moduloId, acao.id) === 1);
+    return acoesDe(moduloPorId(moduloId)).every((acao) => estadoCelula(moduloId, acao.id) === 1);
 }
 
 function alternarLinha(moduloId) {
     const marcar = todosConcedidosNaLinha(moduloId) ? 0 : 1;
-    props.acoes.forEach((acao) => {
+    acoesDe(moduloPorId(moduloId)).forEach((acao) => {
         overridesEstado[chave(moduloId, acao.id)] = marcar;
     });
 }
@@ -89,10 +96,11 @@ function removerPerfil(roleId) {
 }
 
 function guardarOverrides() {
+    // Pares inaplicáveis (ocultos na grelha) não se reenviam: ao guardar, o servidor substitui tudo e limpa-os.
     const celulas = Object.entries(overridesEstado).map(([k, valor]) => {
         const [modulo_id, acao_id] = k.split('-').map(Number);
         return { modulo_id, acao_id, permitido: valor === 1 };
-    });
+    }).filter(({ modulo_id, acao_id }) => aplicavel(moduloPorId(modulo_id), acao_id));
 
     router.put(`/permissoes/utilizadores/${props.utilizador.id}/permissoes`, { celulas }, {
         preserveScroll: true,
@@ -167,18 +175,21 @@ function guardarOverrides() {
                                 </div>
                             </td>
                             <td v-for="acao in acoes" :key="acao.id" class="text-center">
-                                <button
-                                    type="button"
-                                    class="btn btn-sm min-w-100px"
-                                    :class="{
-                                        'btn-light-success btn-permissao-concedido': estadoCelula(modulo.id, acao.id) === 1,
-                                        'btn-light-danger': estadoCelula(modulo.id, acao.id) === 0,
-                                    }"
-                                    :disabled="!can('autorizacao.editar')"
-                                    @click="proximoEstado(modulo.id, acao.id)"
-                                >
-                                    {{ estadoCelula(modulo.id, acao.id) === 1 ? 'Concedido' : 'Negado' }}
-                                </button>
+                                <template v-if="aplicavel(modulo, acao.id)">
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm min-w-100px"
+                                        :class="{
+                                            'btn-light-success btn-permissao-concedido': estadoCelula(modulo.id, acao.id) === 1,
+                                            'btn-light-danger': estadoCelula(modulo.id, acao.id) === 0,
+                                        }"
+                                        :disabled="!can('autorizacao.editar')"
+                                        @click="proximoEstado(modulo.id, acao.id)"
+                                    >
+                                        {{ estadoCelula(modulo.id, acao.id) === 1 ? 'Concedido' : 'Negado' }}
+                                    </button>
+                                </template>
+                                <span v-else class="text-muted">&mdash;</span>
                             </td>
                         </tr>
                     </tbody>

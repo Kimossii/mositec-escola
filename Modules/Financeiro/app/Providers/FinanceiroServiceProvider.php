@@ -2,11 +2,13 @@
 
 namespace Modules\Financeiro\Providers;
 
+use Modules\AnoLectivo\Support\DependenciasRegistadasDoAnoLectivo;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
 use Modules\Financeiro\Console\CambioPlataformaCommand;
 use Modules\Financeiro\Console\SincronizarFinanceiroCommand;
 use Modules\Financeiro\Provisioning\ProvisionarConfiguracaoMonetaria;
 use Modules\Financeiro\Provisioning\ProvisionarRegrasCobranca;
+use Modules\Financeiro\Support\DependenciasDePlanosPropina;
 use Modules\Financeiro\Support\FontesDePrecos;
 use Modules\Financeiro\Support\PrecosDasMultas;
 use Modules\Financeiro\Support\PrecosDoCatalogo;
@@ -42,6 +44,7 @@ class FinanceiroServiceProvider extends ModuleServiceProvider
             ProvisionarRegrasCobranca::class,
             ProvisionarConfiguracaoMonetaria::class,
         ], ProvisionaTenant::ETIQUETA);
+        $this->app->tag([DependenciasDePlanosPropina::class], DependenciasRegistadasDoAnoLectivo::ETIQUETA);
         $this->app->tag([PrecosDoCatalogo::class, PrecosDosPlanos::class, PrecosDasMultas::class], FontesDePrecos::ETIQUETA);
     }
 }

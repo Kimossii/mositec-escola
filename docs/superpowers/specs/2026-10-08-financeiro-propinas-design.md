@@ -105,6 +105,7 @@ Novo caso `Modulo::PROPINA` (slug `propina`) com ver, listar, criar (gerar), can
 
 ## 13. Fora de âmbito
 Registo e distribuição de pagamentos, crédito, acordos de pagamento (prazos e prestações), descontos individuais e bolsas, recibos, relatórios, juros de mora e o estado de matrícula "Trancada".
+- Trancamento de matrícula (exigência de regularização financeira configurável por escola): ver `docs/superpowers/plans/2026-10-12-trancamento-matricula-plano.md` (proposta, a implementar depois de Propinas, Pagamentos e Multas; aguarda aprovação do dono).
 
 ## 14. Alteração de preço de um plano e tratamento das propinas em aberto (módulo de Propinas; decisão registada, ainda não implementada)
 

@@ -10,6 +10,7 @@ use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo as ModuloRegistro;
 use Modules\Permissao\Models\RolePermissao;
 use Modules\Permissao\Models\UserPermissao;
+use Modules\Permissao\Support\AcoesAplicaveis;
 use Modules\Permissao\Support\PermissaoCache;
 use Modules\Usuario\Models\User;
 
@@ -22,6 +23,7 @@ class PermissionResolver
     public function __construct(
         private readonly PermissaoCache $cache,
         private readonly TenantContext $contexto,
+        private readonly AcoesAplicaveis $aplicaveis,
     ) {}
 
     private function chaveMemoria(int $userId): string
@@ -140,6 +142,11 @@ class PermissionResolver
         $acaoNome = $acaoNomesPorId->get($acaoId);
 
         if ($modulo === null || $acaoNome === null) {
+            return null;
+        }
+
+        // Defesa em profundidade: par gravado de acção inaplicável não concede.
+        if (! $this->aplicaveis->aplicavel($modulo, $acaoNome)) {
             return null;
         }
 

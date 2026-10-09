@@ -45,7 +45,7 @@ class PlanoPropinaAlvo extends Model
 
     public function nivelAcademico(): BelongsTo
     {
-        return $this->belongsTo(NivelAcademico::class, 'nivel_academico_id');
+        return $this->belongsTo(NivelAcademico::class, 'nivel_academico_id')->withTrashed();
     }
 
     public function curso(): BelongsTo
@@ -55,11 +55,22 @@ class PlanoPropinaAlvo extends Model
 
     public function turno(): BelongsTo
     {
-        return $this->belongsTo(Turno::class, 'turno_id');
+        return $this->belongsTo(Turno::class, 'turno_id')->withTrashed();
     }
 
     public function turma(): BelongsTo
     {
-        return $this->belongsTo(Turma::class, 'turma_id');
+        return $this->belongsTo(Turma::class, 'turma_id')->withTrashed();
+    }
+
+    /**
+     * Algum dos destinos (nível, turno, turma) foi eliminado (soft delete)? Um alvo obsoleto
+     * nunca casa no resolvedor e é retirado ao guardar o plano. Cursos não têm soft delete.
+     */
+    public function obsoleto(): bool
+    {
+        return $this->nivelAcademico?->trashed() === true
+            || $this->turno?->trashed() === true
+            || $this->turma?->trashed() === true;
     }
 }

@@ -27,6 +27,33 @@ enum Modulo: int
     case PLANO_PROPINA = 20;
     case MOEDA_CAMBIO = 21;
 
+    /**
+     * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
+     * permissões — as que existiam antes de haver acções por módulo.
+     */
+    public const ACOES_BASE = ['ver', 'criar', 'editar', 'eliminar', 'listar', 'exportar'];
+
+    /**
+     * Fonte única das acções aplicáveis a cada módulo. A grelha de permissões
+     * só mostra estas, e o servidor rejeita conceder/negar qualquer outra.
+     *
+     * Por omissão, todos os módulos aplicam ACOES_BASE (nada muda). Um módulo
+     * futuro declara aqui as suas acções extra, ex. (ainda NÃO existem):
+     *
+     *   self::PROPINA => [...self::ACOES_BASE, 'cancelar', 'anular', 'ajustar', 'negociar', 'isentar-multa'],
+     *   self::PAGAMENTO => [...self::ACOES_BASE, 'anular'],
+     *
+     * Ver docs/superpowers/plans/2026-10-12-divida-catalogo-acoes-fk.md.
+     *
+     * @return list<string> nomes de `acoes.nome`
+     */
+    public function acoesAplicaveis(): array
+    {
+        return match ($this) {
+            default => self::ACOES_BASE,
+        };
+    }
+
     public function slug(): string
     {
         return match ($this) {

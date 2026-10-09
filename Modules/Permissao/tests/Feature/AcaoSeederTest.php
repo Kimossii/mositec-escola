@@ -22,6 +22,15 @@ class AcaoSeederTest extends TestCase
         $this->assertDatabaseHas('acoes', ['nome' => 'exportar', 'numero' => 5]);
     }
 
+    public function test_seeder_inclui_as_acoes_financeiras(): void
+    {
+        $this->seed(AcaoSeeder::class);
+
+        foreach (['confirmar' => 6, 'anular' => 7, 'cancelar' => 8, 'ajustar' => 9, 'negociar' => 10, 'isentar-multa' => 11] as $nome => $numero) {
+            $this->assertDatabaseHas('acoes', ['nome' => $nome, 'numero' => $numero]);
+        }
+    }
+
     public function test_seeder_e_idempotente(): void
     {
         $this->seed(AcaoSeeder::class);
@@ -30,7 +39,7 @@ class AcaoSeederTest extends TestCase
         $this->seed(AcaoSeeder::class);
 
         $this->assertSame($contagemInicial, Acao::count());
-        $this->assertSame(6, Acao::count());
+        $this->assertSame(12, Acao::count());
     }
 
     public function test_seeder_nao_apaga_role_permissoes_dependentes(): void

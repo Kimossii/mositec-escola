@@ -5,6 +5,7 @@ namespace Modules\Financeiro\Actions;
 use Illuminate\Validation\ValidationException;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Support\ReferenciasFinanceiras;
+use Modules\Financeiro\Support\ViolacaoDeChave;
 
 class EliminarPlanoPropinaAction
 {
@@ -20,6 +21,6 @@ class EliminarPlanoPropinaAction
             ]);
         }
 
-        $plano->delete();
+        ViolacaoDeChave::comoValidacao(fn () => $plano->delete());
     }
 }

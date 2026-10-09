@@ -67,8 +67,10 @@ function alvoTexto(alvo) {
 }
 
 function alvosTexto(plano) {
-    return plano.alvos.length === 0 ? 'Todas as turmas' : plano.alvos.map(alvoTexto).join('; ');
+    return plano.alvos.length === 0 ? 'Todas as turmas' : plano.alvos.map((a) => alvoTexto(a) + (a.eliminado ? ' (eliminado)' : '')).join('; ');
 }
+
+const temAlvoEliminado = (plano) => plano.alvos.some((a) => a.eliminado);
 
 const modalAberto = ref(false);
 const planoEmEdicao = ref(null);
@@ -236,7 +238,10 @@ function confirmarEliminacao() {
                             <td>{{ plano.periodicidade_descricao }}</td>
                             <td class="text-end">{{ formatarDinheiro(plano.valor, moeda) }}</td>
                             <td>{{ periodoTexto(plano) }} <span class="text-muted fs-7">({{ plano.periodos_total }} períodos)</span></td>
-                            <td>{{ alvosTexto(plano) }}</td>
+                            <td>
+                                {{ alvosTexto(plano) }}
+                                <span v-if="temAlvoEliminado(plano)" class="badge badge-light-warning ms-1" title="Alguns alvos foram eliminados e deixaram de se aplicar. Edite o plano para os retirar.">Alvo eliminado</span>
+                            </td>
                             <td><span class="badge badge-light-info">{{ plano.precedencia }}</span></td>
                             <td><EstadoBadge :estado="plano.estado" :estado-descricao="plano.estado_descricao" /></td>
                             <td class="text-end">

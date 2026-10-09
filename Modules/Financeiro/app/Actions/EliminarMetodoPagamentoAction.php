@@ -5,6 +5,7 @@ namespace Modules\Financeiro\Actions;
 use Illuminate\Validation\ValidationException;
 use Modules\Financeiro\Models\MetodoPagamento;
 use Modules\Financeiro\Support\ReferenciasFinanceiras;
+use Modules\Financeiro\Support\ViolacaoDeChave;
 
 class EliminarMetodoPagamentoAction
 {
@@ -20,6 +21,6 @@ class EliminarMetodoPagamentoAction
             ]);
         }
 
-        $metodo->delete();
+        ViolacaoDeChave::comoValidacao(fn () => $metodo->delete());
     }
 }

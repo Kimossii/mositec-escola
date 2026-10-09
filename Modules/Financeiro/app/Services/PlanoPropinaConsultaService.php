@@ -51,6 +51,7 @@ class PlanoPropinaConsultaService
                     'turno_nome' => $alvo->turno?->nome,
                     'turma_id' => $alvo->turma_id,
                     'turma_nome' => $alvo->turma?->nome,
+                    'eliminado' => $alvo->obsoleto(),
                     'precedencia' => Precedencia::descricao($alvo->only(['nivel_academico_id', 'curso_id', 'turno_id', 'turma_id'])),
                 ])->values()->all(),
                 'estado' => $plano->estado,
