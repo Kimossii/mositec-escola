@@ -1,9 +1,11 @@
 <script setup>
-import { computed, reactive, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import { unidadesMenoresParaDecimal } from '../../Support/dinheiro';
 
 const OUTRA = 0;
+const AVISO_PLANO_GERAL = 'Este plano não tem alvos definidos e será aplicado a todas as turmas do ano lectivo. Confirme que pretende criar um plano geral.';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -118,7 +120,28 @@ function definirCampo(alvo, campo, valor) {
 
 const vazioParaNulo = (valor) => (valor === '' ? null : valor);
 
+const confirmarGeralAberto = ref(false);
+
+const alvosPreenchidos = (alvos) => alvos.filter((a) => !a.eliminado && ['nivel_academico_id', 'curso_id', 'turno_id', 'turma_id'].some((c) => a[c] !== ''));
+
+// Pede confirmação ao ficar sem alvos, excepto ao editar um plano que já era geral.
 function submeter() {
+    const jaEraGeral = props.plano && (props.plano.alvos ?? []).length === 0;
+
+    if (alvosPreenchidos(form.alvos).length === 0 && !jaEraGeral) {
+        confirmarGeralAberto.value = true;
+        return;
+    }
+
+    enviar(false);
+}
+
+function confirmarGeral() {
+    confirmarGeralAberto.value = false;
+    enviar(true);
+}
+
+function enviar(confirmado) {
     const payload = {
         nome: form.nome,
         descricao: form.descricao,
@@ -134,6 +157,7 @@ function submeter() {
         })),
     };
 
+    if (confirmado) payload.confirmar_plano_geral = true;
     if (form.periodicidade === OUTRA) payload.intervalo_meses = form.intervalo_meses;
     if (!props.plano) payload.ano_lectivo_id = form.ano_lectivo_id;
 
@@ -210,7 +234,7 @@ function submeter() {
                             <label class="fw-semibold fs-6">Aplica-se a</label>
                             <button type="button" class="btn btn-sm btn-light-primary" @click="adicionarAlvo">Adicionar alvo</button>
                         </div>
-                        <div v-if="form.alvos.length === 0" class="text-muted fs-7">
+                        <div v-if="form.alvos.length === 0" class="bg-body-secondary rounded fs-7 text-muted px-4 py-3 mb-2">
                             Sem alvos: plano geral, aplica-se a todas as turmas do ano lectivo.
                         </div>
                         <div v-else class="text-muted fs-7 mb-2">
@@ -240,6 +264,7 @@ function submeter() {
                           </template>
                         </div>
                         <div class="text-danger fs-7 mt-1" v-if="erroAlvos">{{ erroAlvos }}</div>
+                        <div class="text-danger fs-7 mt-1" v-if="errors.confirmar_plano_geral">{{ errors.confirmar_plano_geral }}</div>
                     </div>
 
                     <div class="text-end">
@@ -251,5 +276,14 @@ function submeter() {
                 </form>
             </div>
         </div>
+
+        <ConfirmModal
+            :show="confirmarGeralAberto"
+            titulo="Criar plano geral"
+            :mensagem="AVISO_PLANO_GERAL"
+            texto-confirmar="Confirmar plano geral"
+            @confirmar="confirmarGeral"
+            @cancelar="confirmarGeralAberto = false"
+        />
     </div>
 </template>

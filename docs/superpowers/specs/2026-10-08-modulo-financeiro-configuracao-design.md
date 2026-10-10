@@ -52,7 +52,7 @@ Define a que turmas o plano se aplica. Cada linha é um alvo com campos opcionai
 | turno_id | FK nula |
 | turma_id | FK nula |
 
-- Um plano **sem alvos** é o plano **geral**: aplica-se a todas as turmas do seu ano lectivo.
+- Um plano **sem alvos** é o plano **geral**: aplica-se a todas as turmas do seu ano lectivo. Gravar um plano que fique sem alvos exige confirmação explícita (`confirmar_plano_geral`, validada no servidor): ao criar, sempre; ao actualizar, só quando o plano tinha alvos e passa a não ter; editar um plano que já era geral não volta a pedir.
 - Todos os FKs pertencem ao tenant (e não estão apagados). Uma turma sem turno nunca casa um alvo de turno.
 - **`turma_id` é exclusivo**: se definido, nível, curso e turno têm de ser nulos, e a turma tem de pertencer ao **ano lectivo do plano**.
 - Linhas de alvo totalmente vazias são ignoradas. Um plano pode ter vários alvos (cada um com o mesmo preço).
@@ -88,7 +88,7 @@ Define a que turmas o plano se aplica. Cada linha é um alvo com campos opcionai
 
 #### Edição do valor de um plano (desenho)
 - **Hoje (sem propinas):** editar o `valor` apenas actualiza o plano. O ano lectivo continua imutável.
-- **Quando o plano já tem propinas geradas** (módulo de Propinas, ainda não implementado): alterar o `valor` abre um passo de decisão com **actualizar o preço e reajustar as dívidas** ou **manter o preço antigo para as dívidas existentes** (cria automaticamente um plano novo com os mesmos alvos a partir de `mes_efeito`), pré-visualização dos efeitos e confirmação com motivo. Pagas, canceladas e anuladas nunca mudam; pagamentos parciais preservam o valor recebido. Regra completa, tabelas (`alteracoes_preco_plano`, `propina_ajustes`) e invariantes: spec de Propinas, secção 14.
+- **Quando o plano já tem propinas geradas** (módulo de Propinas, ainda não implementado): alterar o `valor` abre um passo de decisão explícito, sem opção pré-seleccionada: novo valor, `mes_efeito` e a escolha entre **aplicar às propinas já geradas** (competência ≥ `mes_efeito`, em aberto ou parcialmente pagas) ou **manter as já geradas** (novo valor só para as ainda não geradas). O plano é dividido em `mes_efeito`; as propinas anteriores mantêm o valor antigo. Pré-visualização e confirmação com motivo; pagas, canceladas e anuladas nunca mudam; pagamentos parciais preservam o valor recebido. Regra completa, tabelas (`alteracoes_preco_plano`, `propina_ajustes`) e invariantes: spec de Propinas, secção 14.
 - O módulo de Planos de Propina fornece apenas o gancho: a Action de edição do plano delega no módulo de Propinas (através de um contrato a definir) quando existirem propinas do plano; sem módulo de Propinas, o comportamento é o simples.
 
 ### `regras_cobranca` (1:1 com o tenant)

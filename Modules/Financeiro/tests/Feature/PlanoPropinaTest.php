@@ -51,7 +51,109 @@ class PlanoPropinaTest extends TestCase
             'mes_inicio' => 9,
             'mes_fim' => 6,
             'alvos' => [],
+            'confirmar_plano_geral' => true,
         ], $sobrepor);
+    }
+
+    private const MSG_GERAL = 'Este plano não tem alvos definidos e será aplicado a todas as turmas do ano lectivo. Confirme que pretende criar um plano geral.';
+
+    public function test_criar_sem_alvos_e_sem_confirmacao_da_422_e_nao_cria(): void
+    {
+        $ano = $this->anoLectivo();
+
+        $this->actingAs($this->adminEscola())->from('/x')
+            ->post(route(self::BASE . 'store'), $this->payload($ano->id, ['confirmar_plano_geral' => null]))
+            ->assertSessionHasErrors(['confirmar_plano_geral' => self::MSG_GERAL]);
+
+        $this->assertSame(0, PlanoPropina::count());
+    }
+
+    public function test_criar_sem_alvos_com_confirmacao_cria_plano_geral(): void
+    {
+        $ano = $this->anoLectivo();
+
+        $this->actingAs($this->adminEscola())
+            ->post(route(self::BASE . 'store'), $this->payload($ano->id, ['confirmar_plano_geral' => true]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(0, PlanoPropina::firstWhere('nome', 'Propina Mensal')->alvos()->count());
+    }
+
+    public function test_criar_so_com_linhas_de_alvo_vazias_conta_como_sem_alvos(): void
+    {
+        $ano = $this->anoLectivo();
+
+        $this->actingAs($this->adminEscola())->from('/x')
+            ->post(route(self::BASE . 'store'), $this->payload($ano->id, ['alvos' => [['nivel_academico_id' => null]], 'confirmar_plano_geral' => null]))
+            ->assertSessionHasErrors('confirmar_plano_geral');
+    }
+
+    public function test_criar_com_alvos_nunca_pede_confirmacao(): void
+    {
+        $ano = $this->anoLectivo();
+        $nivel = $this->nivel('N1');
+
+        $this->actingAs($this->adminEscola())
+            ->post(route(self::BASE . 'store'), $this->payload($ano->id, ['alvos' => [['nivel_academico_id' => $nivel->id]]]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(1, PlanoPropina::count());
+    }
+
+    #[DataProvider('confirmacoesForjadas')]
+    public function test_confirmacao_falsa_ou_forjada_e_rejeitada(mixed $valor): void
+    {
+        $ano = $this->anoLectivo();
+
+        $this->actingAs($this->adminEscola())->from('/x')
+            ->post(route(self::BASE . 'store'), $this->payload($ano->id, ['confirmar_plano_geral' => $valor]))
+            ->assertSessionHasErrors('confirmar_plano_geral');
+
+        $this->assertSame(0, PlanoPropina::count());
+    }
+
+    public static function confirmacoesForjadas(): array
+    {
+        return [[false], ['0'], [0], ['talvez'], [['x']]];
+    }
+
+    public function test_actualizar_de_especifico_para_geral_exige_confirmacao(): void
+    {
+        $ano = $this->anoLectivo();
+        $nivel = $this->nivel('N1');
+        $plano = $this->plano($ano, 'Propina', [], [['nivel' => $nivel]]);
+        $this->actingAs($this->adminEscola());
+
+        $this->from('/x')->put(route(self::BASE . 'update', $plano), $this->payload($ano->id, ['alvos' => [], 'confirmar_plano_geral' => null]))
+            ->assertSessionHasErrors(['confirmar_plano_geral' => self::MSG_GERAL]);
+        $this->assertSame(1, $plano->alvos()->count());
+
+        $this->put(route(self::BASE . 'update', $plano), $this->payload($ano->id, ['alvos' => [], 'confirmar_plano_geral' => true]))
+            ->assertSessionHasNoErrors();
+        $this->assertSame(0, $plano->alvos()->count());
+    }
+
+    public function test_actualizar_plano_ja_geral_nao_pede_confirmacao_de_novo(): void
+    {
+        $ano = $this->anoLectivo();
+        $plano = $this->plano($ano, 'Geral');
+
+        $this->actingAs($this->adminEscola())
+            ->put(route(self::BASE . 'update', $plano), $this->payload($ano->id, ['nome' => 'Geral 2', 'alvos' => []]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('Geral 2', $plano->refresh()->nome);
+    }
+
+    public function test_actualizar_geral_para_especifico_nao_pede_confirmacao(): void
+    {
+        $ano = $this->anoLectivo();
+        $nivel = $this->nivel('N1');
+        $plano = $this->plano($ano, 'Geral');
+
+        $this->actingAs($this->adminEscola())
+            ->put(route(self::BASE . 'update', $plano), $this->payload($ano->id, ['alvos' => [['nivel_academico_id' => $nivel->id]]]))
+            ->assertSessionHasNoErrors();
     }
 
     public function test_index_lista_so_os_planos_do_tenant_com_a_forma_esperada(): void

@@ -85,6 +85,9 @@ class AtualizarPlanoPropinaRequest extends BaseRequest
                 return;
             }
 
+            // Só pede confirmação quando o plano deixa de ter alvos; um plano já geral não pergunta de novo.
+            $this->validarConfirmacaoDePlanoGeral($validator, $plano->alvos()->exists());
+
             if ($plano->anoLectivo !== null) {
                 $this->validarCoerencia($validator, $plano->anoLectivo, (int) $plano->id);
             }

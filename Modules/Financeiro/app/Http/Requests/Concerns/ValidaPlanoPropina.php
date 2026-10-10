@@ -45,6 +45,7 @@ trait ValidaPlanoPropina
             'valor' => ['required', new ValorMonetario(false)],
             'mes_inicio' => ['required', 'integer', 'between:1,12'],
             'mes_fim' => ['required', 'integer', 'between:1,12'],
+            'confirmar_plano_geral' => ['nullable', 'boolean'],
             'alvos' => ['nullable', 'array'],
             'alvos.*.nivel_academico_id' => ['nullable', 'integer', $existeNoTenant('niveis_academicos', true)],
             'alvos.*.curso_id' => ['nullable', 'integer', $existeNoTenant('cursos', false)],
@@ -72,11 +73,34 @@ trait ValidaPlanoPropina
             'mes_inicio.between' => 'O mês de início tem de estar entre 1 e 12.',
             'mes_fim.required' => 'O mês de fim é obrigatório.',
             'mes_fim.between' => 'O mês de fim tem de estar entre 1 e 12.',
+            'confirmar_plano_geral.boolean' => 'A confirmação do plano geral é inválida.',
             'alvos.*.nivel_academico_id.exists' => 'O nível académico escolhido é inválido.',
             'alvos.*.curso_id.exists' => 'O curso escolhido é inválido.',
             'alvos.*.turno_id.exists' => 'O turno escolhido é inválido.',
             'alvos.*.turma_id.exists' => 'A turma escolhida é inválida.',
         ];
+    }
+
+    /**
+     * Gravar um plano que fique sem alvos (plano geral) exige confirmação explícita.
+     */
+    protected function validarConfirmacaoDePlanoGeral(Validator $validator, bool $exigir): void
+    {
+        $erros = $validator->errors();
+
+        if (! $exigir || $erros->has('confirmar_plano_geral')) {
+            return;
+        }
+
+        $alvos = $this->input('alvos', []);
+
+        if (! is_array($alvos) || AlvosDoPlano::paraGravar($alvos) !== []) {
+            return;
+        }
+
+        if (! $this->boolean('confirmar_plano_geral')) {
+            $erros->add('confirmar_plano_geral', 'Este plano não tem alvos definidos e será aplicado a todas as turmas do ano lectivo. Confirme que pretende criar um plano geral.');
+        }
     }
 
     protected function validarCoerencia(Validator $validator, AnoLectivo $ano, ?int $ignorarPlanoId): void

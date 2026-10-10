@@ -122,7 +122,7 @@ class AlvosObsoletosTest extends TestCase
         $plano = $this->plano($ano, 'Propina', [], [['nivel' => $this->nivel('N1')]]);
 
         $this->actingAs($this->adminEscola())
-            ->put(route(self::BASE . 'update', $plano), $this->payload($ano->id))
+            ->put(route(self::BASE . 'update', $plano), $this->payload($ano->id, ['confirmar_plano_geral' => true]))
             ->assertSessionHasNoErrors();
 
         $this->assertSame(0, $plano->fresh()->alvos()->count());

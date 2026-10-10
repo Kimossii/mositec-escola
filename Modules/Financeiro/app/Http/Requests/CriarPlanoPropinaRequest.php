@@ -47,6 +47,8 @@ class CriarPlanoPropinaRequest extends BaseRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $this->validarConfirmacaoDePlanoGeral($validator, true);
+
             if ($validator->errors()->has('ano_lectivo_id')) {
                 return;
             }
