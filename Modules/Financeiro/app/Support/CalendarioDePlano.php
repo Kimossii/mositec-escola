@@ -69,6 +69,28 @@ final class CalendarioDePlano
     }
 
     /**
+     * Duração, em meses, de cada período de cobrança; o último pode ser mais curto (ex.: Set → Jun
+     * trimestral = 3+3+3+1). Não depende do ano lectivo.
+     *
+     * @return list<int>
+     */
+    public static function duracoes(int $mesInicio, int $mesFim, int $intervaloMeses): array
+    {
+        if ($intervaloMeses < 1 || $intervaloMeses > 12) {
+            throw new InvalidArgumentException('O intervalo de cobrança tem de estar entre 1 e 12 meses.');
+        }
+
+        $total = self::meses($mesInicio, $mesFim);
+        $duracoes = array_fill(0, intdiv($total, $intervaloMeses), $intervaloMeses);
+
+        if ($total % $intervaloMeses !== 0) {
+            $duracoes[] = $total % $intervaloMeses;
+        }
+
+        return $duracoes;
+    }
+
+    /**
      * Duas listas de competências têm algum mês (ano + mês) em comum?
      *
      * @param  list<array{ano: int, mes: int}>  $a

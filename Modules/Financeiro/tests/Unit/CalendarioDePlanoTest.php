@@ -146,4 +146,37 @@ class CalendarioDePlanoTest extends TestCase
         $this->assertFalse(CalendarioDePlano::contem($competencias, 2026, 8));
         $this->assertFalse(CalendarioDePlano::contem($competencias, 2027, 9)); // mesmo mês, outro ano
     }
+
+    public function test_duracoes_dos_periodos_com_o_ultimo_mais_curto(): void
+    {
+        $this->assertSame([3, 3, 3, 1], CalendarioDePlano::duracoes(9, 6, 3));   // Set → Jun trimestral
+        $this->assertSame(array_fill(0, 10, 1), CalendarioDePlano::duracoes(9, 6, 1));
+        $this->assertSame([6, 4], CalendarioDePlano::duracoes(9, 6, 6));
+        $this->assertSame([12], CalendarioDePlano::duracoes(1, 12, 12));
+        $this->assertSame([2, 2, 2, 2, 2], CalendarioDePlano::duracoes(9, 6, 2));
+    }
+
+    public function test_duracoes_coincidem_com_os_periodos_para_qualquer_combinacao(): void
+    {
+        $inicio = CarbonImmutable::parse('2026-09-01');
+
+        for ($mesInicio = 1; $mesInicio <= 12; $mesInicio++) {
+            for ($mesFim = 1; $mesFim <= 12; $mesFim++) {
+                for ($intervalo = 1; $intervalo <= 12; $intervalo++) {
+                    $this->assertSame(
+                        array_column(CalendarioDePlano::periodos($mesInicio, $mesFim, $intervalo, $inicio), 'meses'),
+                        CalendarioDePlano::duracoes($mesInicio, $mesFim, $intervalo),
+                        "{$mesInicio} → {$mesFim} de {$intervalo} em {$intervalo}",
+                    );
+                }
+            }
+        }
+    }
+
+    public function test_duracoes_recusam_intervalo_fora_de_1_a_12(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        CalendarioDePlano::duracoes(9, 6, 0);
+    }
 }

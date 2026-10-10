@@ -2,7 +2,8 @@
 import { computed, reactive, ref, watch } from 'vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
-import { unidadesMenoresParaDecimal } from '../../Support/dinheiro';
+import { decimalParaUnidadesMenores, formatarDinheiro, unidadesMenoresParaDecimal } from '../../Support/dinheiro';
+import { duracoesDosPeriodos, resumoPeriodos } from '../../Support/periodos';
 
 const OUTRA = 0;
 const AVISO_PLANO_GERAL = 'Este plano não tem alvos definidos e será aplicado a todas as turmas do ano lectivo. Confirme que pretende criar um plano geral.';
@@ -59,6 +60,39 @@ function textoDoAlvo(a) {
 }
 
 const alvosEliminados = computed(() => form.alvos.filter((a) => a.eliminado));
+
+// Plano com propinas: valor e calendário bloqueados (o servidor recusa na mesma).
+const calendarioBloqueado = computed(() => props.plano?.tem_propinas === true);
+
+// Q3: o valor é por período de cobrança; o último período pode ser mais curto e cobra o valor inteiro.
+// Os valores do enum Periodicidade são os meses de cada período (OUTRA = 0 usa o intervalo indicado).
+const intervaloEfectivo = computed(() => {
+    if (form.periodicidade === OUTRA) {
+        const meses = Number(form.intervalo_meses);
+        return Number.isInteger(meses) && meses >= 1 && meses <= 12 ? meses : null;
+    }
+
+    return Number(form.periodicidade);
+});
+const duracoes = computed(() => (intervaloEfectivo.value === null ? [] : duracoesDosPeriodos(form.mes_inicio, form.mes_fim, intervaloEfectivo.value)));
+const ultimoPeriodoMaisCurto = computed(() => duracoes.value.length > 0 && duracoes.value[duracoes.value.length - 1] < intervaloEfectivo.value);
+const mesesDoUltimo = computed(() => duracoes.value[duracoes.value.length - 1]);
+const resumoCobranca = computed(() => {
+    if (duracoes.value.length === 0) return '';
+
+    const intervalo = intervaloEfectivo.value;
+    const partes = [`${intervalo} ${intervalo === 1 ? 'mês' : 'meses'} por período`, resumoPeriodos(duracoes.value)];
+    const valor = decimalParaUnidadesMenores(form.valor, props.moeda);
+
+    if (valor !== null) {
+        const quantidade = duracoes.value.length;
+        partes.push(`total ${quantidade} × ${formatarDinheiro(valor, props.moeda)} = ${formatarDinheiro(valor * BigInt(quantidade), props.moeda)}`);
+    }
+
+    return partes.join(' · ');
+});
+const rotuloPeriodicidade = computed(() => props.periodicidades.find((p) => p.value === form.periodicidade)?.label ?? '');
+const rotuloMes = (mes) => MESES.find((m) => m.value === mes)?.label ?? '';
 
 watch(() => props.show, (show) => {
     if (!show) return;
@@ -189,17 +223,18 @@ function enviar(confirmado) {
                     <div class="row">
                         <div class="col-md-4 fv-row mb-7">
                             <label class="required fw-semibold fs-6 mb-2">Periodicidade</label>
-                            <SelectSolid v-model="form.periodicidade" :options="periodicidades" />
+                            <input v-if="calendarioBloqueado" type="text" class="form-control form-control-solid" :value="rotuloPeriodicidade" disabled />
+                            <SelectSolid v-else v-model="form.periodicidade" :options="periodicidades" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.periodicidade">{{ errors.periodicidade }}</div>
                         </div>
                         <div v-if="form.periodicidade === OUTRA" class="col-md-4 fv-row mb-7">
                             <label class="required fw-semibold fs-6 mb-2">Intervalo (meses)</label>
-                            <input v-model.number="form.intervalo_meses" type="number" min="1" max="12" class="form-control form-control-solid" />
+                            <input v-model.number="form.intervalo_meses" type="number" min="1" max="12" class="form-control form-control-solid" :disabled="calendarioBloqueado" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.intervalo_meses">{{ errors.intervalo_meses }}</div>
                         </div>
                         <div class="col-md-4 fv-row mb-7">
-                            <label class="required fw-semibold fs-6 mb-2">Valor por período ({{ moeda.simbolo }})</label>
-                            <input v-model="form.valor" type="text" inputmode="decimal" class="form-control form-control-solid" :placeholder="placeholderValor" />
+                            <label class="required fw-semibold fs-6 mb-2">Valor por período de cobrança ({{ moeda.simbolo }})</label>
+                            <input v-model="form.valor" type="text" inputmode="decimal" class="form-control form-control-solid" :placeholder="placeholderValor" :disabled="calendarioBloqueado" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.valor">{{ errors.valor }}</div>
                         </div>
                     </div>
@@ -207,20 +242,38 @@ function enviar(confirmado) {
                     <div class="row">
                         <div class="col-md-4 fv-row mb-7">
                             <label class="required fw-semibold fs-6 mb-2">Mês de início</label>
-                            <SelectSolid v-model="form.mes_inicio" :options="MESES" />
+                            <input v-if="calendarioBloqueado" type="text" class="form-control form-control-solid" :value="rotuloMes(form.mes_inicio)" disabled />
+                            <SelectSolid v-else v-model="form.mes_inicio" :options="MESES" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.mes_inicio">{{ errors.mes_inicio }}</div>
                         </div>
                         <div class="col-md-4 fv-row mb-7">
                             <label class="required fw-semibold fs-6 mb-2">Mês de fim</label>
-                            <SelectSolid v-model="form.mes_fim" :options="MESES" />
+                            <input v-if="calendarioBloqueado" type="text" class="form-control form-control-solid" :value="rotuloMes(form.mes_fim)" disabled />
+                            <SelectSolid v-else v-model="form.mes_fim" :options="MESES" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.mes_fim">{{ errors.mes_fim }}</div>
                         </div>
                         <div class="col-md-4 d-flex align-items-end mb-7">
                             <div class="form-text">
-                                O período pode atravessar o ano civil (ex.: Setembro → Junho). Para mudar o preço a meio do ano,
-                                crie outro plano com os mesmos alvos e o período seguinte.
+                                O período pode atravessar o ano civil (ex.: Setembro → Junho). O valor é cobrado por cada período
+                                de cobrança. Para mudar o preço a meio do ano, crie outro plano com os mesmos alvos e o período seguinte.
                             </div>
                         </div>
+                    </div>
+
+                    <div v-if="calendarioBloqueado" class="alert alert-info fs-7 py-3 mb-4">
+                        Este plano já tem propinas geradas: o valor, a periodicidade e os meses de início e de fim ficam bloqueados.
+                        Pode mudar o nome, a descrição e os alvos; essas alterações só afectam gerações futuras.
+                    </div>
+                    <div v-if="resumoCobranca" class="bg-body-secondary rounded fs-7 px-4 py-3 mb-4">
+                        <span class="fw-semibold">Cobrança:</span> {{ resumoCobranca }}
+                    </div>
+                    <div v-if="ultimoPeriodoMaisCurto" class="alert alert-warning fs-7 py-3 mb-7">
+                        <template v-if="duracoes.length === 1">
+                            O período tem {{ mesesDoUltimo }} {{ mesesDoUltimo === 1 ? 'mês' : 'meses' }} (mais curto que o intervalo), mas é cobrado pelo valor integral de um período.
+                        </template>
+                        <template v-else>
+                            O último período tem só {{ mesesDoUltimo }} {{ mesesDoUltimo === 1 ? 'mês' : 'meses' }}, mas é cobrado pelo valor integral de um período.
+                        </template>
                     </div>
 
                     <div class="fv-row mb-7">
@@ -233,6 +286,9 @@ function enviar(confirmado) {
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <label class="fw-semibold fs-6">Aplica-se a</label>
                             <button type="button" class="btn btn-sm btn-light-primary" @click="adicionarAlvo">Adicionar alvo</button>
+                        </div>
+                        <div v-if="calendarioBloqueado" class="text-muted fs-7 mb-2">
+                            Alterar os alvos só afecta gerações futuras: as propinas já geradas mantêm o seu plano e o seu valor.
                         </div>
                         <div v-if="form.alvos.length === 0" class="bg-body-secondary rounded fs-7 text-muted px-4 py-3 mb-2">
                             Sem alvos: plano geral, aplica-se a todas as turmas do ano lectivo.

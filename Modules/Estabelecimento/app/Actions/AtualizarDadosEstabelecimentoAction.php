@@ -39,6 +39,11 @@ class AtualizarDadosEstabelecimentoAction
                 'observacoes' => $dto->observacoes,
             ]);
 
+            // Sem fuso no pedido, mantém o actual.
+            if ($dto->fuso_horario !== null) {
+                $estabelecimento->fuso_horario = $dto->fuso_horario;
+            }
+
             // Primeira gravação válida dos dados institucionais: a configuração inicial está feita.
             // Nunca volta a nulo.
             $estabelecimento->configurado_em ??= now();

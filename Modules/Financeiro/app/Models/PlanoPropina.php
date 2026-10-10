@@ -14,6 +14,7 @@ use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Financeiro\Casts\DinheiroCast;
 use Modules\Financeiro\Enums\Periodicidade;
 use Modules\Financeiro\Support\CalendarioDePlano;
+use Modules\Financeiro\Support\Dinheiro;
 
 /**
  * Configuração de propina de um ano lectivo (NÃO é uma cobrança): periodicidade, valor por
@@ -72,6 +73,15 @@ class PlanoPropina extends Model
         return $this->hasMany(PlanoPropinaAlvo::class, 'plano_propina_id');
     }
 
+    /**
+     * Propinas geradas a partir deste plano (em qualquer estado). Ter alguma bloqueia a eliminação,
+     * o valor e o calendário do plano.
+     */
+    public function propinas(): HasMany
+    {
+        return $this->hasMany(Propina::class, 'plano_propina_id');
+    }
+
     public function scopeActivos(Builder $query): Builder
     {
         return $query->where('estado', Estado::ATIVO->value);
@@ -104,6 +114,29 @@ class PlanoPropina extends Model
         }
 
         return CalendarioDePlano::periodos($this->mes_inicio, $this->mes_fim, $this->intervalo_meses, $this->anoLectivo->data_inicio);
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function duracoesDosPeriodos(): array
+    {
+        return CalendarioDePlano::duracoes($this->mes_inicio, $this->mes_fim, $this->intervalo_meses);
+    }
+
+    public function ultimoPeriodoMaisCurto(): bool
+    {
+        $duracoes = $this->duracoesDosPeriodos();
+
+        return $duracoes !== [] && $duracoes[array_key_last($duracoes)] < $this->intervalo_meses;
+    }
+
+    /**
+     * Valor por período × número de períodos: o último período, mesmo mais curto, cobra o valor inteiro (Q3).
+     */
+    public function valorTotal(): Dinheiro
+    {
+        return Dinheiro::deUnidadesMenores($this->valor->unidadesMenores() * count($this->duracoesDosPeriodos()));
     }
 
     /**

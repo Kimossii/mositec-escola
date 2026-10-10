@@ -5,6 +5,7 @@ namespace Modules\Financeiro\Console;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Models\CambioPlataforma;
 use Modules\Financeiro\Services\CambioDoDia;
 use Modules\Financeiro\Support\Moeda;
@@ -51,7 +52,7 @@ class CambioPlataformaCommand extends Command
 
         $data = $this->option('data') !== null && $this->option('data') !== ''
             ? (string) $this->option('data')
-            : now()->toDateString();
+            : app(RelogioDoTenant::class)->hojeNoFusoPadrao()->toDateString();
 
         if (! $this->dataValida($data)) {
             $this->error('Data inválida: use o formato AAAA-MM-DD.');

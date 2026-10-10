@@ -54,4 +54,12 @@ class ModuloEnumTest extends TestCase
         $this->assertSame('Senha de Utilizador', Modulo::SENHA_UTILIZADOR->label());
         $this->assertSame(Modulo::SENHA_UTILIZADOR, Modulo::fromSlug('senha-utilizador'));
     }
+
+    public function test_propina_slug_e_label(): void
+    {
+        $this->assertSame('propina', Modulo::PROPINA->slug());
+        $this->assertSame('Propina', Modulo::PROPINA->label());
+        $this->assertSame(Modulo::PROPINA, Modulo::fromSlug('propina'));
+        $this->assertSame(Modulo::PROPINA, Modulo::tryFrom(22));
+    }
 }

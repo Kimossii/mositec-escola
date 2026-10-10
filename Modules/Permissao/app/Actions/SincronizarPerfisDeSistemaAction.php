@@ -47,6 +47,8 @@ class SincronizarPerfisDeSistemaAction
             Modulo::CATALOGO_FINANCEIRO->value => ['ver', 'criar', 'editar', 'eliminar'],
             Modulo::PLANO_PROPINA->value => ['ver', 'criar', 'editar', 'eliminar'],
             Modulo::MOEDA_CAMBIO->value => ['ver', 'criar', 'editar', 'eliminar'],
+            // F1 de Propinas; `ajustar` entra com a alteração de preço (F4), `anular` com Pagamentos.
+            Modulo::PROPINA->value => ['ver', 'listar', 'criar', 'cancelar', 'exportar'],
         ],
         Perfil::FUNCIONARIO->value => [
             Modulo::USUARIO->value => ['ver', 'criar', 'editar'],

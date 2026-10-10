@@ -13,6 +13,7 @@ import CopiarPlanosModal from '../../Components/PlanosPropina/CopiarPlanosModal.
 import PlanoPropinaFormModal from '../../Components/PlanosPropina/PlanoPropinaFormModal.vue';
 import { ESTADO } from '../../Models/Estado';
 import { formatarDinheiro } from '../../Support/dinheiro';
+import { resumoPeriodos } from '../../Support/periodos';
 
 const BASE = '/financeiro/configuracao/planos-propina';
 const MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -233,11 +234,25 @@ function confirmarEliminacao() {
                             <td colspan="9" class="text-center text-muted py-6">Nenhum plano de propina encontrado.</td>
                         </tr>
                         <tr v-for="plano in planos.data" :key="plano.id">
-                            <td class="text-gray-800">{{ plano.nome }}</td>
+                            <td class="text-gray-800">
+                                {{ plano.nome }}
+                                <span v-if="plano.tem_propinas" class="badge badge-light-primary ms-1" title="Já tem propinas geradas: o valor e o calendário ficam bloqueados.">Com propinas</span>
+                            </td>
                             <td>{{ plano.ano_lectivo_nome ?? '—' }}</td>
                             <td>{{ plano.periodicidade_descricao }}</td>
-                            <td class="text-end">{{ formatarDinheiro(plano.valor, moeda) }}</td>
-                            <td>{{ periodoTexto(plano) }} <span class="text-muted fs-7">({{ plano.periodos_total }} períodos)</span></td>
+                            <td class="text-end">
+                                {{ formatarDinheiro(plano.valor, moeda) }}
+                                <div class="text-muted fs-8">por período · total {{ formatarDinheiro(plano.valor_total, moeda) }}</div>
+                            </td>
+                            <td>
+                                {{ periodoTexto(plano) }}
+                                <div class="text-muted fs-7">{{ resumoPeriodos(plano.duracoes_periodos) }}</div>
+                                <span
+                                    v-if="plano.ultimo_periodo_mais_curto"
+                                    class="badge badge-light-warning mt-1"
+                                    :title="plano.duracoes_periodos.length === 1 ? 'O período tem menos meses que o intervalo, mas é cobrado pelo valor integral de um período.' : 'O último período tem menos meses, mas é cobrado pelo valor integral de um período.'"
+                                >{{ plano.duracoes_periodos.length === 1 ? `O período tem ${plano.duracoes_periodos[0]} ${plano.duracoes_periodos[0] === 1 ? 'mês' : 'meses'} (mais curto que o intervalo)` : 'Último período mais curto' }}</span>
+                            </td>
                             <td>
                                 {{ alvosTexto(plano) }}
                                 <span v-if="temAlvoEliminado(plano)" class="badge badge-light-warning ms-1" title="Alguns alvos foram eliminados e deixaram de se aplicar. Edite o plano para os retirar.">Alvo eliminado</span>

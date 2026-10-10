@@ -65,10 +65,26 @@ class AcoesAplicaveisTest extends TestCase
         });
     }
 
-    public function test_todos_os_modulos_existentes_aplicam_exactamente_as_acoes_actuais(): void
+    public function test_os_modulos_sem_acoes_proprias_aplicam_as_acoes_base(): void
     {
         foreach (ModuloEnum::cases() as $modulo) {
+            if ($modulo === ModuloEnum::PROPINA) {
+                continue;
+            }
+
             $this->assertEqualsCanonicalizing(self::BASE, $modulo->acoesAplicaveis(), $modulo->name);
+        }
+    }
+
+    public function test_propina_aplica_so_as_suas_acoes(): void
+    {
+        $this->assertEqualsCanonicalizing(
+            ['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar'],
+            ModuloEnum::PROPINA->acoesAplicaveis(),
+        );
+
+        foreach (['editar', 'eliminar', 'negociar', 'isentar-multa', 'confirmar'] as $acao) {
+            $this->assertNotContains($acao, ModuloEnum::PROPINA->acoesAplicaveis(), $acao);
         }
     }
 
@@ -87,9 +103,9 @@ class AcoesAplicaveisTest extends TestCase
         $this->actingAs($this->admin)->get("/permissoes/perfis/{$role->id}/permissoes")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->has('acoes', 6)
+                ->has('acoes', 9)
                 ->where('acoes.0.nome', 'ver')
-                ->has('modulos', 22)
+                ->has('modulos', 23)
                 ->where('modulos.0.acoes', fn ($ids) => collect($ids)->sort()->values()->all()
                     === Acao::whereIn('nome', self::BASE)->pluck('id')->sort()->values()->all()));
     }
@@ -101,7 +117,7 @@ class AcoesAplicaveisTest extends TestCase
         $this->actingAs($this->admin)->get("/permissoes/utilizadores/{$user->id}/permissoes")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->has('acoes', 6)
+                ->has('acoes', 9)
                 ->has('modulos.0.acoes', 6));
     }
 
@@ -112,7 +128,7 @@ class AcoesAplicaveisTest extends TestCase
 
         $this->actingAs($this->admin)->get("/permissoes/perfis/{$role->id}/permissoes")
             ->assertInertia(fn (Assert $page) => $page
-                ->has('acoes', 8)
+                ->has('acoes', 9)
                 ->where('modulos', function ($modulos) {
                     $porNome = collect($modulos)->keyBy('nome');
 

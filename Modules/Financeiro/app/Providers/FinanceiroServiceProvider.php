@@ -13,6 +13,8 @@ use Modules\Financeiro\Support\FontesDePrecos;
 use Modules\Financeiro\Support\PrecosDasMultas;
 use Modules\Financeiro\Support\PrecosDoCatalogo;
 use Modules\Financeiro\Support\PrecosDosPlanos;
+use Modules\Financeiro\Support\PropinasReferenciam;
+use Modules\Financeiro\Support\ReferenciasFinanceiras;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class FinanceiroServiceProvider extends ModuleServiceProvider
@@ -46,5 +48,6 @@ class FinanceiroServiceProvider extends ModuleServiceProvider
         ], ProvisionaTenant::ETIQUETA);
         $this->app->tag([DependenciasDePlanosPropina::class], DependenciasRegistadasDoAnoLectivo::ETIQUETA);
         $this->app->tag([PrecosDoCatalogo::class, PrecosDosPlanos::class, PrecosDasMultas::class], FontesDePrecos::ETIQUETA);
+        $this->app->tag([PropinasReferenciam::class], ReferenciasFinanceiras::ETIQUETA);
     }
 }

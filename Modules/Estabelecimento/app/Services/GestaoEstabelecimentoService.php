@@ -2,6 +2,7 @@
 
 namespace Modules\Estabelecimento\Services;
 
+use DateTimeZone;
 use Illuminate\Http\UploadedFile;
 use Modules\Estabelecimento\Actions\AtualizarDadosEstabelecimentoAction;
 use Modules\Estabelecimento\Actions\AtualizarLogotipoEstabelecimentoAction;
@@ -27,6 +28,18 @@ class GestaoEstabelecimentoService
     {
         return Estabelecimento::current()->etapasEnsino()
             ->pluck('etapa_ensino')->map(fn (EtapaEnsinoEnum $e) => $e->value)->all();
+    }
+
+    /**
+     * Identificadores de fuso horário para o select, com o fuso por omissão no topo.
+     *
+     * @return list<string>
+     */
+    public function fusosHorarios(): array
+    {
+        $padrao = Estabelecimento::FUSO_HORARIO_PADRAO;
+
+        return [$padrao, ...array_values(array_diff(DateTimeZone::listIdentifiers(), [$padrao]))];
     }
 
     public function atualizarDados(AtualizarDadosRequest $request): Estabelecimento

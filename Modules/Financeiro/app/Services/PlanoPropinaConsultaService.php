@@ -21,6 +21,7 @@ class PlanoPropinaConsultaService
     {
         return PlanoPropina::query()
             ->with(['anoLectivo', 'alvos.nivelAcademico', 'alvos.curso', 'alvos.turno', 'alvos.turma'])
+            ->withExists('propinas')
             ->when(in_array($filtros['estado'] ?? null, ['0', '1', 0, 1], true), fn ($query) => $query->where('estado', $filtros['estado']))
             ->when(is_numeric($filtros['ano_lectivo_id'] ?? null), fn ($query) => $query->where('ano_lectivo_id', (int) $filtros['ano_lectivo_id']))
             ->when(is_string($filtros['pesquisa'] ?? null) && $filtros['pesquisa'] !== '', fn ($query) => $query->whereContem('nome', $filtros['pesquisa']))
@@ -41,6 +42,10 @@ class PlanoPropinaConsultaService
                 'mes_inicio' => $plano->mes_inicio,
                 'mes_fim' => $plano->mes_fim,
                 'periodos_total' => count($plano->periodos()),
+                'duracoes_periodos' => $plano->duracoesDosPeriodos(),
+                'ultimo_periodo_mais_curto' => $plano->ultimoPeriodoMaisCurto(),
+                'valor_total' => $plano->valorTotal()->unidadesMenores(),
+                'tem_propinas' => (bool) $plano->propinas_exists,
                 'precedencia' => $this->precedenciaDoPlano($plano),
                 'alvos' => $plano->alvos->map(fn (PlanoPropinaAlvo $alvo) => [
                     'nivel_academico_id' => $alvo->nivel_academico_id,

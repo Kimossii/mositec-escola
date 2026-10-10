@@ -58,6 +58,11 @@ class TenantContext
         }
     }
 
+    public function esquecer(string $chave): void
+    {
+        unset($this->memoria[$chave]);
+    }
+
     /**
      * Memória por tenant e por pedido. Esvaziada quando o tenant muda.
      */

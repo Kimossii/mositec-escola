@@ -12,6 +12,7 @@ use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 
 class Estabelecimento extends Model
 {
@@ -19,7 +20,14 @@ class Estabelecimento extends Model
     use PertenceAoTenant;
     use SoftDeletes;
 
+    /** Fuso horário de uma escola que ainda não escolheu o seu. */
+    public const FUSO_HORARIO_PADRAO = 'Africa/Luanda';
+
     protected $table = 'estabelecimentos';
+
+    protected $attributes = [
+        'fuso_horario' => self::FUSO_HORARIO_PADRAO,
+    ];
 
     protected $fillable = [
         'nome',
@@ -37,6 +45,7 @@ class Estabelecimento extends Model
         'caixa_postal',
         'municipio',
         'provincia',
+        'fuso_horario',
         'responsavel_nome',
         'responsavel_cargo',
         'ano_fundacao',
@@ -90,6 +99,15 @@ class Estabelecimento extends Model
 
     protected static function booted(): void
     {
+        // O fuso lê-se uma vez por pedido (RelogioDoTenant); gravar o estabelecimento invalida essa leitura.
+        static::saved(function (Estabelecimento $estabelecimento) {
+            $contexto = app(TenantContext::class);
+
+            if ($contexto->temTenant()) {
+                $contexto->esquecer(RelogioDoTenant::CHAVE_FUSO);
+            }
+        });
+
         static::saving(function (Estabelecimento $estabelecimento) {
             $estabelecimento->tipo_descricao = $estabelecimento->tipo?->label();
 

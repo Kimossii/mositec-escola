@@ -4,6 +4,7 @@ namespace Modules\Financeiro\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
 use Illuminate\Contracts\Validation\Validator;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Rules\TaxaDeCambio;
 use Modules\Financeiro\Services\CambioDoDia;
 use Modules\Financeiro\Services\MoedaDoTenant;
@@ -18,7 +19,7 @@ class RegistarCambioRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'data' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'data' => ['required', 'date_format:Y-m-d', 'before_or_equal:' . app(RelogioDoTenant::class)->hoje()->toDateString()],
             'taxa' => ['required', new TaxaDeCambio()],
         ];
     }

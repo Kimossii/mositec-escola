@@ -30,6 +30,7 @@ class EstabelecimentoDTO
         public ?string $responsavel_cargo = null,
         public ?int $ano_fundacao = null,
         public ?string $observacoes = null,
+        public ?string $fuso_horario = null,
     ) {
     }
 
@@ -61,6 +62,7 @@ class EstabelecimentoDTO
             responsavel_cargo: $dados['responsavel_cargo'] ?? null,
             ano_fundacao: isset($dados['ano_fundacao']) ? (int) $dados['ano_fundacao'] : null,
             observacoes: $dados['observacoes'] ?? null,
+            fuso_horario: $dados['fuso_horario'] ?? null,
         );
     }
 }

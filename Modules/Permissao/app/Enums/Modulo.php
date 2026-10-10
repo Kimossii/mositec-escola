@@ -26,6 +26,7 @@ enum Modulo: int
     case CATALOGO_FINANCEIRO = 19;
     case PLANO_PROPINA = 20;
     case MOEDA_CAMBIO = 21;
+    case PROPINA = 22;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -37,19 +38,18 @@ enum Modulo: int
      * Fonte única das acções aplicáveis a cada módulo. A grelha de permissões
      * só mostra estas, e o servidor rejeita conceder/negar qualquer outra.
      *
-     * Por omissão, todos os módulos aplicam ACOES_BASE (nada muda). Um módulo
-     * futuro declara aqui as suas acções extra, ex. (ainda NÃO existem):
-     *
-     *   self::PROPINA => [...self::ACOES_BASE, 'cancelar', 'anular', 'ajustar', 'negociar', 'isentar-multa'],
-     *   self::PAGAMENTO => [...self::ACOES_BASE, 'anular'],
-     *
-     * Ver docs/superpowers/plans/2026-10-12-divida-catalogo-acoes-fk.md.
+     * Por omissão, todos os módulos aplicam ACOES_BASE. Um módulo com acções
+     * próprias declara-as aqui (lista explícita, sem herdar a base). Ver
+     * docs/superpowers/plans/2026-10-12-divida-catalogo-acoes-fk.md.
      *
      * @return list<string> nomes de `acoes.nome`
      */
     public function acoesAplicaveis(): array
     {
         return match ($this) {
+            // Uma propina nunca se edita nem se elimina (cancela-se, anula-se ou ajusta-se). Sem `negociar`
+            // (spec de Dívidas, inexistente) e sem `isentar-multa` (entra com as multas, F5).
+            self::PROPINA => ['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar'],
             default => self::ACOES_BASE,
         };
     }
@@ -79,6 +79,7 @@ enum Modulo: int
             self::CATALOGO_FINANCEIRO => 'catalogo-financeiro',
             self::PLANO_PROPINA => 'plano-propina',
             self::MOEDA_CAMBIO => 'moeda-cambio',
+            self::PROPINA => 'propina',
         };
     }
 
@@ -118,6 +119,7 @@ enum Modulo: int
             self::CATALOGO_FINANCEIRO => 'Catálogo Financeiro',
             self::PLANO_PROPINA => 'Plano de Propina',
             self::MOEDA_CAMBIO => 'Moeda e Câmbio',
+            self::PROPINA => 'Propina',
         };
     }
 }

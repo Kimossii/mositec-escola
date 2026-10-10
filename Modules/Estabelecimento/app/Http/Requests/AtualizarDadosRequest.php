@@ -51,6 +51,7 @@ class AtualizarDadosRequest extends BaseRequest
             'responsavel_cargo' => 'nullable|string|max:100',
             'ano_fundacao' => 'nullable|integer|min:1900|max:' . (int) date('Y'),
             'observacoes' => 'nullable|string',
+            'fuso_horario' => ['sometimes', 'required', 'string', 'max:64', 'timezone:all'],
         ];
     }
 
@@ -66,6 +67,8 @@ class AtualizarDadosRequest extends BaseRequest
             'etapas_ensino.min' => 'Selecione pelo menos uma etapa de ensino.',
             'etapas_ensino.*.in' => 'Uma das etapas de ensino indicadas é inválida.',
             'email.email' => 'Informe um email válido.',
+            'fuso_horario.required' => 'O fuso horário é obrigatório.',
+            'fuso_horario.timezone' => 'O fuso horário indicado é inválido.',
             'ano_fundacao.integer' => 'O ano de fundação deve ser um número válido.',
         ];
     }

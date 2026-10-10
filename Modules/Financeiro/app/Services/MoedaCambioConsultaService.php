@@ -3,6 +3,7 @@
 namespace Modules\Financeiro\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Models\Cambio;
 use Modules\Financeiro\Support\Moeda;
 
@@ -11,6 +12,7 @@ class MoedaCambioConsultaService
     public function __construct(
         private MoedaDoTenant $moedaDoTenant,
         private CambioDoDia $cambioDoDia,
+        private RelogioDoTenant $relogio,
     ) {
     }
 
@@ -49,7 +51,7 @@ class MoedaCambioConsultaService
      */
     public function cambioVigente(): ?array
     {
-        $resolvido = $this->cambioDoDia->resolver(now());
+        $resolvido = $this->cambioDoDia->resolver($this->relogio->hoje());
 
         if ($resolvido === null) {
             return null;

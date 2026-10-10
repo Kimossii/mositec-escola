@@ -36,7 +36,7 @@ Gerir a propina operacional: a obrigação financeira concreta de uma **matrícu
 | motivo_cancelamento / motivo_anulacao, *_por, *_em | preenchidos ao cancelar/anular |
 | criado_por, editado_por, timestamps | `RegistaAutoria` |
 
-- `unique(tenant_id, matricula_id, plano_propina_id, ordem)`.
+- `unique(tenant_id, matricula_id, plano_propina_id, ordem) WHERE estado IN (Em Aberto, Parcialmente Paga, Paga)`: índice único **parcial** (SQL cru, como o da cobrança dupla abaixo). Uma unicidade total impediria regerar o mesmo período do mesmo plano depois de o cancelar ou anular (L21 do plano de fases).
 - Índices: `(tenant_id, matricula_id, periodo_inicio)` e `(tenant_id, estado, data_vencimento)`.
 - Invariantes validadas na geração: `plano.ano_lectivo_id == matricula.ano_lectivo_id`, e plano e matrícula do mesmo tenant.
 - **Cobrança dupla (garantia em duas camadas):** (1) a BD impõe um **índice único parcial** `unique(tenant_id, matricula_id, periodo_inicio) WHERE estado IN (Em Aberto, Parcialmente Paga, Paga)` — Cancelada e Anulada ficam de fora para permitir regerar; criado com SQL cru (sem sintaxe fluente; suportado por PostgreSQL e SQLite); (2) a Action verifica a **sobreposição de intervalos** `[periodo_inicio, periodo_fim]` com outras propinas activas da mesma matrícula (o índice só apanha inícios iguais, não um trimestre contra um mês), sob bloqueio da matrícula (`lockForUpdate`).

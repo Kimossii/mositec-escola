@@ -6,6 +6,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
 import EstabelecimentoCabecalho from '../Components/EstabelecimentoCabecalho.vue';
 import EstabelecimentoTabs from '../Components/EstabelecimentoTabs.vue';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import CampoFicha from '../Components/CampoFicha.vue';
 
 const props = defineProps({
@@ -14,6 +15,10 @@ const props = defineProps({
         default: null,
     },
     etapasEnsino: {
+        type: Array,
+        default: () => [],
+    },
+    fusosHorarios: {
         type: Array,
         default: () => [],
     },
@@ -31,6 +36,8 @@ const tiposEnsino = [
     { value: 2, label: 'Ensino Técnico' },
     { value: 3, label: 'Ensino Universitário' },
 ];
+
+const opcoesFusos = computed(() => props.fusosHorarios.map((fuso) => ({ value: fuso, label: fuso })));
 
 const TIPO_ENSINO_UNIVERSITARIO = 3;
 const ETAPA_SUPERIOR = 5;
@@ -64,6 +71,7 @@ function snapshot() {
         responsavel_cargo: props.estabelecimento?.responsavel_cargo ?? '',
         ano_fundacao: props.estabelecimento?.ano_fundacao ?? '',
         observacoes: props.estabelecimento?.observacoes ?? '',
+        fuso_horario: props.estabelecimento?.fuso_horario ?? 'Africa/Luanda',
     };
 }
 
@@ -258,6 +266,25 @@ function submeter() {
                     </div>
                     <div class="col-md-3">
                         <CampoFicha v-model="form.provincia" label="Província" :editing="editando" :error="errors.provincia?.[0]" icon="ki-flag" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-6">
+                <div class="card-header min-h-auto py-4">
+                    <h3 class="card-title fs-6 fw-bold text-uppercase text-gray-600">Fuso horário</h3>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="row">
+                        <div class="col-md-6 py-3">
+                            <span class="d-block fs-8 fw-bold text-uppercase text-gray-900 mb-2">Fuso horário</span>
+                            <SelectSolid v-if="editando" v-model="form.fuso_horario" :options="opcoesFusos" searchable />
+                            <span v-else class="fs-5 fw-medium text-gray-900">{{ form.fuso_horario }}</span>
+                            <div v-if="errors.fuso_horario" class="text-danger fs-8 mt-1">{{ errors.fuso_horario }}</div>
+                            <div class="form-text bg-body-secondary rounded px-3 py-2 mt-3">
+                                Define o 'hoje' usado em vencimentos, atrasos e pagamentos. Não altera as datas já guardadas.
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
