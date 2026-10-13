@@ -90,8 +90,12 @@ class HandleInertiaRequests extends Middleware
             // precisa de poder mandar a mensagem exacta.
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
+                // Resultado parcial: tudo o que se podia gravar ficou gravado, mas houve erros (ex.: geração de propinas).
+                'warning' => fn () => $request->session()->get('warning'),
                 // Resumo da cópia de planos de propina entre anos lectivos (copiados/ignorados).
                 'copia_planos' => fn () => $request->session()->get('copia_planos'),
+                // Resultado da geração manual de propinas (totais e detalhe por matrícula).
+                'geracao_propinas' => fn () => $request->session()->get('geracao_propinas'),
                 // Senha temporária de uma redefinição manual: aparece uma só vez.
                 'senha_temporaria' => function () use ($request) {
                     $flash = $request->session()->get('senha_temporaria');

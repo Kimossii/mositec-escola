@@ -62,7 +62,10 @@
             <!-- ── Section: Infraestrutura ─────────────────────────────── -->
             <SidebarAccordion :item="infraestrutura" heading="Infraestrutura" />
 
-            <!-- ── Sections por implementar: Frequência, Pessoal, Financeiro,
+            <!-- ── Section: Financeiro (operação; a configuração fica em Configurações → Financeiro) ── -->
+            <SidebarAccordion :item="financeiro" heading="Financeiro" />
+
+            <!-- ── Sections por implementar: Frequência, Pessoal,
                  Comunicação, Documentos, Biblioteca, Relatórios.
                  Descomentar uma a uma, sequencialmente, à medida que cada
                  módulo for implementado — cabeçalho e acordeão já vêm juntos
@@ -70,7 +73,6 @@
             <!--
             <SidebarAccordion :item="frequencia" heading="Frequência" />
             <SidebarAccordion :item="pessoal" heading="Pessoal" />
-            <SidebarAccordion :item="financeiro" heading="Financeiro" />
             <SidebarAccordion :item="comunicacao" heading="Comunicação" />
             <SidebarAccordion :item="documentos" heading="Documentos" />
             <SidebarAccordion :item="biblioteca" heading="Biblioteca" />
@@ -518,20 +520,21 @@ const pedagogico = {
 //     ],
 // }
 //
-// const financeiro = {
-//     title: 'Financeiro',
-//     icon: 'ki-dollar',
-//     paths: 2,
-//     items: [
-//         { href: '#', title: 'Propinas' },
-//         { href: '#', title: 'Pagamentos' },
-//         { href: '#', title: 'Dívidas' },
-//         { href: '#', title: 'Descontos / Bolsas' },
-//         { href: '#', title: 'Recibos' },
-//         { href: '#', title: 'Relatórios Financeiros' },
-//     ],
-// }
-//
+// ── Financeiro (operação) — os restantes itens entram com as respectivas fases ──
+const financeiro = {
+    title: 'Financeiro',
+    icon: 'ki-dollar',
+    paths: 3,
+    items: [
+        { href: '/financeiro/propinas', title: 'Propinas', permissao: 'propina.ver' },
+        // { href: '#', title: 'Pagamentos' },
+        // { href: '#', title: 'Dívidas' },
+        // { href: '#', title: 'Descontos / Bolsas' },
+        // { href: '#', title: 'Recibos' },
+        // { href: '#', title: 'Relatórios Financeiros' },
+    ],
+}
+
 // const comunicacao = {
 //     title: 'Comunicação',
 //     icon: 'ki-message-text-2',

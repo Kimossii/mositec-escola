@@ -30,6 +30,7 @@ use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
 use Modules\Usuario\Models\DadosPessoa;
 use Tests\TestCase;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 
 class MatriculaActionTest extends TestCase
 {
@@ -742,7 +743,7 @@ class MatriculaActionTest extends TestCase
         $actualizada = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CANCELADA);
 
         $this->assertNotNull($actualizada->data_fim);
-        $this->assertSame(now()->toDateString(), $actualizada->data_fim->toDateString());
+        $this->assertSame(app(RelogioDoTenant::class)->hoje()->toDateString(), $actualizada->data_fim->toDateString());
     }
 
     public function test_permite_indicar_data_fim_explicita_ao_alterar_estado(): void

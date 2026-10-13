@@ -5,6 +5,7 @@ namespace Modules\Financeiro\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 
 class CambioPlataformaCommandTest extends TestCase
 {
@@ -32,7 +33,7 @@ class CambioPlataformaCommandTest extends TestCase
         $linha = DB::table('cambios_plataforma')->first();
         $this->assertSame(920_000_000, (int) $linha->taxa);
         $this->assertSame('api', $linha->fonte);
-        $this->assertSame(now()->toDateString(), substr((string) $linha->data, 0, 10));
+        $this->assertSame(app(RelogioDoTenant::class)->hoje()->toDateString(), substr((string) $linha->data, 0, 10));
     }
 
     public function test_rejeita_entradas_invalidas_sem_gravar(): void

@@ -147,6 +147,12 @@ function submeter() {
                         <input id="gerar_automaticamente" v-model="form.gerar_automaticamente" type="checkbox" class="form-check-input" :disabled="!podeEditar">
                         <label for="gerar_automaticamente" class="form-check-label fw-semibold">Gerar cobranças automaticamente</label>
                     </div>
+                    <div class="alert alert-warning fs-7 py-3 mt-4 mb-0" data-aviso="geracao-automatica">
+                        Ao ligar, o comando diário (de madrugada, 02:00 UTC) gera as propinas de cada matrícula activa <strong>desde o mês da matrícula</strong>,
+                        incluindo os meses já passados, que ficam logo <strong>Em Atraso</strong>.
+                        Recomendado antes de ligar: em <strong>Financeiro → Propinas → Gerar propinas</strong>, pré-visualizar e gerar manualmente
+                        por turma, e só depois ligar esta opção. A partir daí o comando só cria o que faltar (não duplica).
+                    </div>
                 </div>
             </div>
 

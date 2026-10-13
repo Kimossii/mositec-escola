@@ -14,6 +14,7 @@ use Modules\Financeiro\Support\TaxaCambio;
 use Modules\Financeiro\Tests\Concerns\ComUtilizadoresFinanceiro;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Tests\TestCase;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 
 class MoedaCambioTest extends TestCase
 {
@@ -158,7 +159,7 @@ class MoedaCambioTest extends TestCase
     {
         $this->actingAs($this->adminEscola())->from('/x');
 
-        $this->post(route(self::BASE . 'cambios.store'), ['data' => now()->addDay()->toDateString(), 'taxa' => '910'])->assertSessionHasErrors('data');
+        $this->post(route(self::BASE . 'cambios.store'), ['data' => app(RelogioDoTenant::class)->hoje()->addDay()->toDateString(), 'taxa' => '910'])->assertSessionHasErrors('data');
         $this->post(route(self::BASE . 'cambios.store'), ['data' => '2026-10-01', 'taxa' => '0'])->assertSessionHasErrors('taxa');
         $this->post(route(self::BASE . 'cambios.store'), ['data' => '2026-10-01', 'taxa' => '910,1234567'])->assertSessionHasErrors('taxa');
         $this->post(route(self::BASE . 'cambios.store'), ['data' => 'abc', 'taxa' => '910'])->assertSessionHasErrors('data');

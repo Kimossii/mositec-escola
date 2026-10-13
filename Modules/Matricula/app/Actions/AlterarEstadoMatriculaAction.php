@@ -3,6 +3,7 @@
 namespace Modules\Matricula\Actions;
 
 use Illuminate\Validation\ValidationException;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
 
@@ -10,6 +11,7 @@ class AlterarEstadoMatriculaAction
 {
     public function __construct(
         private RegistarHistoricoMatriculaAction $registarHistorico,
+        private RelogioDoTenant $relogio,
     ) {
     }
 
@@ -31,7 +33,7 @@ class AlterarEstadoMatriculaAction
         $matricula->editado_por = $utilizadorId;
 
         if ($novoEstado->eTerminal()) {
-            $matricula->data_fim = $dataFim ?? now()->toDateString();
+            $matricula->data_fim = $dataFim ?? $this->relogio->hoje()->toDateString();
         }
 
         $matricula->save();

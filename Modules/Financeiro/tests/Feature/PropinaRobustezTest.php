@@ -28,6 +28,7 @@ use Modules\Usuario\Models\User;
 use PHPUnit\Framework\Attributes\DataProvider;
 use stdClass;
 use Tests\TestCase;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 
 class PropinaRobustezTest extends TestCase
 {
@@ -201,12 +202,12 @@ class PropinaRobustezTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('não pode estar no futuro');
 
-        new ContribuicaoDePagamento(Dinheiro::deUnidadesMenores(100), CarbonImmutable::now()->addDay());
+        new ContribuicaoDePagamento(Dinheiro::deUnidadesMenores(100), app(RelogioDoTenant::class)->hoje()->addDay());
     }
 
     public function test_contribuicao_de_hoje_e_aceite(): void
     {
-        $contribuicao = new ContribuicaoDePagamento(Dinheiro::deUnidadesMenores(100), CarbonImmutable::now());
+        $contribuicao = new ContribuicaoDePagamento(Dinheiro::deUnidadesMenores(100), app(RelogioDoTenant::class)->hoje());
 
         $this->assertSame(100, $contribuicao->valor->unidadesMenores());
     }

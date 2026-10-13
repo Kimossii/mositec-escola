@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Modulo;
 use Modules\Permissao\Enums\Perfil;
+use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo as ModuloRegistro;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\RolePermissao;
@@ -41,15 +42,16 @@ class PermissoesPropinaTest extends TestCase
         $this->assertSame(['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar'], Modulo::PROPINA->acoesAplicaveis());
     }
 
-    public function test_admin_escola_tem_so_as_acoes_de_f1(): void
+    public function test_admin_escola_tem_as_acoes_de_f1_e_ajustar(): void
     {
         $admin = $this->utilizadorCom(Perfil::ADMIN_ESCOLA);
 
-        foreach (['ver', 'listar', 'criar', 'cancelar', 'exportar'] as $acao) {
+        // P1 (F2): `ajustar` (geração retroactiva) entra já; `anular` continua para Pagamentos.
+        foreach (['ver', 'listar', 'criar', 'cancelar', 'exportar', 'ajustar'] as $acao) {
             $this->assertTrue(Gate::forUser($admin)->allows("propina.{$acao}"), $acao);
         }
 
-        foreach (['anular', 'ajustar', 'editar', 'eliminar', 'negociar', 'isentar-multa'] as $acao) {
+        foreach (['anular', 'editar', 'eliminar', 'negociar', 'isentar-multa'] as $acao) {
             $this->assertFalse(Gate::forUser($admin)->allows("propina.{$acao}"), $acao);
         }
     }
@@ -72,6 +74,23 @@ class PermissoesPropinaTest extends TestCase
 
         $this->assertTrue(Gate::forUser($admin)->allows('propina.ver'));
         $this->assertTrue(Gate::forUser($admin)->allows('propina.cancelar'));
-        $this->assertFalse(Gate::forUser($admin)->allows('propina.ajustar'));
+        $this->assertTrue(Gate::forUser($admin)->allows('propina.ajustar'));
+    }
+
+    public function test_sincronizar_concede_ajustar_a_tenants_criados_em_f1(): void
+    {
+        $admin = $this->utilizadorCom(Perfil::ADMIN_ESCOLA);
+        // Simula um tenant de F1: tem as acções de F1, mas não `ajustar`.
+        RolePermissao::query()
+            ->where('role_id', Role::where('nome', Perfil::ADMIN_ESCOLA->value)->value('id'))
+            ->where('modulo_id', ModuloRegistro::where('nome', Modulo::PROPINA->value)->value('id'))
+            ->where('acao_id', Acao::where('nome', 'ajustar')->value('id'))
+            ->delete();
+        $this->assertTrue(Gate::forUser($admin)->denies('propina.ajustar')); // aquece a cache
+        $this->assertTrue(Gate::forUser($admin)->allows('propina.criar'));
+
+        $this->artisan('financeiro:sincronizar', ['--tenant' => $this->tenant->codigo])->assertSuccessful();
+
+        $this->assertTrue(Gate::forUser($admin)->allows('propina.ajustar'));
     }
 }

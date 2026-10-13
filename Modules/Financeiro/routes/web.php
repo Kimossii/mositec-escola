@@ -6,6 +6,7 @@ use Modules\Financeiro\Http\Controllers\MetodoPagamentoController;
 use Modules\Financeiro\Http\Controllers\MoedaCambioController;
 use Modules\Financeiro\Http\Controllers\PlanoPropinaController;
 use Modules\Financeiro\Http\Controllers\ProdutoController;
+use Modules\Financeiro\Http\Controllers\PropinaController;
 use Modules\Financeiro\Http\Controllers\RegraCobrancaController;
 use Modules\Financeiro\Http\Controllers\ServicoController;
 
@@ -52,4 +53,11 @@ Route::middleware(['auth'])->prefix('financeiro/configuracao')->name('financeiro
         Route::post('/cambios', [MoedaCambioController::class, 'registarCambio'])->middleware('can:moeda-cambio.criar')->name('cambios.store');
         Route::delete('/cambios/{cambio}', [MoedaCambioController::class, 'eliminarCambio'])->middleware('can:moeda-cambio.eliminar')->name('cambios.destroy');
     });
+});
+
+// Operação (menu Financeiro), separada da configuração (menu Configurações → Financeiro).
+Route::middleware(['auth'])->prefix('financeiro/propinas')->name('financeiro.propinas.')->group(function () {
+    Route::get('/', [PropinaController::class, 'index'])->middleware('can:propina.ver')->name('index');
+    Route::post('/geracao/pre-visualizar', [PropinaController::class, 'preVisualizarGeracao'])->middleware('can:propina.criar')->name('geracao.pre-visualizar');
+    Route::post('/geracao', [PropinaController::class, 'gerar'])->middleware('can:propina.criar')->name('geracao.store');
 });

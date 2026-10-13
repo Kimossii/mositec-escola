@@ -34,7 +34,11 @@ class RelogioDoTenant
         );
     }
 
-    /** O dia civil de agora na zona da escola, às 00:00 (comparável com datas Y-m-d). */
+    /**
+     * O dia civil de agora na zona da escola, às 00:00 (comparável com datas Y-m-d).
+     * O instante devolvido é a meia-noite na zona da aplicação com a data civil da escola: compare só por
+     * toDateString()/Y-m-d, nunca com diffInDays entre zonas.
+     */
     public function hoje(): CarbonImmutable
     {
         return CarbonImmutable::createFromFormat('!Y-m-d', $this->agora()->toDateString());

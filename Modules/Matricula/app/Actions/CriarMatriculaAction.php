@@ -4,6 +4,7 @@ namespace Modules\Matricula\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Modules\Aluno\Models\Aluno;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
@@ -18,6 +19,7 @@ class CriarMatriculaAction
         private ValidadorMatriculaService $validador,
         private RegistarHistoricoMatriculaAction $registarHistorico,
         private InscreverDisciplinasAutomaticamenteAction $inscreverDisciplinas,
+        private RelogioDoTenant $relogio,
     ) {
     }
 
@@ -45,7 +47,7 @@ class CriarMatriculaAction
                 'turma_id' => $turma->id,
                 'ano_lectivo_id' => $anoLectivoId,
                 'numero_registo_matricula' => $numeroRegisto,
-                'data_matricula' => $dto->dataMatricula ?? now()->toDateString(),
+                'data_matricula' => $dto->dataMatricula ?? $this->relogio->hoje()->toDateString(),
                 'estado' => $dto->estado ?? EstadoMatriculaEnum::PENDENTE->value,
                 'observacoes' => $dto->observacoes,
                 'criado_por' => $utilizadorId,

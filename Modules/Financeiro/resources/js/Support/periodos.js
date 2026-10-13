@@ -22,3 +22,12 @@ export function resumoPeriodos(duracoes) {
 
     return `${quantidade} (${duracoes.join('+')} ${meses})`;
 }
+
+/** "2026-09-10" → "10/09/2026". Sem `Date`: uma data civil não tem fuso e não pode recuar um dia. */
+export function dataCurta(ymd) {
+    if (!ymd) return '—';
+
+    const [ano, mes, dia] = String(ymd).slice(0, 10).split('-');
+
+    return `${dia}/${mes}/${ano}`;
+}

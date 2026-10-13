@@ -9,8 +9,8 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
 /**
- * O "hoje" de negócio do Financeiro é o da escola: vem sempre de RelogioDoTenant. Varre, por tokens,
- * Modules/Financeiro/app à procura de `now()`, `today()`, `Carbon::now/today`, `CarbonImmutable::now/today`,
+ * O "hoje" de negócio do Financeiro (e das datas civis da Matrícula listadas em FICHEIROS_MATRICULA) é o da
+ * escola: vem sempre de RelogioDoTenant. Varre, por tokens, Modules/Financeiro/app à procura de `now()`, `today()`, `Carbon::now/today`, `CarbonImmutable::now/today`,
  * `new DateTime(Immutable)` sem argumentos e da regra de validação `today`/`tomorrow`/`yesterday`
  * (`before_or_equal:today`…), que usam UTC.
  *
@@ -21,6 +21,15 @@ class RelogioDoTenantArquitecturaTest extends TestCase
 {
     /** Ficheiro => razão. CambioPlataformaCommand corre sem tenant: usa a constante do fuso por omissão. */
     private const EXCEPCOES = [];
+
+    /** Actions da Matrícula que gravam datas civis: usam RelogioDoTenant::hoje(), nunca now()/today(). */
+    private const FICHEIROS_MATRICULA = [
+        'Modules/Matricula/app/Actions/CriarMatriculaAction.php',
+        'Modules/Matricula/app/Actions/AlterarEstadoMatriculaAction.php',
+        'Modules/Matricula/app/Actions/RenovarMatriculaAction.php',
+        'Modules/Matricula/app/Actions/CriarInscricaoDisciplinaAction.php',
+        'Modules/Matricula/app/Actions/AlterarEstadoInscricaoDisciplinaAction.php',
+    ];
 
     private const CLASSES_CARBON = ['Carbon', 'CarbonImmutable'];
 
@@ -39,6 +48,11 @@ class RelogioDoTenantArquitecturaTest extends TestCase
             if ($ficheiro->isFile() && $ficheiro->getExtension() === 'php') {
                 $ficheiros[str_replace($this->raiz() . '/', '', $ficheiro->getPathname())] = file_get_contents($ficheiro->getPathname());
             }
+        }
+
+        // Matrícula: as datas civis (data_matricula, data_fim, data_inscricao, data_conclusao) alimentam as Propinas.
+        foreach (self::FICHEIROS_MATRICULA as $relativo) {
+            $ficheiros[$relativo] = file_get_contents($this->raiz() . '/' . $relativo);
         }
 
         return $ficheiros;
@@ -92,6 +106,10 @@ class RelogioDoTenantArquitecturaTest extends TestCase
     public function test_ha_codigo_para_analisar(): void
     {
         $this->assertArrayHasKey('Modules/Financeiro/app/Support/ContribuicaoDePagamento.php', $this->codigo());
+
+        foreach (self::FICHEIROS_MATRICULA as $relativo) {
+            $this->assertArrayHasKey($relativo, $this->codigo());
+        }
     }
 
     public function test_o_financeiro_nao_calcula_o_hoje_de_negocio_sem_o_relogio_do_tenant(): void

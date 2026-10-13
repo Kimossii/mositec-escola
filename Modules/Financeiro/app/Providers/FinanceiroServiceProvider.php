@@ -5,6 +5,7 @@ namespace Modules\Financeiro\Providers;
 use Modules\AnoLectivo\Support\DependenciasRegistadasDoAnoLectivo;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
 use Modules\Financeiro\Console\CambioPlataformaCommand;
+use Modules\Financeiro\Console\GerarPropinasCommand;
 use Modules\Financeiro\Console\SincronizarFinanceiroCommand;
 use Modules\Financeiro\Provisioning\ProvisionarConfiguracaoMonetaria;
 use Modules\Financeiro\Provisioning\ProvisionarRegrasCobranca;
@@ -35,6 +36,7 @@ class FinanceiroServiceProvider extends ModuleServiceProvider
      */
     protected array $commands = [
         CambioPlataformaCommand::class,
+        GerarPropinasCommand::class,
         SincronizarFinanceiroCommand::class,
     ];
 
