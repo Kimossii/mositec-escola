@@ -37,6 +37,6 @@ class PropinasDaMatricula implements DependenciasDaMatricula
         }
 
         return "Esta matrícula já tem {$activas} propina(s) activa(s) calculadas a partir do mês da matrícula: só pode corrigir o dia dentro do mesmo mês. "
-            . 'Para mudar o mês, cancele primeiro as propinas desta matrícula em Financeiro → Propinas e gere-as de novo depois da correcção.';
+            . 'Para mudar o mês, cancele primeiro as propinas desta matrícula em Financeiro → Propinas e gere-as de novo depois da correcção (Financeiro → Propinas → Gerar propinas).';
     }
 }

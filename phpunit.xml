@@ -45,7 +45,6 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TENANCY_MODO" value="dominio"/>
         <env name="TENANCY_HOSTS_CENTRAIS" value=""/>
-        <env name="FINANCEIRO_GERACAO_PROPINAS" value="true"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

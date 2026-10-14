@@ -17,7 +17,6 @@ use Modules\Financeiro\DTO\ResultadoGeracaoPropinasDTO;
 use Modules\Financeiro\Enums\AmbitoGeracaoPropinas;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\OrigemGeracaoPropina;
-use Modules\Financeiro\Exceptions\GeracaoDePropinasDesactivada;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\RegraCobranca;
@@ -95,11 +94,7 @@ class GerarPropinasService
      */
     public function gerar(PedidoGeracaoPropinasDTO $pedido): ResultadoGeracaoPropinasDTO
     {
-        // Ponto único de criação: o interruptor de segurança (R-F2.1) e o ano encerrado travam aqui, também por defesa em profundidade.
-        if (! GeracaoDePropinasDesactivada::activa()) {
-            throw new GeracaoDePropinasDesactivada();
-        }
-
+        // Ponto único de criação: o ano encerrado trava aqui, também por defesa em profundidade.
         $this->recusarAnoEncerrado($pedido->ano_lectivo_id);
 
         $contexto = $this->contexto();
@@ -345,13 +340,6 @@ class GerarPropinasService
     }
 
     /**
-     * D10 (F3): a geração automática não recria um período cancelado — sem isto, o comando da noite seguinte
-     * desfaria um cancelamento manual. A geração manual é uma decisão humana explícita e pode regenerar, mas a
-     * pré-visualização assinala-o (O2, aprovado pelo dono).
-     *
-     * @return Collection<int, Propina>
-     */
-    /**
      * Uma só query por bloco (sem N+1 na pré-visualização), pela mesma ordem de {@see canceladas()}.
      *
      * @param  list<int>  $matriculaIds
@@ -368,6 +356,13 @@ class GerarPropinasService
             ->groupBy(fn (Propina $propina) => (int) $propina->matricula_id);
     }
 
+    /**
+     * D10 (F3): a geração automática não recria um período cancelado — sem isto, o comando da noite seguinte
+     * desfaria um cancelamento manual. A geração manual é uma decisão humana explícita e pode regenerar, mas a
+     * pré-visualização assinala-o (O2, aprovado pelo dono).
+     *
+     * @return Collection<int, Propina>
+     */
     private function canceladas(int $matriculaId): Collection
     {
         return Propina::query()

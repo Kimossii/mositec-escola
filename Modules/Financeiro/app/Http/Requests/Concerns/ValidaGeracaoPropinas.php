@@ -3,14 +3,12 @@
 namespace Modules\Financeiro\Http\Requests\Concerns;
 
 use Illuminate\Validation\Rule;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Validation\Validator;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Enums\Estado;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Financeiro\Enums\AmbitoGeracaoPropinas;
-use Modules\Financeiro\Exceptions\GeracaoDePropinasDesactivada;
 
 /**
  * Regras partilhadas pela pré-visualização e pela confirmação da geração manual (a confirmação valida
@@ -20,11 +18,6 @@ trait ValidaGeracaoPropinas
 {
     public function authorize(): bool
     {
-        // Interruptor de segurança (R-F2.1): desligado, nem a pré-visualização nem a confirmação passam.
-        if (! GeracaoDePropinasDesactivada::activa()) {
-            return false;
-        }
-
         $utilizador = $this->user();
 
         if ($utilizador === null || ! $utilizador->can('propina.criar')) {
@@ -33,15 +26,6 @@ trait ValidaGeracaoPropinas
 
         // Períodos anteriores ao mês da matrícula são excepcionais (spec §7.2, Q9): exigem `propina.ajustar`.
         return ! $this->boolean('incluir_periodos_anteriores') || $utilizador->can('propina.ajustar');
-    }
-
-    protected function failedAuthorization(): void
-    {
-        if (! GeracaoDePropinasDesactivada::activa()) {
-            throw new AuthorizationException(GeracaoDePropinasDesactivada::MENSAGEM);
-        }
-
-        parent::failedAuthorization();
     }
 
     /**

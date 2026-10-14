@@ -6,7 +6,6 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Modules\Core\Tenancy\Console\ParaTodosOsTenants;
 use Modules\Core\Tenancy\TenantAtual;
-use Modules\Financeiro\Exceptions\GeracaoDePropinasDesactivada;
 use Modules\Financeiro\Services\GerarPropinasService;
 use Modules\Financeiro\Services\ReconciliarCancelamentosDePropinas;
 use RuntimeException;
@@ -14,9 +13,8 @@ use RuntimeException;
 /**
  * Comando diário de propinas, por tenant:
  * 1. Reconciliação dos cancelamentos por estado da matrícula (D12 de F3): SEMPRE, mesmo com a geração automática
- *    ou o interruptor de segurança desligados — cancelar é protector.
- * 2. Geração automática (spec §7.6): só com «gerar automaticamente» ligado (e, até à Task 16 de F3, o interruptor
- *    de segurança). Idempotente; recupera o que a geração ao activar uma matrícula não fez (§8.2/3).
+ *    desligada — cancelar é protector.
+ * 2. Geração automática (spec §7.6): só com «gerar automaticamente» ligado. Idempotente; recupera o que a geração ao activar uma matrícula não fez (§8.2/3).
  * Sem lógica de negócio: delega nos serviços.
  */
 class GerarPropinasCommand extends Command
@@ -29,16 +27,7 @@ class GerarPropinasCommand extends Command
 
     public function handle(GerarPropinasService $geracao, ReconciliarCancelamentosDePropinas $reconciliacao): int
     {
-        $geracaoActiva = GeracaoDePropinasDesactivada::activa();
-
-        // Interruptor de segurança (R-F2.1): a geração fica inerte (código 0 de propósito — o comando está agendado
-        // todos os dias); a reconciliação dos cancelamentos corre na mesma.
-        if (! $geracaoActiva) {
-            Log::warning('financeiro.gerar-propinas.desactivada');
-            $this->warn(GeracaoDePropinasDesactivada::MENSAGEM . ' Nada foi gerado; só corre a reconciliação dos cancelamentos.');
-        }
-
-        return $this->paraTenants(function (TenantAtual $tenant) use ($geracao, $reconciliacao, $geracaoActiva): void {
+        return $this->paraTenants(function (TenantAtual $tenant) use ($geracao, $reconciliacao): void {
             $reconciliados = $reconciliacao->executar();
             Log::info('financeiro.reconciliar-cancelamentos', ['tenant' => $tenant->codigo] + $reconciliados);
 
@@ -47,11 +36,7 @@ class GerarPropinasCommand extends Command
                     . "{$reconciliados['matriculas']} matrícula(s) terminada(s), {$reconciliados['erros']} erro(s).");
             }
 
-            $erros = $reconciliados['erros'];
-
-            if ($geracaoActiva) {
-                $erros += $this->gerar($geracao, $tenant);
-            }
+            $erros = $reconciliados['erros'] + $this->gerar($geracao, $tenant);
 
             // Tudo o que correu bem já está gravado. O tenant fica como falhado para o código de saída e o agendador
             // o assinalarem; a execução seguinte volta a tentar (idempotente).

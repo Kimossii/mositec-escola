@@ -9,6 +9,7 @@ use Illuminate\Testing\PendingCommand;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Services\ReconciliarCancelamentosDePropinas;
 use Modules\Financeiro\Tests\Concerns\ComDadosAcademicosFinanceiro;
 use Modules\Financeiro\Tests\Concerns\ComPropinasFinanceiro;
@@ -86,13 +87,13 @@ class ReconciliarCancelamentosDePropinasTest extends TestCase
         $this->assertPropinasCoerentes();
     }
 
-    public function test_corre_mesmo_com_o_interruptor_de_seguranca_desligado(): void
+    public function test_corre_mesmo_com_a_geracao_automatica_desligada(): void
     {
         ['turma' => $turma, 'plano' => $plano] = $this->cenarioPropinas();
         $matricula = $this->terminadaSemCancelamento($turma, $plano, EstadoMatriculaEnum::TRANSFERIDA, '2027-01-31');
-        config()->set('financeiro.propinas.geracao_activa', false);
+        RegraCobranca::doTenant()->update(['gerar_automaticamente' => false]);
 
-        $this->correr()->expectsOutputToContain('desactivada')->assertSuccessful();
+        $this->correr()->assertSuccessful();
 
         // Fev/2027 (ordem 6) em diante: começam depois de 31/01/2027.
         $this->assertSame([6, 7, 8, 9, 10], $this->ordensCanceladas($matricula));

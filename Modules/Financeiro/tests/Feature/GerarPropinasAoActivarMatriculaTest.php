@@ -29,7 +29,7 @@ use Tests\TestCase;
 
 /**
  * Q7 + §8.2/3: ao activar uma matrícula, as propinas geram-se DEPOIS do commit, só com «gerar automaticamente»
- * (e o interruptor de segurança ligado); uma falha nunca impede nem desfaz a activação e o comando diário recupera.
+ * ; uma falha nunca impede nem desfaz a activação e o comando diário recupera.
  * D10: a geração automática nunca recria um período cancelado.
  */
 class GerarPropinasAoActivarMatriculaTest extends TestCase
@@ -96,16 +96,6 @@ class GerarPropinasAoActivarMatriculaTest extends TestCase
 
         $this->activar($matricula);
 
-        $this->assertSame(0, Propina::query()->count());
-    }
-
-    public function test_com_o_interruptor_de_seguranca_desligado_nao_gera_mas_activa(): void
-    {
-        $this->ligar();
-        $matricula = $this->pendente();
-        config()->set('financeiro.propinas.geracao_activa', false);
-
-        $this->assertSame(EstadoMatriculaEnum::ACTIVA, $this->activar($matricula)->estado);
         $this->assertSame(0, Propina::query()->count());
     }
 

@@ -30,7 +30,7 @@ watch(() => props.show, (show) => {
                 <div class="card bg-body-secondary mb-5">
                     <div class="card-body py-4 fs-7">
                         A propina passa a <strong>Cancelada</strong> e deixa de ser cobrada. A operação não se desfaz:
-                        se for preciso, gere de novo o período em Financeiro → Propinas. Uma propina que já recebeu pagamentos
+                        se for preciso, gere de novo o período em Financeiro → Propinas → Gerar propinas (a geração manual volta a cobrá-lo, depois de confirmada). Uma propina que já recebeu pagamentos
                         não se cancela (anula-se, com o módulo de Pagamentos).
                     </div>
                 </div>

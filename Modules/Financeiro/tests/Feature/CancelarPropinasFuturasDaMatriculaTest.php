@@ -188,16 +188,6 @@ class CancelarPropinasFuturasDaMatriculaTest extends TestCase
         $this->assertSame([], $this->ordensCanceladas($matricula));
     }
 
-    public function test_o_cancelamento_por_estado_corre_com_a_geracao_activa_desligada(): void
-    {
-        [$matricula] = $this->matriculaComDezPropinas();
-        config()->set('financeiro.propinas.geracao_activa', false);
-
-        $this->alterar($matricula, EstadoMatriculaEnum::CANCELADA, '2026-10-16');
-
-        $this->assertSame([3, 4, 5, 6, 7, 8, 9, 10], $this->ordensCanceladas($matricula));
-    }
-
     public function test_uma_propina_futura_paga_ou_anulada_fica_intacta(): void
     {
         [$matricula, $propinas] = $this->matriculaComDezPropinas();

@@ -8,8 +8,6 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use Modules\Financeiro\Enums\TipoMulta;
-use Modules\Financeiro\Exceptions\GeracaoDePropinasDesactivada;
-use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Rules\ValorMonetario;
 use Modules\Financeiro\Support\Multa;
 
@@ -88,14 +86,6 @@ class AtualizarRegraCobrancaRequest extends BaseRequest
     public function after(): array
     {
         return [function (Validator $validador) {
-            // R-F2.1: com o interruptor desligado só se aceita manter/pôr a geração automática desligada
-            // (um `true` já gravado e reenviado sem alteração continua a passar, para não bloquear outras edições).
-            if ($this->boolean('gerar_automaticamente')
-                && ! GeracaoDePropinasDesactivada::activa()
-                && ! (RegraCobranca::doTenant()->gerar_automaticamente ?? false)) {
-                $validador->errors()->add('gerar_automaticamente', 'A geração automática está indisponível: a geração de propinas está desactivada até estar concluída a protecção das matrículas (F3).');
-            }
-
             if (! $this->multaActivaNoPedido() || $validador->errors()->isNotEmpty()) {
                 return;
             }

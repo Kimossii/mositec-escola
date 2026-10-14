@@ -84,10 +84,6 @@ class HandleInertiaRequests extends Middleware
             'permissoes' => $request->user()
                 ? app(PermissionResolver::class)->conjuntoConcedido($request->user())
                 : [],
-            // Interruptor de segurança da geração de propinas (Financeiro, R-F2.1): o frontend esconde o que depende dele.
-            'financeiro' => [
-                'geracaoPropinasActiva' => (bool) config('financeiro.propinas.geracao_activa', false),
-            ],
             // A maioria das acções usa toast.success() com texto fixo no
             // frontend, sem olhar para isto — mas quando o resultado varia
             // por pedido (ex.: renovação em massa, com contagens), o backend
