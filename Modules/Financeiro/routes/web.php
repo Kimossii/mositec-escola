@@ -58,6 +58,8 @@ Route::middleware(['auth'])->prefix('financeiro/configuracao')->name('financeiro
 // Operação (menu Financeiro), separada da configuração (menu Configurações → Financeiro).
 Route::middleware(['auth'])->prefix('financeiro/propinas')->name('financeiro.propinas.')->group(function () {
     Route::get('/', [PropinaController::class, 'index'])->middleware('can:propina.ver')->name('index');
+    Route::get('/{propina}', [PropinaController::class, 'show'])->whereNumber('propina')->middleware('can:propina.ver')->name('show');
     Route::post('/geracao/pre-visualizar', [PropinaController::class, 'preVisualizarGeracao'])->middleware('can:propina.criar')->name('geracao.pre-visualizar');
     Route::post('/geracao', [PropinaController::class, 'gerar'])->middleware('can:propina.criar')->name('geracao.store');
+    Route::patch('/{propina}/cancelar', [PropinaController::class, 'cancelar'])->whereNumber('propina')->middleware('can:propina.cancelar')->name('cancelar');
 });

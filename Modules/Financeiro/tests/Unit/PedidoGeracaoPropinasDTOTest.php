@@ -54,4 +54,15 @@ class PedidoGeracaoPropinasDTOTest extends TestCase
             'matrícula sem número' => [['ambito' => AmbitoGeracaoPropinas::MATRICULA, 'alvo_id' => null], 'número de registo'],
         ];
     }
+
+    public function test_o_pedido_da_activacao_e_de_uma_matricula_com_origem_matricula(): void
+    {
+        $pedido = PedidoGeracaoPropinasDTO::daMatricula(7, 'MR-0001');
+
+        $this->assertSame(7, $pedido->ano_lectivo_id);
+        $this->assertSame(AmbitoGeracaoPropinas::MATRICULA, $pedido->ambito);
+        $this->assertSame(OrigemGeracaoPropina::MATRICULA, $pedido->origem);
+        $this->assertSame('MR-0001', $pedido->matricula_numero);
+        $this->assertFalse($pedido->incluir_periodos_anteriores);
+    }
 }

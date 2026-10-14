@@ -109,6 +109,7 @@ class GerarPropinasPreVisualizacaoTest extends TestCase
             'origem_geracao_descricao' => 'Manual',
             'motivo_geracao' => null,
             'tardia' => false,
+            'regenera_cancelada' => null,
         ], $linha['criadas'][0]);
         $this->assertSame(range(1, 10), array_column($linha['criadas'], 'ordem'));
         $this->assertSame([], $linha['ignoradas']);

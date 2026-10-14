@@ -35,13 +35,13 @@
 | D3 | **Cancelável** (§8, §8.2/2 "cancelar ≠ anular") = estado **persistido** Em Aberto (inclui os que se resolvem Pendente ou Em Atraso), `valor_pago = 0`, **sem contribuições** (`FontesDePagamentoDePropina`) e **sem histórico de pagamentos** (`HistoricosDePagamentoDaPropina`, D4). Motivo obrigatório, 5–500 caracteres depois de `trim`. Mensagens distintas por razão (Parcialmente Paga/Paga: "anule primeiro os pagamentos"; histórico: "use Anular (Pagamentos)"; já Cancelada/Anulada: terminal). | §8 e §8.2/2. Anular continua fora (Pagamentos-A, L12). |
 | D4 | **`Contracts\HistoricoDePagamentosDaPropina::temHistorico(Propina): bool`** (qualquer pagamento ou utilização de crédito que alguma vez tocou a propina, em qualquer estado) + agregador `Support\HistoricosDePagamentoDaPropina` (etiqueta `financeiro.historicos-pagamento-propina`). Sem implementações até Pagamentos-A (nada etiquetado → `false`). Testes usam `HistoricoPagamentoFalso`. | F1 D4 adiou-o para F3, que é o primeiro consumidor. |
 | D5 | **Ordem de bloqueio:** matrícula (`lockForUpdate`) → propinas por id crescente (`BloqueioDePropinas`). A mudança de estado, a reconciliação e a geração bloqueiam a matrícula primeiro; o **cancelamento manual bloqueia só a propina** (nunca a matrícula), portanto não há ciclo. Depois do bloqueio, tudo é relido e reavaliado (um cancelamento concorrente já confirmado é ignorado). | Spec §3/§6; F2 D2; trancamento D13. |
-| D6 | **`AlterarEstadoMatriculaAction` transaccional:** `DB::transaction` → relê a matrícula com `lockForUpdate` → valida a transição **sobre a linha bloqueada** (um model desactualizado não passa) → grava → histórico → evento. `dataEfeito` = `data_fim` gravada (terminais) ou hoje da escola (restantes). O comportamento de `data_fim` não muda (livre, pode ser retroactiva; ver pergunta aberta O1). | L10. A transacção é exigida por Q5 (estado + histórico + cancelamentos: tudo ou nada). |
+| D6 | **`AlterarEstadoMatriculaAction` transaccional:** `DB::transaction` → relê a matrícula com `lockForUpdate` → valida a transição **sobre a linha bloqueada** (um model desactualizado não passa) → grava → histórico → evento. `dataEfeito` = `data_fim` gravada (terminais) ou hoje da escola (restantes). **O1 (aprovado pelo dono):** `data_fim` validada sobre a linha bloqueada — entre `data_matricula` e `RelogioDoTenant::hoje()`; Concluída aceita futura até ao fim do ano lectivo; fora disso `ValidationException` em `data_fim` (Task 6). | L10. A transacção é exigida por Q5 (estado + histórico + cancelamentos: tudo ou nada). |
 | D7 | **`CriarMatriculaAction`** despacha o evento sempre que cria uma matrícula (`estadoAnterior = null`, `dataEfeito = data_matricula`), dentro da sua transacção (é o mesmo facto que o histórico regista). Só `ACTIVA` interessa ao Financeiro (Q7). | Fases F3: "evento também na criação". |
 | D8 | **Q6 aprovado:** Cancelada, Transferida **e Concluída** cancelam as propinas da matrícula com `periodo_inicio > dataEfeito` canceláveis (D3); as restantes ficam como dívida. Motivo: "Matrícula {cancelada \| transferida \| concluída} em dd/mm/aaaa (estado da matrícula)."; `cancelado_por = utilizadorId` (nulo em comandos). Idempotente (a 2.ª execução não encontra nada). Estados desconhecidos (ex.: Trancada, futura) são ignorados. | Spec §9, §8.1/Q6, trancamento D14/§189. |
 | D9 | **Q7 aprovado:** ao passar a Activa (criação já Activa ou Pendente → Activa), **depois do commit**, só se o interruptor de segurança estiver ligado e `regras_cobranca.gerar_automaticamente = true` (lido com `RegraCobranca::query()->first()`, nunca `doTenant()`), gera com `GerarPropinasService::gerar(PedidoGeracaoPropinasDTO::daMatricula(...))`, origem `MATRICULA`. Qualquer `Throwable` é apanhado (já fora da transacção), `report()` + `Log::warning('financeiro.gerar-propinas.activacao-falhou', …)`, e **nunca** propaga: a matrícula fica Activa; o comando diário (idempotente) gera o que faltar. | §8.2/3 "geração recuperável". |
-| D10 | **A geração automática (origens `COMANDO` e `MATRICULA`) não recria um período com uma propina Cancelada da matrícula** que se sobreponha: fica "ignorada — cancelada em dd/mm/aaaa". A geração **manual** continua a poder regenerar (comportamento de F2 mantido; a pré-visualização mostra o que cria). | Sem esta regra, um cancelamento manual seria desfeito pelo comando da noite seguinte. Com a matrícula terminada, nada se gera (só Activas), por isso os cancelamentos de §9 nunca são desfeitos. |
+| D10 | **A geração automática (origens `COMANDO` e `MATRICULA`) não recria um período com uma propina Cancelada da matrícula** que se sobreponha: fica ignorada ("Período cancelado (…): a geração automática não o recria…"). A geração **manual** continua a poder regenerar, mas cada item a criar que recobra um período cancelado traz `regenera_cancelada` ("Este período tinha sido cancelado em dd/mm/aaaa («motivo»): confirmar volta a cobrá-lo."), mostrado na pré-visualização (**O2 aprovado**, Tasks 10 e 12). | Sem esta regra, um cancelamento manual seria desfeito pelo comando da noite seguinte. Com a matrícula terminada, nada se gera (só Activas), por isso os cancelamentos de §9 nunca são desfeitos. |
 | D11 | **Q8 aprovado — `Modules\Matricula\Contracts\DependenciasDaMatricula::bloqueiaAlteracao(Matricula $matricula, int $turmaNovaId, int $anoLectivoNovoId, string $dataMatriculaNova): ?string`** + `Support\DependenciasRegistadasDaMatricula` (etiqueta `matricula.dependencias`, padrão de `DependenciasRegistadasDoAnoLectivo`). `AtualizarMatriculaAction` bloqueia a matrícula (`lockForUpdate`) e consulta-as **dentro** da transacção, antes de gravar; o motivo vai para `turma_id` (se a turma ou o ano mudam) ou `data_matricula`. O Financeiro implementa com `Support\PropinasDaMatricula`: com propinas **activas** (estados 1–3) bloqueia mudar turma e ano lectivo, e mudar o **mês/ano** de `data_matricula` (o dia dentro do mesmo mês continua livre); só canceladas/anuladas → livre. A verificação fica na Action (ponto único de escrita), não no FormRequest: um 2.º ponto seria contornável pelo `RenovarMatriculaAction` e não estaria sob bloqueio. | Q8 e §8.1/Q8: a mensagem indica o fluxo correcto (Transferida + nova matrícula, ou cancelar as propinas). |
-| D12 | **Reconciliação diária (rede de segurança):** `Services\ReconciliarCancelamentosDePropinas::executar(): int` corre em `financeiro:gerar-propinas` **antes** da geração e **sempre** — mesmo com `gerar_automaticamente = false` e mesmo com o interruptor de segurança desligado (cancelar é protector). Candidatas: matrículas Cancelada/Transferida/Concluída com `data_fim` e com propinas Em Aberto de `periodo_inicio > data_fim`; cada matrícula na sua transacção, bloqueada, pelo mesmo serviço do listener (D8), com `utilizadorId = null`. | Q5 ("reconciliação diária como rede de segurança em qualquer caso"), trancamento D14. |
+| D12 | **Reconciliação diária (rede de segurança):** `Services\ReconciliarCancelamentosDePropinas::executar(): array{matriculas: int, canceladas: int, erros: int}` (`matriculas` = só as que tiveram propinas canceladas) corre em `financeiro:gerar-propinas` **antes** da geração e **sempre** — mesmo com `gerar_automaticamente = false` e mesmo com o interruptor de segurança desligado (cancelar é protector). Candidatas: matrículas Cancelada/Transferida/Concluída com `data_fim` e com propinas Em Aberto de `periodo_inicio > data_fim`; cada matrícula na sua transacção, bloqueada, pelo mesmo serviço do listener (D8), com `utilizadorId = null`. | Q5 ("reconciliação diária como rede de segurança em qualquer caso"), trancamento D14. |
 | D13 | **Detalhe:** `GET /financeiro/propinas/{propina}` (`can:propina.ver` + `authorize`), `Financeiro/Propinas/Show`, dados de `PropinaConsultaService::detalhe(Propina)`: estado resolvido e persistido, valores (original, actual, pago, saldo), período/ordem, snapshot (vencimento, tolerância, limite, moeda, câmbio, origem, motivo da geração), plano de origem, matrícula (aluno, nº, turma, ano lectivo, estado, datas), cancelamento/anulação, histórico simples **derivado das colunas** (Gerada, Cancelada, Anulada — nenhuma tabela nova), `pagamentos: []` e `ajustes: []` (placeholders até Pagamentos-A/F4) e `cancelamento_bloqueado` (motivo de D3 ou nulo). `pode_cancelar` = `propina.cancelar` **e** cancelável, decidido no servidor. | Spec §10; fases F3. |
 | D14 | **Cancelar:** `PATCH /financeiro/propinas/{propina}/cancelar` (`can:propina.cancelar` + `authorize()` do FormRequest + `authorize` no controller); `DTO\CancelarPropinaDTO`; `Actions\CancelarPropinaAction` (transacção, `BloqueioDePropinas`, D3 sobre a linha bloqueada, `ValidationException` em `propina`). Sem rota de eliminar (DELETE → 405). | §8, §11. |
 | D15 | **Sem tabela, coluna, migração, seeder nem permissão nova.** `propina.cancelar` já foi concedida ao ADMIN_ESCOLA em F1 (`PermissoesPropinaTest`). O menu não muda (`/financeiro/propinas/{id}` fica sob o mesmo prefixo, já activo em `useActiveMenu`). | Nada a correr pelo dono além de validar. |
@@ -63,20 +63,22 @@
 - **Q10 já está em vigor** (`AtualizarPlanoPropinaAction::MENSAGEM_CALENDARIO`/`MENSAGEM_VALOR`, `PlanoPropinaComPropinasTest`): com qualquer propina do plano, **mesmo Cancelada**, valor e calendário ficam bloqueados (L18). F3 não muda isto: cancelar propinas não liberta a edição do plano.
 - `test_renova_em_massa_carrega_as_matriculas_numa_unica_query` conta consultas a `"matriculas"` com `"id" in (`: o `lockForUpdate` novo usa `whereKey($id)` (`"id" = ?`), por isso não o afecta.
 - **Testes sensíveis à hora (pré-existentes):** entre as 23:00 e as 24:00 UTC, 5 testes falham (ver F2, notas pré-voo). Não correr a suite nessa janela.
+- **Datas e O1:** testes de F3 sem relógio congelado usam só datas de fim passadas e ≥ `data_matricula` (ex.: 15/09/2026, 01/10/2026); uma data de fim futura numa Cancelada/Transferida é recusada.
+- **Pré-voo F3 (2026-10-14, cópia descartável):** Tasks 1–15 executadas literalmente; suite 2814 ✓ (baseline 2711); grupo pgsql 16/16 ✓ em PostgreSQL 16 descartável; correcções já incorporadas neste documento (ver `.superpowers/sdd/2026-10-13-financeiro-propinas-f1/f3-preflight-report.md`). `GerarPropinasTest::test_o_dia_de_vencimento_corrompido_e_limitado_a_28` (F2) usa `strftime` (só SQLite): não correr esse ficheiro em PostgreSQL.
 - **Antes da Task 1:** guardar o que já está em stage: `git diff --cached --name-only > /tmp/f3-stage-antes.txt` (para a verificação da Task 15).
 
 ## Fora de âmbito (fases seguintes)
 
-Anular propina (Pagamentos-A), distribuições/pagamentos reais no detalhe, ajustes e alteração de preço (F4), multas (F5), trancamento, exportação. Nenhuma alteração ao comportamento de `data_fim` (pergunta O1).
+Anular propina (Pagamentos-A), distribuições/pagamentos reais no detalhe, ajustes e alteração de preço (F4), multas (F5), trancamento, exportação. (`data_fim` passa a ser validada — O1 aprovado, Task 6.)
 
 ## Review Focus
 
 1. Cancelar ≠ anular: pré-condições de D3 sobre a linha bloqueada; mensagens distintas; regerar depois de cancelar (manual) — Tasks 2–3.
 2. Q5: o cancelamento por estado corre na transacção da matrícula; uma falha no listener reverte o estado e o histórico — Tasks 6 e 8.
-3. Q6: Cancelada/Transferida/Concluída; só `periodo_inicio > dataEfeito`, só canceláveis; idempotente; `data_fim` retroactiva — Task 8.
+3. Q6: Cancelada/Transferida/Concluída; só `periodo_inicio > dataEfeito`, só canceláveis; idempotente; `data_fim` retroactiva — Task 8. O1: `data_fim` entre `data_matricula` e hoje (Concluída até ao fim do ano lectivo) — Task 6.
 4. Q7: geração depois do commit; falha nunca bloqueia; recuperação pelo comando — Task 10.
 5. Q8: turma/ano/mês bloqueados com propinas activas; mensagem com o fluxo certo; livre sem propinas ou só com canceladas — Tasks 7 e 9.
-6. D10: o comando não desfaz cancelamentos manuais — Task 10.
+6. D10: o comando não desfaz cancelamentos manuais; O2: a pré-visualização manual assinala a regeneração de um período cancelado — Tasks 10 e 12.
 7. Reconciliação diária sempre activa e idempotente — Task 11.
 8. Fronteira: Matrícula sem Financeiro; listeners registados uma só vez — Tasks 6–9 e 13.
 9. Concorrência em PostgreSQL — Task 14.
@@ -477,11 +479,17 @@ class CancelamentoDePropinasTest extends TestCase
     public function test_cancelar_fora_de_transaccao_lanca(): void
     {
         ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+        $propina = $this->propina($matricula, $plano);
+
+        // Sai da transacção do RefreshDatabase (padrão de RecalcularPropinaTest): sem isto o nível é 1 e a guarda
+        // nunca dispararia. O serviço tem de lançar antes de ler a base.
+        DB::rollBack();
+        $this->assertSame(0, DB::transactionLevel());
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('transacção');
 
-        $this->cancelamento()->cancelar($this->propina($matricula, $plano), 'Motivo válido', null);
+        $this->cancelamento()->cancelar($propina, 'Motivo válido', null);
     }
 
     public function test_cancelar_recusa_motivo_curto_ou_longo(): void
@@ -1718,19 +1726,21 @@ git add tests/Feature/Arquitectura/CanceladoresDePropinaTest.php tests/Feature/A
 
 ---
 
-### Task 6: Matrícula — evento `MatriculaEstadoAlterado` e mudança de estado transaccional (D1, D6, D7)
+### Task 6: Matrícula — evento `MatriculaEstadoAlterado`, mudança de estado transaccional e validação de `data_fim` (D1, D6, D7, O1)
 
 **Files:**
 - Create: `Modules/Matricula/app/Events/MatriculaEstadoAlterado.php`
 - Modify: `Modules/Matricula/app/Actions/AlterarEstadoMatriculaAction.php`
 - Modify: `Modules/Matricula/app/Actions/CriarMatriculaAction.php`
-- Test: `Modules/Matricula/tests/Feature/MatriculaEstadoAlteradoTest.php`
+- Modify: `Modules/Matricula/tests/Feature/MatriculaActionTest.php` (O1: `test_permite_indicar_data_fim_explicita_ao_alterar_estado` passa a ter uma data de matrícula anterior à data de fim)
+- Test: `Modules/Matricula/tests/Feature/MatriculaEstadoAlteradoTest.php`, `Modules/Matricula/tests/Feature/DataFimMatriculaTest.php` (O1)
 
 **Interfaces:**
 - Consumes: `RegistarHistoricoMatriculaAction`, `RelogioDoTenant::hoje()`, `EstadoMatriculaEnum::{podeTransitarPara,eTerminal}`, `Illuminate\Foundation\Events\Dispatchable`.
 - Produces:
   - `final class MatriculaEstadoAlterado` (`Dispatchable`) com `public readonly int $matriculaId, ?int $estadoAnterior, int $estadoNovo, string $dataEfeito (Y-m-d), ?int $utilizadorId`; `InvalidArgumentException` se `dataEfeito` não for `Y-m-d`. **Não** implementa `ShouldDispatchAfterCommit` (D1).
   - `AlterarEstadoMatriculaAction::executar(...)` (assinatura igual): numa `DB::transaction`, relê com `lockForUpdate`, valida sobre a linha bloqueada, grava, histórico, despacha o evento (`dataEfeito` = `data_fim` nos terminais, hoje da escola nos restantes) e devolve `fresh()`.
+  - **O1 (aprovado pelo dono):** nos estados terminais, `data_fim` (omissão: hoje da escola) tem de estar entre `data_matricula` e `RelogioDoTenant::hoje()`; Concluída aceita uma data futura até ao `data_fim` do ano lectivo. Fora do intervalo → `ValidationException` em `data_fim` (PT-PT), nada muda e o evento não sai (uma data retroactiva não pode cancelar em silêncio propinas de períodos já vencidos). Se a matrícula ainda não começou (`data_matricula` > hoje), o mínimo é hoje (o intervalo estaria vazio).
   - `CriarMatriculaAction::executar(...)` despacha o evento no fim da sua transacção (`estadoAnterior = null`, `dataEfeito = data_matricula`).
 - Nota: nada aqui importa `Modules\Financeiro\` (`FronteiraMatriculaFinanceiroTest`). Os listeners do Financeiro só chegam na Task 8; até lá o evento não tem efeito (os testes existentes de Matrícula continuam verdes).
 
@@ -1921,10 +1931,217 @@ class MatriculaEstadoAlteradoTest extends TestCase
 }
 ```
 
+`Modules/Matricula/tests/Feature/DataFimMatriculaTest.php` (O1):
+```php
+<?php
+
+namespace Modules\Matricula\Tests\Feature;
+
+use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
+use Modules\Aluno\Models\Aluno;
+use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
+use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Events\MatriculaEstadoAlterado;
+use Modules\Matricula\Models\Matricula;
+use Modules\Matricula\Models\MatriculaHistorico;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
+use Modules\Permissao\Enums\Perfil;
+use Modules\Permissao\Models\Role;
+use Modules\Turma\Models\NivelAcademico;
+use Modules\Turma\Models\Turma;
+use Modules\Usuario\Models\DadosPessoa;
+use Modules\Usuario\Models\User;
+use Tests\TestCase;
+
+/**
+ * O1 (aprovado pelo dono em F3): ao terminar uma matrícula, a data de fim fica entre a data da matrícula e hoje
+ * (dia da escola); Concluída aceita uma data futura até ao fim do ano lectivo. Uma data retroactiva anterior à
+ * matrícula cancelaria em silêncio propinas de períodos já vencidos (§9): recusa-se com erro em data_fim.
+ */
+class DataFimMatriculaTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private ?Turma $turma = null;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Carbon::setTestNow(CarbonImmutable::parse('2026-10-16 10:00:00', 'UTC'));
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
+
+    /** Ano 2026/2027 (01/09/2026–31/07/2027), uma turma partilhada e uma matrícula Activa nova por chamada. */
+    private function matricula(string $dataMatricula = '2026-09-01'): Matricula
+    {
+        $estabelecimento = $this->estabelecimentoDeTeste();
+
+        if ($this->turma === null) {
+            $ano = AnoLectivo::create([
+                'estabelecimento_id' => $estabelecimento->id,
+                'nome' => '2026/2027',
+                'data_inicio' => '2026-09-01',
+                'data_fim' => '2027-07-31',
+                'estado' => EstadoAnoLectivo::ATIVO,
+            ]);
+            $nivel = NivelAcademico::create([
+                'estabelecimento_id' => $estabelecimento->id,
+                'codigo' => '1C',
+                'nome' => 'Nível 1C',
+                'ordem' => 1,
+                'etapa_ensino' => 1,
+            ]);
+            $this->turma = Turma::create([
+                'ano_lectivo_id' => $ano->id,
+                'nivel_academico_id' => $nivel->id,
+                'codigo' => 'T1',
+                'nome' => 'Turma Teste',
+                'estado' => 1,
+            ]);
+        }
+
+        $pessoa = DadosPessoa::create([
+            'nome_completo' => 'Aluno Teste',
+            'numero_identificacao' => 'BI-' . uniqid(),
+            'tipo_pessoa' => DadosPessoa::TIPO_ALUNO,
+        ]);
+        $aluno = Aluno::create([
+            'estabelecimento_id' => $estabelecimento->id,
+            'dados_pessoa_id' => $pessoa->id,
+            'numero_matricula' => 'AL-' . uniqid(),
+        ]);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, null, $this->turma->nivel_academico_id);
+
+        return Matricula::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $this->turma->id,
+            'ano_lectivo_id' => $this->turma->ano_lectivo_id,
+            'numero_registo_matricula' => 'MR-' . uniqid(),
+            'data_matricula' => $dataMatricula,
+            'estado' => EstadoMatriculaEnum::ACTIVA->value,
+        ]);
+    }
+
+    private function terminar(Matricula $matricula, EstadoMatriculaEnum $estado, ?string $dataFim): Matricula
+    {
+        return app(AlterarEstadoMatriculaAction::class)->executar($matricula, $estado, null, $dataFim);
+    }
+
+    /** Recusa com erro em data_fim: nada muda (estado, data de fim, histórico) e o evento não sai. */
+    private function assertRecusa(Matricula $matricula, EstadoMatriculaEnum $estado, string $dataFim, string $mensagem): void
+    {
+        Event::fake([MatriculaEstadoAlterado::class]);
+        $historicoAntes = MatriculaHistorico::query()->where('matricula_id', $matricula->id)->count();
+
+        try {
+            $this->terminar($matricula, $estado, $dataFim);
+            $this->fail("Devia recusar {$dataFim} para {$estado->label()}.");
+        } catch (ValidationException $e) {
+            $this->assertSame(['data_fim' => [$mensagem]], $e->errors());
+        }
+
+        $matricula->refresh();
+        $this->assertSame(EstadoMatriculaEnum::ACTIVA, $matricula->estado);
+        $this->assertNull($matricula->data_fim);
+        $this->assertSame($historicoAntes, MatriculaHistorico::query()->where('matricula_id', $matricula->id)->count());
+        Event::assertNotDispatched(MatriculaEstadoAlterado::class);
+    }
+
+    public function test_aceita_datas_entre_a_data_da_matricula_e_hoje(): void
+    {
+        $casos = [
+            [EstadoMatriculaEnum::CANCELADA, '2026-09-01'],
+            [EstadoMatriculaEnum::TRANSFERIDA, '2026-10-16'],
+            [EstadoMatriculaEnum::CONCLUIDA, '2026-09-20'],
+        ];
+
+        foreach ($casos as [$estado, $data]) {
+            $this->assertSame($data, $this->terminar($this->matricula(), $estado, $data)->data_fim->toDateString(), $estado->label());
+        }
+
+        // Sem data: hoje da escola (comportamento anterior).
+        $this->assertSame('2026-10-16', $this->terminar($this->matricula(), EstadoMatriculaEnum::CANCELADA, null)->data_fim->toDateString());
+    }
+
+    public function test_recusa_uma_data_anterior_a_matricula(): void
+    {
+        $this->assertRecusa($this->matricula(), EstadoMatriculaEnum::CANCELADA, '2026-08-31', 'A data de fim não pode ser anterior à data da matrícula (01/09/2026).');
+    }
+
+    public function test_cancelada_e_transferida_nao_aceitam_uma_data_futura(): void
+    {
+        foreach ([EstadoMatriculaEnum::CANCELADA, EstadoMatriculaEnum::TRANSFERIDA] as $estado) {
+            $this->assertRecusa($this->matricula(), $estado, '2026-10-17', 'A data de fim não pode ser posterior a hoje (16/10/2026).');
+        }
+    }
+
+    public function test_concluida_aceita_uma_data_futura_ate_ao_fim_do_ano_lectivo(): void
+    {
+        $this->assertSame('2027-07-31', $this->terminar($this->matricula(), EstadoMatriculaEnum::CONCLUIDA, '2027-07-31')->data_fim->toDateString());
+
+        $this->assertRecusa($this->matricula(), EstadoMatriculaEnum::CONCLUIDA, '2027-08-01', 'A data de fim de uma matrícula concluída não pode ser posterior ao fim do ano lectivo (31/07/2027).');
+    }
+
+    public function test_uma_matricula_que_ainda_nao_comecou_termina_hoje(): void
+    {
+        $this->assertSame('2026-10-16', $this->terminar($this->matricula('2026-11-02'), EstadoMatriculaEnum::CANCELADA, null)->data_fim->toDateString());
+
+        $this->assertRecusa($this->matricula('2026-11-02'), EstadoMatriculaEnum::CANCELADA, '2026-10-15', 'A data de fim não pode ser anterior a hoje (16/10/2026).');
+    }
+
+    public function test_por_http_o_erro_chega_ao_campo_data_fim(): void
+    {
+        $this->seed(PermissaoDatabaseSeeder::class);
+        $staff = User::create(['name' => 'Staff', 'email' => 'staff@example.com', 'password' => Hash::make('segredo123')]);
+        $staff->roles()->attach(Role::where('nome', Perfil::ADMIN_ESCOLA->value)->first()->id);
+        $matricula = $this->matricula();
+
+        $this->actingAs($staff)
+            ->from('/matriculas')
+            ->patch(route('matriculas.alterar-estado', [$matricula->aluno_id, $matricula->id]), [
+                'estado' => EstadoMatriculaEnum::CANCELADA->value,
+                'data_fim' => '2026-08-01',
+            ])
+            ->assertSessionHasErrors(['data_fim' => 'A data de fim não pode ser anterior à data da matrícula (01/09/2026).']);
+
+        $this->assertSame(EstadoMatriculaEnum::ACTIVA, $matricula->refresh()->estado);
+    }
+}
+```
+
+Em `Modules/Matricula/tests/Feature/MatriculaActionTest.php`, em `test_permite_indicar_data_fim_explicita_ao_alterar_estado()` (O1: a matrícula nasce com a data de hoje, por isso 15/03/2026 seria anterior), substituir
+```php
+    public function test_permite_indicar_data_fim_explicita_ao_alterar_estado(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+```
+por
+```php
+    public function test_permite_indicar_data_fim_explicita_ao_alterar_estado(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+        // O1 (F3): a data de fim não pode ser anterior à data da matrícula.
+        $matricula->forceFill(['data_matricula' => '2026-02-01'])->save();
+```
+
 - [ ] **Step 2: Correr e ver falhar**
 
-Run: `php artisan test Modules/Matricula/tests/Feature/MatriculaEstadoAlteradoTest.php`
-Expected: FAIL (classe `MatriculaEstadoAlterado` inexistente).
+Run: `php artisan test Modules/Matricula/tests/Feature/MatriculaEstadoAlteradoTest.php Modules/Matricula/tests/Feature/DataFimMatriculaTest.php`
+Expected: FAIL — 11 de 12: o evento não existe e a data de fim ainda não é validada (`test_aceita_datas_entre_a_data_da_matricula_e_hoje` já passa: é a guarda de não-regressão).
 
 - [ ] **Step 3: Implementar**
 
@@ -1969,6 +2186,7 @@ final class MatriculaEstadoAlterado
 
 namespace Modules\Matricula\Actions;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
@@ -2010,7 +2228,7 @@ class AlterarEstadoMatriculaAction
             $bloqueada->editado_por = $utilizadorId;
 
             if ($novoEstado->eTerminal()) {
-                $bloqueada->data_fim = $dataFim ?? $this->relogio->hoje()->toDateString();
+                $bloqueada->data_fim = $this->dataFimValidada($bloqueada, $novoEstado, $dataFim);
             }
 
             $bloqueada->save();
@@ -2027,6 +2245,41 @@ class AlterarEstadoMatriculaAction
 
             return $bloqueada->fresh();
         });
+    }
+
+    /**
+     * O1 (aprovado pelo dono em F3): a data de fim (omissão: hoje da escola) fica entre a data da matrícula e hoje.
+     * Uma data retroactiva anterior à matrícula cancelaria em silêncio propinas de períodos já vencidos; uma futura
+     * terminaria a matrícula antes do tempo. Concluída aceita uma data futura até ao fim do ano lectivo. Se a
+     * matrícula ainda não começou, o mínimo é hoje (o intervalo [data da matrícula, hoje] estaria vazio).
+     */
+    private function dataFimValidada(Matricula $matricula, EstadoMatriculaEnum $novoEstado, ?string $pedida): string
+    {
+        $hoje = $this->relogio->hoje()->toDateString();
+        $data = $pedida === null ? $hoje : CarbonImmutable::parse($pedida)->toDateString();
+        $inicio = $matricula->data_matricula?->toDateString() ?? $hoje;
+        $minimo = min($inicio, $hoje);
+        $fimDoAno = $novoEstado === EstadoMatriculaEnum::CONCLUIDA ? $matricula->anoLectivo?->data_fim?->toDateString() : null;
+        $maximo = max($hoje, $fimDoAno ?? $hoje);
+
+        if ($data < $minimo) {
+            throw ValidationException::withMessages(['data_fim' => $minimo === $inicio
+                ? 'A data de fim não pode ser anterior à data da matrícula (' . $this->formatar($inicio) . ').'
+                : 'A data de fim não pode ser anterior a hoje (' . $this->formatar($hoje) . ').']);
+        }
+
+        if ($data > $maximo) {
+            throw ValidationException::withMessages(['data_fim' => $maximo === $hoje
+                ? 'A data de fim não pode ser posterior a hoje (' . $this->formatar($hoje) . ').'
+                : 'A data de fim de uma matrícula concluída não pode ser posterior ao fim do ano lectivo (' . $this->formatar($maximo) . ').']);
+        }
+
+        return $data;
+    }
+
+    private function formatar(string $data): string
+    {
+        return CarbonImmutable::createFromFormat('!Y-m-d', $data)->format('d/m/Y');
     }
 }
 ```
@@ -2058,12 +2311,12 @@ por
 - [ ] **Step 4: Correr e ver passar (e não partir a Matrícula)**
 
 Run: `php artisan test Modules/Matricula tests/Feature/Arquitectura/FronteiraMatriculaFinanceiroTest.php tests/Feature/Arquitectura/RelogioDoTenantArquitecturaTest.php`
-Expected: PASS (6 testes novos; todos os testes existentes de Matrícula, incluindo `test_renova_em_massa_carrega_as_matriculas_numa_unica_query`, continuam verdes).
+Expected: PASS (12 testes novos — 6 do evento + 6 de O1; todos os testes existentes de Matrícula, incluindo `test_renova_em_massa_carrega_as_matriculas_numa_unica_query` e `FusoHorarioMatriculaTest`, continuam verdes).
 
 - [ ] **Step 5: Stage**
 
 ```bash
-git add Modules/Matricula/app/Events/MatriculaEstadoAlterado.php Modules/Matricula/app/Actions/AlterarEstadoMatriculaAction.php Modules/Matricula/app/Actions/CriarMatriculaAction.php Modules/Matricula/tests/Feature/MatriculaEstadoAlteradoTest.php
+git add Modules/Matricula/app/Events/MatriculaEstadoAlterado.php Modules/Matricula/app/Actions/AlterarEstadoMatriculaAction.php Modules/Matricula/app/Actions/CriarMatriculaAction.php Modules/Matricula/tests/Feature/MatriculaEstadoAlteradoTest.php Modules/Matricula/tests/Feature/DataFimMatriculaTest.php Modules/Matricula/tests/Feature/MatriculaActionTest.php
 ```
 
 ---
@@ -2560,9 +2813,10 @@ class CancelarPropinasFuturasDaMatriculaTest extends TestCase
     {
         [$matricula] = $this->matriculaComDezPropinas();
 
-        $this->alterar($matricula, EstadoMatriculaEnum::CANCELADA, '2026-11-01');
+        // O1: a data de fim de uma Cancelada não pode ser futura; Out/2026 começa a 01/10 e fica (não é "depois").
+        $this->alterar($matricula, EstadoMatriculaEnum::CANCELADA, '2026-10-01');
 
-        $this->assertSame([4, 5, 6, 7, 8, 9, 10], $this->ordensCanceladas($matricula));
+        $this->assertSame([3, 4, 5, 6, 7, 8, 9, 10], $this->ordensCanceladas($matricula));
     }
 
     public function test_nao_toca_nas_propinas_de_outras_matriculas(): void
@@ -2631,6 +2885,7 @@ class CancelarPropinasFuturasDaMatriculaTest extends TestCase
 namespace Modules\Financeiro\Tests\Feature;
 
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Modules\Financeiro\Listeners\CancelarPropinasAoTerminarMatricula;
 use Modules\Matricula\Events\MatriculaEstadoAlterado;
@@ -2638,11 +2893,14 @@ use Tests\TestCase;
 
 /**
  * D1: o Financeiro escuta o evento da Matrícula com registo explícito (FinanceiroServiceProvider::boot), uma só vez.
- * O cancelamento é síncrono (corre na transacção da matrícula, Q5). NUNCA usar Event::fake() sem lista em testes
+ * O cancelamento é síncrono (corre na transacção da matrícula, Q5). NUNCA usar Event::fake sem lista de eventos em testes
  * que dependam destes listeners: desliga-os.
  */
 class ListenersDaMatriculaTest extends TestCase
 {
+    // O TestCase cria o tenant de teste: sem RefreshDatabase, o 2.º teste colide numa base persistente (PostgreSQL).
+    use RefreshDatabase;
+
     /** @return list<string> */
     private function listenersRegistados(): array
     {
@@ -3081,14 +3339,14 @@ git add Modules/Financeiro/app/Support/PropinasDaMatricula.php Modules/Financeir
 - Modify: `Modules/Financeiro/app/Services/GerarPropinasService.php` (D10)
 - Create: `Modules/Financeiro/app/Listeners/GerarPropinasAoActivarMatricula.php`
 - Modify: `Modules/Financeiro/app/Providers/FinanceiroServiceProvider.php` (+ `Event::listen`)
-- Test: `Modules/Financeiro/tests/Unit/OrigemGeracaoPropinaTest.php`, `Modules/Financeiro/tests/Unit/PedidoGeracaoPropinasDTOTest.php` (+ casos), `Modules/Financeiro/tests/Feature/GerarPropinasAoActivarMatriculaTest.php` (novo), `Modules/Financeiro/tests/Feature/ListenersDaMatriculaTest.php` (+ caso)
+- Test: `Modules/Financeiro/tests/Unit/OrigemGeracaoPropinaTest.php`, `Modules/Financeiro/tests/Unit/PedidoGeracaoPropinasDTOTest.php` (+ casos), `Modules/Financeiro/tests/Feature/GerarPropinasAoActivarMatriculaTest.php` (novo), `Modules/Financeiro/tests/Feature/ListenersDaMatriculaTest.php` (+ caso), `Modules/Financeiro/tests/Feature/GerarPropinasPreVisualizacaoTest.php` (O2: o item a criar ganha a chave `regenera_cancelada`)
 
 **Interfaces:**
 - Consumes: T6 (evento), T8 (registo em `boot()`), `GerarPropinasService::gerar`, `GeracaoDePropinasDesactivada::activa()`, `RegraCobranca`, `TenantContext::{temTenant,id}`, `Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit`.
 - Produces:
   - `OrigemGeracaoPropina::automatica(): bool` (`COMANDO`, `MATRICULA`).
   - `PedidoGeracaoPropinasDTO::daMatricula(int $anoLectivoId, string $numeroRegistoMatricula): self` (âmbito `MATRICULA`, origem `MATRICULA`).
-  - `GerarPropinasService`: com origem automática, um período sobreposto a uma propina **Cancelada** da matrícula fica ignorado ("Período cancelado (…): a geração automática não o recria; gere-o manualmente se for preciso."). A manual mantém-se.
+  - `GerarPropinasService`: com origem automática, um período sobreposto a uma propina **Cancelada** da matrícula fica ignorado ("Período cancelado (…): a geração automática não o recria; gere-o manualmente se for preciso."). A manual continua a regenerar, mas cada item a criar traz `regenera_cancelada` (`null` ou o aviso "Este período tinha sido cancelado em dd/mm/aaaa («motivo»): confirmar volta a cobrá-lo.") — **O2 aprovado**; a UI mostra-o na Task 12.
   - `GerarPropinasAoActivarMatricula implements ShouldHandleEventsAfterCommit`; `handle(MatriculaEstadoAlterado)`: só `estadoNovo = ACTIVA`, interruptor ligado e `gerar_automaticamente`; apanha **todos** os `Throwable` (`report()` excepto `ValidationException` + `Log::warning('financeiro.gerar-propinas.activacao-falhou', {tenant_id, matricula_id, excepcao, mensagem})`); com sucesso `Log::info('financeiro.gerar-propinas.activacao', {tenant_id, matricula_id} + totais)`.
 
 - [ ] **Step 1: Escrever os testes que falham**
@@ -3318,7 +3576,39 @@ class GerarPropinasAoActivarMatriculaTest extends TestCase
             Propina::query()->where('matricula_id', $matricula->id)->where('periodo_inicio', '2026-10-01')->orderBy('id')->get()->pluck('estado')->all(),
         );
     }
+
+    public function test_a_pre_visualizacao_manual_assinala_um_periodo_cancelado_que_volta_a_gerar_o2(): void
+    {
+        ['ano' => $ano, 'turma' => $turma, 'plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+        $outubro = $this->propina($matricula, $plano, 2);
+        app(CancelarPropinaAction::class)->executar($outubro, new CancelarPropinaDTO('Isenção de Outubro'), null);
+
+        $previa = app(GerarPropinasService::class)->preVisualizar(new PedidoGeracaoPropinasDTO(
+            ano_lectivo_id: $ano->id,
+            ambito: AmbitoGeracaoPropinas::TURMA,
+            origem: OrigemGeracaoPropina::MANUAL,
+            alvo_id: $turma->id,
+        ))->toArray()['matriculas'][0];
+        $avisos = array_column($previa['criadas'], 'regenera_cancelada', 'periodo');
+
+        // 10:00 UTC = 11:00 em Luanda: cancelada a 15/09/2026 no dia da escola.
+        $this->assertSame('Este período tinha sido cancelado em 15/09/2026 («Isenção de Outubro»): confirmar volta a cobrá-lo.', $avisos['Out/2026']);
+        $this->assertNull($avisos['Set/2026']);
+        $this->assertNull($avisos['Nov/2026']);
+    }
 }
+```
+
+Em `Modules/Financeiro/tests/Feature/GerarPropinasPreVisualizacaoTest.php`, em `test_mensal_set_a_jun_da_dez_propinas_com_o_snapshot_das_regras()`, substituir
+```php
+            'tardia' => false,
+        ], $linha['criadas'][0]);
+```
+por
+```php
+            'tardia' => false,
+            'regenera_cancelada' => null,
+        ], $linha['criadas'][0]);
 ```
 
 - [ ] **Step 2: Correr e ver falhar**
@@ -3357,7 +3647,8 @@ Em `Modules/Financeiro/app/Services/GerarPropinasService.php`:
 1. `use` novo (ordem alfabética): `use Modules\Financeiro\Enums\EstadoCobranca;`
 2. No docblock da classe, a seguir ao ponto 7, acrescentar:
 ```php
- * 8. A geração automática (comando, activação da matrícula) nunca recria um período cancelado; a manual pode (D10 de F3).
+ * 8. A geração automática (comando, activação da matrícula) nunca recria um período cancelado; a manual pode, e a
+ *    pré-visualização assinala-o em `regenera_cancelada` (D10 e O2 de F3).
 ```
 3. Em `preVisualizar()`, substituir
 ```php
@@ -3365,7 +3656,7 @@ Em `Modules/Financeiro/app/Services/GerarPropinasService.php`:
 ```
 por
 ```php
-                $resultado->juntar($this->calcular($matricula, $pedido, $contexto, $this->activas((int) $matricula->id), $this->canceladas((int) $matricula->id, $pedido)));
+                $resultado->juntar($this->calcular($matricula, $pedido, $contexto, $this->activas((int) $matricula->id), $this->canceladas((int) $matricula->id)));
 ```
 4. Em `gravarMatricula()`, substituir
 ```php
@@ -3373,28 +3664,35 @@ por
 ```
 por
 ```php
-        $resultado = $this->calcular($matricula, $pedido, $contexto, $this->activas((int) $matricula->id), $this->canceladas((int) $matricula->id, $pedido));
+        $resultado = $this->calcular($matricula, $pedido, $contexto, $this->activas((int) $matricula->id), $this->canceladas((int) $matricula->id));
 ```
-5. A seguir ao método `activas()`, novo método:
+5. A seguir ao método `activas()`, novos métodos:
 ```php
 
     /**
-     * D10 (F3): só a geração automática olha para as canceladas — sem isto, o comando da noite seguinte desfaria
-     * um cancelamento manual. A geração manual é uma decisão humana explícita e pode regenerar.
+     * D10 (F3): a geração automática não recria um período cancelado — sem isto, o comando da noite seguinte
+     * desfaria um cancelamento manual. A geração manual é uma decisão humana explícita e pode regenerar, mas a
+     * pré-visualização assinala-o (O2, aprovado pelo dono).
      *
      * @return Collection<int, Propina>
      */
-    private function canceladas(int $matriculaId, PedidoGeracaoPropinasDTO $pedido): Collection
+    private function canceladas(int $matriculaId): Collection
     {
-        if (! $pedido->origem->automatica()) {
-            return new Collection();
-        }
-
         return Propina::query()
             ->where('matricula_id', $matriculaId)
             ->where('estado', EstadoCobranca::CANCELADA->value)
             ->orderBy('periodo_inicio')
+            ->orderBy('id')
             ->get();
+    }
+
+    /** O2 (F3): o aviso mostrado na pré-visualização manual quando um período cancelado volta a ser cobrado. */
+    private function avisoDeRegeneracao(Propina $cancelada): string
+    {
+        $em = $cancelada->cancelado_em?->copy()->setTimezone($this->relogio->fuso())->format('d/m/Y');
+
+        return 'Este período tinha sido cancelado' . ($em !== null ? " em {$em}" : '')
+            . " («{$cancelada->motivo_cancelamento}»): confirmar volta a cobrá-lo.";
     }
 ```
 6. Em `calcular()`, substituir a assinatura
@@ -3405,7 +3703,7 @@ por
 ```php
     private function calcular(Matricula $matricula, PedidoGeracaoPropinasDTO $pedido, ContextoDeGeracao $contexto, Collection $activas, Collection $canceladas): ResultadoGeracaoMatriculaDTO
 ```
-(e no docblock, a seguir a `@param  Collection<int, Propina>  $activas …`, acrescentar ` * @param  Collection<int, Propina>  $canceladas  propinas canceladas da matrícula (só na geração automática, D10)`), e substituir
+(e no docblock, a seguir a `@param  Collection<int, Propina>  $activas …`, acrescentar ` * @param  Collection<int, Propina>  $canceladas  propinas canceladas da matrícula (D10 na automática; O2 na manual)`), e substituir
 ```php
             $this->avaliarPeriodo($matricula, $candidato['plano'], $candidato['periodo'], $pedido, $contexto, $activas, $resultado);
 ```
@@ -3429,11 +3727,12 @@ por
 e, logo a seguir ao bloco `if ($cobertura !== null) { … return; }`, inserir:
 ```php
 
-        // D10 (F3): a geração automática não desfaz um cancelamento (manual ou por estado da matrícula).
-        $cancelada = $canceladas->first(fn (Propina $propina) => $propina->periodo_inicio->toDateString() <= $periodo['fim']
+        // D10 (F3): a geração automática não desfaz um cancelamento (manual ou por estado da matrícula). A manual
+        // pode regenerar, mas o item fica assinalado (O2). A mais recente, se o período foi cancelado mais de uma vez.
+        $cancelada = $canceladas->last(fn (Propina $propina) => $propina->periodo_inicio->toDateString() <= $periodo['fim']
             && $propina->periodo_fim->toDateString() >= $periodo['inicio']);
 
-        if ($cancelada !== null) {
+        if ($cancelada !== null && $pedido->origem->automatica()) {
             $resultado->ignorada(
                 'Período cancelado (' . RotuloDePeriodo::periodo($cancelada->periodo_inicio->toDateString(), $cancelada->periodo_fim->toDateString())
                     . '): a geração automática não o recria; gere-o manualmente se for preciso.',
@@ -3443,6 +3742,11 @@ e, logo a seguir ao bloco `if ($cobertura !== null) { … return; }`, inserir:
 
             return;
         }
+```
+e, no array passado a `$resultado->aCriar([...])`, a seguir à linha `'tardia' => …,`:
+```php
+            // O2 (F3): a geração manual volta a cobrar um período que tinha sido cancelado — a pré-visualização assinala-o.
+            'regenera_cancelada' => $cancelada === null ? null : $this->avisoDeRegeneracao($cancelada),
 ```
 
 `Modules/Financeiro/app/Listeners/GerarPropinasAoActivarMatricula.php`:
@@ -3536,12 +3840,12 @@ Em `Modules/Financeiro/app/Providers/FinanceiroServiceProvider.php`:
 - [ ] **Step 4: Correr e ver passar**
 
 Run: `php artisan test Modules/Financeiro Modules/Matricula`
-Expected: PASS (10 testes novos + os de F2 verdes — em especial `GerarPropinasTest::test_depois_de_cancelar_o_mesmo_periodo_volta_a_gerar` (manual) e `GerarPropinasCommandTest`).
+Expected: PASS (11 testes novos — inclui O2 — + os de F2 verdes — em especial `GerarPropinasTest::test_depois_de_cancelar_o_mesmo_periodo_volta_a_gerar` (manual) e `GerarPropinasCommandTest`).
 
 - [ ] **Step 5: Stage**
 
 ```bash
-git add Modules/Financeiro/app/Enums/OrigemGeracaoPropina.php Modules/Financeiro/app/DTO/PedidoGeracaoPropinasDTO.php Modules/Financeiro/app/Services/GerarPropinasService.php Modules/Financeiro/app/Listeners/GerarPropinasAoActivarMatricula.php Modules/Financeiro/app/Providers/FinanceiroServiceProvider.php Modules/Financeiro/tests/Unit/OrigemGeracaoPropinaTest.php Modules/Financeiro/tests/Unit/PedidoGeracaoPropinasDTOTest.php Modules/Financeiro/tests/Feature/GerarPropinasAoActivarMatriculaTest.php Modules/Financeiro/tests/Feature/ListenersDaMatriculaTest.php
+git add Modules/Financeiro/app/Enums/OrigemGeracaoPropina.php Modules/Financeiro/app/DTO/PedidoGeracaoPropinasDTO.php Modules/Financeiro/app/Services/GerarPropinasService.php Modules/Financeiro/app/Listeners/GerarPropinasAoActivarMatricula.php Modules/Financeiro/app/Providers/FinanceiroServiceProvider.php Modules/Financeiro/tests/Unit/OrigemGeracaoPropinaTest.php Modules/Financeiro/tests/Unit/PedidoGeracaoPropinasDTOTest.php Modules/Financeiro/tests/Feature/GerarPropinasAoActivarMatriculaTest.php Modules/Financeiro/tests/Feature/ListenersDaMatriculaTest.php Modules/Financeiro/tests/Feature/GerarPropinasPreVisualizacaoTest.php
 ```
 
 ---
@@ -3898,6 +4202,7 @@ git add Modules/Financeiro/app/Services/ReconciliarCancelamentosDePropinas.php M
 - Create: `Modules/Financeiro/resources/js/Pages/Propinas/Show.vue`
 - Create: `Modules/Financeiro/resources/js/Components/Propinas/CancelarPropinaModal.vue`
 - Modify: `Modules/Financeiro/resources/js/Pages/Propinas/Index.vue` (coluna "Acções" com "Ver")
+- Modify: `Modules/Financeiro/resources/js/Components/Propinas/ResultadoGeracao.vue` (O2: assinala o período cancelado que a geração manual volta a cobrar)
 - Test: `Modules/Financeiro/tests/Unit/DetalhePropinaVueTest.php`
 
 **Interfaces:**
@@ -3950,6 +4255,14 @@ class DetalhePropinaVueTest extends TestCase
     public function test_a_lista_liga_ao_detalhe(): void
     {
         $this->assertStringContainsString(':href="`${BASE}/${propina.id}`"', $this->vue('Pages/Propinas/Index.vue'));
+    }
+
+    public function test_a_pre_visualizacao_assinala_um_periodo_cancelado_que_volta_a_ser_cobrado_o2(): void
+    {
+        $resultado = $this->vue('Components/Propinas/ResultadoGeracao.vue');
+
+        $this->assertStringContainsString('v-if="propina.regenera_cancelada"', $resultado);
+        $this->assertStringContainsString('{{ propina.regenera_cancelada }}', $resultado);
     }
 }
 ```
@@ -4255,10 +4568,16 @@ Em `Modules/Financeiro/resources/js/Pages/Propinas/Index.vue`:
                                 </td>
 ```
 
+Em `Modules/Financeiro/resources/js/Components/Propinas/ResultadoGeracao.vue` (O2), a seguir à linha do badge "Geração tardia" (`<span v-else-if="propina.tardia" …>Geração tardia</span>`), dentro do mesmo `<li>`:
+```vue
+                            <span v-if="propina.regenera_cancelada" class="badge badge-light-danger ms-1">Período cancelado</span>
+                            <div v-if="propina.regenera_cancelada" class="text-danger fs-8">{{ propina.regenera_cancelada }}</div>
+```
+
 - [ ] **Step 4: Correr e compilar**
 
 Run: `php artisan test Modules/Financeiro/tests/Unit/DetalhePropinaVueTest.php && npm run build`
-Expected: PASS (3 testes) e build sem erros.
+Expected: PASS (4 testes) e build sem erros.
 
 - [ ] **Step 5: Verificação visual (executor com a app local, login `admin@mositec.gmail.com`; nunca escrever na BD directamente)**
 
@@ -4267,7 +4586,7 @@ Com `FINANCEIRO_GERACAO_PROPINAS=true` no `.env` local (e `php artisan config:cl
 - [ ] **Step 6: Stage**
 
 ```bash
-git add Modules/Financeiro/resources/js/Pages/Propinas/Show.vue Modules/Financeiro/resources/js/Components/Propinas/CancelarPropinaModal.vue Modules/Financeiro/resources/js/Pages/Propinas/Index.vue Modules/Financeiro/tests/Unit/DetalhePropinaVueTest.php
+git add Modules/Financeiro/resources/js/Pages/Propinas/Show.vue Modules/Financeiro/resources/js/Components/Propinas/CancelarPropinaModal.vue Modules/Financeiro/resources/js/Pages/Propinas/Index.vue Modules/Financeiro/resources/js/Components/Propinas/ResultadoGeracao.vue Modules/Financeiro/tests/Unit/DetalhePropinaVueTest.php
 ```
 
 ---
@@ -4340,7 +4659,8 @@ use Modules\Matricula\Enums\EstadoMatriculaEnum;
         $propinaDela = $this->noTenant($outro, function () {
             ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
             $propina = $this->propina($matricula, $plano, 10);
-            app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CANCELADA, null, '2026-10-16');
+            // Sem relógio congelado nesta classe: uma data de fim passada e ≥ data da matrícula (O1) é estável.
+            app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CANCELADA, null, '2026-09-15');
 
             return $propina->id;
         });
@@ -4489,7 +4809,8 @@ class CancelamentoPropinasPgsqlTest extends PgsqlConcorrenciaTestCase
             $propinaBloqueada = $this->sqlstateNaOutraLigacao('select id from propinas where id = ? for update', [$junho->id]);
         });
 
-        app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CANCELADA, null, '2026-10-16');
+        // O1: data de fim passada e ≥ data da matrícula (o relógio não está congelado); Nov–Jun começam depois → 8.
+        app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CANCELADA, null, '2026-10-01');
 
         $this->assertSame('55P03', $matriculaBloqueada, 'Inserir propinas desta matrícula noutra sessão (KEY SHARE) tem de esperar.');
         $this->assertSame('55P03', $propinaBloqueada);
@@ -4589,7 +4910,7 @@ grep -rnE "insertOrIgnore|->insert\(|upsert\(|DB::raw|DB::statement|DB::table|wi
 grep -rnE "\bnow\(\)|\btoday\(\)|Carbon(Immutable)?::(now|today)|new \\\\?DateTime(Immutable)?\(\)" Modules/Financeiro/app
 grep -rn "Modules\\\\Financeiro" Modules/Matricula/app Modules/Matricula/routes
 grep -rnE "AnularPropinaAction|AlterarPrecoPlanoAction|propina_ajustes|PropinaMulta" Modules/Financeiro/app
-grep -rn "Event::fake()" Modules/Financeiro/tests Modules/Matricula/tests
+grep -rn "Event::fake()" Modules/*/tests tests
 grep -nE "Route::(get|post|put|patch|delete)" Modules/Financeiro/routes/web.php | grep "\[PropinaController::class"
 git diff --cached --name-only | grep -E "database/migrations|database/seeders" || true
 ```
@@ -4597,8 +4918,8 @@ Expected: os cinco primeiros não devolvem nada (sem SQL cru, sem "hoje" fora do
 
 - [ ] **Step 3: Interruptor de segurança ainda presente (Task 16 não executada)**
 
-Run: `grep -rn "geracao_activa" Modules/Financeiro/config/config.php phpunit.xml .env.example`
-Expected: as três linhas continuam lá. Se não estiverem, alguém executou a Task 16 sem autorização: parar e informar o dono.
+Run: `grep -rnE "geracao_activa|FINANCEIRO_GERACAO_PROPINAS" Modules/Financeiro/config/config.php phpunit.xml .env.example`
+Expected: a chave e a variável continuam lá (`config.php` com `geracao_activa`, `phpunit.xml` com `value="true"`, `.env.example` com `=false`; a chave `geracao_activa` só existe no `config.php`, por isso procurar também a variável). Se não estiverem, alguém executou a Task 16 sem autorização: parar e informar o dono.
 
 - [ ] **Step 4: Build**
 
@@ -4988,21 +5309,21 @@ Informar o dono: retirar `FINANCEIRO_GERACAO_PROPINAS` do `.env` de cada ambient
 |---|---|---|
 | R-F3.1 | **Q5 (atómico):** um defeito no listener de cancelamento impede cancelar/transferir/concluir/renovar matrículas. | Listener simples, testado (Task 8) incluindo a falha que reverte; reconciliação diária (D12) como rede; o erro chega ao utilizador como erro da mudança de estado. Decisão aprovada pelo dono (Q5). |
 | R-F3.2 | **`Event::fake()` sem lista** num teste desliga o cancelamento e a geração ao activar, escondendo regressões. | `ListenersDaMatriculaTest` prova o registo; o `grep` da Task 15 recusa `Event::fake()` sem lista nos módulos Financeiro e Matrícula. |
-| R-F3.3 | **`data_fim` livre** (retroactiva antes de `data_matricula`, ou muito futura): retroactiva cancela períodos já vencidos sem pagamentos (correcto pela regra §9, mas pode surpreender); futura mantém propinas até lá. | Comportamento pela regra aprovada; pergunta aberta O1 (validar `data_fim` entre `data_matricula` e hoje). |
+| R-F3.3 | **`data_fim` retroactiva** (até `data_matricula`) ainda cancela os períodos sem pagamentos que começam depois dela, mesmo já vencidos (regra §9). | O1 aprovado e aplicado (Task 6): nunca antes de `data_matricula` nem depois de hoje (Concluída: até ao fim do ano lectivo). Dados antigos com `data_fim` fora do intervalo não são corrigidos (a reconciliação usa o `data_fim` gravado). |
 | R-F3.4 | **Mudanças em Matrícula** (módulo estável): transacção e `lockForUpdate` novos em `AlterarEstado`/`Atualizar`. | Mínimas; testes existentes de Matrícula verdes; ordem de bloqueio matrícula → aluno → propinas sem ciclos (Criar bloqueia o aluno e cria uma matrícula nova; não bloqueia matrículas existentes). |
 | R-F3.5 | **Concorrência não demonstrável em SQLite.** | Task 14 (pgsql, duas ligações). Até o dono a correr, risco aceite como em F1/F2. |
-| R-F3.6 | **D10:** a geração automática nunca recria um período cancelado; se o cancelamento foi um engano, só a geração manual o repõe. | A pré-visualização do comando mostra "Período cancelado…"; a geração manual continua a regenerar (mostra o que cria). Pergunta aberta O2. |
+| R-F3.6 | **D10:** a geração automática nunca recria um período cancelado; se o cancelamento foi um engano, só a geração manual o repõe. | A pré-visualização do comando mostra "Período cancelado…"; a geração manual continua a regenerar e a pré-visualização assinala cada período cancelado que volta a cobrar (O2 aprovado, `regenera_cancelada`). |
 | R-F3.7 | **Reconciliação** com muitas matrículas terminadas: candidatas por `whereColumn` (só as que têm propinas Em Aberto com início depois do fim). | Índices `(tenant_id, matricula_id, periodo_inicio)` e `(tenant_id, estado, data_vencimento)` de F1; custo por matrícula pequeno; idempotente. |
 | R-F3.8 | **Geração ao activar** no pedido HTTP (depois do commit, mas ainda no mesmo pedido): uma matrícula ≈ 10 propinas, aceitável; activações em massa (se surgirem) somam. | Hoje não há activação em massa; se surgir, mover para fila (o listener é a única peça a mudar). |
 | R-F3.9 | Cancelar/Transferir/Concluir com o Financeiro **desactivado** (módulo fora de `modules_statuses.json`) não cancela nada. | Por desenho (Matrícula independente); ao reactivar o Financeiro, a reconciliação diária apanha o que ficou. |
 
 ## Decisões/perguntas abertas para o dono
 
-Aprovadas e aplicadas: Q5, Q6, Q7, Q8, Q10 (fases §3/§8). As restantes decisões desta fase (D1–D17) seguem o plano de fases; ficam abertas só estas:
+Aprovadas e aplicadas: Q5, Q6, Q7, Q8, Q10 (fases §3/§8); **O1** e **O2** (dono, 2026-10-14). As restantes decisões desta fase (D1–D17) seguem o plano de fases.
 
-- **O1** — Validar `data_fim` ao terminar uma matrícula (≥ `data_matricula` e ≤ hoje)? *Recomendação:* sim, numa tarefa pequena de Matrícula depois de F3 (hoje é livre e há testes que usam datas anteriores à matrícula). Não bloqueia F3.
-- **O2** — D10: a geração **manual** deve pedir confirmação extra quando recria um período que foi cancelado (ex.: assinalar na pré-visualização)? *Recomendação:* sim, em F4 ou numa melhoria de UI; em F3 a manual regenera como em F2.
-- **O3** — Autorizar a **Task 16** (remover o interruptor de segurança) depois de validar F3 na app e em PostgreSQL.
+- **O1 — aprovado e aplicado (Task 6):** `data_fim` validada na `AlterarEstadoMatriculaAction`, sobre a linha bloqueada: entre `data_matricula` e `RelogioDoTenant::hoje()`; Concluída aceita futura até ao `data_fim` do ano lectivo; fora disso `ValidationException` em `data_fim`. Detalhes escolhidos no pré-voo (a confirmar pelo dono, não bloqueiam): (a) matrícula que ainda não começou (`data_matricula` > hoje) → o mínimo passa a ser hoje; (b) dados antigos com `data_fim` fora do intervalo não são corrigidos; (c) a UI de mudança de estado não envia `data_fim` (usa hoje), por isso a validação só se vê pela API/Actions.
+- **O2 — aprovado e aplicado (Tasks 10 e 12):** a geração manual continua a regenerar um período cancelado, mas cada item traz `regenera_cancelada` e a pré-visualização mostra o badge "Período cancelado" com o aviso (data no fuso da escola e motivo). Não há confirmação adicional além do botão "Confirmar e gerar" já existente.
+- **O3 — aberta:** a **Task 16** (remover o interruptor de segurança) **só com autorização expressa do dono**, depois de validar F3 na app e em PostgreSQL.
 
 ---
 

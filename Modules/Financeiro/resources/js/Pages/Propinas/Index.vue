@@ -1,11 +1,12 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import EstadoCobrancaBadge from '../../Components/Shared/EstadoCobrancaBadge.vue';
 import GerarPropinasModal from '../../Components/Propinas/GerarPropinasModal.vue';
 import { ORIGEM_GERACAO } from '../../Models/Propina';
@@ -168,11 +169,12 @@ function gerar(payload) {
                                 <th class="text-end min-w-100px">Pago</th>
                                 <th class="text-end min-w-100px">Saldo</th>
                                 <th class="min-w-125px">Estado</th>
+                                <th class="text-end min-w-75px">Acções</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
                             <tr v-if="propinas.data.length === 0">
-                                <td colspan="10" class="text-center text-muted py-6">Nenhuma propina encontrada.</td>
+                                <td colspan="11" class="text-center text-muted py-6">Nenhuma propina encontrada.</td>
                             </tr>
                             <tr v-for="propina in propinas.data" :key="propina.id">
                                 <td class="text-gray-800">
@@ -197,6 +199,11 @@ function gerar(payload) {
                                         <span v-else-if="propina.geracao_tardia" class="badge badge-light-warning" title="Gerada depois do vencimento.">Geração tardia</span>
                                         <span v-else class="badge badge-light fs-8">{{ propina.origem_geracao_descricao }}</span>
                                     </div>
+                                </td>
+                                <td class="text-end">
+                                    <Link :href="`${BASE}/${propina.id}`" class="btn btn-light btn-active-light-primary btn-sm">
+                                        <AcaoIcone acao="visualizar" class="me-1" /> Ver
+                                    </Link>
                                 </td>
                             </tr>
                         </tbody>

@@ -79,4 +79,15 @@ final class PedidoGeracaoPropinasDTO
             origem: OrigemGeracaoPropina::COMANDO,
         );
     }
+
+    /** Q7 (F3): geração ao activar uma matrícula, identificada como na geração manual (número de registo + ano). */
+    public static function daMatricula(int $anoLectivoId, string $numeroRegistoMatricula): self
+    {
+        return new self(
+            ano_lectivo_id: $anoLectivoId,
+            ambito: AmbitoGeracaoPropinas::MATRICULA,
+            origem: OrigemGeracaoPropina::MATRICULA,
+            matricula_numero: $numeroRegistoMatricula,
+        );
+    }
 }

@@ -15,6 +15,7 @@ use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
 use Modules\Financeiro\DTO\ResultadoGeracaoMatriculaDTO;
 use Modules\Financeiro\DTO\ResultadoGeracaoPropinasDTO;
 use Modules\Financeiro\Enums\AmbitoGeracaoPropinas;
+use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\OrigemGeracaoPropina;
 use Modules\Financeiro\Exceptions\GeracaoDePropinasDesactivada;
 use Modules\Financeiro\Models\PlanoPropina;
@@ -46,6 +47,8 @@ use Throwable;
  *    fica ignorado (cobrança dupla, camada 2; a camada 1 são os índices únicos parciais de F1).
  * 6. Períodos anteriores ao mês da matrícula só com «incluir períodos anteriores», como RETROACTIVA (L19, Q9).
  * 7. Snapshot: valor do plano, regras de cobrança, moeda e câmbio do dia, todos no "hoje" da escola (§8.2b).
+ * 8. A geração automática (comando, activação da matrícula) nunca recria um período cancelado; a manual pode, e a
+ *    pré-visualização assinala-o em `regenera_cancelada` (D10 e O2 de F3).
  */
 class GerarPropinasService
 {
@@ -74,8 +77,10 @@ class GerarPropinasService
         foreach (array_chunk($this->idsDoPedido($pedido, $contexto), 100) as $ids) {
             $matriculas = Matricula::query()->with(['aluno.dadosPessoa', 'turma'])->whereIn('id', $ids)->orderBy('id')->get();
 
+            $canceladas = $this->canceladasDasMatriculas($matriculas->pluck('id')->map(fn ($id) => (int) $id)->all());
+
             foreach ($matriculas as $matricula) {
-                $resultado->juntar($this->calcular($matricula, $pedido, $contexto, $this->activas((int) $matricula->id)));
+                $resultado->juntar($this->calcular($matricula, $pedido, $contexto, $this->activas((int) $matricula->id), $canceladas->get((int) $matricula->id, new Collection())));
             }
         }
 
@@ -177,7 +182,7 @@ class GerarPropinasService
 
         // 3. Calcular sobre o estado bloqueado e criar com Eloquent, uma a uma (L4: nada de inserções que ignorem
         //    conflitos; PertenceAoTenant e as invariantes do model correm). Os índices únicos parciais de F1 são a rede de segurança.
-        $resultado = $this->calcular($matricula, $pedido, $contexto, $this->activas((int) $matricula->id));
+        $resultado = $this->calcular($matricula, $pedido, $contexto, $this->activas((int) $matricula->id), $this->canceladas((int) $matricula->id));
 
         foreach ($resultado->criadas() as $indice => $item) {
             $propina = Propina::create([
@@ -340,11 +345,55 @@ class GerarPropinasService
     }
 
     /**
+     * D10 (F3): a geração automática não recria um período cancelado — sem isto, o comando da noite seguinte
+     * desfaria um cancelamento manual. A geração manual é uma decisão humana explícita e pode regenerar, mas a
+     * pré-visualização assinala-o (O2, aprovado pelo dono).
+     *
+     * @return Collection<int, Propina>
+     */
+    /**
+     * Uma só query por bloco (sem N+1 na pré-visualização), pela mesma ordem de {@see canceladas()}.
+     *
+     * @param  list<int>  $matriculaIds
+     * @return Collection<int, Collection<int, Propina>>  por matricula_id
+     */
+    private function canceladasDasMatriculas(array $matriculaIds): Collection
+    {
+        return Propina::query()
+            ->whereIn('matricula_id', $matriculaIds)
+            ->where('estado', EstadoCobranca::CANCELADA->value)
+            ->orderBy('periodo_inicio')
+            ->orderBy('id')
+            ->get()
+            ->groupBy(fn (Propina $propina) => (int) $propina->matricula_id);
+    }
+
+    private function canceladas(int $matriculaId): Collection
+    {
+        return Propina::query()
+            ->where('matricula_id', $matriculaId)
+            ->where('estado', EstadoCobranca::CANCELADA->value)
+            ->orderBy('periodo_inicio')
+            ->orderBy('id')
+            ->get();
+    }
+
+    /** O2 (F3): o aviso mostrado na pré-visualização manual quando um período cancelado volta a ser cobrado. */
+    private function avisoDeRegeneracao(Propina $cancelada): string
+    {
+        $em = $cancelada->cancelado_em?->copy()->setTimezone($this->relogio->fuso())->format('d/m/Y');
+
+        return 'Este período tinha sido cancelado' . ($em !== null ? " em {$em}" : '')
+            . " («{$cancelada->motivo_cancelamento}»): confirmar volta a cobrá-lo.";
+    }
+
+    /**
      * O cálculo partilhado pela pré-visualização e pela geração. Não escreve.
      *
      * @param  Collection<int, Propina>  $activas  propinas activas (Em Aberto, Parcial, Paga) da matrícula
+     * @param  Collection<int, Propina>  $canceladas  propinas canceladas da matrícula (D10 na automática; O2 na manual)
      */
-    private function calcular(Matricula $matricula, PedidoGeracaoPropinasDTO $pedido, ContextoDeGeracao $contexto, Collection $activas): ResultadoGeracaoMatriculaDTO
+    private function calcular(Matricula $matricula, PedidoGeracaoPropinasDTO $pedido, ContextoDeGeracao $contexto, Collection $activas, Collection $canceladas): ResultadoGeracaoMatriculaDTO
     {
         $resultado = ResultadoGeracaoMatriculaDTO::de($matricula);
 
@@ -372,7 +421,7 @@ class GerarPropinasService
         $porMes = $this->resolverMeses($turma, $contexto, $resultado);
 
         foreach ($this->periodosCandidatos($porMes, $resultado) as $candidato) {
-            $this->avaliarPeriodo($matricula, $candidato['plano'], $candidato['periodo'], $pedido, $contexto, $activas, $resultado);
+            $this->avaliarPeriodo($matricula, $candidato['plano'], $candidato['periodo'], $pedido, $contexto, $activas, $canceladas, $resultado);
         }
 
         return $resultado;
@@ -462,6 +511,7 @@ class GerarPropinasService
         PedidoGeracaoPropinasDTO $pedido,
         ContextoDeGeracao $contexto,
         Collection $activas,
+        Collection $canceladas,
         ResultadoGeracaoMatriculaDTO $resultado,
     ): void {
         $rotulo = RotuloDePeriodo::periodo($periodo['inicio'], $periodo['fim']);
@@ -481,6 +531,22 @@ class GerarPropinasService
             $resultado->ignorada(
                 'Já coberto pela propina de ' . RotuloDePeriodo::periodo($cobertura->periodo_inicio->toDateString(), $cobertura->periodo_fim->toDateString())
                     . " (plano «{$cobertura->plano?->nome}»).",
+                $rotulo,
+                $plano->nome,
+            );
+
+            return;
+        }
+
+        // D10 (F3): a geração automática não desfaz um cancelamento (manual ou por estado da matrícula). A manual
+        // pode regenerar, mas o item fica assinalado (O2). A mais recente, se o período foi cancelado mais de uma vez.
+        $cancelada = $canceladas->last(fn (Propina $propina) => $propina->periodo_inicio->toDateString() <= $periodo['fim']
+            && $propina->periodo_fim->toDateString() >= $periodo['inicio']);
+
+        if ($cancelada !== null && $pedido->origem->automatica()) {
+            $resultado->ignorada(
+                'Período cancelado (' . RotuloDePeriodo::periodo($cancelada->periodo_inicio->toDateString(), $cancelada->periodo_fim->toDateString())
+                    . '): a geração automática não o recria; gere-o manualmente se for preciso.',
                 $rotulo,
                 $plano->nome,
             );
@@ -521,6 +587,8 @@ class GerarPropinasService
             'motivo_geracao' => $origem->exigeMotivo() ? $pedido->motivo_geracao : null,
             // Geração tardia (§8.1/Q4): nasce depois do seu vencimento. Dia da escola, não de UTC (§8.2b).
             'tardia' => $contexto->hoje->toDateString() > $vencimento->toDateString(),
+            // O2 (F3): a geração manual volta a cobrar um período que tinha sido cancelado — a pré-visualização assinala-o.
+            'regenera_cancelada' => $cancelada === null ? null : $this->avisoDeRegeneracao($cancelada),
         ]);
     }
 

@@ -8,12 +8,16 @@ use Modules\Core\Tenancy\Console\ParaTodosOsTenants;
 use Modules\Core\Tenancy\TenantAtual;
 use Modules\Financeiro\Exceptions\GeracaoDePropinasDesactivada;
 use Modules\Financeiro\Services\GerarPropinasService;
+use Modules\Financeiro\Services\ReconciliarCancelamentosDePropinas;
 use RuntimeException;
 
 /**
- * Geração automática de propinas (spec §7.6): em cada tenant com «gerar automaticamente» ligado, gera as
- * propinas em falta das matrículas Activas, pelo mesmo serviço da geração manual. Idempotente; agendado
- * diariamente com --todos. Sem lógica: delega em GerarPropinasService.
+ * Comando diário de propinas, por tenant:
+ * 1. Reconciliação dos cancelamentos por estado da matrícula (D12 de F3): SEMPRE, mesmo com a geração automática
+ *    ou o interruptor de segurança desligados — cancelar é protector.
+ * 2. Geração automática (spec §7.6): só com «gerar automaticamente» ligado (e, até à Task 16 de F3, o interruptor
+ *    de segurança). Idempotente; recupera o que a geração ao activar uma matrícula não fez (§8.2/3).
+ * Sem lógica de negócio: delega nos serviços.
  */
 class GerarPropinasCommand extends Command
 {
@@ -21,45 +25,65 @@ class GerarPropinasCommand extends Command
 
     protected $signature = 'financeiro:gerar-propinas';
 
-    protected $description = 'Gera as propinas em falta das matrículas activas nas escolas com a geração automática ligada (--tenant=CODIGO ou --todos)';
+    protected $description = 'Reconcilia os cancelamentos e gera as propinas em falta das matrículas activas nas escolas com a geração automática ligada (--tenant=CODIGO ou --todos)';
 
-    public function handle(GerarPropinasService $geracao): int
+    public function handle(GerarPropinasService $geracao, ReconciliarCancelamentosDePropinas $reconciliacao): int
     {
-        // Interruptor de segurança (R-F2.1): inerte, e com código de saída 0 de propósito — o comando está agendado
-        // todos os dias e uma falha diária esperada habituaria a ignorar falhas reais. O serviço recusa na mesma.
-        if (! GeracaoDePropinasDesactivada::activa()) {
-            Log::warning('financeiro.gerar-propinas.desactivada');
-            $this->warn(GeracaoDePropinasDesactivada::MENSAGEM . ' Nada foi gerado.');
+        $geracaoActiva = GeracaoDePropinasDesactivada::activa();
 
-            return self::SUCCESS;
+        // Interruptor de segurança (R-F2.1): a geração fica inerte (código 0 de propósito — o comando está agendado
+        // todos os dias); a reconciliação dos cancelamentos corre na mesma.
+        if (! $geracaoActiva) {
+            Log::warning('financeiro.gerar-propinas.desactivada');
+            $this->warn(GeracaoDePropinasDesactivada::MENSAGEM . ' Nada foi gerado; só corre a reconciliação dos cancelamentos.');
         }
 
-        return $this->paraTenants(function (TenantAtual $tenant) use ($geracao): void {
-            $resultados = $geracao->gerarAutomaticamente();
+        return $this->paraTenants(function (TenantAtual $tenant) use ($geracao, $reconciliacao, $geracaoActiva): void {
+            $reconciliados = $reconciliacao->executar();
+            Log::info('financeiro.reconciliar-cancelamentos', ['tenant' => $tenant->codigo] + $reconciliados);
 
-            if ($resultados === null) {
-                Log::info('financeiro.gerar-propinas', ['tenant' => $tenant->codigo, 'activa' => false]);
-                $this->line("[{$tenant->codigo}] geração automática desligada nas Regras de Cobrança: nada a fazer.");
-
-                return;
+            if ($reconciliados['canceladas'] > 0 || $reconciliados['erros'] > 0) {
+                $this->line("[{$tenant->codigo}] reconciliação: {$reconciliados['canceladas']} propina(s) cancelada(s) em "
+                    . "{$reconciliados['matriculas']} matrícula(s) terminada(s), {$reconciliados['erros']} erro(s).");
             }
 
-            $erros = 0;
+            $erros = $reconciliados['erros'];
 
-            foreach ($resultados as $anoLectivoId => $resultado) {
-                $totais = $resultado->totais();
-                $erros += $totais['erros'];
-
-                Log::info('financeiro.gerar-propinas', ['tenant' => $tenant->codigo, 'activa' => true, 'ano_lectivo_id' => $anoLectivoId] + $totais);
-                $this->line("[{$tenant->codigo}] ano lectivo {$anoLectivoId}: {$totais['matriculas']} matrícula(s), {$totais['criadas']} propina(s) criada(s), "
-                    . "{$totais['ignoradas']} ignorada(s), {$totais['conflitos']} conflito(s), {$totais['erros']} erro(s).");
+            if ($geracaoActiva) {
+                $erros += $this->gerar($geracao, $tenant);
             }
 
-            // As matrículas que correram bem já estão gravadas. O tenant fica como falhado para o código de saída
-            // e o agendador o assinalarem; a execução seguinte volta a tentar (idempotente).
+            // Tudo o que correu bem já está gravado. O tenant fica como falhado para o código de saída e o agendador
+            // o assinalarem; a execução seguinte volta a tentar (idempotente).
             if ($erros > 0) {
-                throw new RuntimeException("{$erros} matrícula(s) com erro na geração de propinas; consulte os registos.");
+                throw new RuntimeException("{$erros} matrícula(s) com erro nas propinas; consulte os registos.");
             }
         });
+    }
+
+    /** @return int matrículas com erro */
+    private function gerar(GerarPropinasService $geracao, TenantAtual $tenant): int
+    {
+        $resultados = $geracao->gerarAutomaticamente();
+
+        if ($resultados === null) {
+            Log::info('financeiro.gerar-propinas', ['tenant' => $tenant->codigo, 'activa' => false]);
+            $this->line("[{$tenant->codigo}] geração automática desligada nas Regras de Cobrança: nada a fazer.");
+
+            return 0;
+        }
+
+        $erros = 0;
+
+        foreach ($resultados as $anoLectivoId => $resultado) {
+            $totais = $resultado->totais();
+            $erros += $totais['erros'];
+
+            Log::info('financeiro.gerar-propinas', ['tenant' => $tenant->codigo, 'activa' => true, 'ano_lectivo_id' => $anoLectivoId] + $totais);
+            $this->line("[{$tenant->codigo}] ano lectivo {$anoLectivoId}: {$totais['matriculas']} matrícula(s), {$totais['criadas']} propina(s) criada(s), "
+                . "{$totais['ignoradas']} ignorada(s), {$totais['conflitos']} conflito(s), {$totais['erros']} erro(s).");
+        }
+
+        return $erros;
     }
 }

@@ -24,4 +24,12 @@ class OrigemGeracaoPropinaTest extends TestCase
             $this->assertSame($origem === OrigemGeracaoPropina::RETROACTIVA, $origem->exigeMotivo(), $origem->name);
         }
     }
+
+    public function test_so_o_comando_e_a_activacao_da_matricula_sao_automaticas(): void
+    {
+        $this->assertSame(
+            [OrigemGeracaoPropina::MATRICULA, OrigemGeracaoPropina::COMANDO],
+            array_values(array_filter(OrigemGeracaoPropina::cases(), fn (OrigemGeracaoPropina $o) => $o->automatica())),
+        );
+    }
 }

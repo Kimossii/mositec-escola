@@ -7,12 +7,16 @@ use LogicException;
 use Modules\Core\Tenancy\Exceptions\AlteracaoDeTenantProibida;
 use Modules\Core\Tenancy\Exceptions\TenantNaoResolvido;
 use Modules\Core\Tenancy\TenantContext;
+use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\TipoMulta;
 use Modules\Financeiro\Models\EscalaoMulta;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\RegraCobranca;
+use Modules\Financeiro\Services\ReconciliarCancelamentosDePropinas;
 use Modules\Financeiro\Tests\Concerns\ComDadosAcademicosFinanceiro;
 use Modules\Financeiro\Tests\Concerns\ComPropinasFinanceiro;
+use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Tests\TestCase;
 
 class FinanceiroTenancyTest extends TestCase
@@ -114,5 +118,39 @@ class FinanceiroTenancyTest extends TestCase
         $this->expectExceptionMessage('A matrícula e o plano têm de existir no tenant da propina.');
 
         $this->propina($matriculaDela, $plano);
+    }
+
+    public function test_o_cancelamento_por_estado_da_matricula_so_toca_no_tenant_dela(): void
+    {
+        $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
+        ['plano' => $plano, 'matricula' => $minha] = $this->cenarioPropinas();
+        $minhaPropina = $this->propina($minha, $plano, 10);
+
+        $propinaDela = $this->noTenant($outro, function () {
+            ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+            $propina = $this->propina($matricula, $plano, 10);
+            // Sem relógio congelado nesta classe: uma data de fim passada e ≥ data da matrícula (O1) é estável.
+            app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::CANCELADA, null, '2026-09-15');
+
+            return $propina->id;
+        });
+
+        $this->assertSame(EstadoCobranca::EM_ABERTO, $minhaPropina->refresh()->estado);
+        $this->assertSame(EstadoCobranca::CANCELADA, $this->noTenant($outro, fn () => Propina::query()->find($propinaDela)->estado));
+    }
+
+    public function test_a_reconciliacao_so_ve_as_matriculas_do_tenant_corrente(): void
+    {
+        $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
+        $propinaDela = $this->noTenant($outro, function () {
+            ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+            $propina = $this->propina($matricula, $plano, 10);
+            $matricula->forceFill(['estado' => EstadoMatriculaEnum::CANCELADA, 'data_fim' => '2026-10-16'])->save();
+
+            return $propina->id;
+        });
+
+        $this->assertSame(['matriculas' => 0, 'canceladas' => 0, 'erros' => 0], app(ReconciliarCancelamentosDePropinas::class)->executar());
+        $this->assertSame(EstadoCobranca::EM_ABERTO, $this->noTenant($outro, fn () => Propina::query()->find($propinaDela)->estado));
     }
 }

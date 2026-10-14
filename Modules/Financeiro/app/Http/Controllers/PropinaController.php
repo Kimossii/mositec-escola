@@ -6,14 +6,19 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Modules\Financeiro\Actions\CancelarPropinaAction;
 use Modules\Financeiro\Actions\GerarPropinasAction;
+use Modules\Financeiro\DTO\CancelarPropinaDTO;
 use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
+use Modules\Financeiro\Http\Requests\CancelarPropinaRequest;
 use Modules\Financeiro\Http\Requests\GerarPropinasRequest;
 use Modules\Financeiro\Http\Requests\PreVisualizarGeracaoPropinasRequest;
+use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Services\GerarPropinasService;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Services\PlanoPropinaConsultaService;
 use Modules\Financeiro\Services\PropinaConsultaService;
+use Modules\Financeiro\Support\Moeda;
 
 class PropinaController extends Controller
 {
@@ -22,6 +27,7 @@ class PropinaController extends Controller
         private PlanoPropinaConsultaService $planos,
         private GerarPropinasService $geracao,
         private GerarPropinasAction $gerarAction,
+        private CancelarPropinaAction $cancelarAction,
         private MoedaDoTenant $moedaDoTenant,
     ) {
     }
@@ -49,6 +55,20 @@ class PropinaController extends Controller
             'estados' => $this->consulta->estados(),
             'origens' => $this->consulta->origens(),
             'moeda' => $this->moedaDoTenant->atual()->paraFrontend(),
+        ]);
+    }
+
+    public function show(Request $request, Propina $propina)
+    {
+        $this->authorize('propina.ver');
+
+        $detalhe = $this->consulta->detalhe($propina);
+
+        return Inertia::render('Financeiro/Propinas/Show', [
+            'propina' => $detalhe,
+            'moeda' => Moeda::de($propina->moeda)->paraFrontend(),
+            // D13: decide o servidor — permissão E propina cancelável (o botão nunca aparece para um 422 certo).
+            'podeCancelar' => ($request->user()?->can('propina.cancelar') ?? false) && $detalhe['cancelamento_bloqueado'] === null,
         ]);
     }
 
@@ -80,5 +100,14 @@ class PropinaController extends Controller
         }
 
         return $redireccao->with('geracao_propinas', $resultado->toArray());
+    }
+
+    public function cancelar(CancelarPropinaRequest $request, Propina $propina)
+    {
+        $this->authorize('propina.cancelar');
+
+        $this->cancelarAction->executar($propina, CancelarPropinaDTO::fromRequest($request), $request->user()?->id);
+
+        return redirect()->back()->with('success', 'Propina cancelada.');
     }
 }

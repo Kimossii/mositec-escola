@@ -749,6 +749,8 @@ class MatriculaActionTest extends TestCase
     public function test_permite_indicar_data_fim_explicita_ao_alterar_estado(): void
     {
         $matricula = $this->criarMatriculaPendente();
+        // O1 (F3): a data de fim não pode ser anterior à data da matrícula.
+        $matricula->forceFill(['data_matricula' => '2026-02-01'])->save();
         $matricula = app(AlterarEstadoMatriculaAction::class)->executar($matricula, EstadoMatriculaEnum::ACTIVA);
 
         $actualizada = app(AlterarEstadoMatriculaAction::class)->executar(

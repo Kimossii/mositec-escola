@@ -12,6 +12,7 @@ use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Support\FontesDePagamentoDePropina;
+use Modules\Financeiro\Support\HistoricosDePagamentoDaPropina;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
 use Modules\Turma\Models\Turma;
@@ -193,5 +194,17 @@ trait ComPropinasFinanceiro
         $this->app->tag([$chave], FontesDePagamentoDePropina::ETIQUETA);
 
         return $fonte;
+    }
+
+    /**
+     * Regista um histórico de pagamentos falso (substituto de Pagamentos-A para "já recebeu dinheiro").
+     */
+    protected function historicoPagamentoFalso(string $chave = 'historico.pagamento.falso'): HistoricoPagamentoFalso
+    {
+        $historico = new HistoricoPagamentoFalso();
+        $this->app->instance($chave, $historico);
+        $this->app->tag([$chave], HistoricosDePagamentoDaPropina::ETIQUETA);
+
+        return $historico;
     }
 }

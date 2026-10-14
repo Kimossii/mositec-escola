@@ -315,6 +315,7 @@ class EscritoresDePropinaTest extends TestCase
             'estado 3 via relação propina atribuído' => ['$pagamento->propina->estado = 3;', true],
             'estado 1 via relação propina' => ["\$pagamento->propina->forceFill(['estado' => 1]);", false],
             'valor_pago via relação propina' => ['$pagamento->propina->valor_pago = 1;', true],
+            'cancelamento (estado 4 e cancelado_*) não é cache' => ["\$p->forceFill(['estado' => EstadoCobranca::CANCELADA, 'motivo_cancelamento' => 'x', 'cancelado_em' => \$agora])->save();", false],
             'comentário' => ["// \$p->valor_pago = 1;\n/* \$p->update(['valor_pago' => 1]); */", false],
         ];
     }

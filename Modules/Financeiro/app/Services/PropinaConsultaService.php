@@ -3,6 +3,7 @@
 namespace Modules\Financeiro\Services;
 
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
@@ -10,6 +11,7 @@ use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\OrigemGeracaoPropina;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Support\CancelamentoDePropinas;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 
 /**
@@ -20,8 +22,10 @@ class PropinaConsultaService
 {
     public const POR_PAGINA = 15;
 
-    public function __construct(private RelogioDoTenant $relogio)
-    {
+    public function __construct(
+        private RelogioDoTenant $relogio,
+        private CancelamentoDePropinas $cancelamento,
+    ) {
     }
 
     public function listar(array $filtros = []): LengthAwarePaginator
@@ -78,6 +82,84 @@ class PropinaConsultaService
     }
 
     /**
+     * Detalhe de uma propina (spec §10): estado resolvido para o "hoje" da escola, snapshot, plano de origem,
+     * matrícula, cancelamento/anulação e um histórico simples derivado das colunas (nenhuma tabela nova).
+     * Pagamentos (Pagamentos-A) e ajustes (F4) ainda não existem: listas vazias.
+     *
+     * @return array<string, mixed>
+     */
+    public function detalhe(Propina $propina): array
+    {
+        $propina->loadMissing([
+            'matricula.aluno.dadosPessoa', 'matricula.turma', 'matricula.anoLectivo', 'plano', 'criadoPor', 'canceladoPor', 'anuladoPor',
+        ]);
+
+        $hoje = $this->relogio->hoje();
+        $fuso = $this->relogio->fuso();
+        $estado = $propina->estadoResolvido($hoje);
+        $inicio = $propina->periodo_inicio->toDateString();
+        $fim = $propina->periodo_fim->toDateString();
+        $matricula = $propina->matricula;
+        $plano = $propina->plano;
+
+        return [
+            'id' => $propina->id,
+            'estado' => $estado->value,
+            'estado_descricao' => $estado->label(),
+            'estado_persistido' => $propina->estado->value,
+            'estado_persistido_descricao' => $propina->estado->label(),
+            'ordem' => $propina->ordem,
+            'periodo' => RotuloDePeriodo::periodo($inicio, $fim),
+            'periodo_inicio' => $inicio,
+            'periodo_fim' => $fim,
+            'valor_original' => $propina->valor_original->unidadesMenores(),
+            'valor' => $propina->valor->unidadesMenores(),
+            'valor_pago' => $propina->valor_pago->unidadesMenores(),
+            'saldo' => $propina->saldo()->unidadesMenores(),
+            'data_vencimento' => $propina->data_vencimento->toDateString(),
+            'dias_tolerancia' => $propina->dias_tolerancia,
+            'data_limite' => $propina->data_limite->toDateString(),
+            'moeda' => $propina->moeda,
+            'cambio_usd' => $propina->taxaCambio()?->formatar(),
+            'origem_geracao' => $propina->origem_geracao->value,
+            'origem_geracao_descricao' => $propina->origem_geracao->label(),
+            'motivo_geracao' => $propina->motivo_geracao,
+            'geracao_tardia' => $this->geracaoTardia($propina, $fuso),
+            'plano' => $plano === null ? null : [
+                'id' => $plano->id,
+                'nome' => $plano->nome,
+                'periodicidade' => $plano->periodicidade?->label(),
+                'valor_actual' => $plano->valor->unidadesMenores(),
+            ],
+            'matricula' => $matricula === null ? null : [
+                'id' => $matricula->id,
+                'numero' => $matricula->numero_registo_matricula,
+                'estado_descricao' => $matricula->estado?->label(),
+                'data_matricula' => $matricula->data_matricula?->toDateString(),
+                'data_fim' => $matricula->data_fim?->toDateString(),
+                'aluno_nome' => $matricula->aluno?->dadosPessoa?->nome_completo,
+                'aluno_numero' => $matricula->aluno?->numero_matricula,
+                'turma_nome' => $matricula->turma?->nome,
+                'ano_lectivo_nome' => $matricula->anoLectivo?->nome,
+            ],
+            'cancelamento' => $propina->estado === EstadoCobranca::CANCELADA ? [
+                'motivo' => $propina->motivo_cancelamento,
+                'por' => $propina->canceladoPor?->name,
+                'em' => $this->instante($propina->cancelado_em, $fuso),
+            ] : null,
+            'anulacao' => $propina->estado === EstadoCobranca::ANULADA ? [
+                'motivo' => $propina->motivo_anulacao,
+                'por' => $propina->anuladoPor?->name,
+                'em' => $this->instante($propina->anulado_em, $fuso),
+            ] : null,
+            'historico' => $this->historico($propina, $fuso),
+            'pagamentos' => [],
+            'ajustes' => [],
+            'cancelamento_bloqueado' => $this->cancelamento->motivoParaNaoCancelar($propina),
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function linha(Propina $propina, CarbonImmutable $hoje, string $fuso): array
@@ -86,7 +168,6 @@ class PropinaConsultaService
         $inicio = $propina->periodo_inicio->toDateString();
         $fim = $propina->periodo_fim->toDateString();
         $vencimento = $propina->data_vencimento->toDateString();
-        $criadaNaEscola = $propina->created_at?->copy()->setTimezone($fuso)->toDateString();
 
         return [
             'id' => $propina->id,
@@ -111,10 +192,58 @@ class PropinaConsultaService
             'origem_geracao' => $propina->origem_geracao->value,
             'origem_geracao_descricao' => $propina->origem_geracao_descricao,
             'motivo_geracao' => $propina->motivo_geracao,
-            // §8.1/Q4: retroactiva, ou criada (dia da escola) depois do vencimento.
-            'geracao_tardia' => $propina->origem_geracao === OrigemGeracaoPropina::RETROACTIVA
-                || ($criadaNaEscola !== null && $criadaNaEscola > $vencimento),
+            'geracao_tardia' => $this->geracaoTardia($propina, $fuso),
         ];
+    }
+
+    /** §8.1/Q4: retroactiva, ou criada (dia da escola) depois do vencimento. */
+    private function geracaoTardia(Propina $propina, string $fuso): bool
+    {
+        $criadaNaEscola = $propina->created_at?->copy()->setTimezone($fuso)->toDateString();
+
+        return $propina->origem_geracao === OrigemGeracaoPropina::RETROACTIVA
+            || ($criadaNaEscola !== null && $criadaNaEscola > $propina->data_vencimento->toDateString());
+    }
+
+    /**
+     * Histórico simples, derivado das colunas da própria propina (D13). `por` nulo = sistema (comando/evento).
+     *
+     * @return list<array{evento: string, em: ?string, por: ?string, detalhe: ?string}>
+     */
+    private function historico(Propina $propina, string $fuso): array
+    {
+        $eventos = [[
+            'evento' => 'Gerada',
+            'em' => $this->instante($propina->created_at, $fuso),
+            'por' => $propina->criadoPor?->name,
+            'detalhe' => $propina->origem_geracao->label() . ($propina->motivo_geracao ? " — {$propina->motivo_geracao}" : ''),
+        ]];
+
+        if ($propina->cancelado_em !== null) {
+            $eventos[] = [
+                'evento' => 'Cancelada',
+                'em' => $this->instante($propina->cancelado_em, $fuso),
+                'por' => $propina->canceladoPor?->name,
+                'detalhe' => $propina->motivo_cancelamento,
+            ];
+        }
+
+        if ($propina->anulado_em !== null) {
+            $eventos[] = [
+                'evento' => 'Anulada',
+                'em' => $this->instante($propina->anulado_em, $fuso),
+                'por' => $propina->anuladoPor?->name,
+                'detalhe' => $propina->motivo_anulacao,
+            ];
+        }
+
+        return $eventos;
+    }
+
+    /** Um instante guardado na zona da aplicação, mostrado no fuso da escola. */
+    private function instante(?CarbonInterface $instante, string $fuso): ?string
+    {
+        return $instante === null ? null : $instante->copy()->setTimezone($fuso)->format('Y-m-d H:i');
     }
 
     private function data(mixed $valor): ?string

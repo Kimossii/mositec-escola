@@ -7,6 +7,7 @@ use Modules\Aluno\Models\Aluno;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Events\MatriculaEstadoAlterado;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\GeradorNumeroRegistoMatriculaService;
 use Modules\Matricula\Services\ValidadorMatriculaService;
@@ -56,6 +57,15 @@ class CriarMatriculaAction
             $this->registarHistorico->executar($matricula, null, $matricula->estado, $utilizadorId);
 
             $this->inscreverDisciplinas->executar($matricula, $utilizadorId);
+
+            // O mesmo facto que o histórico regista (estado anterior nulo), na mesma transacção.
+            MatriculaEstadoAlterado::dispatch(
+                (int) $matricula->id,
+                null,
+                $matricula->estado->value,
+                $matricula->data_matricula->toDateString(),
+                $utilizadorId,
+            );
 
             return $matricula;
         });

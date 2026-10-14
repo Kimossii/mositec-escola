@@ -131,6 +131,7 @@ class CriadoresDePropinaTest extends TestCase
             'PlanoPropina::create' => ['PlanoPropina::create([]);', false],
             'contar propinas do plano' => ['$plano->propinas()->count();', false],
             'new PropinaAjuste' => ['$a = new PropinaAjuste();', false],
+            'cancelamento não é criação' => ["\$p->forceFill(['estado' => EstadoCobranca::CANCELADA])->save();", false],
             'comentário' => ["// Propina::create([]);\n/* new Propina(); */", false],
         ];
     }

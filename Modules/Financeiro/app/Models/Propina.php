@@ -175,6 +175,11 @@ class Propina extends Model implements CobrancaResolvivel
         return $this->belongsTo(User::class, 'anulado_por');
     }
 
+    public function criadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'criado_por');
+    }
+
     public function scopeActivas(Builder $query): Builder
     {
         return $query->whereIn($this->qualifyColumn('estado'), self::ESTADOS_ACTIVOS);

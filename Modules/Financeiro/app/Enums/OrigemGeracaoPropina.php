@@ -28,4 +28,10 @@ enum OrigemGeracaoPropina: int
     {
         return $this === self::RETROACTIVA;
     }
+
+    /** Geração sem decisão humana no momento (D10 do plano F3): nunca recria um período cancelado. */
+    public function automatica(): bool
+    {
+        return $this === self::COMANDO || $this === self::MATRICULA;
+    }
 }

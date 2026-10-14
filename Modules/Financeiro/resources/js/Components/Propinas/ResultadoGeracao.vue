@@ -45,6 +45,8 @@ defineProps({
                             — {{ propina.plano }} · {{ formatarDinheiro(propina.valor, moeda) }} · vence {{ dataCurta(propina.data_vencimento) }}
                             <span v-if="propina.origem_geracao === ORIGEM_GERACAO.RETROACTIVA" class="badge badge-light-warning ms-1">Retroactiva</span>
                             <span v-else-if="propina.tardia" class="badge badge-light-warning ms-1" title="Gerada depois da data de vencimento. Só passa a Em Atraso depois da data limite (vencimento mais tolerância).">Geração tardia</span>
+                            <span v-if="propina.regenera_cancelada" class="badge badge-light-danger ms-1">Período cancelado</span>
+                            <div v-if="propina.regenera_cancelada" class="text-danger fs-8">{{ propina.regenera_cancelada }}</div>
                         </li>
                     </ul>
 

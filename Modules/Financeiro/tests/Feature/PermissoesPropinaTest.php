@@ -5,6 +5,7 @@ namespace Modules\Financeiro\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Route;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Modulo;
 use Modules\Permissao\Enums\Perfil;
@@ -92,5 +93,12 @@ class PermissoesPropinaTest extends TestCase
         $this->artisan('financeiro:sincronizar', ['--tenant' => $this->tenant->codigo])->assertSuccessful();
 
         $this->assertTrue(Gate::forUser($admin)->allows('propina.ajustar'));
+    }
+
+    public function test_detalhe_e_cancelar_exigem_a_ability_propria(): void
+    {
+        $this->assertContains('can:propina.ver', Route::getRoutes()->getByName('financeiro.propinas.show')->gatherMiddleware());
+        $this->assertContains('can:propina.cancelar', Route::getRoutes()->getByName('financeiro.propinas.cancelar')->gatherMiddleware());
+        $this->assertSame(['PATCH'], Route::getRoutes()->getByName('financeiro.propinas.cancelar')->methods());
     }
 }
