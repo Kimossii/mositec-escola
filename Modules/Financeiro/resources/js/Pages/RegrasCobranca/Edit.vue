@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
@@ -19,6 +19,11 @@ const props = defineProps({
 defineOptions({ layout: AppLayout });
 
 const podeEditar = computed(() => can('regra-cobranca.editar'));
+
+// Interruptor de segurança (R-F2.1): desligado, não se pode LIGAR a geração automática (desligar continua possível).
+const page = usePage();
+const geracaoActiva = computed(() => page.props.financeiro?.geracaoPropinasActiva === true);
+const bloqueiaGeracaoAutomatica = computed(() => !geracaoActiva.value && !form.gerar_automaticamente);
 
 function snapshot() {
     return {
@@ -144,9 +149,13 @@ function submeter() {
                         <label for="permite_pagamento_antecipado" class="form-check-label fw-semibold">Permitir pagamento antecipado</label>
                     </div>
                     <div class="form-check form-switch form-check-custom form-check-solid">
-                        <input id="gerar_automaticamente" v-model="form.gerar_automaticamente" type="checkbox" class="form-check-input" :disabled="!podeEditar">
+                        <input id="gerar_automaticamente" v-model="form.gerar_automaticamente" type="checkbox" class="form-check-input" :disabled="!podeEditar || bloqueiaGeracaoAutomatica">
                         <label for="gerar_automaticamente" class="form-check-label fw-semibold">Gerar cobranças automaticamente</label>
                     </div>
+                    <div v-if="!geracaoActiva" class="alert alert-info fs-7 py-3 mt-4 mb-0" data-aviso="geracao-desactivada">
+                        Em validação: a geração de propinas está desactivada até estar concluída a protecção das matrículas (F3). Não usar com dados reais.
+                    </div>
+                    <div v-if="errors.gerar_automaticamente" class="text-danger fs-7 mt-2">{{ errors.gerar_automaticamente }}</div>
                     <div class="alert alert-warning fs-7 py-3 mt-4 mb-0" data-aviso="geracao-automatica">
                         Ao ligar, o comando diário (de madrugada, 02:00 UTC) gera as propinas de cada matrícula activa <strong>desde o mês da matrícula</strong>,
                         incluindo os meses já passados, que ficam logo <strong>Em Atraso</strong>.

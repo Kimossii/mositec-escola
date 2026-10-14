@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Modules\Core\Tenancy\Console\ParaTodosOsTenants;
 use Modules\Core\Tenancy\TenantAtual;
+use Modules\Financeiro\Exceptions\GeracaoDePropinasDesactivada;
 use Modules\Financeiro\Services\GerarPropinasService;
 use RuntimeException;
 
@@ -24,6 +25,15 @@ class GerarPropinasCommand extends Command
 
     public function handle(GerarPropinasService $geracao): int
     {
+        // Interruptor de segurança (R-F2.1): inerte, e com código de saída 0 de propósito — o comando está agendado
+        // todos os dias e uma falha diária esperada habituaria a ignorar falhas reais. O serviço recusa na mesma.
+        if (! GeracaoDePropinasDesactivada::activa()) {
+            Log::warning('financeiro.gerar-propinas.desactivada');
+            $this->warn(GeracaoDePropinasDesactivada::MENSAGEM . ' Nada foi gerado.');
+
+            return self::SUCCESS;
+        }
+
         return $this->paraTenants(function (TenantAtual $tenant) use ($geracao): void {
             $resultados = $geracao->gerarAutomaticamente();
 

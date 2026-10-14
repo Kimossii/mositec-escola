@@ -62,6 +62,7 @@ watch(filtros, (valor) => {
 });
 
 const page = usePage();
+const geracaoActiva = computed(() => page.props.financeiro?.geracaoPropinasActiva === true);
 const geracaoAberta = ref(false);
 const geracaoProcessing = ref(false);
 const geracaoErrors = ref({});
@@ -107,9 +108,13 @@ function gerar(payload) {
                     na escola: Pendente antes do período começar, Em Atraso depois do vencimento e da tolerância.
                 </p>
             </div>
-            <div v-if="can('propina.criar')">
+            <div v-if="can('propina.criar') && geracaoActiva">
                 <button class="btn btn-primary" @click="abrirGeracao">Gerar propinas</button>
             </div>
+        </div>
+
+        <div v-if="!geracaoActiva" class="alert alert-info fs-7 py-3 mb-6" data-aviso="geracao-desactivada">
+            Em validação: a geração de propinas está desactivada até estar concluída a protecção das matrículas (F3). Não usar com dados reais.
         </div>
 
         <div class="card mb-6">

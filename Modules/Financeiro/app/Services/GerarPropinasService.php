@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
+use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
@@ -14,6 +16,7 @@ use Modules\Financeiro\DTO\ResultadoGeracaoMatriculaDTO;
 use Modules\Financeiro\DTO\ResultadoGeracaoPropinasDTO;
 use Modules\Financeiro\Enums\AmbitoGeracaoPropinas;
 use Modules\Financeiro\Enums\OrigemGeracaoPropina;
+use Modules\Financeiro\Exceptions\GeracaoDePropinasDesactivada;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\RegraCobranca;
@@ -87,6 +90,13 @@ class GerarPropinasService
      */
     public function gerar(PedidoGeracaoPropinasDTO $pedido): ResultadoGeracaoPropinasDTO
     {
+        // Ponto único de criação: o interruptor de segurança (R-F2.1) e o ano encerrado travam aqui, também por defesa em profundidade.
+        if (! GeracaoDePropinasDesactivada::activa()) {
+            throw new GeracaoDePropinasDesactivada();
+        }
+
+        $this->recusarAnoEncerrado($pedido->ano_lectivo_id);
+
         $contexto = $this->contexto();
         // Fora de transacção, só para escolher as matrículas do âmbito; cada matrícula volta a sincronizar com bloqueio.
         $contexto->resolucao->sincronizar($pedido->ano_lectivo_id, bloquear: false);
@@ -115,6 +125,8 @@ class GerarPropinasService
         $resultados = [];
         $anos = Matricula::query()
             ->where('estado', EstadoMatriculaEnum::ACTIVA->value)
+            // Anos lectivos encerrados nunca geram propinas (spec §7).
+            ->whereNotIn('ano_lectivo_id', AnoLectivo::query()->where('estado', EstadoAnoLectivo::ENCERRADO->value)->select('id'))
             ->distinct()
             ->orderBy('ano_lectivo_id')
             ->pluck('ano_lectivo_id');
@@ -124,6 +136,13 @@ class GerarPropinasService
         }
 
         return $resultados;
+    }
+
+    private function recusarAnoEncerrado(int $anoLectivoId): void
+    {
+        if (AnoLectivo::query()->whereKey($anoLectivoId)->where('estado', EstadoAnoLectivo::ENCERRADO->value)->exists()) {
+            throw ValidationException::withMessages(['ano_lectivo_id' => 'Não é possível gerar propinas para um ano lectivo encerrado.']);
+        }
     }
 
     private function gerarParaMatricula(int $id, PedidoGeracaoPropinasDTO $pedido, ContextoDeGeracao $contexto): ResultadoGeracaoMatriculaDTO

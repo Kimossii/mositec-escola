@@ -73,7 +73,7 @@ Mais nenhum código escreve `valor_pago` ou `estado`. Pagamentos chama este serv
 `GerarPropinasService`, usado pela geração manual e pela automática.
 
 1. **Plano aplicável:** `ResolvePlanoAplicavel` (configuração) escolhe o plano da matrícula pela turma, nível e curso. É o único ponto que decide isto.
-2. **Elegibilidade:** matrícula Activa. São geradas as competências cujo `periodo_fim` é igual ou posterior ao primeiro dia do mês de `data_matricula`. Períodos anteriores só se criam manualmente, com permissão.
+2. **Elegibilidade:** matrícula Activa, de um ano lectivo que não esteja encerrado (anos encerrados nunca geram propinas, nem manual nem automaticamente). São geradas as competências cujo `periodo_fim` é igual ou posterior ao primeiro dia do mês de `data_matricula`. Períodos anteriores só se criam manualmente, com permissão.
 3. **Valores:** `valor`, `dias_tolerancia` e `data_vencimento` copiados no momento da geração.
 4. **Idempotência:** inserção protegida pela unicidade, dentro de uma transacção por matrícula. Executar duas vezes não duplica. O resultado devolve `criadas`, `ignoradas` (já existiam) e `conflitos` (outro plano para o mesmo período).
 5. **Manual:** modal com plano e âmbito (uma matrícula, uma turma, um nível ou todas as do plano), com pré-visualização do que será criado e ignorado antes de confirmar.
