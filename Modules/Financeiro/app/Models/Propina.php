@@ -174,6 +174,18 @@ class Propina extends Model implements CobrancaResolvivel
         return $this->hasMany(PropinaAjuste::class, 'propina_id')->orderBy('id');
     }
 
+    /** Distribuições de pagamentos (qualquer estado do pagamento), da mais antiga para a mais recente. */
+    public function distribuicoes(): HasMany
+    {
+        return $this->hasMany(PagamentoPropina::class, 'propina_id')->orderBy('id');
+    }
+
+    /** Utilizações de crédito (Activas e Anuladas). */
+    public function utilizacoesDeCredito(): HasMany
+    {
+        return $this->hasMany(CreditoUtilizacao::class, 'propina_id')->orderBy('id');
+    }
+
     public function canceladoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cancelado_por');

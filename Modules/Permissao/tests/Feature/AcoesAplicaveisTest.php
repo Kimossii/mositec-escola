@@ -68,7 +68,7 @@ class AcoesAplicaveisTest extends TestCase
     public function test_os_modulos_sem_acoes_proprias_aplicam_as_acoes_base(): void
     {
         foreach (ModuloEnum::cases() as $modulo) {
-            if ($modulo === ModuloEnum::PROPINA) {
+            if (in_array($modulo, [ModuloEnum::PROPINA, ModuloEnum::PAGAMENTO], true)) {
                 continue;
             }
 
@@ -105,7 +105,7 @@ class AcoesAplicaveisTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('acoes', 9)
                 ->where('acoes.0.nome', 'ver')
-                ->has('modulos', 23)
+                ->has('modulos', 24)
                 ->where('modulos.0.acoes', fn ($ids) => collect($ids)->sort()->values()->all()
                     === Acao::whereIn('nome', self::BASE)->pluck('id')->sort()->values()->all()));
     }

@@ -27,6 +27,7 @@ enum Modulo: int
     case PLANO_PROPINA = 20;
     case MOEDA_CAMBIO = 21;
     case PROPINA = 22;
+    case PAGAMENTO = 23;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -50,6 +51,9 @@ enum Modulo: int
             // Uma propina nunca se edita nem se elimina (cancela-se, anula-se ou ajusta-se). Sem `negociar`
             // (spec de Dívidas, inexistente) e sem `isentar-multa` (entra com as multas, F5).
             self::PROPINA => ['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar'],
+            // Um pagamento nunca se edita nem se elimina: anula-se (spec Pagamentos §8). As acções de crédito
+            // reutilizam `criar` (aplicar) e `anular` (anular utilização).
+            self::PAGAMENTO => ['ver', 'listar', 'criar', 'anular', 'exportar'],
             default => self::ACOES_BASE,
         };
     }
@@ -80,6 +84,7 @@ enum Modulo: int
             self::PLANO_PROPINA => 'plano-propina',
             self::MOEDA_CAMBIO => 'moeda-cambio',
             self::PROPINA => 'propina',
+            self::PAGAMENTO => 'pagamento',
         };
     }
 
@@ -120,6 +125,7 @@ enum Modulo: int
             self::PLANO_PROPINA => 'Plano de Propina',
             self::MOEDA_CAMBIO => 'Moeda e Câmbio',
             self::PROPINA => 'Propina',
+            self::PAGAMENTO => 'Pagamento',
         };
     }
 }

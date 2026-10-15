@@ -10,7 +10,7 @@ use RuntimeException;
  * O pai e os filhos só falam por stdout (uma linha JSON) e pela base. Requer PgsqlConcorrenciaTestCase.
  *
  * Operações: alterar (AlterarPrecoPlanoAction), gerar (GerarPropinasService por turma), cancelar (matrícula
- * Cancelada → cancela as propinas futuras).
+ * Cancelada → cancela as propinas futuras), pagar, anular-pagamento, aplicar-credito, cancelar-propina, anular-propina.
  */
 trait ComProcessosConcorrentes
 {
@@ -60,6 +60,41 @@ try {
     } elseif ($args['op'] === 'cancelar') {
         $m = Modules\Matricula\Models\Matricula::findOrFail($a['matricula']);
         app(Modules\Matricula\Actions\AlterarEstadoMatriculaAction::class)->executar($m, Modules\Matricula\Enums\EstadoMatriculaEnum::CANCELADA, null, '2026-10-01');
+        $saida(['ok' => true]);
+    } elseif ($args['op'] === 'pagar') {
+        $dto = new Modules\Financeiro\DTO\RegistarPagamentoDTO(
+            metodoPagamentoId: $a['metodo'],
+            valor: Modules\Financeiro\Support\Dinheiro::deUnidadesMenores($a['valor']),
+            dataPagamento: Carbon\CarbonImmutable::createFromFormat('!Y-m-d', $a['data'] ?? '2026-10-16'),
+            referencia: $a['referencia'] ?? null,
+            distribuicao: ($a['linhas'] ?? null) === null ? null : array_map(
+                fn ($l) => new Modules\Financeiro\DTO\LinhaDeDistribuicao($l[0], Modules\Financeiro\Support\Dinheiro::deUnidadesMenores($l[1])),
+                $a['linhas'],
+            ),
+            valorCredito: Modules\Financeiro\Support\Dinheiro::deUnidadesMenores($a['credito'] ?? 0),
+        );
+        $r = app(Modules\Financeiro\Actions\RegistarPagamentoAction::class)->executar(Modules\Matricula\Models\Matricula::findOrFail($a['matricula']), $dto);
+        $saida(['ok' => true, 'pagamento' => $r->id, 'numero' => $r->numero]);
+    } elseif ($args['op'] === 'anular-pagamento') {
+        app(Modules\Financeiro\Actions\AnularPagamentoAction::class)->executar(
+            Modules\Financeiro\Models\Pagamento::findOrFail($a['pagamento']), new Modules\Financeiro\DTO\MotivoDeAnulacaoDTO('Anulação concorrente'), null,
+        );
+        $saida(['ok' => true]);
+    } elseif ($args['op'] === 'aplicar-credito') {
+        $r = app(Modules\Financeiro\Actions\AplicarCreditoAction::class)->executar(
+            Modules\Matricula\Models\Matricula::findOrFail($a['matricula']),
+            new Modules\Financeiro\DTO\AplicarCreditoDTO(Modules\Financeiro\Support\Dinheiro::deUnidadesMenores($a['credito'])),
+        );
+        $saida(['ok' => true, 'utilizacoes' => count($r)]);
+    } elseif ($args['op'] === 'cancelar-propina') {
+        app(Modules\Financeiro\Actions\CancelarPropinaAction::class)->executar(
+            Modules\Financeiro\Models\Propina::findOrFail($a['propina']), new Modules\Financeiro\DTO\CancelarPropinaDTO('Cancelamento concorrente'), null,
+        );
+        $saida(['ok' => true]);
+    } elseif ($args['op'] === 'anular-propina') {
+        app(Modules\Financeiro\Actions\AnularPropinaAction::class)->executar(
+            Modules\Financeiro\Models\Propina::findOrFail($a['propina']), new Modules\Financeiro\DTO\MotivoDeAnulacaoDTO('Anulação de propina concorrente'), null,
+        );
         $saida(['ok' => true]);
     } else {
         throw new RuntimeException('operação desconhecida');

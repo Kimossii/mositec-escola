@@ -2,8 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Financeiro\Http\Controllers\CatalogoFinanceiroController;
+use Modules\Financeiro\Http\Controllers\CreditoController;
 use Modules\Financeiro\Http\Controllers\MetodoPagamentoController;
 use Modules\Financeiro\Http\Controllers\MoedaCambioController;
+use Modules\Financeiro\Http\Controllers\PagamentoController;
 use Modules\Financeiro\Http\Controllers\PlanoPropinaController;
 use Modules\Financeiro\Http\Controllers\ProdutoController;
 use Modules\Financeiro\Http\Controllers\PropinaController;
@@ -66,4 +68,23 @@ Route::middleware(['auth'])->prefix('financeiro/propinas')->name('financeiro.pro
     Route::post('/geracao/pre-visualizar', [PropinaController::class, 'preVisualizarGeracao'])->middleware('can:propina.criar')->name('geracao.pre-visualizar');
     Route::post('/geracao', [PropinaController::class, 'gerar'])->middleware('can:propina.criar')->name('geracao.store');
     Route::patch('/{propina}/cancelar', [PropinaController::class, 'cancelar'])->whereNumber('propina')->middleware('can:propina.cancelar')->name('cancelar');
+    Route::patch('/{propina}/anular', [PropinaController::class, 'anular'])->whereNumber('propina')->middleware('can:propina.anular')->name('anular');
+});
+
+Route::middleware(['auth'])->prefix('financeiro/pagamentos')->name('financeiro.pagamentos.')->group(function () {
+    Route::get('/', [PagamentoController::class, 'index'])->middleware('can:pagamento.ver')->name('index');
+    Route::get('/novo', [PagamentoController::class, 'create'])->middleware('can:pagamento.criar')->name('create');
+    Route::get('/matriculas', [PagamentoController::class, 'pesquisarMatriculas'])->middleware('can:pagamento.criar')->name('matriculas.pesquisar');
+    Route::get('/matriculas/{matricula}/situacao', [PagamentoController::class, 'situacao'])->whereNumber('matricula')->middleware('can:pagamento.criar')->name('matriculas.situacao');
+    Route::post('/matriculas/{matricula}/pre-visualizar', [PagamentoController::class, 'preVisualizar'])->whereNumber('matricula')->middleware('can:pagamento.criar')->name('pre-visualizar');
+    Route::post('/matriculas/{matricula}', [PagamentoController::class, 'store'])->whereNumber('matricula')->middleware('can:pagamento.criar')->name('store');
+    Route::get('/{pagamento}', [PagamentoController::class, 'show'])->whereNumber('pagamento')->middleware('can:pagamento.ver')->name('show');
+    Route::patch('/{pagamento}/anular', [PagamentoController::class, 'anular'])->whereNumber('pagamento')->middleware('can:pagamento.anular')->name('anular');
+});
+
+Route::middleware(['auth'])->prefix('financeiro/creditos')->name('financeiro.creditos.')->group(function () {
+    Route::get('/alunos/{aluno}', [CreditoController::class, 'aluno'])->whereNumber('aluno')->middleware('can:pagamento.ver')->name('aluno');
+    Route::post('/matriculas/{matricula}/pre-visualizar', [CreditoController::class, 'preVisualizar'])->whereNumber('matricula')->middleware('can:pagamento.criar')->name('pre-visualizar');
+    Route::post('/matriculas/{matricula}/aplicar', [CreditoController::class, 'aplicar'])->whereNumber('matricula')->middleware('can:pagamento.criar')->name('aplicar');
+    Route::patch('/utilizacoes/{utilizacao}/anular', [CreditoController::class, 'anularUtilizacao'])->whereNumber('utilizacao')->middleware('can:pagamento.anular')->name('utilizacoes.anular');
 });

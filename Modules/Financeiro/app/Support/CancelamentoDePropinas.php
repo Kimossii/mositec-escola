@@ -16,7 +16,7 @@ use Modules\Financeiro\Models\Propina;
  *
  * Cancelar ≠ anular (spec §8; §8.2/2 do plano de fases): cancela-se só uma propina persistida Em Aberto,
  * sem valor pago, sem contribuições activas e sem NENHUM histórico de pagamentos. Uma propina que já recebeu
- * dinheiro, mesmo que entretanto devolvido/anulado, anula-se (Pagamentos-A).
+ * dinheiro, mesmo que entretanto devolvido/anulado, anula-se (AnulacaoDePropinas).
  */
 class CancelamentoDePropinas
 {
@@ -43,7 +43,7 @@ class CancelamentoDePropinas
             $propina->estado !== EstadoCobranca::EM_ABERTO,
             $propina->valorRecebido()->unidadesMenores() > 0 => 'A propina tem pagamentos: só se cancela uma propina Em Aberto sem pagamentos. Anule primeiro os pagamentos.',
             $this->fontes->contribuicoes($propina) !== [] => 'A propina tem pagamentos activos: anule-os antes de cancelar.',
-            $this->historicos->temHistorico($propina) => 'A propina já recebeu pagamentos (entretanto anulados): não se cancela, anula-se (disponível com o módulo de Pagamentos).',
+            $this->historicos->temHistorico($propina) => 'A propina já recebeu pagamentos (entretanto anulados): não se cancela, anula-se.',
             default => null,
         };
     }

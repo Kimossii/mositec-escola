@@ -2,22 +2,29 @@
 
 namespace Modules\Financeiro\Tests\Feature;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use LogicException;
 use Modules\Core\Tenancy\Exceptions\AlteracaoDeTenantProibida;
 use Modules\Core\Tenancy\Exceptions\TenantNaoResolvido;
 use Modules\Core\Tenancy\TenantContext;
+use Modules\Financeiro\Actions\RegistarPagamentoAction;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\ModoAlteracaoPreco;
 use Modules\Financeiro\Enums\TipoMulta;
 use Modules\Financeiro\Models\AlteracaoPrecoPlano;
+use Modules\Financeiro\Models\Credito;
 use Modules\Financeiro\Models\EscalaoMulta;
+use Modules\Financeiro\Models\Pagamento;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaAjuste;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Services\ReconciliarCancelamentosDePropinas;
 use Modules\Financeiro\Support\Dinheiro;
 use Modules\Financeiro\Tests\Concerns\ComDadosAcademicosFinanceiro;
+use Modules\Financeiro\Tests\Concerns\ComPagamentosFinanceiro;
 use Modules\Financeiro\Tests\Concerns\ComPropinasFinanceiro;
 use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
@@ -26,8 +33,16 @@ use Tests\TestCase;
 class FinanceiroTenancyTest extends TestCase
 {
     use ComDadosAcademicosFinanceiro;
+    use ComPagamentosFinanceiro;
     use ComPropinasFinanceiro;
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
 
     public function test_sem_contexto_de_tenant_a_leitura_lanca_tenant_nao_resolvido(): void
     {
@@ -193,5 +208,72 @@ class FinanceiroTenancyTest extends TestCase
 
         $this->expectException(TenantNaoResolvido::class);
         (new PropinaAjuste())->forceFill([])->save();
+    }
+
+    public function test_pagamentos_e_creditos_so_aparecem_no_tenant_dono(): void
+    {
+        Carbon::setTestNow(CarbonImmutable::parse('2026-10-16 10:00:00', 'UTC'));
+        $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
+        $this->noTenant($outro, function () {
+            ['matricula' => $matricula] = $this->cenarioPropinas();
+            $this->regras();
+            $this->pagar($matricula, 1_000_000); // sem propinas: tudo crédito
+        });
+
+        $this->assertSame(0, Pagamento::query()->count());
+        $this->assertSame(0, Credito::query()->count());
+        $this->noTenant($outro, fn () => $this->assertSame([1, 1], [Pagamento::query()->count(), Credito::query()->count()]));
+    }
+
+    public function test_metodo_de_outro_tenant_e_recusado(): void
+    {
+        Carbon::setTestNow(CarbonImmutable::parse('2026-10-16 10:00:00', 'UTC'));
+        $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
+        $metodoDela = $this->noTenant($outro, function () {
+            $this->cenarioPropinas();
+
+            return $this->metodoPagamento('Numerário B');
+        });
+        ['plano' => $plano, 'matricula' => $minha] = $this->cenarioPropinas();
+        $this->propina($minha, $plano, 1);
+        $this->regras();
+
+        try {
+            app(RegistarPagamentoAction::class)->executar($minha, $this->pedidoPagamento(2_500_000, null, metodoId: $metodoDela->id));
+            $this->fail('Devia recusar em metodo_pagamento_id.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('metodo_pagamento_id', $e->errors());
+        }
+
+        $this->assertSame(0, Pagamento::query()->count());
+    }
+
+    /**
+     * A matrícula chega à Action como model já resolvido; só o scope de tenant em `BloqueioDePagamentos::matricula`
+     * impede que se pague uma matrícula alheia. (Uma propina alheia não tem teste próprio: a Action só lê propinas
+     * pelo `matricula_id` da matrícula bloqueada, por isso nunca chega a vê-la; seria tautológico.)
+     */
+    public function test_matricula_de_outro_tenant_e_recusada_e_nada_se_grava(): void
+    {
+        Carbon::setTestNow(CarbonImmutable::parse('2026-10-16 10:00:00', 'UTC'));
+        $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
+        $alheia = $this->noTenant($outro, function () {
+            ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+            $this->propina($matricula, $plano, 1);
+
+            return $matricula;
+        });
+        $this->cenarioPropinas();
+        $this->regras();
+
+        try {
+            app(RegistarPagamentoAction::class)->executar($alheia, $this->pedidoPagamento(2_500_000));
+            $this->fail('Devia recusar em matricula.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('matricula', $e->errors());
+        }
+
+        $this->assertSame(0, Pagamento::query()->count());
+        $this->noTenant($outro, fn () => $this->assertSame(0, Pagamento::query()->count()));
     }
 }

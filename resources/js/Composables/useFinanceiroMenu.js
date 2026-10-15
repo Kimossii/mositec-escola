@@ -10,7 +10,7 @@ const seccoesFinanceiro = [
         title: 'Financeiro',
         links: [
             { href: '/financeiro/propinas', label: 'Propinas', permissao: 'propina.ver' },
-            // { href: '#', label: 'Pagamentos' },
+            { href: '/financeiro/pagamentos', label: 'Pagamentos', permissao: 'pagamento.ver' },
             // { href: '#', label: 'Dívidas' },
         ],
     },

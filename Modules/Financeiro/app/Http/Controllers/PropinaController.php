@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Modules\Financeiro\Actions\AnularPropinaAction;
 use Modules\Financeiro\Actions\CancelarPropinaAction;
 use Modules\Financeiro\Actions\GerarPropinasAction;
 use Modules\Financeiro\DTO\CancelarPropinaDTO;
+use Modules\Financeiro\DTO\MotivoDeAnulacaoDTO;
 use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
+use Modules\Financeiro\Http\Requests\AnularPropinaRequest;
 use Modules\Financeiro\Http\Requests\CancelarPropinaRequest;
 use Modules\Financeiro\Http\Requests\GerarPropinasRequest;
 use Modules\Financeiro\Http\Requests\PreVisualizarGeracaoPropinasRequest;
@@ -28,6 +31,7 @@ class PropinaController extends Controller
         private GerarPropinasService $geracao,
         private GerarPropinasAction $gerarAction,
         private CancelarPropinaAction $cancelarAction,
+        private AnularPropinaAction $anularAction,
         private MoedaDoTenant $moedaDoTenant,
     ) {
     }
@@ -69,6 +73,7 @@ class PropinaController extends Controller
             'moeda' => Moeda::de($propina->moeda)->paraFrontend(),
             // D13: decide o servidor — permissão E propina cancelável (o botão nunca aparece para um 422 certo).
             'podeCancelar' => ($request->user()?->can('propina.cancelar') ?? false) && $detalhe['cancelamento_bloqueado'] === null,
+            'podeAnular' => ($request->user()?->can('propina.anular') ?? false) && $detalhe['anulacao_bloqueada'] === null,
         ]);
     }
 
@@ -109,5 +114,14 @@ class PropinaController extends Controller
         $this->cancelarAction->executar($propina, CancelarPropinaDTO::fromRequest($request), $request->user()?->id);
 
         return redirect()->back()->with('success', 'Propina cancelada.');
+    }
+
+    public function anular(AnularPropinaRequest $request, Propina $propina)
+    {
+        $this->authorize('propina.anular');
+
+        $this->anularAction->executar($propina, MotivoDeAnulacaoDTO::fromRequest($request), $request->user()?->id);
+
+        return redirect()->back()->with('success', 'Propina anulada.');
     }
 }

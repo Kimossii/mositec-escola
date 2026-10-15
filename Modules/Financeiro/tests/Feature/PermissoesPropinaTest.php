@@ -47,12 +47,12 @@ class PermissoesPropinaTest extends TestCase
     {
         $admin = $this->utilizadorCom(Perfil::ADMIN_ESCOLA);
 
-        // P1 (F2): `ajustar` (geração retroactiva) entra já; `anular` continua para Pagamentos.
-        foreach (['ver', 'listar', 'criar', 'cancelar', 'exportar', 'ajustar'] as $acao) {
+        // P1 (F2): `ajustar`; Pagamentos-A: `anular` (D16).
+        foreach (['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar'] as $acao) {
             $this->assertTrue(Gate::forUser($admin)->allows("propina.{$acao}"), $acao);
         }
 
-        foreach (['anular', 'editar', 'eliminar', 'negociar', 'isentar-multa'] as $acao) {
+        foreach (['editar', 'eliminar', 'negociar', 'isentar-multa'] as $acao) {
             $this->assertFalse(Gate::forUser($admin)->allows("propina.{$acao}"), $acao);
         }
     }

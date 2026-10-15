@@ -36,6 +36,13 @@ class ModuloSeederTest extends TestCase
         $this->assertDatabaseHas('modulos', ['nome' => 22, 'descricao' => 'Propina']);
     }
 
+    public function test_seeder_inclui_o_modulo_pagamento(): void
+    {
+        $this->seed(ModuloSeeder::class);
+
+        $this->assertDatabaseHas('modulos', ['nome' => 23, 'descricao' => 'Pagamento']);
+    }
+
     public function test_seeder_e_idempotente(): void
     {
         $this->seed(ModuloSeeder::class);
@@ -44,7 +51,7 @@ class ModuloSeederTest extends TestCase
         $this->seed(ModuloSeeder::class);
 
         $this->assertSame($contagemInicial, Modulo::count());
-        $this->assertSame(23, Modulo::count());
+        $this->assertSame(24, Modulo::count());
     }
 
     public function test_seeder_nao_apaga_role_permissoes_dependentes(): void

@@ -62,4 +62,12 @@ class ModuloEnumTest extends TestCase
         $this->assertSame(Modulo::PROPINA, Modulo::fromSlug('propina'));
         $this->assertSame(Modulo::PROPINA, Modulo::tryFrom(22));
     }
+
+    public function test_pagamento_slug_e_label(): void
+    {
+        $this->assertSame('pagamento', Modulo::PAGAMENTO->slug());
+        $this->assertSame('Pagamento', Modulo::PAGAMENTO->label());
+        $this->assertSame(Modulo::PAGAMENTO, Modulo::fromSlug('pagamento'));
+        $this->assertSame(Modulo::PAGAMENTO, Modulo::tryFrom(23));
+    }
 }

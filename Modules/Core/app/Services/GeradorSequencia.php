@@ -25,19 +25,26 @@ use Modules\Core\Tenancy\SequenciaPorTenant;
  */
 class GeradorSequencia
 {
-    /** @param class-string<SequenciaPorTenant&\Illuminate\Database\Eloquent\Model> $modeloSequencia */
-    public function gerar(string $modeloSequencia): string
+    /**
+     * @param class-string<SequenciaPorTenant&\Illuminate\Database\Eloquent\Model> $modeloSequencia
+     * @param int|null $ano ano da sequência; null = ano corrente da aplicação (Pagamentos passam o ano do dia da escola)
+     */
+    public function gerar(string $modeloSequencia, ?int $ano = null): string
     {
         if (! is_subclass_of($modeloSequencia, SequenciaPorTenant::class)) {
             throw new InvalidArgumentException("Sequência desconhecida: {$modeloSequencia}.");
+        }
+
+        if ($ano !== null && ($ano < 2000 || $ano > 9999)) {
+            throw new InvalidArgumentException("Ano de sequência inválido: {$ano} (esperado entre 2000 e 9999).");
         }
 
         // Sem contexto lança TenantNaoResolvido: nunca se cria uma sequência partilhada.
         $tenantId = app(TenantContext::class)->id();
         $tabela = (new $modeloSequencia())->getTable();
 
-        return DB::transaction(function () use ($modeloSequencia, $tabela, $tenantId) {
-            $ano = now()->year;
+        return DB::transaction(function () use ($modeloSequencia, $tabela, $tenantId, $ano) {
+            $ano ??= now()->year;
 
             DB::table($tabela)->upsert(
                 [['tenant_id' => $tenantId, 'ano' => $ano, 'ultimo_numero' => 0, 'created_at' => now(), 'updated_at' => now()]],

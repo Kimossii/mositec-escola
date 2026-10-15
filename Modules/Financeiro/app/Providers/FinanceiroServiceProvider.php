@@ -13,7 +13,12 @@ use Modules\Financeiro\Listeners\GerarPropinasAoActivarMatricula;
 use Modules\Financeiro\Provisioning\ProvisionarConfiguracaoMonetaria;
 use Modules\Financeiro\Provisioning\ProvisionarRegrasCobranca;
 use Modules\Financeiro\Support\DependenciasDePlanosPropina;
+use Modules\Financeiro\Support\FontesDePagamentoDePropina;
 use Modules\Financeiro\Support\FontesDePrecos;
+use Modules\Financeiro\Support\HistoricoDosPagamentos;
+use Modules\Financeiro\Support\HistoricosDePagamentoDaPropina;
+use Modules\Financeiro\Support\PagamentosDaPropina;
+use Modules\Financeiro\Support\PagamentosReferenciam;
 use Modules\Financeiro\Support\PrecosDasMultas;
 use Modules\Financeiro\Support\PrecosDoCatalogo;
 use Modules\Financeiro\Support\PrecosDosPlanos;
@@ -57,7 +62,10 @@ class FinanceiroServiceProvider extends ModuleServiceProvider
         $this->app->tag([DependenciasDePlanosPropina::class], DependenciasRegistadasDoAnoLectivo::ETIQUETA);
         $this->app->tag([PropinasDaMatricula::class], DependenciasRegistadasDaMatricula::ETIQUETA);
         $this->app->tag([PrecosDoCatalogo::class, PrecosDosPlanos::class, PrecosDasMultas::class], FontesDePrecos::ETIQUETA);
-        $this->app->tag([PropinasReferenciam::class], ReferenciasFinanceiras::ETIQUETA);
+        $this->app->tag([PropinasReferenciam::class, PagamentosReferenciam::class], ReferenciasFinanceiras::ETIQUETA);
+        // Pagamentos-A: as fontes reais do valor pago e do histórico de uma propina (contratos de F1).
+        $this->app->tag([PagamentosDaPropina::class], FontesDePagamentoDePropina::ETIQUETA);
+        $this->app->tag([HistoricoDosPagamentos::class], HistoricosDePagamentoDaPropina::ETIQUETA);
     }
 
     public function boot(): void

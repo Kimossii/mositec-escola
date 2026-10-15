@@ -1,12 +1,13 @@
 <script setup>
 import { ref } from 'vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import { can } from '@/Composables/usePermissoes';
 import EstadoCobrancaBadge from '../../Components/Shared/EstadoCobrancaBadge.vue';
 import CancelarPropinaModal from '../../Components/Propinas/CancelarPropinaModal.vue';
+import AnularRegistoModal from '../../Components/Pagamentos/AnularRegistoModal.vue';
 import { ORIGEM_GERACAO } from '../../Models/Propina';
 import { formatarDinheiro } from '../../Support/dinheiro';
 import { dataCurta } from '../../Support/periodos';
@@ -15,11 +16,13 @@ const props = defineProps({
     propina: { type: Object, required: true },
     moeda: { type: Object, required: true },
     podeCancelar: { type: Boolean, required: true },
+    podeAnular: { type: Boolean, required: true },
 });
 defineOptions({ layout: AppLayout });
 
 const page = usePage();
 const cancelarAberto = ref(false);
+const anularAberto = ref(false);
 const processing = ref(false);
 const errors = ref({});
 
@@ -41,6 +44,27 @@ function cancelar(motivo) {
         onSuccess: () => {
             cancelarAberto.value = false;
             toast.success(page.props.flash?.success ?? 'Propina cancelada.');
+        },
+        onError: (erros) => {
+            errors.value = erros;
+            toast.error(Object.values(erros)[0]);
+        },
+        onFinish: () => {
+            processing.value = false;
+        },
+    });
+}
+
+function anular(motivo) {
+    if (processing.value) return;
+    processing.value = true;
+    errors.value = {};
+
+    router.patch(`/financeiro/propinas/${props.propina.id}/anular`, { motivo }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            anularAberto.value = false;
+            toast.success(page.props.flash?.success ?? 'Propina anulada.');
         },
         onError: (erros) => {
             errors.value = erros;
@@ -73,6 +97,12 @@ function cancelar(motivo) {
                 </button>
                 <div v-else-if="can('propina.cancelar') && propina.cancelamento_bloqueado" class="text-muted fs-7" style="max-width: 360px">
                     {{ propina.cancelamento_bloqueado }}
+                </div>
+                <button v-if="podeAnular" type="button" class="btn btn-light-danger ms-2" @click="errors = {}; anularAberto = true">
+                    Anular propina
+                </button>
+                <div v-else-if="can('propina.anular') && !podeCancelar && propina.anulacao_bloqueada" class="text-muted fs-7 mt-2" style="max-width: 360px">
+                    {{ propina.anulacao_bloqueada }}
                 </div>
             </div>
         </div>
@@ -185,7 +215,22 @@ function cancelar(motivo) {
                 <div class="card h-100">
                     <div class="card-header"><h3 class="card-title fs-6 fw-bold text-uppercase text-gray-600">Pagamentos</h3></div>
                     <div class="card-body pt-0">
-                        <p v-if="propina.pagamentos.length === 0" class="text-muted mb-0">Sem pagamentos. Os pagamentos aparecem aqui quando o módulo de Pagamentos estiver disponível.</p>
+                        <p v-if="propina.pagamentos.length === 0" class="text-muted mb-0">Sem pagamentos.</p>
+                        <table v-else class="table table-row-dashed align-middle fs-7 gy-2 mb-0">
+                            <thead><tr class="text-muted fw-bold text-uppercase"><th>Data</th><th>Origem</th><th>Estado</th><th class="text-end">Valor</th></tr></thead>
+                            <tbody>
+                                <tr v-for="registo in propina.pagamentos" :key="`${registo.tipo}-${registo.id}`" :class="{ 'text-muted text-decoration-line-through': !registo.activo }">
+                                    <td>{{ dataCurta(registo.data) }}</td>
+                                    <td>
+                                        <Link v-if="registo.pagamento_id" :href="`/financeiro/pagamentos/${registo.pagamento_id}`">
+                                            {{ registo.tipo === 'pagamento' ? 'Pagamento' : 'Crédito do pagamento' }} nº {{ registo.numero }}
+                                        </Link>
+                                    </td>
+                                    <td>{{ registo.estado_descricao }}</td>
+                                    <td class="text-end">{{ formatarDinheiro(registo.valor, moeda) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -227,6 +272,18 @@ function cancelar(motivo) {
             :errors="errors"
             @confirmar="cancelar"
             @cancelar="cancelarAberto = false"
+        />
+        <AnularRegistoModal
+            :show="anularAberto"
+            titulo="Anular propina"
+            :subtitulo="`${propina.periodo} — ${propina.matricula?.aluno_nome ?? 'Aluno'}`"
+            aviso="A propina recebeu pagamentos que foram todos anulados. Passa a Anulada e deixa de ser cobrada. A operação não se desfaz."
+            rotulo-confirmar="Anular propina"
+            campo-erro="propina"
+            :processing="processing"
+            :errors="errors"
+            @confirmar="anular"
+            @cancelar="anularAberto = false"
         />
     </div>
 </template>

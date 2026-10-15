@@ -74,4 +74,20 @@ final class ViolacaoDeUnicidade
         return stripos($mensagem, 'planos_propina_tenant_id_ano_lectivo_id_nome_unique') !== false
             || (stripos($mensagem, 'UNIQUE constraint failed') !== false && stripos($mensagem, 'planos_propina.nome') !== false);
     }
+
+    /**
+     * Violação de `pagamentos_referencia_confirmada_unique` (mesma referência no mesmo método entre Confirmados): a
+     * única unicidade do registo de pagamentos que se atribui a concorrência (duas sessões com a mesma referência).
+     */
+    public static function daReferenciaDoPagamento(Throwable $e): bool
+    {
+        if (! self::e($e)) {
+            return false;
+        }
+
+        $mensagem = $e->getMessage();
+
+        return stripos($mensagem, 'pagamentos_referencia_confirmada_unique') !== false
+            || (stripos($mensagem, 'UNIQUE constraint failed') !== false && stripos($mensagem, 'pagamentos.referencia') !== false);
+    }
 }

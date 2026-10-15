@@ -527,7 +527,7 @@ const financeiro = {
     paths: 3,
     items: [
         { href: '/financeiro/propinas', title: 'Propinas', permissao: 'propina.ver' },
-        // { href: '#', title: 'Pagamentos' },
+        { href: '/financeiro/pagamentos', title: 'Pagamentos', permissao: 'pagamento.ver' },
         // { href: '#', title: 'Dívidas' },
         // { href: '#', title: 'Descontos / Bolsas' },
         // { href: '#', title: 'Recibos' },

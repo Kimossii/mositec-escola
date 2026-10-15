@@ -104,7 +104,7 @@ class CancelarPropinaTest extends TestCase
         $this->historicoPagamentoFalso()->marcar($propina);
         $this->actingAs($this->adminEscola());
 
-        $this->cancelar($propina)->assertSessionHasErrors(['propina' => 'A propina já recebeu pagamentos (entretanto anulados): não se cancela, anula-se (disponível com o módulo de Pagamentos).']);
+        $this->cancelar($propina)->assertSessionHasErrors(['propina' => 'A propina já recebeu pagamentos (entretanto anulados): não se cancela, anula-se.']);
         $this->assertSame(EstadoCobranca::EM_ABERTO, $propina->refresh()->estado);
     }
 

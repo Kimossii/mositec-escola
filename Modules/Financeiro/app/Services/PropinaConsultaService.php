@@ -12,6 +12,7 @@ use Modules\Financeiro\Enums\OrigemGeracaoPropina;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaAjuste;
+use Modules\Financeiro\Support\AnulacaoDePropinas;
 use Modules\Financeiro\Support\CancelamentoDePropinas;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 
@@ -26,6 +27,8 @@ class PropinaConsultaService
     public function __construct(
         private RelogioDoTenant $relogio,
         private CancelamentoDePropinas $cancelamento,
+        private AnulacaoDePropinas $anulacao,
+        private PagamentoConsultaService $pagamentos,
     ) {
     }
 
@@ -85,7 +88,7 @@ class PropinaConsultaService
     /**
      * Detalhe de uma propina (spec §10): estado resolvido para o "hoje" da escola, snapshot, plano de origem,
      * matrícula, cancelamento/anulação e um histórico simples derivado das colunas (nenhuma tabela nova).
-     * Pagamentos (Pagamentos-A) ainda não existem: lista vazia. Ajustes de preço (F4) do mais antigo para o mais recente.
+     * Pagamentos e utilizações de crédito, por data (PagamentoConsultaService::daPropina). Ajustes de preço (F4) do mais antigo para o mais recente.
      *
      * @return array<string, mixed>
      */
@@ -154,7 +157,7 @@ class PropinaConsultaService
                 'em' => $this->instante($propina->anulado_em, $fuso),
             ] : null,
             'historico' => $this->historico($propina, $fuso),
-            'pagamentos' => [],
+            'pagamentos' => $this->pagamentos->daPropina($propina),
             'ajustes' => $propina->ajustes()->with(['alteracao', 'criadoPor', 'planoAnterior', 'planoNovo'])->get()
                 ->map(fn (PropinaAjuste $ajuste) => [
                     'id' => $ajuste->id,
@@ -171,6 +174,7 @@ class PropinaConsultaService
                     'motivo' => $ajuste->motivo,
                 ])->values()->all(),
             'cancelamento_bloqueado' => $this->cancelamento->motivoParaNaoCancelar($propina),
+            'anulacao_bloqueada' => $this->anulacao->motivoParaNaoAnular($propina),
         ];
     }
 
