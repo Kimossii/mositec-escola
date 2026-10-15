@@ -27,7 +27,7 @@ class PlanoPropinaComPropinasTest extends TestCase
 
     private const BASE = 'financeiro.configuracao.planos-propina.';
 
-    private const MSG_VALOR = 'Este plano já tem propinas geradas: o valor não pode ser alterado na edição do plano. As propinas existentes mantêm o seu valor.';
+    private const MSG_VALOR = AtualizarPlanoPropinaAction::MENSAGEM_VALOR;
 
     private const MSG_CALENDARIO = 'Este plano já tem propinas geradas: a periodicidade e os meses de início e de fim não podem ser alterados, porque definem os períodos das propinas existentes.';
 
@@ -170,5 +170,10 @@ class PlanoPropinaComPropinasTest extends TestCase
             ->assertSessionHasErrors(['eliminar' => 'Não é possível eliminar este plano de propina: já existem registos financeiros que o utilizam. Desative-o.']);
 
         $this->assertNotNull(PlanoPropina::query()->find($plano->id));
+    }
+
+    public function test_a_mensagem_do_valor_aponta_para_a_alteracao_de_preco(): void
+    {
+        $this->assertStringContainsString('«Alterar preço»', AtualizarPlanoPropinaAction::MENSAGEM_VALOR);
     }
 }

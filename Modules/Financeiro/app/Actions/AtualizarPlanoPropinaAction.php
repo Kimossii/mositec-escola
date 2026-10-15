@@ -9,7 +9,7 @@ use Modules\Financeiro\Models\PlanoPropina;
 
 class AtualizarPlanoPropinaAction
 {
-    public const MENSAGEM_VALOR = 'Este plano já tem propinas geradas: o valor não pode ser alterado na edição do plano. As propinas existentes mantêm o seu valor.';
+    public const MENSAGEM_VALOR = 'Este plano já tem propinas geradas: o valor só muda em «Alterar preço», onde escolhe como tratar as propinas já geradas.';
 
     public const MENSAGEM_CALENDARIO = 'Este plano já tem propinas geradas: a periodicidade e os meses de início e de fim não podem ser alterados, porque definem os períodos das propinas existentes.';
 

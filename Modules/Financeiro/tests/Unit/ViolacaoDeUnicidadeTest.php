@@ -71,4 +71,14 @@ class ViolacaoDeUnicidadeTest extends TestCase
         $this->assertFalse(ViolacaoDeUnicidade::dasPropinas($this->consulta('pgsql', '23503', 'violates foreign key constraint "propinas_periodo_activo_unique"')));
         $this->assertFalse(ViolacaoDeUnicidade::dasPropinas(new LogicException('propinas_periodo_activo_unique')));
     }
+
+    public function test_do_nome_do_plano_so_aceita_a_unicidade_do_nome_dos_planos(): void
+    {
+        $this->assertTrue(ViolacaoDeUnicidade::doNomeDoPlano($this->consulta('sqlite', '23000', 'UNIQUE constraint failed: planos_propina.tenant_id, planos_propina.ano_lectivo_id, planos_propina.nome', 19)));
+        $this->assertTrue(ViolacaoDeUnicidade::doNomeDoPlano($this->consulta('pgsql', '23505', 'duplicate key value violates unique constraint "planos_propina_tenant_id_ano_lectivo_id_nome_unique"')));
+        $this->assertFalse(ViolacaoDeUnicidade::doNomeDoPlano($this->consulta('pgsql', '23505', 'duplicate key value violates unique constraint "propinas_plano_ordem_activo_unique"')));
+        $this->assertFalse(ViolacaoDeUnicidade::doNomeDoPlano($this->consulta('sqlite', '23000', 'UNIQUE constraint failed: propinas.tenant_id, propinas.matricula_id, propinas.plano_propina_id, propinas.ordem', 19)));
+        $this->assertFalse(ViolacaoDeUnicidade::doNomeDoPlano($this->consulta('pgsql', '23503', 'violates foreign key constraint "planos_propina_tenant_id_ano_lectivo_id_nome_unique"')));
+        $this->assertFalse(ViolacaoDeUnicidade::doNomeDoPlano(new LogicException('planos_propina.nome')));
+    }
 }

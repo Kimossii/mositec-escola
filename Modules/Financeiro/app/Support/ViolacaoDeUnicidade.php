@@ -58,4 +58,20 @@ final class ViolacaoDeUnicidade
             && stripos($mensagem, 'propinas.matricula_id') !== false
             && (stripos($mensagem, 'propinas.periodo_inicio') !== false || stripos($mensagem, 'propinas.ordem') !== false);
     }
+
+    /**
+     * Violação de unicidade de `unique(tenant_id, ano_lectivo_id, nome)` de `planos_propina`: a única que a alteração
+     * de preço pode atribuir a concorrência (o mesmo nome de plano novo criado ao mesmo tempo).
+     */
+    public static function doNomeDoPlano(Throwable $e): bool
+    {
+        if (! self::e($e)) {
+            return false;
+        }
+
+        $mensagem = $e->getMessage();
+
+        return stripos($mensagem, 'planos_propina_tenant_id_ano_lectivo_id_nome_unique') !== false
+            || (stripos($mensagem, 'UNIQUE constraint failed') !== false && stripos($mensagem, 'planos_propina.nome') !== false);
+    }
 }

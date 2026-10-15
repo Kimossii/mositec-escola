@@ -6,6 +6,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Tenancy\PertenceAoTenant;
@@ -163,6 +164,14 @@ class Propina extends Model implements CobrancaResolvivel
     public function anoLectivo(): BelongsTo
     {
         return $this->belongsTo(AnoLectivo::class, 'ano_lectivo_id')->withTrashed();
+    }
+
+    /**
+     * Ajustes de preço (F4, spec §14), do mais antigo para o mais recente.
+     */
+    public function ajustes(): HasMany
+    {
+        return $this->hasMany(PropinaAjuste::class, 'propina_id')->orderBy('id');
     }
 
     public function canceladoPor(): BelongsTo

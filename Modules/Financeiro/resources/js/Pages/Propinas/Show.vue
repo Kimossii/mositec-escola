@@ -194,6 +194,27 @@ function cancelar(motivo) {
                     <div class="card-header"><h3 class="card-title fs-6 fw-bold text-uppercase text-gray-600">Ajustes de preço</h3></div>
                     <div class="card-body pt-0">
                         <p v-if="propina.ajustes.length === 0" class="text-muted mb-0">Sem ajustes de preço.</p>
+                        <div v-else class="table-responsive">
+                            <table class="table table-row-dashed align-middle fs-7 gy-2 mb-0">
+                                <thead>
+                                    <tr class="text-muted fw-bold text-uppercase">
+                                        <th>Data</th><th>Valor</th><th>Recebido</th><th>Plano</th><th>Motivo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="ajuste in propina.ajustes" :key="ajuste.id">
+                                        <td>{{ instante(ajuste.em) }}<div class="text-muted">{{ ajuste.por ?? '—' }}</div></td>
+                                        <td>
+                                            {{ formatarDinheiro(ajuste.valor_anterior, moeda) }} → {{ formatarDinheiro(ajuste.valor_novo, moeda) }}
+                                            <div class="text-muted">{{ ajuste.modo_descricao }} · desde {{ ajuste.mes_efeito }}</div>
+                                        </td>
+                                        <td>{{ formatarDinheiro(ajuste.valor_pago_no_momento, moeda) }}</td>
+                                        <td>{{ ajuste.plano_anterior }}<span v-if="ajuste.plano_novo"> → {{ ajuste.plano_novo }}</span></td>
+                                        <td>{{ ajuste.motivo }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

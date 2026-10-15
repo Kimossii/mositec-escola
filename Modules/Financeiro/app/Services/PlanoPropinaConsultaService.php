@@ -4,10 +4,12 @@ namespace Modules\Financeiro\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Curso\Models\Curso;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\PlanoPropinaAlvo;
+use Modules\Financeiro\Support\RotuloDePeriodo;
 use Modules\Financeiro\Support\AlvosDoPlano;
 use Modules\Financeiro\Support\CalendarioDePlano;
 use Modules\Financeiro\Support\Precedencia;
@@ -45,7 +47,13 @@ class PlanoPropinaConsultaService
                 'duracoes_periodos' => $plano->duracoesDosPeriodos(),
                 'ultimo_periodo_mais_curto' => $plano->ultimoPeriodoMaisCurto(),
                 'valor_total' => $plano->valorTotal()->unidadesMenores(),
+                'ano_lectivo_encerrado' => $plano->anoLectivo?->estado === EstadoAnoLectivo::ENCERRADO,
                 'tem_propinas' => (bool) $plano->propinas_exists,
+                // Meses de efeito possíveis numa alteração de preço (spec §14): o início de cada período.
+                'inicios_periodo' => array_map(fn (array $periodo) => [
+                    'valor' => substr($periodo['inicio'], 0, 7),
+                    'rotulo' => RotuloDePeriodo::competencia((int) substr($periodo['inicio'], 0, 4), (int) substr($periodo['inicio'], 5, 2)),
+                ], $plano->periodos()),
                 'precedencia' => $this->precedenciaDoPlano($plano),
                 'alvos' => $plano->alvos->map(fn (PlanoPropinaAlvo $alvo) => [
                     'nivel_academico_id' => $alvo->nivel_academico_id,

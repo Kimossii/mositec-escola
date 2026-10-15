@@ -192,6 +192,21 @@ class PlanoPropinaTest extends TestCase
                 ->where('moeda.decimais', 2));
     }
 
+    public function test_index_indica_se_o_ano_lectivo_do_plano_esta_encerrado(): void
+    {
+        $ano = $this->anoLectivo();
+        $this->plano($ano, 'Do Ano');
+        $this->actingAs($this->adminEscola());
+
+        $this->get(route(self::BASE . 'index'))
+            ->assertInertia(fn (Assert $page) => $page->where('planos.data.0.ano_lectivo_encerrado', false));
+
+        $ano->update(['estado' => EstadoAnoLectivo::ENCERRADO]);
+
+        $this->get(route(self::BASE . 'index'))
+            ->assertInertia(fn (Assert $page) => $page->where('planos.data.0.ano_lectivo_encerrado', true));
+    }
+
     public function test_index_mostra_geral_quando_nao_ha_alvos(): void
     {
         $this->plano($this->anoLectivo(), 'Geral');

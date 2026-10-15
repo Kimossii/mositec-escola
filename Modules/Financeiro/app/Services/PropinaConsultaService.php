@@ -11,6 +11,7 @@ use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\OrigemGeracaoPropina;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Models\PropinaAjuste;
 use Modules\Financeiro\Support\CancelamentoDePropinas;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 
@@ -84,7 +85,7 @@ class PropinaConsultaService
     /**
      * Detalhe de uma propina (spec §10): estado resolvido para o "hoje" da escola, snapshot, plano de origem,
      * matrícula, cancelamento/anulação e um histórico simples derivado das colunas (nenhuma tabela nova).
-     * Pagamentos (Pagamentos-A) e ajustes (F4) ainda não existem: listas vazias.
+     * Pagamentos (Pagamentos-A) ainda não existem: lista vazia. Ajustes de preço (F4) do mais antigo para o mais recente.
      *
      * @return array<string, mixed>
      */
@@ -154,7 +155,21 @@ class PropinaConsultaService
             ] : null,
             'historico' => $this->historico($propina, $fuso),
             'pagamentos' => [],
-            'ajustes' => [],
+            'ajustes' => $propina->ajustes()->with(['alteracao', 'criadoPor', 'planoAnterior', 'planoNovo'])->get()
+                ->map(fn (PropinaAjuste $ajuste) => [
+                    'id' => $ajuste->id,
+                    'em' => $this->instante($ajuste->created_at, $fuso),
+                    'por' => $ajuste->criadoPor?->name,
+                    'modo_descricao' => $ajuste->alteracao?->modo_descricao,
+                    'mes_efeito' => $ajuste->alteracao?->mes_efeito === null ? null
+                        : RotuloDePeriodo::competencia($ajuste->alteracao->mes_efeito->year, $ajuste->alteracao->mes_efeito->month),
+                    'valor_anterior' => $ajuste->valor_anterior->unidadesMenores(),
+                    'valor_novo' => $ajuste->valor_novo->unidadesMenores(),
+                    'valor_pago_no_momento' => $ajuste->valor_pago_no_momento->unidadesMenores(),
+                    'plano_anterior' => $ajuste->planoAnterior?->nome,
+                    'plano_novo' => $ajuste->planoNovo?->nome,
+                    'motivo' => $ajuste->motivo,
+                ])->values()->all(),
             'cancelamento_bloqueado' => $this->cancelamento->motivoParaNaoCancelar($propina),
         ];
     }

@@ -42,9 +42,13 @@ Route::middleware(['auth'])->prefix('financeiro/configuracao')->name('financeiro
         Route::get('/', [PlanoPropinaController::class, 'index'])->middleware('can:plano-propina.ver')->name('index');
         Route::post('/', [PlanoPropinaController::class, 'store'])->middleware('can:plano-propina.criar')->name('store');
         Route::post('/copiar', [PlanoPropinaController::class, 'copiar'])->middleware('can:plano-propina.criar')->name('copiar');
-        Route::put('/{plano}', [PlanoPropinaController::class, 'update'])->middleware('can:plano-propina.editar')->name('update');
-        Route::patch('/{plano}/estado', [PlanoPropinaController::class, 'alterarEstado'])->middleware('can:plano-propina.editar')->name('alterar-estado');
-        Route::delete('/{plano}', [PlanoPropinaController::class, 'destroy'])->middleware('can:plano-propina.eliminar')->name('destroy');
+        Route::put('/{plano}', [PlanoPropinaController::class, 'update'])->middleware('can:plano-propina.editar')->whereNumber('plano')->name('update');
+        Route::patch('/{plano}/estado', [PlanoPropinaController::class, 'alterarEstado'])->middleware('can:plano-propina.editar')->whereNumber('plano')->name('alterar-estado');
+        Route::post('/{plano}/alterar-preco/pre-visualizar', [PlanoPropinaController::class, 'preVisualizarAlteracaoPreco'])
+            ->middleware(['can:propina.ajustar', 'can:plano-propina.editar'])->whereNumber('plano')->name('alterar-preco.pre-visualizar');
+        Route::post('/{plano}/alterar-preco', [PlanoPropinaController::class, 'alterarPreco'])
+            ->middleware(['can:propina.ajustar', 'can:plano-propina.editar'])->whereNumber('plano')->name('alterar-preco');
+        Route::delete('/{plano}', [PlanoPropinaController::class, 'destroy'])->middleware('can:plano-propina.eliminar')->whereNumber('plano')->name('destroy');
     });
 
     Route::prefix('moeda-cambio')->name('moeda-cambio.')->group(function () {

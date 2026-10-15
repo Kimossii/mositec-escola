@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Services;
 
+use Illuminate\Support\Collection;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Support\CalendarioDePlano;
 use Modules\Financeiro\Support\Precedencia;
@@ -17,16 +18,13 @@ class ResolvePlanoAplicavel
 {
     /**
      * @param  array{ano: int, mes: int}|null  $competencia  null = ignora o tempo
+     * @param  Collection<int, PlanoPropina>|null  $planos  os de `planosActivosDoAno` já carregados (evita N+1 ao resolver várias turmas do mesmo ano)
      */
-    public function paraTurma(Turma $turma, ?array $competencia = null): ResultadoResolucaoPlano
+    public function paraTurma(Turma $turma, ?array $competencia = null, ?Collection $planos = null): ResultadoResolucaoPlano
     {
         $candidatos = [];
 
-        $planos = PlanoPropina::query()
-            ->activos()
-            ->where('ano_lectivo_id', $turma->ano_lectivo_id)
-            ->with(['alvos.nivelAcademico', 'alvos.turno', 'alvos.turma', 'anoLectivo'])
-            ->get();
+        $planos ??= $this->planosActivosDoAno((int) $turma->ano_lectivo_id);
 
         foreach ($planos as $plano) {
             if ($competencia !== null && ! CalendarioDePlano::contem($plano->competencias(), $competencia['ano'], $competencia['mes'])) {
@@ -58,6 +56,21 @@ class ResolvePlanoAplicavel
         }
 
         return ResultadoResolucaoPlano::conflito(array_map(fn (array $c) => $c['plano'], $topo));
+    }
+
+    /**
+     * Planos activos do ano lectivo, com o que a resolução precisa. Carregar uma vez e passar a `paraTurma`
+     * quando se resolvem muitas turmas do mesmo ano.
+     *
+     * @return Collection<int, PlanoPropina>
+     */
+    public function planosActivosDoAno(int $anoLectivoId): Collection
+    {
+        return PlanoPropina::query()
+            ->activos()
+            ->where('ano_lectivo_id', $anoLectivoId)
+            ->with(['alvos.nivelAcademico', 'alvos.turno', 'alvos.turma', 'anoLectivo'])
+            ->get();
     }
 
     /**

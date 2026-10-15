@@ -9,6 +9,7 @@ import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
+import AlterarPrecoPlanoModal from '../../Components/PlanosPropina/AlterarPrecoPlanoModal.vue';
 import CopiarPlanosModal from '../../Components/PlanosPropina/CopiarPlanosModal.vue';
 import PlanoPropinaFormModal from '../../Components/PlanosPropina/PlanoPropinaFormModal.vue';
 import { ESTADO } from '../../Models/Estado';
@@ -27,6 +28,7 @@ const props = defineProps({
     turnos: { type: Array, required: true },
     turmas: { type: Array, required: true },
     periodicidades: { type: Array, required: true },
+    modosAlteracaoPreco: { type: Array, required: true },
     moeda: { type: Object, required: true },
 });
 defineOptions({ layout: AppLayout });
@@ -145,6 +147,39 @@ function copiar(payload) {
     });
 }
 
+const precoAberto = ref(false);
+const planoPreco = ref(null);
+const precoProcessing = ref(false);
+const precoErrors = ref({});
+
+function abrirAlteracaoPreco(plano) {
+    planoPreco.value = plano;
+    precoErrors.value = {};
+    precoAberto.value = true;
+}
+
+function alterarPreco(payload) {
+    if (precoProcessing.value) return;
+    precoProcessing.value = true;
+    precoErrors.value = {};
+
+    router.post(`${BASE}/${planoPreco.value.id}/alterar-preco`, payload, {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success(page.props.flash?.success ?? 'Preço do plano alterado.');
+            precoAberto.value = false;
+        },
+        onError: (erros) => {
+            precoErrors.value = erros;
+            // A impressão digital desactualizada é tratada pelo modal (refaz a pré-visualização).
+            if (!erros.impressao_digital) toast.error(Object.values(erros)[0]);
+        },
+        onFinish: () => {
+            precoProcessing.value = false;
+        },
+    });
+}
+
 const paraEstado = ref(null);
 const novoEstado = ref(null);
 const paraEliminar = ref(null);
@@ -236,7 +271,7 @@ function confirmarEliminacao() {
                         <tr v-for="plano in planos.data" :key="plano.id">
                             <td class="text-gray-800">
                                 {{ plano.nome }}
-                                <span v-if="plano.tem_propinas" class="badge badge-light-primary ms-1" title="Já tem propinas geradas: o valor e o calendário ficam bloqueados.">Com propinas</span>
+                                <span v-if="plano.tem_propinas" class="badge badge-light-primary ms-1" title="Já tem propinas geradas: o calendário fica bloqueado e o valor muda em «Alterar preço».">Com propinas</span>
                             </td>
                             <td>{{ plano.ano_lectivo_nome ?? '—' }}</td>
                             <td>{{ plano.periodicidade_descricao }}</td>
@@ -268,6 +303,11 @@ function confirmarEliminacao() {
                                     <div v-if="can('plano-propina.editar')" class="menu-item px-3">
                                         <a href="#" class="menu-link px-3" @click.prevent="abrirEdicao(plano)">
                                             <AcaoIcone acao="editar" class="me-2" /> Editar
+                                        </a>
+                                    </div>
+                                    <div v-if="plano.tem_propinas && !plano.ano_lectivo_encerrado && can('propina.ajustar') && can('plano-propina.editar')" class="menu-item px-3">
+                                        <a href="#" class="menu-link px-3" @click.prevent="abrirAlteracaoPreco(plano)">
+                                            <AcaoIcone acao="alterar-preco" class="me-2" /> Alterar preço
                                         </a>
                                     </div>
                                     <div v-if="can('plano-propina.editar') && plano.estado !== ESTADO.ATIVO" class="menu-item px-3">
@@ -320,6 +360,17 @@ function confirmarEliminacao() {
             :errors="copiaErrors"
             @submit="copiar"
             @cancelar="copiaAberta = false"
+        />
+
+        <AlterarPrecoPlanoModal
+            :show="precoAberto"
+            :plano="planoPreco"
+            :modos="modosAlteracaoPreco"
+            :moeda="moeda"
+            :processing="precoProcessing"
+            :errors="precoErrors"
+            @confirmar="alterarPreco"
+            @cancelar="precoAberto = false"
         />
 
         <ConfirmModal

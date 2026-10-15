@@ -10,6 +10,7 @@ use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\OrigemGeracaoPropina;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Models\PropinaAjuste;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Support\FontesDePagamentoDePropina;
 use Modules\Financeiro\Support\HistoricosDePagamentoDaPropina;
@@ -148,8 +149,8 @@ trait ComPropinasFinanceiro
     }
 
     /**
-     * Reconciliação global (critério 8.2/1 do plano de fases), sobre TODAS as propinas do tenant corrente.
-     * F4 acrescenta Σ(ajustes) à igualdade valor = valor_original.
+     * Reconciliação global (critério 8.2/1 do plano de fases) sobre TODAS as propinas do tenant corrente,
+     * incluindo a invariante auditável de §3 (valor = valor_original + Σ ajustes, encadeados).
      */
     protected function assertPropinasCoerentes(): void
     {
@@ -163,16 +164,25 @@ trait ComPropinasFinanceiro
             $this->assertGreaterThan(0, $valor, "{$id}: valor > 0");
             $this->assertGreaterThanOrEqual(0, $pago, "{$id}: valor_pago >= 0");
             $this->assertLessThanOrEqual($valor, $pago, "{$id}: valor_pago <= valor");
-            $this->assertSame($propina->valor_original->unidadesMenores(), $valor, "{$id}: valor = valor_original (sem ajustes em F1)");
+            $esperado = $propina->valor_original->unidadesMenores();
+            $anterior = $esperado;
 
-            $esperado = match (true) {
+            foreach (PropinaAjuste::query()->where('propina_id', $propina->id)->orderBy('id')->get() as $ajuste) {
+                $this->assertSame($anterior, $ajuste->valor_anterior->unidadesMenores(), "{$id}: o ajuste {$ajuste->id} continua o anterior");
+                $esperado += $ajuste->valor_novo->unidadesMenores() - $ajuste->valor_anterior->unidadesMenores();
+                $anterior = $ajuste->valor_novo->unidadesMenores();
+            }
+
+            $this->assertSame($esperado, $valor, "{$id}: valor = valor_original + Σ(ajustes)");
+
+            $estadoEsperado = match (true) {
                 in_array($propina->estado, [EstadoCobranca::CANCELADA, EstadoCobranca::ANULADA], true) => $propina->estado,
                 $pago === 0 => EstadoCobranca::EM_ABERTO,
                 $pago === $valor => EstadoCobranca::PAGA,
                 default => EstadoCobranca::PARCIALMENTE_PAGA,
             };
 
-            $this->assertSame($esperado, $propina->estado, "{$id}: estado coerente com o valor pago");
+            $this->assertSame($estadoEsperado, $propina->estado, "{$id}: estado coerente com o valor pago");
             $this->assertSame($propina->estado->label(), $propina->estado_descricao, "{$id}: estado_descricao");
             $this->assertSame($pago === $valor, $propina->capital_liquidado_em !== null, "{$id}: capital_liquidado_em só com saldo 0");
             $this->assertSame($moeda, $propina->moeda, "{$id}: moeda da escola");

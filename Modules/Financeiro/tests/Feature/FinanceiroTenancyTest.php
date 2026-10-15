@@ -8,11 +8,15 @@ use Modules\Core\Tenancy\Exceptions\AlteracaoDeTenantProibida;
 use Modules\Core\Tenancy\Exceptions\TenantNaoResolvido;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Financeiro\Enums\EstadoCobranca;
+use Modules\Financeiro\Enums\ModoAlteracaoPreco;
 use Modules\Financeiro\Enums\TipoMulta;
+use Modules\Financeiro\Models\AlteracaoPrecoPlano;
 use Modules\Financeiro\Models\EscalaoMulta;
 use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Models\PropinaAjuste;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Services\ReconciliarCancelamentosDePropinas;
+use Modules\Financeiro\Support\Dinheiro;
 use Modules\Financeiro\Tests\Concerns\ComDadosAcademicosFinanceiro;
 use Modules\Financeiro\Tests\Concerns\ComPropinasFinanceiro;
 use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
@@ -152,5 +156,42 @@ class FinanceiroTenancyTest extends TestCase
 
         $this->assertSame(['matriculas' => 0, 'canceladas' => 0, 'erros' => 0], app(ReconciliarCancelamentosDePropinas::class)->executar());
         $this->assertSame(EstadoCobranca::EM_ABERTO, $this->noTenant($outro, fn () => Propina::query()->find($propinaDela)->estado));
+    }
+
+    public function test_os_registos_de_alteracao_de_preco_sao_do_tenant_e_sem_contexto_lancam(): void
+    {
+        $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
+        $criar = function (): int {
+            ['plano' => $plano] = $this->cenarioPropinas();
+
+            return AlteracaoPrecoPlano::create([
+                'ano_lectivo_id' => $plano->ano_lectivo_id,
+                'plano_propina_id' => $plano->id,
+                'modo' => ModoAlteracaoPreco::MANTER_GERADAS,
+                'valor_anterior' => Dinheiro::deUnidadesMenores(2_500_000),
+                'valor_novo' => Dinheiro::deUnidadesMenores(3_000_000),
+                'mes_efeito' => '2027-01-01',
+                'motivo' => 'Teste',
+                'total_propinas_afectadas' => 0,
+                'impressao_digital' => str_repeat('c', 64),
+            ])->id;
+        };
+        $minha = $criar();
+        $dela = $this->noTenant($outro, $criar);
+
+        $this->assertSame([$minha], AlteracaoPrecoPlano::query()->pluck('id')->all());
+        $this->assertNull(AlteracaoPrecoPlano::query()->find($dela));
+
+        app(TenantContext::class)->limpar();
+
+        try {
+            AlteracaoPrecoPlano::query()->count();
+            $this->fail('A leitura sem contexto devia lançar.');
+        } catch (TenantNaoResolvido) {
+            $this->addToAssertionCount(1);
+        }
+
+        $this->expectException(TenantNaoResolvido::class);
+        (new PropinaAjuste())->forceFill([])->save();
     }
 }
