@@ -27,7 +27,14 @@ class AtualizarTurmaRequest extends BaseRequest
                 'integer',
                 'exists:cursos,id',
             ],
-            'codigo' => 'required|string|max:50',
+            'codigo' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('turmas', 'codigo')
+                    ->where('ano_lectivo_id', $this->route('turma')->ano_lectivo_id)
+                    ->ignore($this->route('turma')),
+            ],
             'nome' => 'required|string|max:255',
             'turno_id' => 'nullable|integer|exists:turnos,id',
         ];
@@ -44,6 +51,7 @@ class AtualizarTurmaRequest extends BaseRequest
 
             'codigo.required' => 'O código da turma é obrigatório.',
             'codigo.max' => 'O código da turma não pode ultrapassar 50 caracteres.',
+            'codigo.unique' => 'Já existe uma turma com este código neste ano lectivo.',
 
             'nome.required' => 'O nome da turma é obrigatório.',
             'nome.max' => 'O nome da turma não pode ultrapassar 255 caracteres.',
