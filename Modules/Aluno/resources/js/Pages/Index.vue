@@ -46,6 +46,7 @@ const opcoesCriterio = [
 
 const opcoesAnoLectivo = computed(() => [
     { value: '', label: 'Todos os anos lectivos' },
+    { value: 'sem_matricula', label: 'Sem matrícula' },
     ...props.anosLectivosDisponiveis.map((ano) => ({ value: ano.id, label: ano.nome })),
 ]);
 
