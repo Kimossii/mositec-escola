@@ -25,7 +25,7 @@ use Modules\Matricula\Models\Matricula;
  * Motor ÚNICO da divisão de uma operação de pagamento (spec Pagamentos §4; D8–D12). Só lê. Usado pela
  * pré-visualização (dados sem bloqueio) e pelas Actions (dados já bloqueados), por isso tudo o que decide vem dos
  * argumentos de `calcular`. Ordem: crédito primeiro, depois dinheiro novo, da propina mais antiga para a mais recente.
- * Pagamentos-B: depois do capital de cada propina, a multa dela (imputação capital → multa) — ponto marcado abaixo.
+ * Dentro de cada propina o dinheiro paga primeiro o CAPITAL e só depois a MULTA dela (imputação capital → multa).
  */
 class DistribuicaoDePagamentoService
 {
@@ -87,12 +87,13 @@ class DistribuicaoDePagamentoService
             : "Esta referência já foi usada no pagamento n.º {$anulado->numero}, que foi anulado. Confirme que não é um registo em duplicado.";
     }
 
-    /** @return Collection<int, Propina> Em Aberto ou Parcialmente Paga, da matrícula (sem bloqueio). */
+    /** @return Collection<int, Propina> com capital OU multa em dívida (não Cancelada/Anulada), da matrícula (sem bloqueio). */
     public function propinasPagaveis(Matricula $matricula): Collection
     {
         return Propina::query()
             ->where('matricula_id', $matricula->getKey())
-            ->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value])
+            ->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value, EstadoCobranca::PAGA->value])
+            ->with('multa')
             ->orderBy('id')
             ->get();
     }
@@ -139,8 +140,8 @@ class DistribuicaoDePagamentoService
         RegraCobranca $regras,
     ): PlanoDePagamentoDTO {
         $pagaveis = $propinas
-            ->filter(fn (Propina $p) => in_array($p->estado, [EstadoCobranca::EM_ABERTO, EstadoCobranca::PARCIALMENTE_PAGA], true)
-                && $p->saldo()->unidadesMenores() > 0)
+            ->filter(fn (Propina $p) => in_array($p->estado, [EstadoCobranca::EM_ABERTO, EstadoCobranca::PARCIALMENTE_PAGA, EstadoCobranca::PAGA], true)
+                && ($p->saldo()->unidadesMenores() > 0 || $p->multaPendente() > 0))
             ->sort(fn (Propina $a, Propina $b) => [$a->periodo_inicio->toDateString(), $a->ordem, $a->id] <=> [$b->periodo_inicio->toDateString(), $b->ordem, $b->id])
             ->values();
         $total = $dinheiro + $creditoPedido;
@@ -148,7 +149,7 @@ class DistribuicaoDePagamentoService
         $alvos = $distribuicao === null
             ? $this->automatica($pagaveis, $total, $dataEfeito, $regras)
             : $this->explicita($distribuicao, $pagaveis, $total, $dataEfeito, $regras);
-        $somaAlvos = array_sum(array_column($alvos, 'valor'));
+        $somaAlvos = array_sum(array_map(fn (array $alvo) => $alvo['capital'] + $alvo['multa'], $alvos));
 
         $fila = $creditos
             ->filter(fn (Credito $c) => $c->estado === EstadoCredito::DISPONIVEL && $c->saldo()->unidadesMenores() > 0)
@@ -169,48 +170,86 @@ class DistribuicaoDePagamentoService
         }
 
         $restanteCredito = $creditoPedido;
+        $restanteDinheiro = $dinheiro;
         $linhas = [];
         $utilizacoes = [];
 
-        foreach ($alvos as ['propina' => $propina, 'valor' => $valor]) {
-            $doCredito = min($restanteCredito, $valor);
-            $restanteCredito -= $doCredito;
-            $porCobrir = $doCredito;
+        foreach ($alvos as $alvo) {
+            $propina = $alvo['propina'];
+            $capitalSaldo = $propina->saldo()->unidadesMenores();
+            $multaPendente = $propina->multaPendente();
 
-            while ($porCobrir > 0) {
-                $uso = min($fila[0]['saldo'], $porCobrir);
-                $utilizacoes[] = ['credito_id' => $fila[0]['id'], 'propina_id' => (int) $propina->id, 'valor' => $uso];
-                $fila[0]['saldo'] -= $uso;
-                $porCobrir -= $uso;
+            // Capital primeiro: crédito e depois dinheiro novo.
+            $creditoCapital = min($restanteCredito, $alvo['capital']);
+            $restanteCredito -= $creditoCapital;
+            $dinheiroCapital = min($restanteDinheiro, $alvo['capital'] - $creditoCapital);
+            $restanteDinheiro -= $dinheiroCapital;
 
-                if ($fila[0]['saldo'] === 0) {
-                    array_shift($fila);
-                }
+            // Multa só depois de o capital ficar a zero, com a mesma ordem crédito → dinheiro.
+            $creditoMulta = 0;
+            $dinheiroMulta = 0;
+
+            if ($creditoCapital + $dinheiroCapital === $alvo['capital']) {
+                $creditoMulta = min($restanteCredito, $alvo['multa']);
+                $restanteCredito -= $creditoMulta;
+                $dinheiroMulta = min($restanteDinheiro, $alvo['multa'] - $creditoMulta);
+                $restanteDinheiro -= $dinheiroMulta;
             }
 
-            $saldo = $propina->saldo()->unidadesMenores();
+            $this->consumirCredito($creditoCapital, (int) $propina->id, null, $fila, $utilizacoes);
+
+            if ($creditoMulta > 0) {
+                $this->consumirCredito($creditoMulta, null, $alvo['multa_id'], $fila, $utilizacoes);
+            }
+
             $inicio = $propina->periodo_inicio->toDateString();
             $linhas[] = [
                 'propina_id' => (int) $propina->id,
+                'multa_id' => $alvo['multa_id'],
                 'periodo' => RotuloDePeriodo::periodo($inicio, $propina->periodo_fim->toDateString()),
                 'periodo_inicio' => $inicio,
-                'saldo_antes' => $saldo,
-                'credito' => $doCredito,
-                'dinheiro' => $valor - $doCredito,
-                'saldo_depois' => $saldo - $valor,
+                'saldo_antes' => $capitalSaldo,
+                'credito' => $creditoCapital,
+                'dinheiro' => $dinheiroCapital,
+                'saldo_depois' => $capitalSaldo - $alvo['capital'],
+                'multa_pendente_antes' => $multaPendente,
+                'multa_credito' => $creditoMulta,
+                'multa_dinheiro' => $dinheiroMulta,
+                'multa_pendente_depois' => $multaPendente - $creditoMulta - $dinheiroMulta,
             ];
-
-            // Pagamentos-B: aqui, com o capital desta propina liquidado, a multa dela (imputação capital → multa).
         }
 
-        $dinheiroDistribuido = array_sum(array_column($linhas, 'dinheiro'));
+        $dinheiroDistribuido = array_sum(array_column($linhas, 'dinheiro')) + array_sum(array_column($linhas, 'multa_dinheiro'));
 
         return new PlanoDePagamentoDTO($dinheiro, $creditoPedido, $linhas, $utilizacoes, $dinheiro - $dinheiroDistribuido);
     }
 
     /**
+     * Consome crédito da fila (mais antigo primeiro) e regista cada parcela como uma utilização para a propina OU
+     * para a multa indicada.
+     *
+     * @param  list<array{id: int, saldo: int}>  $fila
+     * @param  list<array{credito_id: int, propina_id: int|null, propina_multa_id: int|null, valor: int}>  $utilizacoes
+     */
+    private function consumirCredito(int $valor, ?int $propinaId, ?int $multaId, array &$fila, array &$utilizacoes): void
+    {
+        $porCobrir = $valor;
+
+        while ($porCobrir > 0) {
+            $uso = min($fila[0]['saldo'], $porCobrir);
+            $utilizacoes[] = ['credito_id' => $fila[0]['id'], 'propina_id' => $propinaId, 'propina_multa_id' => $multaId, 'valor' => $uso];
+            $fila[0]['saldo'] -= $uso;
+            $porCobrir -= $uso;
+
+            if ($fila[0]['saldo'] === 0) {
+                array_shift($fila);
+            }
+        }
+    }
+
+    /**
      * @param  Collection<int, Propina>  $pagaveis  ordenadas
-     * @return list<array{propina: Propina, valor: int}>
+     * @return list<array{propina: Propina, capital: int, multa: int, multa_id: int|null}>
      */
     private function automatica(Collection $pagaveis, int $total, CarbonImmutable $dataEfeito, RegraCobranca $regras): array
     {
@@ -227,21 +266,34 @@ class DistribuicaoDePagamentoService
                 break;
             }
 
-            $saldo = $propina->saldo()->unidadesMenores();
-
-            if ($restante >= $saldo) {
-                $alvos[] = ['propina' => $propina, 'valor' => $saldo];
-                $restante -= $saldo;
-
-                continue;
-            }
+            $capital = $propina->saldo()->unidadesMenores();
+            $multa = $propina->multaPendente();
+            $multaId = $propina->multa?->id;
 
             if ($regras->permite_pagamento_parcial) {
-                $alvos[] = ['propina' => $propina, 'valor' => $restante];
-            }
+                $cap = min($restante, $capital);
+                $restante -= $cap;
+                $mult = 0;
 
-            // Sem parcial: nunca se salta uma propina mais antiga para pagar uma mais recente (o resto vira crédito).
-            break;
+                if ($cap === $capital) {
+                    $mult = min($restante, $multa);
+                    $restante -= $mult;
+                }
+
+                if ($cap + $mult > 0) {
+                    $alvos[] = ['propina' => $propina, 'capital' => $cap, 'multa' => $mult, 'multa_id' => $mult > 0 ? $multaId : null];
+                }
+            } else {
+                // Sem parcial: capital + multa por inteiro, ou não se toca (nunca se salta a propina mais antiga).
+                $totalDevido = $capital + $multa;
+
+                if ($restante >= $totalDevido) {
+                    $alvos[] = ['propina' => $propina, 'capital' => $capital, 'multa' => $multa, 'multa_id' => $multa > 0 ? $multaId : null];
+                    $restante -= $totalDevido;
+                } else {
+                    break;
+                }
+            }
         }
 
         return $alvos;
@@ -250,7 +302,7 @@ class DistribuicaoDePagamentoService
     /**
      * @param  list<LinhaDeDistribuicao>  $distribuicao
      * @param  Collection<int, Propina>  $pagaveis  ordenadas
-     * @return list<array{propina: Propina, valor: int}>
+     * @return list<array{propina: Propina, capital: int, multa: int, multa_id: int|null}>
      */
     private function explicita(array $distribuicao, Collection $pagaveis, int $total, CarbonImmutable $dataEfeito, RegraCobranca $regras): array
     {
@@ -263,24 +315,28 @@ class DistribuicaoDePagamentoService
                 "distribuicao.{$i}.propina_id" => 'A propina indicada não é desta matrícula ou já não está em dívida (paga, cancelada ou anulada).',
             ]);
             $valor = $linha->valor->unidadesMenores();
-            $saldo = $propina->saldo()->unidadesMenores();
+            $capital = $propina->saldo()->unidadesMenores();
+            $multa = $propina->multaPendente();
 
-            if ($valor > $saldo) {
-                throw ValidationException::withMessages(["distribuicao.{$i}.valor" => 'O valor excede o saldo em dívida desta propina (' . $this->formatar($saldo) . ').']);
+            if ($valor > $capital + $multa) {
+                throw ValidationException::withMessages(["distribuicao.{$i}.valor" => 'O valor excede o saldo em dívida desta propina (' . $this->formatar($capital + $multa) . ').']);
             }
 
-            if (! $regras->permite_pagamento_parcial && $valor !== $saldo) {
-                throw ValidationException::withMessages(["distribuicao.{$i}.valor" => 'A escola não permite pagamento parcial: pague o saldo inteiro desta propina (' . $this->formatar($saldo) . ').']);
+            if (! $regras->permite_pagamento_parcial && $valor !== $capital + $multa) {
+                throw ValidationException::withMessages(["distribuicao.{$i}.valor" => 'A escola não permite pagamento parcial: pague o saldo inteiro desta propina (' . $this->formatar($capital + $multa) . ').']);
             }
 
             if ($propina->periodo_inicio->toDateString() > $dataEfeito->toDateString() && ! $regras->permite_pagamento_antecipado) {
                 throw ValidationException::withMessages(["distribuicao.{$i}.propina_id" => 'A escola não permite pagamento antecipado: esta propina ainda não tinha começado na data do pagamento.']);
             }
 
-            $alvos[] = ['propina' => $propina, 'valor' => $valor];
+            $cap = min($valor, $capital);
+            $mult = $cap === $capital ? $valor - $cap : 0;
+
+            $alvos[] = ['propina' => $propina, 'capital' => $cap, 'multa' => $mult, 'multa_id' => $mult > 0 ? $propina->multa?->id : null];
         }
 
-        if (array_sum(array_column($alvos, 'valor')) > $total) {
+        if (array_sum(array_map(fn (array $alvo) => $alvo['capital'] + $alvo['multa'], $alvos)) > $total) {
             throw ValidationException::withMessages(['distribuicao' => 'A distribuição excede o valor do pagamento mais o crédito usado (' . $this->formatar($total) . ').']);
         }
 

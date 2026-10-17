@@ -21,13 +21,13 @@ class CreditoUtilizacao extends Model
 {
     use PertenceAoTenant;
 
-    public const IMUTAVEIS = ['credito_id', 'propina_id', 'pagamento_id', 'valor', 'data_utilizacao', 'criado_por'];
+    public const IMUTAVEIS = ['credito_id', 'propina_id', 'propina_multa_id', 'pagamento_id', 'valor', 'data_utilizacao', 'criado_por'];
 
     public const CAMPOS_DE_ANULACAO = ['motivo_anulacao', 'anulado_por', 'anulado_em'];
 
     protected $table = 'credito_utilizacoes';
 
-    protected $fillable = ['credito_id', 'propina_id', 'pagamento_id', 'valor', 'data_utilizacao'];
+    protected $fillable = ['credito_id', 'propina_id', 'propina_multa_id', 'pagamento_id', 'valor', 'data_utilizacao'];
 
     protected $hidden = ['tenant_id'];
 
@@ -38,6 +38,7 @@ class CreditoUtilizacao extends Model
     protected $casts = [
         'credito_id' => 'integer',
         'propina_id' => 'integer',
+        'propina_multa_id' => 'integer',
         'pagamento_id' => 'integer',
         'valor' => DinheiroCast::class,
         'data_utilizacao' => DataCast::class,
@@ -69,11 +70,25 @@ class CreditoUtilizacao extends Model
             }
 
             $credito = Credito::query()->find($utilizacao->credito_id);
-            $propina = Propina::query()->find($utilizacao->propina_id);
+
+            if (($utilizacao->propina_id !== null) === ($utilizacao->propina_multa_id !== null)) {
+                throw new LogicException('Uma utilização de crédito liquida uma propina OU uma multa, nunca as duas nem nenhuma.');
+            }
+
+            $multa = null;
+            $propina = null;
+
+            if ($utilizacao->propina_multa_id !== null) {
+                $multa = PropinaMulta::query()->find($utilizacao->propina_multa_id);
+                $propina = $multa === null ? null : Propina::query()->find($multa->propina_id);
+            } else {
+                $propina = Propina::query()->find($utilizacao->propina_id);
+            }
+
             $matricula = $propina === null ? null : Matricula::query()->withTrashed()->find($propina->matricula_id);
 
             if ($credito === null || $matricula === null) {
-                throw new LogicException('O crédito e a propina têm de existir no tenant da utilização.');
+                throw new LogicException('O crédito, a propina e a multa têm de existir no tenant da utilização.');
             }
 
             if ((int) $matricula->aluno_id !== (int) $credito->aluno_id) {
@@ -128,6 +143,11 @@ class CreditoUtilizacao extends Model
     public function propina(): BelongsTo
     {
         return $this->belongsTo(Propina::class, 'propina_id');
+    }
+
+    public function multa(): BelongsTo
+    {
+        return $this->belongsTo(PropinaMulta::class, 'propina_multa_id');
     }
 
     /** O pagamento do mesmo acto (O8); null na aplicação isolada. */

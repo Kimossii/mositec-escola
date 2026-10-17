@@ -15,3 +15,6 @@ Schedule::command('mosi:tenant:tokens:prune --todos')->daily();
 // Propinas em falta das matrículas activas (só nas escolas com «gerar automaticamente» ligado nas Regras
 // de Cobrança). Corre às 02:00 no fuso da aplicação/servidor (UTC), i.e. 03:00 em Luanda. Idempotente: apanha o que falhou na véspera.
 Schedule::command('financeiro:gerar-propinas --todos')->dailyAt('02:00')->withoutOverlapping();
+
+// Multas por atraso (só nas escolas com multas activas). Corre DEPOIS da geração, às 02:30. Idempotente.
+Schedule::command('financeiro:aplicar-multas --todos')->dailyAt('02:30')->withoutOverlapping();

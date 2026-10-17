@@ -69,6 +69,7 @@ Route::middleware(['auth'])->prefix('financeiro/propinas')->name('financeiro.pro
     Route::post('/geracao', [PropinaController::class, 'gerar'])->middleware('can:propina.criar')->name('geracao.store');
     Route::patch('/{propina}/cancelar', [PropinaController::class, 'cancelar'])->whereNumber('propina')->middleware('can:propina.cancelar')->name('cancelar');
     Route::patch('/{propina}/anular', [PropinaController::class, 'anular'])->whereNumber('propina')->middleware('can:propina.anular')->name('anular');
+    Route::patch('/{propina}/multa', [PropinaController::class, 'isentarMulta'])->whereNumber('propina')->middleware('can:propina.isentar-multa')->name('multa');
 });
 
 Route::middleware(['auth'])->prefix('financeiro/pagamentos')->name('financeiro.pagamentos.')->group(function () {

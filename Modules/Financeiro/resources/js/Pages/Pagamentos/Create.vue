@@ -150,7 +150,7 @@ async function preVisualizar() {
 function confirmar() {
     if (!podeConfirmar.value) return;
     processing.value = true;
-    const distribuicao = plano.value.linhas.map((l) => ({ propina_id: l.propina_id, valor: unidadesMenoresParaDecimal(l.credito + l.dinheiro, props.moeda) }));
+    const distribuicao = plano.value.linhas.map((l) => ({ propina_id: l.propina_id, valor: unidadesMenoresParaDecimal(l.credito + l.dinheiro + l.multa_credito + l.multa_dinheiro, props.moeda) }));
     ordemEnviada.value = distribuicao.map((l) => l.propina_id);
 
     router.post(`/financeiro/pagamentos/matriculas/${matricula.value.id}`, { ...base(), modo_distribuicao: MODO_DISTRIBUICAO.EXPLICITA, distribuicao }, {
@@ -269,7 +269,7 @@ function confirmar() {
                     <table class="table table-row-dashed align-middle fs-7 gy-2 mb-0">
                         <thead>
                             <tr class="text-muted fw-bold text-uppercase">
-                                <th>Período</th><th>Vencimento</th><th>Estado</th><th class="text-end">Em dívida</th>
+                                <th>Período</th><th>Vencimento</th><th>Estado</th><th class="text-end">Capital</th><th class="text-end">Multa</th><th class="text-end">Total</th>
                                 <th v-if="modo === MODO_DISTRIBUICAO.EXPLICITA" class="text-end min-w-150px">Pagar ({{ moeda.simbolo }})</th>
                             </tr>
                         </thead>
@@ -282,10 +282,12 @@ function confirmar() {
                                 <td>{{ dataCurta(propina.data_vencimento) }}</td>
                                 <td><EstadoCobrancaBadge :estado="propina.estado" :estado-descricao="propina.estado_descricao" /></td>
                                 <td class="text-end">{{ formatarDinheiro(propina.saldo, moeda) }}</td>
+                                <td class="text-end">{{ propina.multa_pendente ? formatarDinheiro(propina.multa_pendente, moeda) : '—' }}</td>
+                                <td class="text-end fw-semibold">{{ formatarDinheiro(propina.total_em_divida, moeda) }}</td>
                                 <td v-if="modo === MODO_DISTRIBUICAO.EXPLICITA" class="text-end">
                                     <input v-model="manual[propina.id]" type="text" inputmode="decimal" class="form-control form-control-sm form-control-solid text-end"
                                         :disabled="bloqueadaPorAntecipado(propina)"
-                                        :placeholder="situacao.regras.permite_pagamento_parcial ? '0' : unidadesMenoresParaDecimal(propina.saldo, moeda)" />
+                                        :placeholder="situacao.regras.permite_pagamento_parcial ? '0' : unidadesMenoresParaDecimal(propina.total_em_divida, moeda)" />
                                     <div class="text-danger fs-8">{{ erroDaPropina(propina.id) }}</div>
                                 </td>
                             </tr>

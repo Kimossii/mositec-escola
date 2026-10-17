@@ -2,12 +2,14 @@
 
 namespace Modules\Financeiro\Actions;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\DTO\AplicarCreditoDTO;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\EstadoCredito;
+use Modules\Financeiro\Enums\EstadoMulta;
 use Modules\Financeiro\Models\Credito;
 use Modules\Financeiro\Models\CreditoUtilizacao;
 use Modules\Financeiro\Models\Propina;
@@ -45,9 +47,19 @@ class AplicarCreditoAction
             $bloqueada = $this->bloqueio->matricula((int) $matricula->getKey())
                 ?? throw ValidationException::withMessages(['matricula' => 'A matrícula não existe ou foi eliminada.']);
 
+            // Em Aberto e Parcialmente Paga todas; Paga só as que têm multa pendente (valor > valor_pago).
             $propinas = $this->bloqueioDePropinas->bloquear(
-                Propina::query()->where('matricula_id', $bloqueada->id)
-                    ->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value])
+                Propina::query()
+                    ->where('matricula_id', $bloqueada->id)
+                    ->where(function (Builder $q) {
+                        $q->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value])
+                            ->orWhere(function (Builder $sub) {
+                                $sub->where('estado', EstadoCobranca::PAGA->value)
+                                    ->whereHas('multa', fn (Builder $m) => $m
+                                        ->where('estado', '!=', EstadoMulta::ANULADA->value)
+                                        ->whereColumn('propina_multas.valor', '>', 'propina_multas.valor_pago'));
+                            });
+                    })
                     ->pluck('id')->map(fn ($id) => (int) $id)->all(),
             );
             $creditos = $this->bloqueio->creditos(
@@ -72,6 +84,7 @@ class AplicarCreditoAction
                 $criadas[] = CreditoUtilizacao::create([
                     'credito_id' => $utilizacao['credito_id'],
                     'propina_id' => $utilizacao['propina_id'],
+                    'propina_multa_id' => $utilizacao['propina_multa_id'],
                     'valor' => Dinheiro::deUnidadesMenores($utilizacao['valor']),
                     'data_utilizacao' => $hoje->toDateString(),
                 ]);

@@ -13,8 +13,10 @@ use Modules\Financeiro\Models\Credito;
 use Modules\Financeiro\Models\CreditoUtilizacao;
 use Modules\Financeiro\Models\MetodoPagamento;
 use Modules\Financeiro\Models\Pagamento;
+use Modules\Financeiro\Models\PagamentoMulta;
 use Modules\Financeiro\Models\PagamentoPropina;
 use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Support\AnulacaoDePagamentos;
 use Modules\Financeiro\Support\RotuloDePeriodo;
@@ -106,7 +108,7 @@ class PagamentoConsultaService
         // load (não loadMissing): relações já carregadas (ex.: o `credito` devolvido pela Action) podem estar obsoletas.
         $pagamento->load([
             'matricula.aluno.dadosPessoa', 'matricula.turma', 'matricula.anoLectivo', 'metodo', 'criadoPor', 'anuladoPor',
-            'distribuicoes.propina.plano', 'credito.utilizacoes.propina.matricula', 'utilizacoesCombinadas.propina.matricula',
+            'distribuicoes.propina.plano', 'multas.multa.propina', 'credito.utilizacoes.propina.matricula', 'utilizacoesCombinadas.propina.matricula',
         ]);
         $fuso = $this->relogio->fuso();
         $credito = $pagamento->credito;
@@ -136,6 +138,12 @@ class PagamentoConsultaService
                 'plano_nome' => $d->propina->plano?->nome,
                 'valor' => $d->valor->unidadesMenores(),
                 'estado_propina_descricao' => $d->propina->estadoResolvido($this->relogio->hoje())->label(),
+            ])->values()->all(),
+            'multas' => $pagamento->multas->map(fn (PagamentoMulta $d) => [
+                'propina_id' => $d->multa->propina_id,
+                'periodo' => RotuloDePeriodo::periodo($d->multa->propina->periodo_inicio->toDateString(), $d->multa->propina->periodo_fim->toDateString()),
+                'valor' => $d->valor->unidadesMenores(),
+                'estado_propina_descricao' => $d->multa->propina->estadoResolvido($this->relogio->hoje())->label(),
             ])->values()->all(),
             'credito' => $credito === null ? null : [
                 'id' => $credito->id,
@@ -211,6 +219,9 @@ class PagamentoConsultaService
                     'valor' => $p->valor->unidadesMenores(),
                     'valor_pago' => $p->valor_pago->unidadesMenores(),
                     'saldo' => $p->saldo()->unidadesMenores(),
+                    'capital_em_divida' => $p->saldo()->unidadesMenores(),
+                    'multa_pendente' => $p->multaPendente(),
+                    'total_em_divida' => $p->saldo()->unidadesMenores() + $p->multaPendente(),
                     'estado' => $estado->value,
                     'estado_descricao' => $estado->label(),
                     'futura' => $p->periodo_inicio->toDateString() > $hoje->toDateString(),
@@ -284,6 +295,35 @@ class PagamentoConsultaService
                     'estado_descricao' => $u->estado->label(),
                     'activo' => $u->estado === EstadoUtilizacaoCredito::ACTIVA,
                 ]));
+
+        // A multa da propina (1:1) também conta para o histórico: pagamentos e créditos sobre ela.
+        $multa = PropinaMulta::query()->where('propina_id', $propina->getKey())->first();
+
+        if ($multa !== null) {
+            $linhas = $linhas
+                ->concat(PagamentoMulta::query()->where('propina_multa_id', $multa->id)->with('pagamento')->get()
+                    ->map(fn (PagamentoMulta $d) => [
+                        'tipo' => 'pagamento',
+                        'id' => $d->id,
+                        'pagamento_id' => $d->pagamento_id,
+                        'numero' => $d->pagamento->numero,
+                        'data' => $d->pagamento->data_pagamento->toDateString(),
+                        'valor' => $d->valor->unidadesMenores(),
+                        'estado_descricao' => $d->pagamento->estado->label(),
+                        'activo' => $d->pagamento->estado === EstadoPagamento::CONFIRMADO,
+                    ]))
+                ->concat(CreditoUtilizacao::query()->where('propina_multa_id', $multa->id)->with('credito.origem')->get()
+                    ->map(fn (CreditoUtilizacao $u) => [
+                        'tipo' => 'credito',
+                        'id' => $u->id,
+                        'pagamento_id' => $u->credito?->origem_pagamento_id,
+                        'numero' => $u->credito?->origem?->numero,
+                        'data' => $u->data_utilizacao->toDateString(),
+                        'valor' => $u->valor->unidadesMenores(),
+                        'estado_descricao' => $u->estado->label(),
+                        'activo' => $u->estado === EstadoUtilizacaoCredito::ACTIVA,
+                    ]));
+        }
 
         return $linhas->sortBy([['data', 'asc'], ['tipo', 'desc'], ['id', 'asc']])->values()->all();
     }

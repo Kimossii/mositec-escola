@@ -164,13 +164,14 @@ function gerar(payload) {
                                 <th class="text-end min-w-100px">Valor</th>
                                 <th class="text-end min-w-100px">Pago</th>
                                 <th class="text-end min-w-100px">Saldo</th>
+                                <th class="text-end min-w-100px">Multa</th>
                                 <th class="min-w-125px">Estado</th>
                                 <th class="text-end min-w-75px">Acções</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
                             <tr v-if="propinas.data.length === 0">
-                                <td colspan="11" class="text-center text-muted py-6">Nenhuma propina encontrada.</td>
+                                <td colspan="12" class="text-center text-muted py-6">Nenhuma propina encontrada.</td>
                             </tr>
                             <tr v-for="propina in propinas.data" :key="propina.id">
                                 <td class="text-gray-800">
@@ -188,6 +189,7 @@ function gerar(payload) {
                                 <td class="text-end">{{ formatarDinheiro(propina.valor, moeda) }}</td>
                                 <td class="text-end">{{ formatarDinheiro(propina.valor_pago, moeda) }}</td>
                                 <td class="text-end">{{ formatarDinheiro(propina.saldo, moeda) }}</td>
+                                <td class="text-end">{{ propina.multa?.pendente ? formatarDinheiro(propina.multa.pendente, moeda) : '—' }}</td>
                                 <td>
                                     <EstadoCobrancaBadge :estado="propina.estado" :estado-descricao="propina.estado_descricao" />
                                     <div class="mt-1">

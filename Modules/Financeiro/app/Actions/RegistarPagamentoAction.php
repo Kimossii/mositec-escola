@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Actions;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -12,11 +13,13 @@ use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\DTO\RegistarPagamentoDTO;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\EstadoCredito;
+use Modules\Financeiro\Enums\EstadoMulta;
 use Modules\Financeiro\Enums\EstadoPagamento;
 use Modules\Financeiro\Models\Credito;
 use Modules\Financeiro\Models\CreditoUtilizacao;
 use Modules\Financeiro\Models\MetodoPagamento;
 use Modules\Financeiro\Models\Pagamento;
+use Modules\Financeiro\Models\PagamentoMulta;
 use Modules\Financeiro\Models\PagamentoPropina;
 use Modules\Financeiro\Models\PagamentoSequencia;
 use Modules\Financeiro\Models\Propina;
@@ -78,8 +81,18 @@ class RegistarPagamentoAction
         // O3: nem futura nem anterior à matrícula, com a data_matricula RELIDA sob o lock (a do pedido pode estar obsoleta).
         $this->distribuicao->validarData($dto->dataPagamento, $bloqueada);
 
-        $ids = Propina::query()->where('matricula_id', $bloqueada->id)
-            ->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value])
+        // Em Aberto e Parcialmente Paga todas; Paga só as que têm multa pendente (valor > valor_pago).
+        $ids = Propina::query()
+            ->where('matricula_id', $bloqueada->id)
+            ->where(function (Builder $q) {
+                $q->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value])
+                    ->orWhere(function (Builder $sub) {
+                        $sub->where('estado', EstadoCobranca::PAGA->value)
+                            ->whereHas('multa', fn (Builder $m) => $m
+                                ->where('estado', '!=', EstadoMulta::ANULADA->value)
+                                ->whereColumn('propina_multas.valor', '>', 'propina_multas.valor_pago'));
+                    });
+            })
             ->pluck('id')->map(fn ($id) => (int) $id)->all();
         $propinas = $this->bloqueioDePropinas->bloquear($ids); // relidas: o calcular volta a filtrar o estado
 
@@ -139,12 +152,21 @@ class RegistarPagamentoAction
             ]);
         }
 
+        foreach ($plano->distribuicoesMulta() as $distribuicao) {
+            PagamentoMulta::create([
+                'pagamento_id' => $pagamento->id,
+                'propina_multa_id' => $distribuicao['propina_multa_id'],
+                'valor' => Dinheiro::deUnidadesMenores($distribuicao['valor']),
+            ]);
+        }
+
         $hoje = $this->relogio->hoje()->toDateString();
 
         foreach ($plano->utilizacoes as $utilizacao) {
             CreditoUtilizacao::create([
                 'credito_id' => $utilizacao['credito_id'],
                 'propina_id' => $utilizacao['propina_id'],
+                'propina_multa_id' => $utilizacao['propina_multa_id'],
                 'valor' => Dinheiro::deUnidadesMenores($utilizacao['valor']),
                 'data_utilizacao' => $hoje,
                 'pagamento_id' => $pagamento->id, // O8: rastreia o acto em que foi combinada

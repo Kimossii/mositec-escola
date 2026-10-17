@@ -9,7 +9,9 @@ use Modules\Financeiro\DTO\MotivoDeAnulacaoDTO;
 use Modules\Financeiro\Enums\EstadoPagamento;
 use Modules\Financeiro\Models\Credito;
 use Modules\Financeiro\Models\Pagamento;
+use Modules\Financeiro\Models\PagamentoMulta;
 use Modules\Financeiro\Models\PagamentoPropina;
+use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Services\RecalcularCredito;
 use Modules\Financeiro\Services\RecalcularPropina;
 use Modules\Financeiro\Support\AnulacaoDePagamentos;
@@ -42,7 +44,17 @@ class AnularPagamentoAction
             $bloqueado = $this->bloqueio->pagamento((int) $pagamento->getKey())
                 ?? throw ValidationException::withMessages(['pagamento' => 'O pagamento não existe.']);
 
-            $propinas = PagamentoPropina::query()->where('pagamento_id', $bloqueado->id)->pluck('propina_id')->map(fn ($id) => (int) $id)->all();
+            // As propinas distribuídas e as propinas das multas distribuídas (RecalcularPropina delega na multa).
+            $propinas = PagamentoPropina::query()->where('pagamento_id', $bloqueado->id)->pluck('propina_id')
+                ->merge(
+                    PropinaMulta::query()
+                        ->whereIn('id', PagamentoMulta::query()->where('pagamento_id', $bloqueado->id)->pluck('propina_multa_id'))
+                        ->pluck('propina_id'),
+                )
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
             $this->bloqueioDePropinas->bloquear($propinas);
             $credito = $this->bloqueio->creditos(
                 Credito::query()->where('origem_pagamento_id', $bloqueado->id)->pluck('id')->map(fn ($id) => (int) $id)->all(),
@@ -64,9 +76,8 @@ class AnularPagamentoAction
             }
 
             $this->recalcularPropina->executarVarias($propinas);
-            // Pagamentos-B: RecalcularMulta de cada multa distribuída (pagamento_multas).
 
-            return $bloqueado->fresh(['distribuicoes', 'credito']);
+            return $bloqueado->fresh(['distribuicoes', 'multas', 'credito']);
         });
     }
 }

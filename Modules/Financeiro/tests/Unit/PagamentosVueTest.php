@@ -70,7 +70,7 @@ class PagamentosVueTest extends TestCase
         $create = $this->vue('Pages/Pagamentos/Create.vue');
 
         $this->assertStringContainsString("axios.post(`/financeiro/pagamentos/matriculas/\${matricula.value.id}/pre-visualizar`, pedidoDaEdicao())", $create);
-        $this->assertStringContainsString('unidadesMenoresParaDecimal(l.credito + l.dinheiro, props.moeda)', $create);
+        $this->assertStringContainsString('unidadesMenoresParaDecimal(l.credito + l.dinheiro + l.multa_credito + l.multa_dinheiro, props.moeda)', $create);
         $this->assertStringContainsString("router.post(`/financeiro/pagamentos/matriculas/\${matricula.value.id}`, { ...base(), modo_distribuicao: MODO_DISTRIBUICAO.EXPLICITA, distribuicao }", $create);
         $this->assertStringContainsString(':max="hoje"', $create);
     }

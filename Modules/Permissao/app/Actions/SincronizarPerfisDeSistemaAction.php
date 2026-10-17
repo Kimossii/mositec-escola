@@ -47,8 +47,8 @@ class SincronizarPerfisDeSistemaAction
             Modulo::CATALOGO_FINANCEIRO->value => ['ver', 'criar', 'editar', 'eliminar'],
             Modulo::PLANO_PROPINA->value => ['ver', 'criar', 'editar', 'eliminar'],
             Modulo::MOEDA_CAMBIO->value => ['ver', 'criar', 'editar', 'eliminar'],
-            // Propinas: `ajustar` entrou em F2 (via P1) e é também o que autoriza a geração retroactiva; `anular` em Pagamentos-A.
-            Modulo::PROPINA->value => ['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar'],
+            // Propinas: `ajustar` entrou em F2 (via P1) e é também o que autoriza a geração retroactiva; `anular` em Pagamentos-A; `isentar-multa` em F5.
+            Modulo::PROPINA->value => ['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar', 'isentar-multa'],
             Modulo::PAGAMENTO->value => ['ver', 'listar', 'criar', 'anular', 'exportar'],
         ],
         Perfil::FUNCIONARIO->value => [

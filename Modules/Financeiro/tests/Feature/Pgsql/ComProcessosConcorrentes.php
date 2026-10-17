@@ -96,6 +96,9 @@ try {
             Modules\Financeiro\Models\Propina::findOrFail($a['propina']), new Modules\Financeiro\DTO\MotivoDeAnulacaoDTO('Anulação de propina concorrente'), null,
         );
         $saida(['ok' => true]);
+    } elseif ($args['op'] === 'aplicar-multas') {
+        $r = app(Modules\Financeiro\Services\AplicarMultasService::class)->executar();
+        $saida(['ok' => true, 'resultado' => $r]);
     } else {
         throw new RuntimeException('operação desconhecida');
     }

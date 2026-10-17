@@ -80,6 +80,18 @@ final class Dinheiro
     }
 
     /**
+     * Pontos-base (10000 = 100%): valor × pontosBase / 10000, arredondado para baixo (spec Propinas §15.3).
+     */
+    public function pontosBase(int $pontosBase): self
+    {
+        if ($pontosBase < 0 || $pontosBase > 10_000) {
+            throw new InvalidArgumentException('Os pontos-base têm de estar entre 0 e 10000.');
+        }
+
+        return new self(intdiv($this->unidadesMenores * $pontosBase, 10_000));
+    }
+
+    /**
      * @return list<self>
      */
     public function dividir(int $partes): array

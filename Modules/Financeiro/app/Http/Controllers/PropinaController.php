@@ -9,12 +9,15 @@ use Inertia\Inertia;
 use Modules\Financeiro\Actions\AnularPropinaAction;
 use Modules\Financeiro\Actions\CancelarPropinaAction;
 use Modules\Financeiro\Actions\GerarPropinasAction;
+use Modules\Financeiro\Actions\IsentarReduzirMultaAction;
 use Modules\Financeiro\DTO\CancelarPropinaDTO;
+use Modules\Financeiro\DTO\IsentarMultaDTO;
 use Modules\Financeiro\DTO\MotivoDeAnulacaoDTO;
 use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
 use Modules\Financeiro\Http\Requests\AnularPropinaRequest;
 use Modules\Financeiro\Http\Requests\CancelarPropinaRequest;
 use Modules\Financeiro\Http\Requests\GerarPropinasRequest;
+use Modules\Financeiro\Http\Requests\IsentarReduzirMultaRequest;
 use Modules\Financeiro\Http\Requests\PreVisualizarGeracaoPropinasRequest;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Services\GerarPropinasService;
@@ -32,6 +35,7 @@ class PropinaController extends Controller
         private GerarPropinasAction $gerarAction,
         private CancelarPropinaAction $cancelarAction,
         private AnularPropinaAction $anularAction,
+        private IsentarReduzirMultaAction $isentarAction,
         private MoedaDoTenant $moedaDoTenant,
     ) {
     }
@@ -123,5 +127,14 @@ class PropinaController extends Controller
         $this->anularAction->executar($propina, MotivoDeAnulacaoDTO::fromRequest($request), $request->user()?->id);
 
         return redirect()->back()->with('success', 'Propina anulada.');
+    }
+
+    public function isentarMulta(IsentarReduzirMultaRequest $request, Propina $propina)
+    {
+        $this->authorize('propina.isentar-multa');
+
+        $this->isentarAction->executar($propina, IsentarMultaDTO::fromRequest($request), $request->user()?->id);
+
+        return redirect()->back()->with('success', 'Multa actualizada.');
     }
 }

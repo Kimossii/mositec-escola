@@ -22,6 +22,7 @@ class AnulacaoDePropinas
         private FontesDePagamentoDePropina $fontes,
         private HistoricosDePagamentoDaPropina $historicos,
         private RelogioDoTenant $relogio,
+        private AnulacaoDeMultas $multas,
     ) {
     }
 
@@ -35,6 +36,7 @@ class AnulacaoDePropinas
             $propina->valorRecebido()->unidadesMenores() > 0,
             $this->fontes->contribuicoes($propina) !== [] => 'A propina tem pagamentos ou créditos activos: anule primeiro os pagamentos e as utilizações de crédito que a liquidam.',
             ! $this->historicos->temHistorico($propina) => 'A propina nunca recebeu pagamentos: cancele-a em vez de a anular.',
+            $this->multas->temPagamentos($propina) => 'A multa desta propina já recebeu pagamentos: anule primeiro os pagamentos da multa.',
             default => null,
         };
     }
@@ -65,6 +67,7 @@ class AnulacaoDePropinas
         ])->save();
 
         // F5: a multa da propina (se existir e não tiver pagamentos) passa a Anulada aqui, na mesma transacção.
+        $this->multas->anular($bloqueada);
 
         return $bloqueada;
     }

@@ -23,6 +23,7 @@ class RecalcularPropina
         private BloqueioDePropinas $bloqueio,
         private FontesDePagamentoDePropina $fontes,
         private RelogioDoTenant $relogio,
+        private RecalcularMulta $recalcularMulta,
     ) {
     }
 
@@ -143,7 +144,12 @@ class RecalcularPropina
             'capital_liquidado_em' => $pago === $valor ? $liquidadaEm : null,
         ])->save();
 
-        // F5: a multa da propina (se existir) é recalculada aqui, na mesma transacção.
+        // F5: a multa da propina (se existir) é recalculada aqui, na mesma transacção (spec §6).
+        $multa = $bloqueada->multa;
+
+        if ($multa !== null) {
+            $this->recalcularMulta->executar($multa);
+        }
 
         return $bloqueada;
     }

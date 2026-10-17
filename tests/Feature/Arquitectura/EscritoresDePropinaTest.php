@@ -29,7 +29,11 @@ use RecursiveIteratorIterator;
  */
 class EscritoresDePropinaTest extends TestCase
 {
-    private const ESCRITORES_PERMITIDOS = ['Modules/Financeiro/app/Services/RecalcularPropina.php'];
+    private const ESCRITORES_PERMITIDOS = [
+        'Modules/Financeiro/app/Services/RecalcularPropina.php',
+        // F5: o `valor_pago` da MULTA é cache do RecalcularMulta (tabela propina_multas, não propinas).
+        'Modules/Financeiro/app/Services/RecalcularMulta.php',
+    ];
 
     private const CAMPOS_DE_CACHE = ['valor_pago', 'capital_liquidado_em'];
 
@@ -40,7 +44,12 @@ class EscritoresDePropinaTest extends TestCase
 
     /** F4: quem pode actualizar estes campos de uma propina JÁ GERADA (a criação é do CriadoresDePropinaTest). */
     private const REAJUSTES_PERMITIDOS = [
-        'valor' => ['Modules/Financeiro/app/Services/RecalcularPropina.php'],
+        'valor' => [
+            'Modules/Financeiro/app/Services/RecalcularPropina.php',
+            // F5: o `valor` da MULTA (propina_multas) é escrito pelo comando (subida) e pela isenção/redução manual.
+            'Modules/Financeiro/app/Services/AplicarMultasService.php',
+            'Modules/Financeiro/app/Actions/IsentarReduzirMultaAction.php',
+        ],
         'plano_propina_id' => ['Modules/Financeiro/app/Support/ReassociacaoDePropinas.php'],
         'ordem' => ['Modules/Financeiro/app/Support/ReassociacaoDePropinas.php'],
     ];

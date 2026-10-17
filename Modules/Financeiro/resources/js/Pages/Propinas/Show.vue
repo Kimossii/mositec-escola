@@ -7,6 +7,7 @@ import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import { can } from '@/Composables/usePermissoes';
 import EstadoCobrancaBadge from '../../Components/Shared/EstadoCobrancaBadge.vue';
 import CancelarPropinaModal from '../../Components/Propinas/CancelarPropinaModal.vue';
+import IsentarMultaModal from '../../Components/Propinas/IsentarMultaModal.vue';
 import AnularRegistoModal from '../../Components/Pagamentos/AnularRegistoModal.vue';
 import { ORIGEM_GERACAO } from '../../Models/Propina';
 import { formatarDinheiro } from '../../Support/dinheiro';
@@ -23,6 +24,7 @@ defineOptions({ layout: AppLayout });
 const page = usePage();
 const cancelarAberto = ref(false);
 const anularAberto = ref(false);
+const isentarAberto = ref(false);
 const processing = ref(false);
 const errors = ref({});
 
@@ -75,6 +77,27 @@ function anular(motivo) {
         },
     });
 }
+
+function isentar(novoValor, motivo) {
+    if (processing.value) return;
+    processing.value = true;
+    errors.value = {};
+
+    router.patch(`/financeiro/propinas/${props.propina.id}/multa`, { novo_valor: novoValor, motivo }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            isentarAberto.value = false;
+            toast.success(page.props.flash?.success ?? 'Multa actualizada.');
+        },
+        onError: (erros) => {
+            errors.value = erros;
+            toast.error(Object.values(erros)[0]);
+        },
+        onFinish: () => {
+            processing.value = false;
+        },
+    });
+}
 </script>
 
 <template>
@@ -100,6 +123,9 @@ function anular(motivo) {
                 </div>
                 <button v-if="podeAnular" type="button" class="btn btn-light-danger ms-2" @click="errors = {}; anularAberto = true">
                     Anular propina
+                </button>
+                <button v-if="can('propina.isentar-multa') && propina.multa && propina.multa.estado !== 4" type="button" class="btn btn-light-warning ms-2" @click="errors = {}; isentarAberto = true">
+                    Isentar/reduzir multa
                 </button>
                 <div v-else-if="can('propina.anular') && !podeCancelar && propina.anulacao_bloqueada" class="text-muted fs-7 mt-2" style="max-width: 360px">
                     {{ propina.anulacao_bloqueada }}
@@ -163,6 +189,21 @@ function anular(motivo) {
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Periodicidade</span><span>{{ propina.plano.periodicidade ?? '—' }}</span></div>
                             <div class="d-flex justify-content-between"><span class="text-muted">Valor actual do plano</span><span>{{ formatarDinheiro(propina.plano.valor_actual, moeda) }}</span></div>
                             <div class="text-muted fs-8 mt-2">A propina guarda o valor do momento em que foi gerada; mudar o plano não a altera.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header"><h3 class="card-title fs-6 fw-bold text-uppercase text-gray-600">Multa</h3></div>
+                    <div class="card-body pt-0">
+                        <div v-if="!propina.multa" class="text-muted">Sem multa.</div>
+                        <div v-else class="bg-body-secondary rounded p-4">
+                            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Valor</span><span>{{ formatarDinheiro(propina.multa.valor, moeda) }}</span></div>
+                            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Pago</span><span>{{ formatarDinheiro(propina.multa.valor_pago, moeda) }}</span></div>
+                            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Pendente</span><span class="fw-bold">{{ formatarDinheiro(propina.multa.pendente, moeda) }}</span></div>
+                            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Estado</span><span>{{ propina.multa.estado_descricao }}</span></div>
+                            <div class="d-flex justify-content-between"><span class="text-muted">Automática</span><span>{{ propina.multa.bloqueada_automatico ? 'Bloqueada (manual)' : 'Activa' }}</span></div>
                         </div>
                     </div>
                 </div>
@@ -284,6 +325,15 @@ function anular(motivo) {
             :errors="errors"
             @confirmar="anular"
             @cancelar="anularAberto = false"
+        />
+        <IsentarMultaModal
+            :show="isentarAberto"
+            :propina="propina"
+            :moeda="moeda"
+            :processing="processing"
+            :errors="errors"
+            @confirmar="isentar"
+            @cancelar="isentarAberto = false"
         />
     </div>
 </template>

@@ -228,9 +228,9 @@ class DistribuicaoDePagamentoTest extends TestCase
 
         $this->assertSame([$this->p['set']->id => [2_500_000, 0], $this->p['out']->id => [500_000, 2_000_000]], $this->porPropina($plano));
         $this->assertSame([
-            ['credito_id' => $antigo->id, 'propina_id' => $this->p['set']->id, 'valor' => 1_000_000],
-            ['credito_id' => $novo->id, 'propina_id' => $this->p['set']->id, 'valor' => 1_500_000],
-            ['credito_id' => $novo->id, 'propina_id' => $this->p['out']->id, 'valor' => 500_000],
+            ['credito_id' => $antigo->id, 'propina_id' => $this->p['set']->id, 'propina_multa_id' => null, 'valor' => 1_000_000],
+            ['credito_id' => $novo->id, 'propina_id' => $this->p['set']->id, 'propina_multa_id' => null, 'valor' => 1_500_000],
+            ['credito_id' => $novo->id, 'propina_id' => $this->p['out']->id, 'propina_multa_id' => null, 'valor' => 500_000],
         ], $plano->utilizacoes);
         $this->assertSame(0, $plano->excedente);
     }

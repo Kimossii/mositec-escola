@@ -40,19 +40,19 @@ class PermissoesPropinaTest extends TestCase
         $this->assertSame('propina', Modulo::PROPINA->slug());
         $this->assertSame(Modulo::PROPINA, Modulo::fromSlug('propina'));
         $this->assertSame('Propina', Modulo::PROPINA->label());
-        $this->assertSame(['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar'], Modulo::PROPINA->acoesAplicaveis());
+        $this->assertSame(['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar', 'isentar-multa'], Modulo::PROPINA->acoesAplicaveis());
     }
 
     public function test_admin_escola_tem_as_acoes_de_f1_e_ajustar(): void
     {
         $admin = $this->utilizadorCom(Perfil::ADMIN_ESCOLA);
 
-        // P1 (F2): `ajustar`; Pagamentos-A: `anular` (D16).
-        foreach (['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar'] as $acao) {
+        // P1 (F2): `ajustar`; Pagamentos-A: `anular` (D16); F5: `isentar-multa`.
+        foreach (['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar', 'isentar-multa'] as $acao) {
             $this->assertTrue(Gate::forUser($admin)->allows("propina.{$acao}"), $acao);
         }
 
-        foreach (['editar', 'eliminar', 'negociar', 'isentar-multa'] as $acao) {
+        foreach (['editar', 'eliminar', 'negociar'] as $acao) {
             $this->assertFalse(Gate::forUser($admin)->allows("propina.{$acao}"), $acao);
         }
     }

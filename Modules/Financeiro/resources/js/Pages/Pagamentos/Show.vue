@@ -197,6 +197,22 @@ function anularUtilizacao(motivo) {
             </div>
         </div>
 
+        <div v-if="pagamento.multas?.length" class="card mt-6">
+            <div class="card-header"><h3 class="card-title fs-6 fw-bold text-uppercase text-gray-600">Distribuição por multas</h3></div>
+            <div class="card-body pt-0">
+                <table class="table table-row-dashed align-middle fs-7 gy-2 mb-0">
+                    <thead><tr class="text-muted fw-bold text-uppercase"><th>Período</th><th>Estado</th><th class="text-end">Valor</th></tr></thead>
+                    <tbody>
+                        <tr v-for="m in pagamento.multas" :key="`multa-${m.propina_id}`">
+                            <td><Link :href="`/financeiro/propinas/${m.propina_id}`">{{ m.periodo }}</Link></td>
+                            <td>{{ m.estado_propina_descricao }}</td>
+                            <td class="text-end">{{ formatarDinheiro(m.valor, moeda) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div v-if="pagamento.utilizacoes_combinadas.length" class="card mt-6">
             <div class="card-header"><h3 class="card-title fs-6 fw-bold text-uppercase text-gray-600">Crédito usado neste pagamento</h3></div>
             <div class="card-body pt-0">

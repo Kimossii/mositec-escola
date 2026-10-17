@@ -5,6 +5,7 @@ namespace Modules\Financeiro\Providers;
 use Illuminate\Support\Facades\Event;
 use Modules\AnoLectivo\Support\DependenciasRegistadasDoAnoLectivo;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
+use Modules\Financeiro\Console\AplicarMultasCommand;
 use Modules\Financeiro\Console\CambioPlataformaCommand;
 use Modules\Financeiro\Console\GerarPropinasCommand;
 use Modules\Financeiro\Console\SincronizarFinanceiroCommand;
@@ -46,6 +47,7 @@ class FinanceiroServiceProvider extends ModuleServiceProvider
      * @var string[]
      */
     protected array $commands = [
+        AplicarMultasCommand::class,
         CambioPlataformaCommand::class,
         GerarPropinasCommand::class,
         SincronizarFinanceiroCommand::class,

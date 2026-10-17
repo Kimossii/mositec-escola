@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use LogicException;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Tenancy\PertenceAoTenant;
@@ -15,6 +16,7 @@ use Modules\Financeiro\Casts\DataCast;
 use Modules\Financeiro\Casts\DinheiroCast;
 use Modules\Financeiro\Contracts\CobrancaResolvivel;
 use Modules\Financeiro\Enums\EstadoCobranca;
+use Modules\Financeiro\Enums\EstadoMulta;
 use Modules\Financeiro\Enums\OrigemGeracaoPropina;
 use Modules\Financeiro\Support\Dinheiro;
 use Modules\Financeiro\Support\Moeda;
@@ -172,6 +174,27 @@ class Propina extends Model implements CobrancaResolvivel
     public function ajustes(): HasMany
     {
         return $this->hasMany(PropinaAjuste::class, 'propina_id')->orderBy('id');
+    }
+
+    /** A multa por atraso desta propina (no máximo uma, spec §15.2). */
+    public function multa(): HasOne
+    {
+        return $this->hasOne(PropinaMulta::class, 'propina_id');
+    }
+
+    /**
+     * Multa pendente (valor − valor_pago) desta propina, em unidades menores; 0 se não tem multa ou se ela
+     * está ANULADA (a propina foi cancelada/anulada). O estado da propina continua a depender só do capital.
+     */
+    public function multaPendente(): int
+    {
+        $multa = $this->multa;
+
+        if ($multa === null || $multa->estado === EstadoMulta::ANULADA) {
+            return 0;
+        }
+
+        return $multa->pendente()->unidadesMenores();
     }
 
     /** Distribuições de pagamentos (qualquer estado do pagamento), da mais antiga para a mais recente. */

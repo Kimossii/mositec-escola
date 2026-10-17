@@ -49,8 +49,8 @@ enum Modulo: int
     {
         return match ($this) {
             // Uma propina nunca se edita nem se elimina (cancela-se, anula-se ou ajusta-se). Sem `negociar`
-            // (spec de Dívidas, inexistente) e sem `isentar-multa` (entra com as multas, F5).
-            self::PROPINA => ['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar'],
+            // (spec de Dívidas, inexistente). `isentar-multa` entra com as multas (F5).
+            self::PROPINA => ['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar', 'isentar-multa'],
             // Um pagamento nunca se edita nem se elimina: anula-se (spec Pagamentos §8). As acções de crédito
             // reutilizam `criar` (aplicar) e `anular` (anular utilização).
             self::PAGAMENTO => ['ver', 'listar', 'criar', 'anular', 'exportar'],

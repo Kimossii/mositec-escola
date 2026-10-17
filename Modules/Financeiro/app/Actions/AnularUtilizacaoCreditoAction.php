@@ -9,6 +9,7 @@ use Modules\Financeiro\DTO\MotivoDeAnulacaoDTO;
 use Modules\Financeiro\Enums\EstadoUtilizacaoCredito;
 use Modules\Financeiro\Models\CreditoUtilizacao;
 use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Services\RecalcularCredito;
 use Modules\Financeiro\Services\RecalcularPropina;
 use Modules\Financeiro\Support\BloqueioDePagamentos;
@@ -32,7 +33,15 @@ class AnularUtilizacaoCreditoAction
     public function executar(CreditoUtilizacao $utilizacao, MotivoDeAnulacaoDTO $dto, ?int $utilizadorId): CreditoUtilizacao
     {
         return DB::transaction(function () use ($utilizacao, $dto, $utilizadorId) {
-            $propina = Propina::query()->findOrFail($utilizacao->propina_id);
+            // A utilização pode liquidar uma propina OU a multa dela: resolve a propina em ambos os casos
+            // (RecalcularPropina delega na multa).
+            if ($utilizacao->propina_multa_id !== null) {
+                $multa = PropinaMulta::query()->findOrFail($utilizacao->propina_multa_id);
+                $propina = Propina::query()->findOrFail($multa->propina_id);
+            } else {
+                $propina = Propina::query()->findOrFail($utilizacao->propina_id);
+            }
+
             $this->bloqueio->matricula((int) $propina->matricula_id, incluirEliminadas: true);
             $this->bloqueioDePropinas->bloquear([(int) $propina->id]);
             $credito = $this->bloqueio->creditos([(int) $utilizacao->credito_id])->first()

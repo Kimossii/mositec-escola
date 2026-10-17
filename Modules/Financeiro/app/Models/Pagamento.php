@@ -134,6 +134,12 @@ class Pagamento extends Model
         return $this->hasMany(PagamentoPropina::class, 'pagamento_id')->orderBy('id');
     }
 
+    /** Distribuições deste pagamento por multas (spec Pagamentos §3). */
+    public function multas(): HasMany
+    {
+        return $this->hasMany(PagamentoMulta::class, 'pagamento_id')->orderBy('id');
+    }
+
     /** O crédito gerado pelo excedente (no máximo um). */
     public function credito(): HasOne
     {

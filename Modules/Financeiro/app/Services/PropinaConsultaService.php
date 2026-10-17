@@ -12,6 +12,7 @@ use Modules\Financeiro\Enums\OrigemGeracaoPropina;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaAjuste;
+use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Support\AnulacaoDePropinas;
 use Modules\Financeiro\Support\CancelamentoDePropinas;
 use Modules\Financeiro\Support\RotuloDePeriodo;
@@ -41,7 +42,7 @@ class PropinaConsultaService
         $pesquisa = is_string($filtros['pesquisa'] ?? null) ? trim($filtros['pesquisa']) : '';
 
         return Propina::query()
-            ->with(['matricula.aluno.dadosPessoa', 'matricula.turma', 'plano'])
+            ->with(['matricula.aluno.dadosPessoa', 'matricula.turma', 'plano', 'multa'])
             ->when(is_numeric($filtros['ano_lectivo_id'] ?? null), fn ($query) => $query->where('ano_lectivo_id', (int) $filtros['ano_lectivo_id']))
             ->when($estado !== null, fn ($query) => $query->comEstadoResolvido($estado, $hoje))
             ->when(is_numeric($filtros['plano_propina_id'] ?? null), fn ($query) => $query->where('plano_propina_id', (int) $filtros['plano_propina_id']))
@@ -95,7 +96,7 @@ class PropinaConsultaService
     public function detalhe(Propina $propina): array
     {
         $propina->loadMissing([
-            'matricula.aluno.dadosPessoa', 'matricula.turma', 'matricula.anoLectivo', 'plano', 'criadoPor', 'canceladoPor', 'anuladoPor',
+            'matricula.aluno.dadosPessoa', 'matricula.turma', 'matricula.anoLectivo', 'plano', 'multa', 'criadoPor', 'canceladoPor', 'anuladoPor',
         ]);
 
         $hoje = $this->relogio->hoje();
@@ -120,6 +121,8 @@ class PropinaConsultaService
             'valor' => $propina->valor->unidadesMenores(),
             'valor_pago' => $propina->valor_pago->unidadesMenores(),
             'saldo' => $propina->saldo()->unidadesMenores(),
+            'multa' => $this->resumoMulta($propina->multa),
+            'total_em_divida' => $propina->saldo()->unidadesMenores() + $propina->multaPendente(),
             'data_vencimento' => $propina->data_vencimento->toDateString(),
             'dias_tolerancia' => $propina->dias_tolerancia,
             'data_limite' => $propina->data_limite->toDateString(),
@@ -206,6 +209,8 @@ class PropinaConsultaService
             'valor' => $propina->valor->unidadesMenores(),
             'valor_pago' => $propina->valor_pago->unidadesMenores(),
             'saldo' => $propina->saldo()->unidadesMenores(),
+            'multa' => $this->resumoMulta($propina->multa),
+            'total_em_divida' => $propina->saldo()->unidadesMenores() + $propina->multaPendente(),
             'estado' => $estado->value,
             'estado_descricao' => $estado->label(),
             'origem_geracao' => $propina->origem_geracao->value,
@@ -222,6 +227,23 @@ class PropinaConsultaService
 
         return $propina->origem_geracao === OrigemGeracaoPropina::RETROACTIVA
             || ($criadaNaEscola !== null && $criadaNaEscola > $propina->data_vencimento->toDateString());
+    }
+
+    /** @return array{valor: int, valor_pago: int, pendente: int, estado: int, estado_descricao: string, bloqueada_automatico: bool}|null */
+    private function resumoMulta(?PropinaMulta $multa): ?array
+    {
+        if ($multa === null) {
+            return null;
+        }
+
+        return [
+            'valor' => $multa->valor->unidadesMenores(),
+            'valor_pago' => $multa->valor_pago->unidadesMenores(),
+            'pendente' => $multa->pendente()->unidadesMenores(),
+            'estado' => $multa->estado->value,
+            'estado_descricao' => $multa->estado->label(),
+            'bloqueada_automatico' => $multa->bloqueada_automatico,
+        ];
     }
 
     /**

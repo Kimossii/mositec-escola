@@ -20,8 +20,10 @@ use Modules\Financeiro\Models\Credito;
 use Modules\Financeiro\Models\CreditoUtilizacao;
 use Modules\Financeiro\Models\MetodoPagamento;
 use Modules\Financeiro\Models\Pagamento;
+use Modules\Financeiro\Models\PagamentoMulta;
 use Modules\Financeiro\Models\PagamentoPropina;
 use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Support\Dinheiro;
@@ -141,12 +143,13 @@ trait ComPagamentosFinanceiro
      */
     protected function assertPagamentosCoerentes(): void
     {
-        foreach (Pagamento::query()->with(['distribuicoes', 'credito'])->orderBy('id')->get() as $pagamento) {
+        foreach (Pagamento::query()->with(['distribuicoes', 'multas', 'credito'])->orderBy('id')->get() as $pagamento) {
             $id = "pagamento {$pagamento->numero}";
-            $distribuido = $pagamento->distribuicoes->sum(fn ($d) => $d->valor->unidadesMenores());
+            $distribuido = $pagamento->distribuicoes->sum(fn ($d) => $d->valor->unidadesMenores())
+                + $pagamento->multas->sum(fn ($d) => $d->valor->unidadesMenores());
             $gerado = $pagamento->credito?->valor->unidadesMenores() ?? 0;
 
-            $this->assertSame($pagamento->valor->unidadesMenores(), $distribuido + $gerado, "{$id}: valor = Σ distribuições + crédito gerado");
+            $this->assertSame($pagamento->valor->unidadesMenores(), $distribuido + $gerado, "{$id}: valor = Σ distribuições + multas + crédito gerado");
 
             if ($pagamento->estado === EstadoPagamento::ANULADO && $pagamento->credito !== null) {
                 $this->assertSame(EstadoCredito::ANULADO, $pagamento->credito->estado, "{$id}: o crédito de um pagamento anulado está anulado");
@@ -172,6 +175,18 @@ trait ComPagamentosFinanceiro
                     ->sum(fn ($u) => $u->valor->unidadesMenores());
 
             $this->assertSame($pago, $propina->valor_pago->unidadesMenores(), "propina {$propina->id}: valor_pago = Σ pagamentos confirmados + créditos activos");
+        }
+
+        foreach (PropinaMulta::query()->orderBy('id')->get() as $multa) {
+            $id = "multa {$multa->id}";
+            $pago = PagamentoMulta::query()->where('propina_multa_id', $multa->id)
+                ->whereHas('pagamento', fn ($p) => $p->where('estado', EstadoPagamento::CONFIRMADO->value))->get()
+                ->sum(fn ($d) => $d->valor->unidadesMenores())
+                + CreditoUtilizacao::query()->where('propina_multa_id', $multa->id)->where('estado', EstadoUtilizacaoCredito::ACTIVA->value)->get()
+                    ->sum(fn ($u) => $u->valor->unidadesMenores());
+
+            $this->assertSame($pago, $multa->valor_pago->unidadesMenores(), "{$id}: valor_pago = Σ pagamentos confirmados + créditos activos");
+            $this->assertLessThanOrEqual($multa->valor->unidadesMenores(), $multa->valor_pago->unidadesMenores(), "{$id}: valor_pago <= valor");
         }
 
         $this->assertPropinasCoerentes();
