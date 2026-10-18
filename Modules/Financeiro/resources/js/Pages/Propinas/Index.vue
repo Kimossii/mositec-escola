@@ -14,6 +14,13 @@ import { formatarDinheiro } from '../../Support/dinheiro';
 import { dataCurta } from '../../Support/periodos';
 
 const BASE = '/financeiro/propinas';
+
+// Linhas com o detalhe aberto (matrícula, turma, plano, vencimento): a tabela fica estreita e as acções mais perto.
+const abertas = ref([]);
+const estaAberta = (id) => abertas.value.includes(id);
+const alternar = (id) => {
+    abertas.value = estaAberta(id) ? abertas.value.filter((x) => x !== id) : [...abertas.value, id];
+};
 // 'todos' distingue "sem filtro" de "filtro ausente" (que aplica o ano lectivo activo no servidor).
 const TODOS = 'todos';
 
@@ -155,41 +162,44 @@ function gerar(payload) {
                     <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
                         <thead>
                             <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                                <th class="w-40px"></th>
                                 <th class="min-w-175px">Aluno</th>
-                                <th class="min-w-100px">Matrícula</th>
-                                <th class="min-w-100px">Turma</th>
-                                <th class="min-w-125px">Plano</th>
                                 <th class="min-w-100px">Período</th>
-                                <th class="min-w-100px">Vencimento</th>
                                 <th class="text-end min-w-100px">Valor</th>
                                 <th class="text-end min-w-100px">Pago</th>
                                 <th class="text-end min-w-100px">Saldo</th>
                                 <th class="text-end min-w-100px">Multa</th>
                                 <th class="min-w-125px">Estado</th>
-                                <th class="text-end min-w-75px">Acções</th>
+                                <th class="text-end min-w-100px">Acções</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
                             <tr v-if="propinas.data.length === 0">
-                                <td colspan="12" class="text-center text-muted py-6">Nenhuma propina encontrada.</td>
+                                <td colspan="9" class="text-center text-muted py-6">Nenhuma propina encontrada.</td>
                             </tr>
-                            <tr v-for="propina in propinas.data" :key="propina.id">
+                            <template v-for="propina in propinas.data" :key="propina.id">
+                            <tr>
+                                <td>
+                                    <button type="button" class="btn btn-icon btn-sm btn-light" :title="estaAberta(propina.id) ? 'Recolher detalhes' : 'Ver detalhes'" :aria-expanded="estaAberta(propina.id)" @click="alternar(propina.id)">
+                                        <i class="ki-duotone ki-down fs-5" :style="{ transform: estaAberta(propina.id) ? 'none' : 'rotate(-90deg)' }"></i>
+                                    </button>
+                                </td>
                                 <td class="text-gray-800">
                                     {{ propina.aluno_nome ?? '—' }}
                                     <div class="text-muted fs-7">nº {{ propina.aluno_numero ?? '—' }}</div>
                                 </td>
-                                <td>{{ propina.matricula_numero ?? '—' }}</td>
-                                <td>{{ propina.turma_nome ?? '—' }}</td>
-                                <td>{{ propina.plano_nome ?? '—' }}</td>
                                 <td>{{ propina.periodo }}</td>
-                                <td>
-                                    {{ dataCurta(propina.data_vencimento) }}
-                                    <div class="text-muted fs-8">limite {{ dataCurta(propina.data_limite) }}</div>
-                                </td>
                                 <td class="text-end">{{ formatarDinheiro(propina.valor, moeda) }}</td>
                                 <td class="text-end">{{ formatarDinheiro(propina.valor_pago, moeda) }}</td>
                                 <td class="text-end">{{ formatarDinheiro(propina.saldo, moeda) }}</td>
-                                <td class="text-end">{{ propina.multa?.pendente ? formatarDinheiro(propina.multa.pendente, moeda) : '—' }}</td>
+                                <td class="text-end">
+                                    <template v-if="propina.multa && propina.multa.estado !== 4 && propina.multa.valor > 0">
+                                        {{ formatarDinheiro(propina.multa.valor, moeda) }}
+                                        <div v-if="propina.multa.pendente > 0" class="fs-8 text-danger">pendente {{ formatarDinheiro(propina.multa.pendente, moeda) }}</div>
+                                        <div v-else class="fs-8 text-success">paga</div>
+                                    </template>
+                                    <template v-else>—</template>
+                                </td>
                                 <td>
                                     <EstadoCobrancaBadge :estado="propina.estado" :estado-descricao="propina.estado_descricao" />
                                     <div class="mt-1">
@@ -199,11 +209,35 @@ function gerar(payload) {
                                     </div>
                                 </td>
                                 <td class="text-end">
-                                    <Link :href="`${BASE}/${propina.id}`" class="btn btn-light btn-active-light-primary btn-sm">
-                                        <AcaoIcone acao="visualizar" class="me-1" /> Ver
-                                    </Link>
+                                    <a href="#" class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
+                                        Ações
+                                        <i class="ki-duotone ki-down fs-5 ms-1"></i>
+                                    </a>
+                                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4" data-kt-menu="true">
+                                        <div class="menu-item px-3">
+                                            <Link :href="`${BASE}/${propina.id}`" class="menu-link px-3">
+                                                <AcaoIcone acao="visualizar" class="me-2" /> Ver
+                                            </Link>
+                                        </div>
+                                        <div v-if="propina.ultimo_pagamento_id && can('pagamento.ver')" class="menu-item px-3">
+                                            <a :href="`/financeiro/pagamentos/${propina.ultimo_pagamento_id}/recibo/propinas/${propina.id}`" target="_blank" class="menu-link px-3">
+                                                Imprimir recibo
+                                            </a>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
+                            <tr v-if="estaAberta(propina.id)">
+                                <td colspan="9" class="bg-body-secondary py-4 px-8">
+                                    <div class="row g-4 fs-7">
+                                        <div class="col-6 col-md-3"><div class="text-muted">Matrícula</div><div class="fw-bold text-gray-800">{{ propina.matricula_numero ?? '—' }}</div></div>
+                                        <div class="col-6 col-md-3"><div class="text-muted">Turma</div><div class="fw-bold text-gray-800">{{ propina.turma_nome ?? '—' }}</div></div>
+                                        <div class="col-6 col-md-3"><div class="text-muted">Plano</div><div class="fw-bold text-gray-800">{{ propina.plano_nome ?? '—' }}</div></div>
+                                        <div class="col-6 col-md-3"><div class="text-muted">Vencimento</div><div class="fw-bold text-gray-800">{{ dataCurta(propina.data_vencimento) }} <span class="text-muted fw-normal">· limite {{ dataCurta(propina.data_limite) }}</span></div></div>
+                                    </div>
+                                </td>
+                            </tr>
+                            </template>
                         </tbody>
                     </table>
                 </div>

@@ -171,7 +171,8 @@ class PagamentoController extends Controller
 
         if ($posicao !== null) {
             $periodo = $recibo['periodos'][$posicao - 1];
-            $numero = "{$pagamento->numero}/{$posicao}";
+            // Com um só período, o recibo do mês é o próprio recibo do pagamento: sem sufixo.
+            $numero = count($recibo['periodos']) > 1 ? "{$pagamento->numero}/{$posicao}" : $pagamento->numero;
             $rotulo = "Recibo do mês {$periodo['periodo']}";
             $propinaId = $periodo['propina_id'];
         }

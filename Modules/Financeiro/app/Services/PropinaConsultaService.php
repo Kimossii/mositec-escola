@@ -8,7 +8,11 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Enums\EstadoCobranca;
+use Modules\Financeiro\Enums\EstadoPagamento;
 use Modules\Financeiro\Enums\OrigemGeracaoPropina;
+use Modules\Financeiro\Models\CreditoUtilizacao;
+use Modules\Financeiro\Models\PagamentoMulta;
+use Modules\Financeiro\Models\PagamentoPropina;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaAjuste;
@@ -41,7 +45,7 @@ class PropinaConsultaService
         $origem = is_numeric($filtros['origem_geracao'] ?? null) ? OrigemGeracaoPropina::tryFrom((int) $filtros['origem_geracao']) : null;
         $pesquisa = is_string($filtros['pesquisa'] ?? null) ? trim($filtros['pesquisa']) : '';
 
-        return Propina::query()
+        $pagina = Propina::query()
             ->with(['matricula.aluno.dadosPessoa', 'matricula.turma', 'plano', 'multa'])
             ->when(is_numeric($filtros['ano_lectivo_id'] ?? null), fn ($query) => $query->where('ano_lectivo_id', (int) $filtros['ano_lectivo_id']))
             ->when($estado !== null, fn ($query) => $query->comEstadoResolvido($estado, $hoje))
@@ -58,8 +62,45 @@ class PropinaConsultaService
             ->orderBy('data_vencimento')
             ->orderBy('id')
             ->paginate(self::POR_PAGINA)
-            ->withQueryString()
-            ->through(fn (Propina $propina) => $this->linha($propina, $hoje, $fuso));
+            ->withQueryString();
+
+        $ultimos = $this->ultimosPagamentos($pagina->getCollection()->pluck('id')->map(fn ($id) => (int) $id)->all());
+
+        return $pagina->through(fn (Propina $propina) => $this->linha($propina, $hoje, $fuso) + ['ultimo_pagamento_id' => $ultimos[(int) $propina->id] ?? null]);
+    }
+
+    /**
+     * O pagamento Confirmado mais recente que tocou cada propina (capital ou multa, em dinheiro ou com crédito no
+     * mesmo acto): é o recibo que a lista oferece. Uma consulta por tipo para a página inteira, sem N+1.
+     *
+     * @param  list<int>  $propinaIds
+     * @return array<int, int> propina_id => pagamento_id
+     */
+    private function ultimosPagamentos(array $propinaIds): array
+    {
+        if ($propinaIds === []) {
+            return [];
+        }
+
+        $confirmado = fn ($consulta) => $consulta->where('estado', EstadoPagamento::CONFIRMADO->value);
+        $ultimos = [];
+        $registar = function (int $propinaId, int $pagamentoId) use (&$ultimos): void {
+            $ultimos[$propinaId] = max($ultimos[$propinaId] ?? 0, $pagamentoId);
+        };
+
+        foreach (PagamentoPropina::query()->whereIn('propina_id', $propinaIds)->whereHas('pagamento', $confirmado)->get(['propina_id', 'pagamento_id']) as $linha) {
+            $registar((int) $linha->propina_id, (int) $linha->pagamento_id);
+        }
+
+        foreach (PagamentoMulta::query()->with('multa:id,propina_id')->whereHas('multa', fn ($m) => $m->whereIn('propina_id', $propinaIds))->whereHas('pagamento', $confirmado)->get(['pagamento_id', 'propina_multa_id']) as $linha) {
+            $registar((int) $linha->multa->propina_id, (int) $linha->pagamento_id);
+        }
+
+        foreach (CreditoUtilizacao::query()->whereIn('propina_id', $propinaIds)->whereNotNull('pagamento_id')->whereHas('pagamento', $confirmado)->get(['propina_id', 'pagamento_id']) as $linha) {
+            $registar((int) $linha->propina_id, (int) $linha->pagamento_id);
+        }
+
+        return $ultimos;
     }
 
     /**
