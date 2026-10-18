@@ -26,6 +26,8 @@ class DadosPessoa extends Model
         'data_nascimento',
         'sexo',
         'numero_identificacao',
+        'provincia_nascimento',
+        'municipio_nascimento',
         'tipo_pessoa',
     ];
 

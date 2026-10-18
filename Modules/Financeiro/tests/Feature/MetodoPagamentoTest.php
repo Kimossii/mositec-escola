@@ -52,7 +52,7 @@ class MetodoPagamentoTest extends TestCase
                 ->where('metodos.data.0.nome', 'Numerário')
                 ->where('metodos.data.0.tipo_descricao', 'Numerário')
                 ->missing('metodos.data.0.tenant_id')
-                ->has('tipos', 5));
+                ->has('tipos', 7));
     }
 
     public function test_index_pesquisa_por_nome_e_filtra_por_estado(): void

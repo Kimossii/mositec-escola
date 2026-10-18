@@ -12,6 +12,7 @@ import { dataCurta } from '../../Support/periodos';
 
 const props = defineProps({
     pagamento: { type: Object, required: true },
+    recibo: { type: Object, required: true },
     moeda: { type: Object, required: true },
     podeAnular: { type: Boolean, required: true },
     podeAnularUtilizacoes: { type: Boolean, required: true },
@@ -23,6 +24,33 @@ const anularAberto = ref(false);
 const utilizacaoAnular = ref(null);
 const processing = ref(false);
 const errors = ref({});
+
+const anexando = ref(false);
+const errosComprovativo = ref({});
+const inputComprovativo = ref(null);
+
+function anexarComprovativo(event) {
+    const ficheiro = event.target.files?.[0] ?? null;
+    if (!ficheiro || anexando.value) return;
+    anexando.value = true;
+    errosComprovativo.value = {};
+
+    router.post(`/financeiro/pagamentos/${props.pagamento.id}/comprovativo`, { comprovativo: ficheiro }, {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success(page.props.flash?.success ?? 'Comprovativo anexado.');
+        },
+        onError: (erros) => {
+            errosComprovativo.value = erros;
+            toast.error(Object.values(erros)[0]);
+        },
+        onFinish: () => {
+            anexando.value = false;
+            if (inputComprovativo.value) inputComprovativo.value.value = '';
+        },
+    });
+}
 
 // O1: o registo redirecciona para aqui com um aviso (referência já usada num pagamento anulado).
 onMounted(() => {
@@ -93,6 +121,18 @@ function anularUtilizacao(motivo) {
                 <span class="badge" :class="estadoPagamentoBadgeClass(pagamento.estado)">{{ pagamento.estado_descricao }}</span>
             </div>
             <div class="text-end">
+                <a :href="`/financeiro/pagamentos/${pagamento.id}/recibo`" target="_blank" class="btn btn-light-primary me-2">
+                    {{ recibo.periodos.length > 1 ? 'Recibo geral' : 'Imprimir recibo' }}
+                </a>
+                <a
+                    v-for="periodo in recibo.periodos.length > 1 ? recibo.periodos : []"
+                    :key="periodo.propina_id"
+                    :href="`/financeiro/pagamentos/${pagamento.id}/recibo/propinas/${periodo.propina_id}`"
+                    target="_blank"
+                    class="btn btn-light me-2"
+                >
+                    Recibo de {{ periodo.periodo }}
+                </a>
                 <button v-if="podeAnular" type="button" class="btn btn-light-danger" @click="errors = {}; anularAberto = true">
                     Anular pagamento
                 </button>
@@ -116,6 +156,22 @@ function anularUtilizacao(motivo) {
                                 <tr><td class="text-muted">Câmbio (1 USD)</td><td class="text-end">{{ pagamento.cambio_usd ?? '—' }}</td></tr>
                                 <tr><td class="text-muted">Registado</td><td class="text-end">{{ instante(pagamento.registado?.em) }} · {{ pagamento.registado?.por ?? 'Sistema' }}</td></tr>
                                 <tr v-if="pagamento.observacao"><td class="text-muted">Observação</td><td class="text-end">{{ pagamento.observacao }}</td></tr>
+                                <tr>
+                                    <td class="text-muted">Comprovativo</td>
+                                    <td class="text-end">
+                                        <a v-if="pagamento.comprovativo" :href="`/financeiro/pagamentos/${pagamento.id}/comprovativo`" target="_blank" class="btn btn-sm btn-light-primary">
+                                            Ver comprovativo
+                                        </a>
+                                        <template v-else-if="can('pagamento.criar')">
+                                            <button type="button" class="btn btn-sm btn-light" :disabled="anexando" @click="inputComprovativo.click()">
+                                                {{ anexando ? 'A anexar…' : 'Anexar comprovativo' }}
+                                            </button>
+                                            <input ref="inputComprovativo" type="file" accept="image/*,application/pdf" capture="environment" class="d-none" @change="anexarComprovativo" />
+                                            <div v-if="errosComprovativo.comprovativo" class="text-danger fs-8 mt-1">{{ errosComprovativo.comprovativo }}</div>
+                                        </template>
+                                        <span v-else class="text-muted">—</span>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>

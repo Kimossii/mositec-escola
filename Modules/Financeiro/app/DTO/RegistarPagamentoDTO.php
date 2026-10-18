@@ -4,6 +4,7 @@ namespace Modules\Financeiro\DTO;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\UploadedFile;
 use InvalidArgumentException;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Support\Dinheiro;
@@ -36,6 +37,7 @@ final class RegistarPagamentoDTO
         ?Dinheiro $valorCredito = null,
         public readonly ?int $ate_ano = null,
         public readonly ?int $ate_mes = null,
+        public readonly ?UploadedFile $comprovativo = null,
     ) {
         if ($valor->unidadesMenores() <= 0) {
             throw new InvalidArgumentException('O valor do pagamento tem de ser maior que zero.');
@@ -83,6 +85,7 @@ final class RegistarPagamentoDTO
             valorCredito: Dinheiro::deDecimal($credito === '' ? '0' : $credito, $moeda),
             ate_ano: isset($dados['ate_ano']) && $dados['ate_ano'] !== null ? (int) $dados['ate_ano'] : null,
             ate_mes: isset($dados['ate_mes']) && $dados['ate_mes'] !== null ? (int) $dados['ate_mes'] : null,
+            comprovativo: $request->file('comprovativo'),
         );
     }
 }

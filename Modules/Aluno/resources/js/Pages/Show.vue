@@ -11,6 +11,8 @@ import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/Shared/EstadoBadge.vue';
+import EstadoCobrancaBadge from '../../../../Financeiro/resources/js/Components/Shared/EstadoCobrancaBadge.vue';
+import { formatarDinheiro } from '../../../../Financeiro/resources/js/Support/dinheiro.js';
 import MatriculaFormModal from '../../../../Matricula/resources/js/Components/MatriculaFormModal.vue';
 import InscricaoDisciplinaModal from '../../../../Matricula/resources/js/Components/InscricaoDisciplinaModal.vue';
 import DocumentoPessoaModal from '../../../../Usuario/resources/js/Components/DocumentoPessoaModal.vue';
@@ -26,6 +28,12 @@ const props = defineProps({
     turmasDisponiveis: { type: Array, default: () => [] },
     anosLectivosComMatricula: { type: Array, default: () => [] },
     filtrosMatricula: { type: Object, default: () => ({}) },
+    provincias: { type: Array, default: () => [] },
+    municipiosPorProvincia: { type: Object, default: () => ({}) },
+    podeVerPropinas: { type: Boolean, default: false },
+    situacaoPropinas: { type: Object, default: null },
+    podeRegistarPagamento: { type: Boolean, default: false },
+    moeda: { type: Object, default: null },
 });
 defineOptions({ layout: AppLayout });
 
@@ -599,6 +607,14 @@ function confirmarEliminacao() {
                             <div class="col-md-4 fw-bold text-muted">Nº de matrícula</div>
                             <div class="col-md-8">{{ aluno.numero_matricula }}</div>
                         </div>
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Província de nascimento</div>
+                            <div class="col-md-8">{{ aluno.dados_pessoa?.provincia_nascimento ?? '—' }}</div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Município de nascimento</div>
+                            <div class="col-md-8">{{ aluno.dados_pessoa?.municipio_nascimento ?? '—' }}</div>
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <div class="row mb-4">
@@ -633,6 +649,77 @@ function confirmarEliminacao() {
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="card mt-6">
+            <div class="card-header">
+                <h3 class="card-title fw-bold">Situação de propinas</h3>
+                <div class="card-toolbar">
+                    <a
+                        v-if="podeVerPropinas && situacaoPropinas?.tem_matricula_activa && podeRegistarPagamento"
+                        :href="`/financeiro/pagamentos/novo?matricula=${situacaoPropinas.matricula_id}`"
+                        class="btn btn-sm btn-primary"
+                    >
+                        Registar pagamento
+                    </a>
+                </div>
+            </div>
+            <div class="card-body pt-4">
+                <div v-if="!podeVerPropinas" class="text-muted fs-7">Sem permissão para ver a situação de propinas.</div>
+                <div v-else-if="!situacaoPropinas?.tem_matricula_activa" class="text-muted fs-7">Sem matrícula activa.</div>
+                <template v-else>
+                    <div class="row g-4 mb-6">
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted fs-8 text-uppercase fw-bold">Capital em dívida</div>
+                            <div class="fs-4 fw-bold">{{ formatarDinheiro(situacaoPropinas.capital_em_divida, moeda) }}</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted fs-8 text-uppercase fw-bold">Multas pendentes</div>
+                            <div class="fs-4 fw-bold">{{ formatarDinheiro(situacaoPropinas.multas_pendentes, moeda) }}</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted fs-8 text-uppercase fw-bold">Total em dívida</div>
+                            <div class="fs-4 fw-bold">{{ formatarDinheiro(situacaoPropinas.total_em_divida, moeda) }}</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted fs-8 text-uppercase fw-bold">Em atraso</div>
+                            <div class="fs-4 fw-bold">{{ situacaoPropinas.propinas_em_atraso }} propina(s)</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted fs-8 text-uppercase fw-bold">Próximo vencimento</div>
+                            <div class="fs-4 fw-bold">{{ formatarData(situacaoPropinas.proximo_vencimento) }}</div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle table-row-dashed table-hover fs-7 gy-5 mb-0">
+                            <thead>
+                                <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0">
+                                    <th class="min-w-100px">Período</th>
+                                    <th class="text-end min-w-100px">Valor</th>
+                                    <th class="text-end min-w-100px">Pago</th>
+                                    <th class="text-end min-w-100px">Saldo</th>
+                                    <th class="text-end min-w-100px">Multa</th>
+                                    <th class="min-w-125px">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 fw-semibold">
+                                <tr v-if="situacaoPropinas.periodos.length === 0">
+                                    <td colspan="6" class="text-center text-muted py-6">Sem propinas registadas.</td>
+                                </tr>
+                                <tr v-for="periodo in situacaoPropinas.periodos" :key="periodo.periodo">
+                                    <td class="text-gray-800">{{ periodo.periodo }}</td>
+                                    <td class="text-end">{{ formatarDinheiro(periodo.valor, moeda) }}</td>
+                                    <td class="text-end">{{ formatarDinheiro(periodo.pago, moeda) }}</td>
+                                    <td class="text-end">{{ formatarDinheiro(periodo.saldo, moeda) }}</td>
+                                    <td class="text-end">{{ periodo.multa_pendente ? formatarDinheiro(periodo.multa_pendente, moeda) : '—' }}</td>
+                                    <td><EstadoCobrancaBadge :estado="periodo.estado" :estado-descricao="periodo.estado_descricao" /></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
             </div>
         </div>
 
@@ -762,6 +849,8 @@ function confirmarEliminacao() {
         <AlunoFormModal
             :show="modalAberto"
             :aluno="aluno"
+            :provincias="provincias"
+            :municipios-por-provincia="municipiosPorProvincia"
             :processing="processing"
             :errors="errors"
             @submit="guardar"

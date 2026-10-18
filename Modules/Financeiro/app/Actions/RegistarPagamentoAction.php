@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use Modules\Core\Enums\Estado;
 use Modules\Core\Services\GeradorSequencia;
+use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
 use Modules\Financeiro\DTO\RegistarPagamentoDTO;
@@ -68,18 +71,40 @@ class RegistarPagamentoAction
 
     public function executar(Matricula $matricula, RegistarPagamentoDTO $dto): Pagamento
     {
+        // O ficheiro grava-se no disco privado ANTES da transacção; se o registo falhar, apaga-se (sem órfãos).
+        $caminho = $dto->comprovativo?->store(CaminhoTenant::para('financeiro/comprovativos'), 'privado');
+
         try {
-            return DB::transaction(fn () => $this->registar($matricula, $dto));
+            return DB::transaction(fn () => $this->registar($matricula, $dto, $caminho));
         } catch (QueryException $e) {
+            $this->apagarComprovativo($caminho);
+
             if (ViolacaoDeUnicidade::daReferenciaDoPagamento($e)) {
                 throw ValidationException::withMessages(['referencia' => self::MENSAGEM_REFERENCIA]);
             }
 
             throw $e;
+        } catch (\Throwable $e) {
+            $this->apagarComprovativo($caminho);
+
+            throw $e;
         }
     }
 
-    private function registar(Matricula $matricula, RegistarPagamentoDTO $dto): Pagamento
+    private function apagarComprovativo(?string $caminho): void
+    {
+        if ($caminho === null) {
+            return;
+        }
+
+        try {
+            Storage::disk('privado')->delete(CaminhoTenant::garantir($caminho));
+        } catch (InvalidArgumentException) {
+            // Caminho fora do tenant ou adulterado: não se apaga nada.
+        }
+    }
+
+    private function registar(Matricula $matricula, RegistarPagamentoDTO $dto, ?string $comprovativoCaminho): Pagamento
     {
         // 1. Bloqueios (D13). A matrícula primeiro: a geração e a alteração de preço também começam por ela.
         $bloqueada = $this->bloqueio->matricula((int) $matricula->getKey())
@@ -171,7 +196,16 @@ class RegistarPagamentoAction
             'referencia' => $dto->referencia,
             'observacao' => $dto->observacao,
         ]);
-        $pagamento->forceFill(['numero' => $numero, 'aluno_id' => $bloqueada->aluno_id, ...$this->snapshot->em($dto->dataPagamento)])->save();
+
+        $atributos = ['numero' => $numero, 'aluno_id' => $bloqueada->aluno_id, ...$this->snapshot->em($dto->dataPagamento)];
+
+        if ($comprovativoCaminho !== null) {
+            $atributos['comprovativo_path'] = $comprovativoCaminho;
+            $atributos['comprovativo_nome_original'] = $dto->comprovativo->getClientOriginalName();
+            $atributos['comprovativo_mime_type'] = $dto->comprovativo->getClientMimeType();
+        }
+
+        $pagamento->forceFill($atributos)->save();
 
         foreach ($plano->distribuicoes() as $distribuicao) {
             PagamentoPropina::create([

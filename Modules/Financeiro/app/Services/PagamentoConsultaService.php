@@ -6,6 +6,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Modules\Aluno\Models\Aluno;
+use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Enums\EstadoPagamento;
 use Modules\Financeiro\Enums\EstadoUtilizacaoCredito;
@@ -90,10 +91,23 @@ class PagamentoConsultaService
         return MetodoPagamento::query()->orderBy('nome')->get(['id', 'nome', 'estado']);
     }
 
-    /** @return Collection<int, MetodoPagamento> */
+    /** @return Collection<int, array<string, mixed>> os métodos activos com o tipo e os dados de cada um */
     public function metodosActivos(): Collection
     {
-        return MetodoPagamento::query()->activos()->orderBy('nome')->get(['id', 'nome', 'tipo']);
+        return MetodoPagamento::query()->activos()->orderBy('nome')
+            ->get(['id', 'nome', 'tipo', 'titular', 'banco', 'iban', 'numero_conta', 'telefone', 'exige_comprovativo'])
+            ->map(fn (MetodoPagamento $metodo) => [
+                'id' => $metodo->id,
+                'nome' => $metodo->nome,
+                'tipo' => $metodo->tipo->value,
+                'tipo_descricao' => $metodo->tipo->label(),
+                'titular' => $metodo->titular,
+                'banco' => $metodo->banco,
+                'iban' => $metodo->iban,
+                'numero_conta' => $metodo->numero_conta,
+                'telefone' => $metodo->telefone,
+                'exige_comprovativo' => $metodo->exige_comprovativo,
+            ]);
     }
 
     /** @return list<array{value: int, label: string}> */
@@ -108,7 +122,9 @@ class PagamentoConsultaService
         // load (não loadMissing): relações já carregadas (ex.: o `credito` devolvido pela Action) podem estar obsoletas.
         $pagamento->load([
             'matricula.aluno.dadosPessoa', 'matricula.turma', 'matricula.anoLectivo', 'metodo', 'criadoPor', 'anuladoPor',
-            'distribuicoes.propina.plano', 'multas.multa.propina', 'credito.utilizacoes.propina.matricula', 'utilizacoesCombinadas.propina.matricula',
+            'distribuicoes.propina.plano', 'multas.multa.propina',
+            'credito.utilizacoes.propina.matricula', 'credito.utilizacoes.multa.propina.matricula',
+            'utilizacoesCombinadas.propina.matricula', 'utilizacoesCombinadas.multa.propina.matricula',
         ]);
         $fuso = $this->relogio->fuso();
         $credito = $pagamento->credito;
@@ -124,9 +140,22 @@ class PagamentoConsultaService
             'cambio_usd' => $pagamento->cambio_usd === null ? null : TaxaCambio::deMicros($pagamento->cambio_usd)->formatar(),
             'referencia' => $pagamento->referencia,
             'observacao' => $pagamento->observacao,
-            'metodo' => ['id' => $pagamento->metodo?->id, 'nome' => $pagamento->metodo?->nome, 'tipo_descricao' => $pagamento->metodo?->tipo?->label()],
+            'metodo' => [
+                'id' => $pagamento->metodo?->id,
+                'nome' => $pagamento->metodo?->nome,
+                'tipo' => $pagamento->metodo?->tipo?->value,
+                'tipo_descricao' => $pagamento->metodo?->tipo?->label(),
+                'titular' => $pagamento->metodo?->titular,
+                'banco' => $pagamento->metodo?->banco,
+                'iban' => $pagamento->metodo?->iban,
+                'numero_conta' => $pagamento->metodo?->numero_conta,
+                'telefone' => $pagamento->metodo?->telefone,
+            ],
             'matricula' => $this->resumo($pagamento->matricula),
             'registado' => ['por' => $pagamento->criadoPor?->name, 'em' => $this->instante($pagamento->created_at, $fuso)],
+            'comprovativo' => $pagamento->comprovativo_path === null ? null : [
+                'nome_original' => $pagamento->comprovativo_nome_original,
+            ],
             'anulacao' => $pagamento->estado === EstadoPagamento::ANULADO ? [
                 'motivo' => $pagamento->motivo_anulacao,
                 'por' => $pagamento->anuladoPor?->name,
@@ -156,6 +185,127 @@ class PagamentoConsultaService
             ],
             'utilizacoes_combinadas' => $pagamento->utilizacoesCombinadas->map(fn (CreditoUtilizacao $u) => $this->utilizacao($u))->values()->all(),
             'anulacao_bloqueada' => $this->anulacao->motivoParaNaoAnular($pagamento),
+        ];
+    }
+
+    /**
+     * Agregação para o recibo: por propina do pagamento, o que foi pago em dinheiro e o que foi pago com crédito,
+     * separando capital e multa (spec Pagamentos §9). Uma utilização de crédito sobre uma multa (propina_multa_id)
+     * é atribuída ao período da propina dessa multa. Nunca escreve.
+     *
+     * @return array{periodos: list<array<string, mixed>>, recebido_em_dinheiro: int, pago_com_credito: int, total_liquidado: int}
+     */
+    public function recibo(Pagamento $pagamento): array
+    {
+        $pagamento->load([
+            'distribuicoes.propina.plano',
+            'multas.multa.propina.plano',
+            'utilizacoesCombinadas.propina.plano',
+            'utilizacoesCombinadas.multa.propina.plano',
+        ]);
+
+        $periodos = [];
+
+        $base = function (Propina $propina): array {
+            return [
+                'propina_id' => (int) $propina->getKey(),
+                'periodo_inicio' => $propina->periodo_inicio->toDateString(),
+                'ordem' => $propina->ordem,
+                'periodo' => RotuloDePeriodo::periodo($propina->periodo_inicio->toDateString(), $propina->periodo_fim->toDateString()),
+                'plano' => $propina->plano?->nome,
+                'capital_dinheiro' => 0,
+                'capital_credito' => 0,
+                'multa_dinheiro' => 0,
+                'multa_credito' => 0,
+            ];
+        };
+
+        foreach ($pagamento->distribuicoes as $distribuicao) {
+            $id = (int) $distribuicao->propina_id;
+            $periodos[$id] ??= $base($distribuicao->propina);
+            $periodos[$id]['capital_dinheiro'] += $distribuicao->valor->unidadesMenores();
+        }
+
+        foreach ($pagamento->multas as $distribuicao) {
+            $id = (int) $distribuicao->multa->propina_id;
+            $periodos[$id] ??= $base($distribuicao->multa->propina);
+            $periodos[$id]['multa_dinheiro'] += $distribuicao->valor->unidadesMenores();
+        }
+
+        foreach ($pagamento->utilizacoesCombinadas as $utilizacao) {
+            if ($utilizacao->propina_id !== null) {
+                $id = (int) $utilizacao->propina_id;
+                $periodos[$id] ??= $base($utilizacao->propina);
+                $periodos[$id]['capital_credito'] += $utilizacao->valor->unidadesMenores();
+            } elseif ($utilizacao->propina_multa_id !== null) {
+                $id = (int) $utilizacao->multa->propina_id;
+                $periodos[$id] ??= $base($utilizacao->multa->propina);
+                $periodos[$id]['multa_credito'] += $utilizacao->valor->unidadesMenores();
+            }
+        }
+
+        usort($periodos, fn (array $a, array $b) => [$a['periodo_inicio'], $a['ordem'], $a['propina_id']] <=> [$b['periodo_inicio'], $b['ordem'], $b['propina_id']]);
+
+        $recebido = 0;
+        $credito = 0;
+
+        $periodos = array_map(function (array $periodo) use (&$recebido, &$credito): array {
+            $recebido += $periodo['capital_dinheiro'] + $periodo['multa_dinheiro'];
+            $credito += $periodo['capital_credito'] + $periodo['multa_credito'];
+
+            return [
+                'propina_id' => $periodo['propina_id'],
+                'periodo' => $periodo['periodo'],
+                'plano' => $periodo['plano'],
+                'capital_dinheiro' => $periodo['capital_dinheiro'],
+                'capital_credito' => $periodo['capital_credito'],
+                'multa_dinheiro' => $periodo['multa_dinheiro'],
+                'multa_credito' => $periodo['multa_credito'],
+                'total' => $periodo['capital_dinheiro'] + $periodo['capital_credito'] + $periodo['multa_dinheiro'] + $periodo['multa_credito'],
+            ];
+        }, $periodos);
+
+        return [
+            'periodos' => array_values($periodos),
+            'recebido_em_dinheiro' => $recebido,
+            'pago_com_credito' => $credito,
+            'total_liquidado' => $recebido + $credito,
+        ];
+    }
+
+    /**
+     * Dados de contacto e identificação do aluno para o recibo (só aí: a pesquisa de matrículas não os expõe).
+     *
+     * @return array{identificacao: ?string, email: ?string, telefone: ?string}
+     */
+    public function alunoDoRecibo(Pagamento $pagamento): array
+    {
+        $pagamento->loadMissing('matricula.aluno.dadosPessoa');
+        $pessoa = $pagamento->matricula?->aluno?->dadosPessoa;
+
+        return [
+            'identificacao' => $pessoa?->numero_identificacao,
+            'email' => $pessoa?->email,
+            'telefone' => $pessoa?->telefone,
+        ];
+    }
+
+    /**
+     * Os dados da escola para o cabeçalho do recibo (1 tenant = 1 escola = 1 estabelecimento).
+     *
+     * @return array{nome: ?string, nif: ?string, morada: ?string, telefone: ?string, email: ?string, logotipo_url: ?string}
+     */
+    public function escola(): array
+    {
+        $escola = Estabelecimento::query()->first();
+
+        return [
+            'nome' => $escola?->nome,
+            'nif' => $escola?->nif,
+            'morada' => collect([$escola?->endereco, $escola?->municipio, $escola?->provincia])->filter()->implode(', ') ?: null,
+            'telefone' => $escola?->telefone,
+            'email' => $escola?->email,
+            'logotipo_url' => $escola?->logotipo_url,
         ];
     }
 
@@ -242,7 +392,7 @@ class PagamentoConsultaService
     public function creditosDoAluno(Aluno $aluno): array
     {
         $aluno->loadMissing('dadosPessoa');
-        $creditos = Credito::query()->where('aluno_id', $aluno->id)->with(['origem', 'utilizacoes.propina.matricula'])->orderBy('id')->get();
+        $creditos = Credito::query()->where('aluno_id', $aluno->id)->with(['origem', 'utilizacoes.propina.matricula', 'utilizacoes.multa.propina.matricula'])->orderBy('id')->get();
 
         return [
             'aluno' => ['id' => $aluno->id, 'nome' => $aluno->dadosPessoa?->nome_completo, 'numero' => $aluno->numero_matricula],
@@ -347,13 +497,19 @@ class PagamentoConsultaService
     /** @return array<string, mixed> */
     private function utilizacao(CreditoUtilizacao $u): array
     {
+        $ehMulta = $u->propina_multa_id !== null;
+        $propina = $ehMulta ? $u->multa?->propina : $u->propina;
+        $periodo = $propina === null
+            ? null
+            : RotuloDePeriodo::periodo($propina->periodo_inicio->toDateString(), $propina->periodo_fim->toDateString());
+
         return [
             'id' => $u->id,
             'credito_id' => $u->credito_id,
             'pagamento_id' => $u->pagamento_id,
-            'propina_id' => $u->propina_id,
-            'periodo' => $u->propina === null ? null : RotuloDePeriodo::periodo($u->propina->periodo_inicio->toDateString(), $u->propina->periodo_fim->toDateString()),
-            'matricula_numero' => $u->propina?->matricula?->numero_registo_matricula,
+            'propina_id' => $propina?->getKey(),
+            'periodo' => $periodo === null ? null : ($ehMulta ? "Multa {$periodo}" : $periodo),
+            'matricula_numero' => $propina?->matricula?->numero_registo_matricula,
             'valor' => $u->valor->unidadesMenores(),
             'data_utilizacao' => $u->data_utilizacao->toDateString(),
             'estado' => $u->estado->value,

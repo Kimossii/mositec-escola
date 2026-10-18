@@ -23,6 +23,7 @@ defineOptions({ layout: AppLayout });
 
 const PASSOS = ['Matrícula', 'Valor e método', 'Distribuição', 'Resumo'];
 const passo = ref(1);
+const passoMaximo = ref(1); // o passo mais avançado a que já se chegou: a barra de passos deixa voltar e avançar até aí
 
 const termo = ref('');
 const resultados = ref([]);
@@ -40,6 +41,47 @@ const form = reactive({
 });
 const opcoesMetodo = computed(() => props.metodos.map((m) => ({ value: m.id, label: m.nome })));
 
+const TIPO_NUMERARIO = 1;
+const TIPO_TPA = 3;
+
+// Comprovativo: só para métodos que não sejam Numerário nem TPA; obrigatório se o método tiver exige_comprovativo.
+const comprovativo = ref(null);
+const inputComprovativo = ref(null);
+const metodoEscolhido = computed(() => props.metodos.find((m) => m.id === form.metodo_pagamento_id) ?? null);
+const mostraComprovativo = computed(() => {
+    const tipo = metodoEscolhido.value?.tipo;
+    return tipo !== undefined && Number(tipo) !== TIPO_NUMERARIO && Number(tipo) !== TIPO_TPA;
+});
+const exigeComprovativo = computed(() => !!metodoEscolhido.value?.exige_comprovativo);
+
+function aoEscolherComprovativo(event) {
+    comprovativo.value = event.target.files?.[0] ?? null;
+}
+
+// Trocar de método descarta o comprovativo escolhido (o novo método pode não o aceitar).
+watch(() => form.metodo_pagamento_id, () => {
+    comprovativo.value = null;
+    if (inputComprovativo.value) inputComprovativo.value.value = '';
+});
+
+// O método escolhe-se em dois passos: primeiro o TIPO (Multicaixa, Transferência, Numerário…), depois, numa mini
+// tabela, o método concreto desse tipo com os seus dados (banco, IBAN, telefone…).
+const tipoMetodo = ref('');
+const opcoesTipo = computed(() => [...new Map(props.metodos.map((m) => [m.tipo, { value: m.tipo, label: m.tipo_descricao }])).values()]);
+const metodosDoTipo = computed(() => props.metodos.filter((m) => m.tipo === tipoMetodo.value));
+const COLUNAS_METODO = [
+    { chave: 'titular', rotulo: 'Titular' },
+    { chave: 'banco', rotulo: 'Banco' },
+    { chave: 'iban', rotulo: 'IBAN' },
+    { chave: 'numero_conta', rotulo: 'Nº conta' },
+    { chave: 'telefone', rotulo: 'Telefone' },
+];
+// Só mostra as colunas que algum método do tipo escolhido tem preenchidas.
+const colunasDoTipo = computed(() => COLUNAS_METODO.filter((c) => metodosDoTipo.value.some((m) => m[c.chave])));
+watch(tipoMetodo, () => {
+    form.metodo_pagamento_id = metodosDoTipo.value.length === 1 ? metodosDoTipo.value[0].id : '';
+});
+
 const modo = ref(null); // nenhum modo pré-seleccionado: o utilizador escolhe;
 const manual = reactive({}); // propina_id → texto decimal
 
@@ -50,14 +92,35 @@ const errors = ref({});
 const ordemEnviada = ref([]); // propina_id de cada posição de `distribuicao` no último pedido: o servidor indexa os erros por posição (R-PA.4)
 const aPrever = ref(false);
 const processing = ref(false);
-const aConfirmar = ref(false); // modal «Registar este pagamento?» antes de gravar
+const aConfirmar = ref(false);
+
+watch(passo, (novo) => {
+    passoMaximo.value = Math.max(passoMaximo.value, novo);
+});
+
+// Mexer em qualquer dado invalida o resumo calculado: só se volta a avançar para lá com «Continuar».
+watch([form, manual, modo], () => {
+    plano.value = null;
+    passoMaximo.value = Math.min(passoMaximo.value, passo.value);
+}, { deep: true });
+
+const passoAcessivel = (n) => n !== passo.value && !processing.value && !aPrever.value
+    && !(n === 3 && (valorFixo.value || temAte.value)) // sem distribuição manual, o passo 3 é saltado
+    && (n < passo.value || (matricula.value !== null && n <= passoMaximo.value && (n < 4 || plano.value !== null)));
+
+function irParaPasso(n) {
+    if (passoAcessivel(n)) passo.value = n;
+} // modal «Registar este pagamento?» antes de gravar
 
 const mensagemDeConfirmacao = computed(() => {
     const unidades = decimalParaUnidadesMenores(form.valor, props.moeda);
     const valor = unidades === null ? form.valor : formatarDinheiro(unidades, props.moeda);
     const metodo = opcoesMetodo.value.find((m) => m.value === form.metodo_pagamento_id)?.label ?? '—';
+    const credito = decimalParaUnidadesMenores(form.valor_credito || '0', props.moeda) ?? 0n;
+    const comCredito = credito > 0n ? ` e usar ${formatarDinheiro(credito, props.moeda)} de crédito do aluno` : '';
+    const cobre = periodosAPagar.value.length > 0 ? ` Cobre: ${periodosAPagar.value.join(' · ')}.` : '';
 
-    return `Registar o pagamento de ${valor} por ${metodo}? O pagamento fica registado e só pode ser corrigido anulando-o.`;
+    return `Registar o pagamento de ${valor} por ${metodo}${comCredito}?${cobre} O pagamento fica registado e só pode ser corrigido anulando-o.`;
 });
 
 function confirmarNoModal() {
@@ -69,6 +132,20 @@ const tudoParaCredito = computed(() => plano.value !== null && plano.value.linha
 const podeConfirmar = computed(() => plano.value !== null && !processing.value && (!tudoParaCredito.value || confirmaTudoCredito.value));
 const bloqueadaPorAntecipado = (propina) => propina.futura && !situacao.value?.regras.permite_pagamento_antecipado;
 const temAte = computed(() => (form.ate ?? '').trim() !== '');
+
+// Que mês(es) este pagamento cobre, em grande no topo: com o resumo calculado, os períodos que recebem valor; antes
+// disso, os períodos em dívida (e, com «Adiantar meses», o mês até onde se avança).
+const periodosAPagar = computed(() => {
+    if (plano.value !== null) {
+        return plano.value.linhas
+            .filter((l) => l.credito + l.dinheiro + l.multa_credito + l.multa_dinheiro > 0)
+            .map((l) => l.periodo);
+    }
+
+    const emDivida = (situacao.value?.propinas ?? []).filter((p) => !p.futura).map((p) => p.periodo);
+
+    return temAte.value ? [...emDivida, `até ${dataCurta(form.ate).slice(3)}`] : emDivida;
+});
 const minMes = computed(() => (situacao.value?.matricula?.data_matricula ?? props.hoje).slice(0, 10));
 const ateAnoMes = () => (temAte.value ? form.ate.split('-') : null);
 
@@ -210,7 +287,7 @@ async function preVisualizar() {
 
         errors.value = primeiroErro(erro.response.data.errors);
         toast.error(Object.values(errors.value)[0]);
-        passo.value = ['metodo_pagamento_id', 'valor', 'data_pagamento', 'referencia', 'observacao', 'valor_credito', 'ate_ano', 'ate_mes'].some((c) => errors.value[c]) ? 2 : 3;
+        passo.value = ['metodo_pagamento_id', 'valor', 'data_pagamento', 'referencia', 'observacao', 'valor_credito', 'ate_ano', 'ate_mes', 'comprovativo'].some((c) => errors.value[c]) ? 2 : 3;
     } finally {
         aPrever.value = false;
     }
@@ -225,38 +302,45 @@ function confirmar() {
     if (!podeConfirmar.value) return;
     processing.value = true;
 
+    const opcoes = (aoErro) => ({
+        forceFormData: comprovativo.value !== null,
+        onError: (erros) => {
+            errors.value = erros;
+            toast.error(Object.values(erros)[0]);
+            aoErro();
+        },
+        onFinish: () => {
+            processing.value = false;
+        },
+    });
+
+    const comComprovativo = (payload) => (comprovativo.value !== null ? { ...payload, comprovativo: comprovativo.value } : payload);
+
     if (temAte.value) {
-        router.post(`/financeiro/pagamentos/matriculas/${matricula.value.id}`, { ...base(), modo_distribuicao: MODO_DISTRIBUICAO.AUTOMATICA }, {
-            onError: (erros) => {
-                errors.value = erros;
-                toast.error(Object.values(erros)[0]);
-                passo.value = 2;
-            },
-            onFinish: () => {
-                processing.value = false;
-            },
-        });
+        router.post(
+            `/financeiro/pagamentos/matriculas/${matricula.value.id}`,
+            comComprovativo({ ...base(), modo_distribuicao: MODO_DISTRIBUICAO.AUTOMATICA }),
+            opcoes(() => { passo.value = 2; }),
+        );
         return;
     }
 
     const distribuicao = plano.value.linhas.map((l) => ({ propina_id: l.propina_id, valor: unidadesMenoresParaDecimal(l.credito + l.dinheiro + l.multa_credito + l.multa_dinheiro, props.moeda) }));
     ordemEnviada.value = distribuicao.map((l) => l.propina_id);
 
-    router.post(`/financeiro/pagamentos/matriculas/${matricula.value.id}`, { ...base(), modo_distribuicao: MODO_DISTRIBUICAO.EXPLICITA, distribuicao }, {
-        onError: (erros) => {
-            errors.value = erros;
-            toast.error(Object.values(erros)[0]);
-            passo.value = 3;
-        },
-        onFinish: () => {
-            processing.value = false;
-        },
-    });
+    router.post(
+        `/financeiro/pagamentos/matriculas/${matricula.value.id}`,
+        comComprovativo({ ...base(), modo_distribuicao: MODO_DISTRIBUICAO.EXPLICITA, distribuicao }),
+        opcoes(() => { passo.value = errors.value.comprovativo ? 2 : 3; }),
+    );
 }
 
-/** Do passo 2 para a distribuição ou, com «Pagar até [mês]», directamente para o resumo automático. */
+/**
+ * Do passo 2 para a distribuição ou, directamente, para o resumo automático: com «Pagar até [mês]» e também quando o
+ * pagamento parcial não é permitido (o valor é o total em dívida, não há nada a repartir à mão).
+ */
 function continuar() {
-    if (temAte.value) {
+    if (temAte.value || valorFixo.value) {
         modo.value = MODO_DISTRIBUICAO.AUTOMATICA;
         preVisualizar();
     } else {
@@ -271,7 +355,15 @@ function continuar() {
         <h1 class="fs-2 fw-bold mb-6">Registar pagamento</h1>
 
         <div class="d-flex flex-wrap gap-3 mb-6">
-            <span v-for="(nome, i) in PASSOS" :key="nome" class="badge fs-7" :class="passo === i + 1 ? 'badge-primary' : 'badge-light'">{{ i + 1 }}. {{ nome }}</span>
+            <button
+                v-for="(nome, i) in PASSOS"
+                :key="nome"
+                type="button"
+                class="badge fs-7 border-0"
+                :class="[passo === i + 1 ? 'badge-primary' : 'badge-light', passoAcessivel(i + 1) ? 'cursor-pointer' : '']"
+                :disabled="passo !== i + 1 && !passoAcessivel(i + 1)"
+                @click="irParaPasso(i + 1)"
+            >{{ i + 1 }}. {{ nome }}</button>
         </div>
 
         <!-- 1. Matrícula -->
@@ -304,6 +396,11 @@ function continuar() {
             </div>
         </div>
 
+        <div v-if="passo >= 2 && matricula !== null && periodosAPagar.length > 0" class="rounded bg-light-primary px-6 py-5 mb-6">
+            <div class="text-muted fs-7 fw-semibold text-uppercase mb-1">{{ plano !== null ? 'Este pagamento cobre' : 'Em dívida' }}</div>
+            <h1 class="fs-1 fw-bold text-gray-900 mb-0">{{ periodosAPagar.join(' · ') }}</h1>
+        </div>
+
         <!-- 2. Valor e método -->
         <div v-if="passo === 2" class="card">
             <div class="card-body">
@@ -318,7 +415,7 @@ function continuar() {
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label required fw-semibold">Método</label>
-                        <SelectSolid v-model="form.metodo_pagamento_id" :options="opcoesMetodo" />
+                        <SelectSolid v-model="tipoMetodo" :options="opcoesTipo" placeholder="Selecione o tipo" />
                         <div class="text-danger fs-7">{{ errors.metodo_pagamento_id }}</div>
                     </div>
                     <div class="col-12 col-md-4">
@@ -330,6 +427,12 @@ function continuar() {
                         <label class="form-label fw-semibold">Referência</label>
                         <input v-model="form.referencia" type="text" maxlength="100" class="form-control form-control-solid" :class="{ 'is-invalid': errors.referencia }" placeholder="Nº da transferência, do talão…" />
                         <div class="text-danger fs-7">{{ errors.referencia }}</div>
+                    </div>
+                    <div v-if="mostraComprovativo" class="col-12 col-md-4">
+                        <label class="form-label fw-semibold" :class="{ required: exigeComprovativo }">Comprovativo</label>
+                        <input ref="inputComprovativo" type="file" accept="image/*,application/pdf" capture="environment" class="form-control form-control-solid" :class="{ 'is-invalid': errors.comprovativo }" @change="aoEscolherComprovativo" />
+                        <div class="text-muted fs-8">{{ exigeComprovativo ? 'Obrigatório. ' : 'Opcional. ' }}PDF, JPG, JPEG, PNG ou WEBP, até 5 MB.</div>
+                        <div class="text-danger fs-7">{{ errors.comprovativo }}</div>
                     </div>
                     <div v-if="(situacao?.credito_disponivel ?? 0) > 0" class="col-12 col-md-4">
                         <label class="form-label fw-semibold">Usar crédito do aluno ({{ moeda.simbolo }})</label>
@@ -343,13 +446,39 @@ function continuar() {
                         <div class="text-muted fs-8">Opcional. Por omissão paga o que já está em dívida. Escolha uma data para adiantar também os meses seguintes (as propinas em falta são geradas; o mês da data conta por inteiro).</div>
                         <div class="text-danger fs-7">{{ errors.ate_mes }}</div>
                     </div>
+                    <div v-if="tipoMetodo !== ''" class="col-12">
+                        <div class="table-responsive border rounded">
+                            <table class="table table-row-dashed align-middle fs-7 gy-3 mb-0">
+                                <thead>
+                                    <tr class="text-muted fw-bold text-uppercase fs-8">
+                                        <th class="w-30px"></th>
+                                        <th>Nome</th>
+                                        <th v-for="c in colunasDoTipo" :key="c.chave">{{ c.rotulo }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="m in metodosDoTipo"
+                                        :key="m.id"
+                                        role="button"
+                                        :class="{ 'bg-body-secondary': form.metodo_pagamento_id === m.id }"
+                                        @click="form.metodo_pagamento_id = m.id"
+                                    >
+                                        <td><input type="radio" class="form-check-input" :checked="form.metodo_pagamento_id === m.id" @click.stop="form.metodo_pagamento_id = m.id" /></td>
+                                        <td class="fw-semibold">{{ m.nome }}</td>
+                                        <td v-for="c in colunasDoTipo" :key="c.chave">{{ m[c.chave] ?? '—' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                     <div class="col-12">
                         <label class="form-label fw-semibold">Observação</label>
                         <textarea v-model="form.observacao" rows="2" maxlength="1000" class="form-control form-control-solid"></textarea>
                     </div>
                 </div>
                 <div class="d-flex justify-content-end mt-6">
-                    <button type="button" class="btn btn-primary" :disabled="!form.valor || !form.metodo_pagamento_id" @click="continuar">{{ temAte ? 'Ver resumo' : 'Continuar' }}</button>
+                    <button type="button" class="btn btn-primary" :disabled="!form.valor || !form.metodo_pagamento_id || (exigeComprovativo && !comprovativo)" @click="continuar">{{ temAte || valorFixo ? 'Ver resumo' : 'Continuar' }}</button>
                 </div>
             </div>
         </div>

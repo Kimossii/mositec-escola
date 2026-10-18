@@ -12,6 +12,12 @@ class AtualizarMetodoPagamentoAction
         $metodo->update([
             'nome' => $dto->nome,
             'tipo' => $dto->tipo,
+            'titular' => $dto->titular,
+            'banco' => $dto->banco,
+            'iban' => $dto->iban,
+            'numero_conta' => $dto->numeroConta,
+            'telefone' => $dto->telefone,
+            'exige_comprovativo' => $dto->exigeComprovativo,
         ]);
 
         return $metodo->fresh();

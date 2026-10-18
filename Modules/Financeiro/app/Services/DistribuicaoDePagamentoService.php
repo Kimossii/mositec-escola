@@ -372,6 +372,15 @@ class DistribuicaoDePagamentoService
 
         $dinheiroDistribuido = array_sum(array_column($linhas, 'dinheiro')) + array_sum(array_column($linhas, 'multa_dinheiro'));
 
+        // Dinheiro que sobra vira crédito novo, ou seja, pagamento adiantado: sem «Permitir pagamento antecipado» não se aceita
+        // (vale na pré-visualização e no registo, que partilham este cálculo).
+        if ($dinheiro - $dinheiroDistribuido > 0 && ! $regras->permite_pagamento_antecipado) {
+            throw ValidationException::withMessages([
+                'valor' => 'A escola não permite pagamento antecipado: o valor excede o que está em dívida em '
+                    . $this->formatar($dinheiro - $dinheiroDistribuido) . '. Registe só o valor em dívida.',
+            ]);
+        }
+
         return new PlanoDePagamentoDTO($dinheiro, $creditoPedido, $linhas, $utilizacoes, $dinheiro - $dinheiroDistribuido);
     }
 

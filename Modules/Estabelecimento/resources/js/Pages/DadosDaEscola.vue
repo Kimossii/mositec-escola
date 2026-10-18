@@ -7,6 +7,7 @@ import { can } from '@/Composables/usePermissoes';
 import EstabelecimentoCabecalho from '../Components/EstabelecimentoCabecalho.vue';
 import EstabelecimentoTabs from '../Components/EstabelecimentoTabs.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import SelectProvinciaMunicipio from '@/Components/Shared/SelectProvinciaMunicipio.vue';
 import CampoFicha from '../Components/CampoFicha.vue';
 
 const props = defineProps({
@@ -21,6 +22,14 @@ const props = defineProps({
     fusosHorarios: {
         type: Array,
         default: () => [],
+    },
+    provincias: {
+        type: Array,
+        default: () => [],
+    },
+    municipiosPorProvincia: {
+        type: Object,
+        default: () => ({}),
     },
 });
 defineOptions({ layout: AppLayout });
@@ -258,15 +267,26 @@ function submeter() {
                             icon="ki-directbox-default" :icon-paths="4"
                         />
                     </div>
-                    <div class="col-md-3">
-                        <CampoFicha
-                            v-model="form.municipio" label="Município" :editing="editando" :error="errors.municipio?.[0]"
-                            icon="ki-geolocation"
-                        />
-                    </div>
-                    <div class="col-md-3">
-                        <CampoFicha v-model="form.provincia" label="Província" :editing="editando" :error="errors.provincia?.[0]" icon="ki-flag" />
-                    </div>
+                    <template v-if="editando">
+                        <div class="col-md-6">
+                            <SelectProvinciaMunicipio
+                                v-model:provincia="form.provincia"
+                                v-model:municipio="form.municipio"
+                                :provincias="provincias"
+                                :municipios-por-provincia="municipiosPorProvincia"
+                                :erro-provincia="errors.provincia?.[0]"
+                                :erro-municipio="errors.municipio?.[0]"
+                            />
+                        </div>
+                    </template>
+                    <template v-else>
+                        <div class="col-md-3">
+                            <CampoFicha :model-value="form.municipio" label="Município" :editing="false" icon="ki-geolocation" />
+                        </div>
+                        <div class="col-md-3">
+                            <CampoFicha :model-value="form.provincia" label="Província" :editing="false" icon="ki-flag" />
+                        </div>
+                    </template>
                 </div>
             </div>
 

@@ -137,7 +137,7 @@ class GerarPropinasTest extends TestCase
         $this->assertSame(10, $segunda->totais()['ignoradas']);
         $this->assertSame(10, Propina::query()->count());
         $this->assertSame(
-            'Já coberto pela propina de Set/2026 (plano «Propina Mensal»).',
+            'Já existe a propina de Set/2026 (plano «Propina Mensal»): Em Aberto.',
             $segunda->toArray()['matriculas'][0]['ignoradas'][0]['motivo'],
         );
     }

@@ -685,8 +685,8 @@ class GerarPropinasService
 
         if ($cobertura !== null) {
             $resultado->ignorada(
-                'Já coberto pela propina de ' . RotuloDePeriodo::periodo($cobertura->periodo_inicio->toDateString(), $cobertura->periodo_fim->toDateString())
-                    . " (plano «{$cobertura->plano?->nome}»).",
+                'Já existe a propina de ' . RotuloDePeriodo::periodo($cobertura->periodo_inicio->toDateString(), $cobertura->periodo_fim->toDateString())
+                    . " (plano «{$cobertura->plano?->nome}»): " . $cobertura->estadoResolvido($this->relogio->hoje())->label() . '.',
                 $rotulo,
                 $plano->nome,
             );

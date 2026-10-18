@@ -20,6 +20,8 @@ return new class extends Migration
             $table->date('data_nascimento')->nullable();
             $table->integer('sexo')->default(0); // 0: Não especificado, 1: Masculino, 2: Feminino.
             $table->string('numero_identificacao');
+            $table->string('provincia_nascimento', 100)->nullable();
+            $table->string('municipio_nascimento', 100)->nullable();
             $table->integer('tipo_pessoa')->default(0); // 0: Aluno, 1: Professor, 2: Funcionário, 3: Outro
             $table->timestamps();
 

@@ -71,8 +71,19 @@ class PagamentosVueTest extends TestCase
 
         $this->assertStringContainsString("axios.post(`/financeiro/pagamentos/matriculas/\${matricula.value.id}/pre-visualizar`, pedidoDaEdicao())", $create);
         $this->assertStringContainsString('unidadesMenoresParaDecimal(l.credito + l.dinheiro + l.multa_credito + l.multa_dinheiro, props.moeda)', $create);
-        $this->assertStringContainsString("router.post(`/financeiro/pagamentos/matriculas/\${matricula.value.id}`, { ...base(), modo_distribuicao: MODO_DISTRIBUICAO.EXPLICITA, distribuicao }", $create);
+        $this->assertStringContainsString('comComprovativo({ ...base(), modo_distribuicao: MODO_DISTRIBUICAO.EXPLICITA, distribuicao })', $create);
+        $this->assertStringContainsString('forceFormData: comprovativo.value !== null', $create);
         $this->assertStringContainsString(':max="hoje"', $create);
+    }
+
+    public function test_o_registo_so_pede_comprovativo_fora_de_numerario_e_tpa(): void
+    {
+        $create = $this->vue('Pages/Pagamentos/Create.vue');
+
+        $this->assertStringContainsString('accept="image/*,application/pdf"', $create);
+        $this->assertStringContainsString('capture="environment"', $create);
+        $this->assertStringContainsString('Number(tipo) !== TIPO_NUMERARIO && Number(tipo) !== TIPO_TPA', $create);
+        $this->assertStringContainsString('exigeComprovativo && !comprovativo', $create);
     }
 
     public function test_o_resumo_avisa_quando_tudo_vai_para_credito(): void

@@ -23,6 +23,9 @@ return new class extends Migration
             $table->date('data_pagamento');
             $table->string('referencia', 100)->nullable();
             $table->text('observacao')->nullable();
+            $table->string('comprovativo_path')->nullable();
+            $table->string('comprovativo_nome_original')->nullable();
+            $table->string('comprovativo_mime_type')->nullable();
             $table->unsignedTinyInteger('estado')->default(1);
             $table->string('estado_descricao');
             $table->text('motivo_anulacao')->nullable();
@@ -68,6 +71,7 @@ return new class extends Migration
             DECLARE
                 autoria text[] := ARRAY['criado_por', 'editado_por', 'anulado_por', 'updated_at'];
                 anulacao text[] := ARRAY['estado', 'estado_descricao', 'motivo_anulacao', 'anulado_por', 'anulado_em', 'editado_por', 'updated_at'];
+                comprovativo text[] := ARRAY['comprovativo_path', 'comprovativo_nome_original', 'comprovativo_mime_type', 'editado_por', 'updated_at'];
             BEGIN
                 IF TG_OP = 'DELETE' THEN
                     RAISE EXCEPTION 'pagamentos: um pagamento nunca se elimina (anule-o)' USING ERRCODE = 'integrity_constraint_violation';
@@ -78,6 +82,9 @@ return new class extends Migration
                     RETURN NEW;
                 END IF;
                 IF OLD.estado = 1 AND NEW.estado = 2 AND (to_jsonb(NEW) - anulacao) = (to_jsonb(OLD) - anulacao) THEN
+                    RETURN NEW;
+                END IF;
+                IF OLD.estado = NEW.estado AND (to_jsonb(NEW) - comprovativo) = (to_jsonb(OLD) - comprovativo) THEN
                     RETURN NEW;
                 END IF;
                 RAISE EXCEPTION 'pagamentos: um pagamento registado nunca se edita (anule-o e registe outro)' USING ERRCODE = 'integrity_constraint_violation';

@@ -34,6 +34,12 @@ trait ValidaPagamento
     /** @return array<string, mixed> */
     public function rules(): array
     {
+        return $this->regrasDoPagamento();
+    }
+
+    /** @return array<string, mixed> */
+    protected function regrasDoPagamento(): array
+    {
         $tenantId = app(TenantContext::class)->id();
         $hoje = app(RelogioDoTenant::class)->hoje()->toDateString();
         $matricula = $this->route('matricula');
@@ -77,6 +83,12 @@ trait ValidaPagamento
 
     /** @return array<string, string> */
     public function messages(): array
+    {
+        return $this->mensagensDoPagamento();
+    }
+
+    /** @return array<string, string> */
+    protected function mensagensDoPagamento(): array
     {
         return [
             'metodo_pagamento_id.required' => 'Escolha o método de pagamento.',

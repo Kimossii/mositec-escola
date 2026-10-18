@@ -4,9 +4,12 @@ namespace Modules\Aluno\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
+use Modules\Core\Http\Requests\Concerns\ValidaProvinciaMunicipio;
 
 class AtualizarAlunoRequest extends BaseRequest
 {
+    use ValidaProvinciaMunicipio;
+
     public function authorize(): bool
     {
         return $this->user()?->can('aluno.editar') ?? false;
@@ -14,7 +17,7 @@ class AtualizarAlunoRequest extends BaseRequest
 
     public function rules(): array
     {
-        return [
+        return array_merge([
             'nome_completo' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'telefone' => ['nullable', 'string', 'max:50'],
@@ -28,12 +31,12 @@ class AtualizarAlunoRequest extends BaseRequest
                 Rule::unique('dados_pessoas', 'numero_identificacao')->ignore($this->route('aluno')?->dados_pessoa_id),
             ],
             'foto' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
-        ];
+        ], $this->regrasDeProvinciaMunicipio('provincia_nascimento', 'municipio_nascimento'));
     }
 
     public function messages(): array
     {
-        return [
+        return array_merge([
             'nome_completo.required' => 'O nome completo é obrigatório.',
             'data_nascimento.required' => 'A data de nascimento é obrigatória.',
             'numero_identificacao.required' => 'O número de identificação é obrigatório.',
@@ -41,6 +44,6 @@ class AtualizarAlunoRequest extends BaseRequest
             'foto.image' => 'A foto deve ser uma imagem válida.',
             'foto.mimes' => 'A foto deve ser um ficheiro PNG, JPG, JPEG ou WEBP.',
             'foto.max' => 'A foto não pode exceder 2MB.',
-        ];
+        ], $this->mensagensDeProvinciaMunicipio('provincia_nascimento', 'municipio_nascimento'));
     }
 }

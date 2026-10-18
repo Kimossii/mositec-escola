@@ -8,14 +8,18 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Actions\AnularPagamentoAction;
+use Modules\Financeiro\Actions\AnexarComprovativoAction;
 use Modules\Financeiro\Actions\RegistarPagamentoAction;
 use Modules\Financeiro\DTO\MotivoDeAnulacaoDTO;
 use Modules\Financeiro\DTO\RegistarPagamentoDTO;
 use Modules\Financeiro\Http\Requests\AnularPagamentoRequest;
+use Modules\Financeiro\Http\Requests\AnexarComprovativoRequest;
 use Modules\Financeiro\Http\Requests\PreVisualizarPagamentoRequest;
 use Modules\Financeiro\Http\Requests\TotalDevidoRequest;
 use Modules\Financeiro\Http\Requests\RegistarPagamentoRequest;
 use Modules\Financeiro\Models\Pagamento;
+use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Services\ComprovativoService;
 use Modules\Financeiro\Services\DistribuicaoDePagamentoService;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Services\PagamentoConsultaService;
@@ -29,6 +33,8 @@ class PagamentoController extends Controller
         private DistribuicaoDePagamentoService $distribuicao,
         private RegistarPagamentoAction $registar,
         private AnularPagamentoAction $anularAction,
+        private AnexarComprovativoAction $anexarComprovativo,
+        private ComprovativoService $comprovativo,
         private MoedaDoTenant $moedaDoTenant,
         private RelogioDoTenant $relogio,
     ) {
@@ -122,10 +128,63 @@ class PagamentoController extends Controller
 
         return Inertia::render('Financeiro/Pagamentos/Show', [
             'pagamento' => $detalhe,
+            'recibo' => $this->consulta->recibo($pagamento),
             'moeda' => Moeda::de($pagamento->moeda)->paraFrontend(),
             // O servidor decide: permissão E pagamento anulável (o botão nunca aparece para um 422 certo).
             'podeAnular' => $podeAnular && $detalhe['anulacao_bloqueada'] === null,
             'podeAnularUtilizacoes' => $podeAnular,
+        ]);
+    }
+
+    public function recibo(Pagamento $pagamento)
+    {
+        $this->authorize('pagamento.ver');
+
+        return $this->reciboDoPagamento($pagamento, $this->consulta->recibo($pagamento), null);
+    }
+
+    public function reciboPropina(Pagamento $pagamento, Propina $propina)
+    {
+        $this->authorize('pagamento.ver');
+
+        $recibo = $this->consulta->recibo($pagamento);
+        $posicao = null;
+
+        foreach ($recibo['periodos'] as $indice => $periodo) {
+            if ($periodo['propina_id'] === (int) $propina->getKey()) {
+                $posicao = $indice + 1;
+                break;
+            }
+        }
+
+        abort_if($posicao === null, 404);
+
+        return $this->reciboDoPagamento($pagamento, $recibo, $posicao);
+    }
+
+    /** @param array<string, mixed> $recibo */
+    private function reciboDoPagamento(Pagamento $pagamento, array $recibo, ?int $posicao)
+    {
+        $numero = $pagamento->numero;
+        $rotulo = 'Recibo geral';
+        $propinaId = null;
+
+        if ($posicao !== null) {
+            $periodo = $recibo['periodos'][$posicao - 1];
+            $numero = "{$pagamento->numero}/{$posicao}";
+            $rotulo = "Recibo do mês {$periodo['periodo']}";
+            $propinaId = $periodo['propina_id'];
+        }
+
+        return Inertia::render('Financeiro/Pagamentos/Recibo', [
+            'pagamento' => $this->consulta->detalhe($pagamento),
+            'recibo' => $recibo,
+            'moeda' => Moeda::de($pagamento->moeda)->paraFrontend(),
+            'escola' => $this->consulta->escola(),
+            'aluno' => $this->consulta->alunoDoRecibo($pagamento),
+            'numero' => $numero,
+            'rotulo' => $rotulo,
+            'propinaId' => $propinaId,
         ]);
     }
 
@@ -136,5 +195,21 @@ class PagamentoController extends Controller
         $this->anularAction->executar($pagamento, MotivoDeAnulacaoDTO::fromRequest($request), $request->user()?->id);
 
         return redirect()->back()->with('success', 'Pagamento anulado.');
+    }
+
+    public function anexarComprovativo(AnexarComprovativoRequest $request, Pagamento $pagamento)
+    {
+        $this->authorize('pagamento.criar');
+
+        $this->anexarComprovativo->executar($pagamento, $request->file('comprovativo'));
+
+        return redirect()->back()->with('success', 'Comprovativo anexado.');
+    }
+
+    public function comprovativo(Pagamento $pagamento)
+    {
+        $this->authorize('pagamento.ver');
+
+        return $this->comprovativo->visualizar($pagamento);
     }
 }

@@ -89,6 +89,10 @@ Route::middleware(['auth'])->prefix('financeiro/pagamentos')->name('financeiro.p
     Route::post('/matriculas/{matricula}/pre-visualizar', [PagamentoController::class, 'preVisualizar'])->whereNumber('matricula')->middleware('can:pagamento.criar')->name('pre-visualizar');
     Route::post('/matriculas/{matricula}', [PagamentoController::class, 'store'])->whereNumber('matricula')->middleware('can:pagamento.criar')->name('store');
     Route::get('/{pagamento}', [PagamentoController::class, 'show'])->whereNumber('pagamento')->middleware('can:pagamento.ver')->name('show');
+    Route::get('/{pagamento}/recibo', [PagamentoController::class, 'recibo'])->whereNumber('pagamento')->middleware('can:pagamento.ver')->name('recibo');
+    Route::get('/{pagamento}/recibo/propinas/{propina}', [PagamentoController::class, 'reciboPropina'])->whereNumber('pagamento')->whereNumber('propina')->middleware('can:pagamento.ver')->name('recibo.propina');
+    Route::get('/{pagamento}/comprovativo', [PagamentoController::class, 'comprovativo'])->whereNumber('pagamento')->middleware('can:pagamento.ver')->name('comprovativo');
+    Route::post('/{pagamento}/comprovativo', [PagamentoController::class, 'anexarComprovativo'])->whereNumber('pagamento')->middleware('can:pagamento.criar')->name('comprovativo.anexar');
     Route::patch('/{pagamento}/anular', [PagamentoController::class, 'anular'])->whereNumber('pagamento')->middleware('can:pagamento.anular')->name('anular');
 });
 

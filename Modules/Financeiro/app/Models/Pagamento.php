@@ -36,6 +36,9 @@ class Pagamento extends Model
 
     public const CAMPOS_DE_ANULACAO = ['motivo_anulacao', 'anulado_por', 'anulado_em'];
 
+    /** O comprovativo anexa-se uma única vez e nunca se substitui (spec Comprovativo). */
+    public const CAMPOS_DE_COMPROVATIVO = ['comprovativo_path', 'comprovativo_nome_original', 'comprovativo_mime_type'];
+
     protected $table = 'pagamentos';
 
     protected $fillable = [
@@ -45,9 +48,12 @@ class Pagamento extends Model
         'data_pagamento',
         'referencia',
         'observacao',
+        'comprovativo_path',
+        'comprovativo_nome_original',
+        'comprovativo_mime_type',
     ];
 
-    protected $hidden = ['tenant_id', 'criado_por', 'editado_por'];
+    protected $hidden = ['tenant_id', 'criado_por', 'editado_por', 'comprovativo_path'];
 
     protected $attributes = [
         'estado' => 1,
@@ -94,6 +100,10 @@ class Pagamento extends Model
 
             if (! $pagamento->isDirty('estado') && $pagamento->isDirty(self::CAMPOS_DE_ANULACAO)) {
                 throw new LogicException('Os dados da anulação só se gravam no acto de anular.');
+            }
+
+            if ($pagamento->isDirty(self::CAMPOS_DE_COMPROVATIVO) && $pagamento->getOriginal('comprovativo_path') !== null) {
+                throw new LogicException('O comprovativo só se anexa uma vez: nunca se substitui.');
             }
 
             $pagamento->validarCoerencia();

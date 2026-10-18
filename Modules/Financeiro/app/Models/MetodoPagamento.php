@@ -21,6 +21,12 @@ class MetodoPagamento extends Model
     protected $fillable = [
         'nome',
         'tipo',
+        'titular',
+        'banco',
+        'iban',
+        'numero_conta',
+        'telefone',
+        'exige_comprovativo',
         'estado',
     ];
 
@@ -32,6 +38,7 @@ class MetodoPagamento extends Model
 
     protected $casts = [
         'tipo' => TipoMetodoPagamento::class,
+        'exige_comprovativo' => 'boolean',
         'estado' => 'integer',
     ];
 

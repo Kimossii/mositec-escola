@@ -80,6 +80,10 @@ class PagamentoHttpTest extends TestCase
             'financeiro.pagamentos.pre-visualizar' => 'can:pagamento.criar',
             'financeiro.pagamentos.store' => 'can:pagamento.criar',
             'financeiro.pagamentos.show' => 'can:pagamento.ver',
+            'financeiro.pagamentos.recibo' => 'can:pagamento.ver',
+            'financeiro.pagamentos.recibo.propina' => 'can:pagamento.ver',
+            'financeiro.pagamentos.comprovativo' => 'can:pagamento.ver',
+            'financeiro.pagamentos.comprovativo.anexar' => 'can:pagamento.criar',
             'financeiro.pagamentos.anular' => 'can:pagamento.anular',
             'financeiro.creditos.aluno' => 'can:pagamento.ver',
             'financeiro.creditos.pre-visualizar' => 'can:pagamento.criar',
@@ -347,6 +351,7 @@ class PagamentoHttpTest extends TestCase
         foreach ([
             'financeiro.pagamentos.matriculas.situacao' => 'matricula', 'financeiro.pagamentos.pre-visualizar' => 'matricula',
             'financeiro.pagamentos.store' => 'matricula', 'financeiro.pagamentos.show' => 'pagamento', 'financeiro.pagamentos.anular' => 'pagamento',
+            'financeiro.pagamentos.comprovativo' => 'pagamento', 'financeiro.pagamentos.comprovativo.anexar' => 'pagamento',
             'financeiro.creditos.aluno' => 'aluno', 'financeiro.creditos.pre-visualizar' => 'matricula', 'financeiro.creditos.aplicar' => 'matricula',
             'financeiro.creditos.utilizacoes.anular' => 'utilizacao',
         ] as $nome => $parametro) {
@@ -358,6 +363,8 @@ class PagamentoHttpTest extends TestCase
         foreach ([
             ['get', '/financeiro/pagamentos/abc'],
             ['patch', '/financeiro/pagamentos/abc/anular'],
+            ['get', '/financeiro/pagamentos/abc/comprovativo'],
+            ['post', '/financeiro/pagamentos/abc/comprovativo'],
             ['get', '/financeiro/pagamentos/matriculas/abc/situacao'],
             ['post', '/financeiro/pagamentos/matriculas/abc/pre-visualizar'],
             ['post', '/financeiro/pagamentos/matriculas/abc'],

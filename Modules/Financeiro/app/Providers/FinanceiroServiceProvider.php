@@ -4,6 +4,7 @@ namespace Modules\Financeiro\Providers;
 
 use Illuminate\Support\Facades\Event;
 use Modules\AnoLectivo\Support\DependenciasRegistadasDoAnoLectivo;
+use Modules\Core\Contracts\SituacaoDePropinasDoAluno;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
 use Modules\Financeiro\Console\AplicarMultasCommand;
 use Modules\Financeiro\Console\CambioPlataformaCommand;
@@ -13,6 +14,7 @@ use Modules\Financeiro\Listeners\CancelarPropinasAoTerminarMatricula;
 use Modules\Financeiro\Listeners\GerarPropinasAoActivarMatricula;
 use Modules\Financeiro\Provisioning\ProvisionarConfiguracaoMonetaria;
 use Modules\Financeiro\Provisioning\ProvisionarRegrasCobranca;
+use Modules\Financeiro\Services\SituacaoDePropinasDoAlunoService;
 use Modules\Financeiro\Support\DependenciasDePlanosPropina;
 use Modules\Financeiro\Support\FontesDePagamentoDePropina;
 use Modules\Financeiro\Support\FontesDePrecos;
@@ -56,6 +58,8 @@ class FinanceiroServiceProvider extends ModuleServiceProvider
     public function register(): void
     {
         parent::register();
+
+        $this->app->bind(SituacaoDePropinasDoAluno::class, SituacaoDePropinasDoAlunoService::class);
 
         $this->app->tag([
             ProvisionarRegrasCobranca::class,

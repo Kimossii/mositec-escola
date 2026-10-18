@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import axios from 'axios';
 import { toast } from 'vue-sonner';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import ResultadoGeracao from './ResultadoGeracao.vue';
 import { ESTADO } from '../../Models/Estado';
 
@@ -126,6 +127,20 @@ async function preVisualizar() {
     }
 }
 
+const aConfirmarGeracao = ref(false); // modal «Gerar estas propinas?» antes de gravar
+
+const mensagemDeConfirmacao = computed(() => {
+    const totais = previsao.value?.totais ?? { criadas: 0, matriculas: 0 };
+    const multas = previsao.value?.inclui_multas_estimadas ? ' As multas por atraso devidas serão aplicadas.' : '';
+
+    return `Gerar ${totais.criadas} propina(s) para ${totais.matriculas} matrícula(s)? As propinas ficam registadas e só podem ser corrigidas cancelando-as.${multas}`;
+});
+
+function confirmarNoModal() {
+    aConfirmarGeracao.value = false;
+    confirmar();
+}
+
 function confirmar() {
     emit('confirmar', payload());
 }
@@ -155,7 +170,7 @@ function confirmar() {
                     </div>
                     <div class="text-end mt-5">
                         <button type="button" class="btn btn-light me-2" :disabled="processing" @click="previsao = null">Voltar</button>
-                        <button type="button" class="btn btn-primary" :disabled="processing || previsao.totais.criadas === 0" @click="confirmar">
+                        <button type="button" class="btn btn-primary" :disabled="processing || previsao.totais.criadas === 0" @click="aConfirmarGeracao = true">
                             {{ processing ? 'A gerar…' : `Confirmar e gerar ${previsao.totais.criadas} propina(s)` }}
                         </button>
                     </div>
@@ -230,4 +245,15 @@ function confirmar() {
             </div>
         </div>
     </div>
+
+    <ConfirmModal
+        :show="aConfirmarGeracao"
+        titulo="Gerar propinas"
+        :mensagem="mensagemDeConfirmacao"
+        texto-confirmar="Gerar propinas"
+        variante="primary"
+        :processando="processing"
+        @confirmar="confirmarNoModal"
+        @cancelar="aConfirmarGeracao = false"
+    />
 </template>

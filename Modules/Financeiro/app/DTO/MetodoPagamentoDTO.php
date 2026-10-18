@@ -10,6 +10,12 @@ class MetodoPagamentoDTO
     public function __construct(
         public string $nome,
         public TipoMetodoPagamento $tipo,
+        public ?string $titular,
+        public ?string $banco,
+        public ?string $iban,
+        public ?string $numeroConta,
+        public ?string $telefone,
+        public bool $exigeComprovativo,
     ) {
     }
 
@@ -20,6 +26,12 @@ class MetodoPagamentoDTO
         return new self(
             nome: $dados['nome'],
             tipo: TipoMetodoPagamento::from((int) $dados['tipo']),
+            titular: $dados['titular'] ?? null,
+            banco: $dados['banco'] ?? null,
+            iban: $dados['iban'] ?? null,
+            numeroConta: $dados['numero_conta'] ?? null,
+            telefone: $dados['telefone'] ?? null,
+            exigeComprovativo: (bool) ($dados['exige_comprovativo'] ?? false),
         );
     }
 }
