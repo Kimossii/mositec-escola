@@ -4,6 +4,7 @@ namespace Modules\Financeiro\Http\Requests\Concerns;
 
 use Carbon\CarbonImmutable;
 use Closure;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Validation\Rule;
 use Modules\Core\Enums\Estado;
 use Modules\Core\Tenancy\TenantContext;
@@ -54,7 +55,24 @@ trait ValidaPagamento
             'distribuicao' => ['exclude_unless:modo_distribuicao,' . LinhaDeDistribuicao::EXPLICITA, 'present', 'array', 'max:60'],
             'distribuicao.*.propina_id' => ['required', 'integer', 'distinct'],
             'distribuicao.*.valor' => ['required', new ValorMonetario(false)],
+            'ate_ano' => ['sometimes', 'nullable', 'integer', 'between:2000,2100'],
+            'ate_mes' => ['sometimes', 'nullable', 'integer', 'between:1,12'],
         ];
+    }
+
+    /**
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [function (Validator $validador) {
+            $temAno = $this->filled('ate_ano');
+            $temMes = $this->filled('ate_mes');
+
+            if ($temAno !== $temMes) {
+                $validador->errors()->add('ate_mes', 'Indique o ano e o mês «até» em conjunto.');
+            }
+        }];
     }
 
     /** @return array<string, string> */
@@ -74,6 +92,7 @@ trait ValidaPagamento
             'distribuicao.max' => 'Demasiadas linhas na distribuição.',
             'distribuicao.*.propina_id.distinct' => 'Cada propina só pode aparecer uma vez na distribuição.',
             'distribuicao.*.valor.required' => 'Indique o valor de cada linha.',
+            'ate_mes.between' => 'O mês «até» tem de estar entre 1 e 12.',
         ];
     }
 }

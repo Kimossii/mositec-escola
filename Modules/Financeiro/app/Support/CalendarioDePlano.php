@@ -7,34 +7,33 @@ use Carbon\CarbonInterface;
 use InvalidArgumentException;
 
 /**
- * Calendário de cobrança de um plano de propina: funções puras, sem base de dados.
- * O período (mes_inicio -> mes_fim) pode atravessar o ano civil (Set -> Jun).
+ * Calendário de cobrança de um plano de propina: funções puras, sem base de dados. O plano vale de uma
+ * data a outra (data_inicio -> data_fim); as competências (ano, mês) derivam-se directamente das datas —
+ * do mês de data_inicio ao mês de data_fim, inclusive — e o ano vem das próprias datas (nunca é deduzido
+ * do ano lectivo). Cada mês tocado conta como mês inteiro (15/09 -> 20/06 = Set a Jun, 10 meses).
  */
 final class CalendarioDePlano
 {
-    public static function meses(int $mesInicio, int $mesFim): int
+    public static function meses(CarbonInterface $dataInicio, CarbonInterface $dataFim): int
     {
-        self::validarMes($mesInicio);
-        self::validarMes($mesFim);
-
-        return (($mesFim - $mesInicio + 12) % 12) + 1;
+        return count(self::competencias($dataInicio, $dataFim));
     }
 
     /**
-     * Competências (ano, mês) do período. A primeira é a primeira ocorrência de $mesInicio
-     * igual ou posterior ao mês de início do ano lectivo.
+     * Competências (ano, mês) cobertas, da primeira à última, inclusive.
      *
      * @return list<array{ano: int, mes: int}>
      */
-    public static function competencias(int $mesInicio, int $mesFim, CarbonInterface $inicioAnoLectivo): array
+    public static function competencias(CarbonInterface $dataInicio, CarbonInterface $dataFim): array
     {
-        $total = self::meses($mesInicio, $mesFim);
-        $anoDaPrimeira = $mesInicio >= $inicioAnoLectivo->month ? $inicioAnoLectivo->year : $inicioAnoLectivo->year + 1;
+        $cursor = CarbonImmutable::createFromDate($dataInicio->year, $dataInicio->month, 1)->startOfDay();
+        $fim = CarbonImmutable::createFromDate($dataFim->year, $dataFim->month, 1)->startOfDay();
 
         $competencias = [];
-        for ($i = 0; $i < $total; $i++) {
-            $indice = ($mesInicio - 1) + $i;
-            $competencias[] = ['ano' => $anoDaPrimeira + intdiv($indice, 12), 'mes' => ($indice % 12) + 1];
+
+        while ($cursor->lte($fim)) {
+            $competencias[] = ['ano' => $cursor->year, 'mes' => $cursor->month];
+            $cursor = $cursor->addMonth();
         }
 
         return $competencias;
@@ -46,14 +45,15 @@ final class CalendarioDePlano
      *
      * @return list<array{ordem: int, meses: int, inicio: string, fim: string}>
      */
-    public static function periodos(int $mesInicio, int $mesFim, int $intervaloMeses, CarbonInterface $inicioAnoLectivo): array
+    public static function periodos(CarbonInterface $dataInicio, CarbonInterface $dataFim, int $intervaloMeses): array
     {
         if ($intervaloMeses < 1 || $intervaloMeses > 12) {
             throw new InvalidArgumentException('O intervalo de cobrança tem de estar entre 1 e 12 meses.');
         }
 
         $periodos = [];
-        foreach (array_chunk(self::competencias($mesInicio, $mesFim, $inicioAnoLectivo), $intervaloMeses) as $indice => $grupo) {
+
+        foreach (array_chunk(self::competencias($dataInicio, $dataFim), $intervaloMeses) as $indice => $grupo) {
             $primeiro = $grupo[0];
             $ultimo = $grupo[array_key_last($grupo)];
 
@@ -69,18 +69,17 @@ final class CalendarioDePlano
     }
 
     /**
-     * Duração, em meses, de cada período de cobrança; o último pode ser mais curto (ex.: Set → Jun
-     * trimestral = 3+3+3+1). Não depende do ano lectivo.
+     * Duração, em meses, de cada período de cobrança; o último pode ser mais curto.
      *
      * @return list<int>
      */
-    public static function duracoes(int $mesInicio, int $mesFim, int $intervaloMeses): array
+    public static function duracoes(CarbonInterface $dataInicio, CarbonInterface $dataFim, int $intervaloMeses): array
     {
         if ($intervaloMeses < 1 || $intervaloMeses > 12) {
             throw new InvalidArgumentException('O intervalo de cobrança tem de estar entre 1 e 12 meses.');
         }
 
-        $total = self::meses($mesInicio, $mesFim);
+        $total = self::meses($dataInicio, $dataFim);
         $duracoes = array_fill(0, intdiv($total, $intervaloMeses), $intervaloMeses);
 
         if ($total % $intervaloMeses !== 0) {
@@ -115,12 +114,5 @@ final class CalendarioDePlano
     public static function contem(array $competencias, int $ano, int $mes): bool
     {
         return self::sobrepoem($competencias, [['ano' => $ano, 'mes' => $mes]]);
-    }
-
-    private static function validarMes(int $mes): void
-    {
-        if ($mes < 1 || $mes > 12) {
-            throw new InvalidArgumentException('O mês tem de estar entre 1 e 12.');
-        }
     }
 }

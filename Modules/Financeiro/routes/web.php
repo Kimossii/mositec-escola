@@ -6,6 +6,7 @@ use Modules\Financeiro\Http\Controllers\CreditoController;
 use Modules\Financeiro\Http\Controllers\MetodoPagamentoController;
 use Modules\Financeiro\Http\Controllers\MoedaCambioController;
 use Modules\Financeiro\Http\Controllers\PagamentoController;
+use Modules\Financeiro\Http\Controllers\PausaCobrancaController;
 use Modules\Financeiro\Http\Controllers\PlanoPropinaController;
 use Modules\Financeiro\Http\Controllers\ProdutoController;
 use Modules\Financeiro\Http\Controllers\PropinaController;
@@ -39,6 +40,13 @@ Route::middleware(['auth'])->prefix('financeiro/configuracao')->name('financeiro
     });
 
     Route::get('/produtos-servicos', [CatalogoFinanceiroController::class, 'index'])->middleware('can:catalogo-financeiro.ver')->name('produtos-servicos.index');
+
+    Route::prefix('pausas-cobranca')->name('pausas-cobranca.')->group(function () {
+        Route::get('/', [PausaCobrancaController::class, 'index'])->middleware('can:pausa-cobranca.ver')->name('index');
+        Route::post('/', [PausaCobrancaController::class, 'store'])->middleware('can:pausa-cobranca.criar')->name('store');
+        Route::put('/{pausa}', [PausaCobrancaController::class, 'update'])->middleware('can:pausa-cobranca.editar')->whereNumber('pausa')->name('update');
+        Route::delete('/{pausa}', [PausaCobrancaController::class, 'destroy'])->middleware('can:pausa-cobranca.eliminar')->whereNumber('pausa')->name('destroy');
+    });
 
     Route::prefix('planos-propina')->name('planos-propina.')->group(function () {
         Route::get('/', [PlanoPropinaController::class, 'index'])->middleware('can:plano-propina.ver')->name('index');
@@ -77,6 +85,7 @@ Route::middleware(['auth'])->prefix('financeiro/pagamentos')->name('financeiro.p
     Route::get('/novo', [PagamentoController::class, 'create'])->middleware('can:pagamento.criar')->name('create');
     Route::get('/matriculas', [PagamentoController::class, 'pesquisarMatriculas'])->middleware('can:pagamento.criar')->name('matriculas.pesquisar');
     Route::get('/matriculas/{matricula}/situacao', [PagamentoController::class, 'situacao'])->whereNumber('matricula')->middleware('can:pagamento.criar')->name('matriculas.situacao');
+    Route::get('/matriculas/{matricula}/total-devido', [PagamentoController::class, 'totalDevido'])->whereNumber('matricula')->middleware('can:pagamento.criar')->name('total-devido');
     Route::post('/matriculas/{matricula}/pre-visualizar', [PagamentoController::class, 'preVisualizar'])->whereNumber('matricula')->middleware('can:pagamento.criar')->name('pre-visualizar');
     Route::post('/matriculas/{matricula}', [PagamentoController::class, 'store'])->whereNumber('matricula')->middleware('can:pagamento.criar')->name('store');
     Route::get('/{pagamento}', [PagamentoController::class, 'show'])->whereNumber('pagamento')->middleware('can:pagamento.ver')->name('show');

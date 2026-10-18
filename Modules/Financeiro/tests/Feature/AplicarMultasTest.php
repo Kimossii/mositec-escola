@@ -140,11 +140,11 @@ class AplicarMultasTest extends TestCase
     public function test_capital_pago_antes_de_l2_congela_no_escalao_anterior(): void
     {
         $this->regras();
-        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500], [30, TipoMulta::PERCENTAGEM, 1000]]); // L1=16/09, L2=15/10
         ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
         $propina = $this->propina($matricula, $plano);
         $this->pagar($matricula, 2_500_000, [[$propina, 2_500_000]], 0, '2026-09-20'); // entre L1 e L2
 
+        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500], [30, TipoMulta::PERCENTAGEM, 1000]]); // L1=16/09, L2=15/10
         $this->aplicar();
 
         $multa = PropinaMulta::sole();
@@ -156,11 +156,11 @@ class AplicarMultasTest extends TestCase
     {
         Carbon::setTestNow('2026-10-21 10:00:00');
         $this->regras();
-        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500], [30, TipoMulta::PERCENTAGEM, 1000]]);
         ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
         $propina = $this->propina($matricula, $plano);
         $this->pagar($matricula, 2_500_000, [[$propina, 2_500_000]], 0, '2026-10-20'); // depois de L2
 
+        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500], [30, TipoMulta::PERCENTAGEM, 1000]]);
         $this->aplicar();
 
         $multa = PropinaMulta::sole();
@@ -197,11 +197,11 @@ class AplicarMultasTest extends TestCase
     public function test_paga_liquidada_antes_de_l1_nao_e_avaliada_nem_abre_transacao(): void
     {
         $this->regras();
-        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]); // L1 = 16/09
         ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
         $propina = $this->propina($matricula, $plano);
         $this->pagar($matricula, 2_500_000, [[$propina, 2_500_000]], 0, '2026-09-10'); // pago antes de L1
 
+        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]); // L1 = 16/09
         $spy = \Mockery::mock(BloqueioDePropinas::class);
         $spy->shouldReceive('bloquear')->never();
         $this->instance(BloqueioDePropinas::class, $spy);
@@ -229,7 +229,6 @@ class AplicarMultasTest extends TestCase
     public function test_catch_up_apos_anulacao_de_pagamento_continua_a_funcionar(): void
     {
         $this->regras();
-        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]); // L1 = 16/09
         ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
         $propina = $this->propina($matricula, $plano);
 
@@ -237,6 +236,7 @@ class AplicarMultasTest extends TestCase
         $this->anularPagamento($pagamento);
         $this->assertSame(EstadoCobranca::EM_ABERTO, $propina->fresh()->estado, 'Capital reaberto (capital_liquidado_em a nulo).');
 
+        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]); // L1 = 16/09
         $this->aplicar();
 
         $multa = PropinaMulta::sole();
@@ -320,11 +320,11 @@ class AplicarMultasTest extends TestCase
     public function test_paga_liquidada_exactamente_em_l1_recebe_multa(): void
     {
         $this->regras();
-        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]); // L1 = 16/09
         ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
         $propina = $this->propina($matricula, $plano);
         $this->pagar($matricula, 2_500_000, [[$propina, 2_500_000]], 0, '2026-09-16'); // exactamente em L1
 
+        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]); // L1 = 16/09
         $this->assertSame(['criadas' => 1, 'escaloes_subidos' => 0, 'ignoradas' => 0], $this->aplicar());
 
         $this->assertSame(125_000, PropinaMulta::sole()->valor->unidadesMenores());
@@ -333,11 +333,11 @@ class AplicarMultasTest extends TestCase
     public function test_paga_liquidada_um_dia_antes_de_l1_nao_recebe_multa(): void
     {
         $this->regras();
-        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]); // L1 = 16/09
         ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
         $propina = $this->propina($matricula, $plano);
         $this->pagar($matricula, 2_500_000, [[$propina, 2_500_000]], 0, '2026-09-15'); // um dia antes de L1
 
+        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]); // L1 = 16/09
         $this->assertSame(['criadas' => 0, 'escaloes_subidos' => 0, 'ignoradas' => 0], $this->aplicar());
 
         $this->assertSame(0, PropinaMulta::count());

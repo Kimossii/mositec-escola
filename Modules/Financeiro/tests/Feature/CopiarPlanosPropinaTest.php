@@ -63,9 +63,9 @@ class CopiarPlanosPropinaTest extends TestCase
         $this->assertNotSame($original->id, $copia->id);
         $this->assertSame('Trimestral', $copia->nome);
         $this->assertSame('Descrição X', $copia->descricao);
-        $this->assertSame(Periodicidade::TRIMESTRAL, $copia->periodicidade);
-        $this->assertSame('Trimestral', $copia->periodicidade_descricao);
-        $this->assertSame(3, $copia->intervalo_meses);
+        $this->assertSame(Periodicidade::MENSAL, $copia->periodicidade);
+        $this->assertSame('Mensal', $copia->periodicidade_descricao);
+        $this->assertSame(1, $copia->intervalo_meses);
         $this->assertSame(1_234_500, $copia->valor->unidadesMenores());
         $this->assertSame(9, $copia->mes_inicio);
         $this->assertSame(6, $copia->mes_fim);

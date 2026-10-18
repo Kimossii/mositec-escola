@@ -35,8 +35,8 @@ class PlanoPropina extends Model
         'periodicidade',
         'intervalo_meses',
         'valor',
-        'mes_inicio',
-        'mes_fim',
+        'data_inicio',
+        'data_fim',
         'estado',
     ];
 
@@ -50,8 +50,8 @@ class PlanoPropina extends Model
         'periodicidade' => Periodicidade::class,
         'intervalo_meses' => 'integer',
         'valor' => DinheiroCast::class,
-        'mes_inicio' => 'integer',
-        'mes_fim' => 'integer',
+        'data_inicio' => 'date:Y-m-d',
+        'data_fim' => 'date:Y-m-d',
         'estado' => 'integer',
     ];
 
@@ -89,7 +89,7 @@ class PlanoPropina extends Model
 
     public function totalMeses(): int
     {
-        return CalendarioDePlano::meses($this->mes_inicio, $this->mes_fim);
+        return CalendarioDePlano::meses($this->data_inicio, $this->data_fim);
     }
 
     /**
@@ -97,11 +97,11 @@ class PlanoPropina extends Model
      */
     public function competencias(): array
     {
-        if ($this->anoLectivo === null) {
+        if ($this->data_inicio === null || $this->data_fim === null) {
             return [];
         }
 
-        return CalendarioDePlano::competencias($this->mes_inicio, $this->mes_fim, $this->anoLectivo->data_inicio);
+        return CalendarioDePlano::competencias($this->data_inicio, $this->data_fim);
     }
 
     /**
@@ -109,11 +109,11 @@ class PlanoPropina extends Model
      */
     public function periodos(): array
     {
-        if ($this->anoLectivo === null) {
+        if ($this->data_inicio === null || $this->data_fim === null) {
             return [];
         }
 
-        return CalendarioDePlano::periodos($this->mes_inicio, $this->mes_fim, $this->intervalo_meses, $this->anoLectivo->data_inicio);
+        return CalendarioDePlano::periodos($this->data_inicio, $this->data_fim, $this->intervalo_meses);
     }
 
     /**
@@ -121,7 +121,7 @@ class PlanoPropina extends Model
      */
     public function duracoesDosPeriodos(): array
     {
-        return CalendarioDePlano::duracoes($this->mes_inicio, $this->mes_fim, $this->intervalo_meses);
+        return CalendarioDePlano::duracoes($this->data_inicio, $this->data_fim, $this->intervalo_meses);
     }
 
     public function ultimoPeriodoMaisCurto(): bool

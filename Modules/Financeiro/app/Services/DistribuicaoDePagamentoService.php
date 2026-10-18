@@ -8,16 +8,21 @@ use Illuminate\Validation\ValidationException;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\DTO\AplicarCreditoDTO;
 use Modules\Financeiro\DTO\LinhaDeDistribuicao;
+use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
 use Modules\Financeiro\DTO\PlanoDePagamentoDTO;
 use Modules\Financeiro\DTO\RegistarPagamentoDTO;
+use Modules\Financeiro\Enums\AmbitoGeracaoPropinas;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\EstadoCredito;
 use Modules\Financeiro\Enums\EstadoPagamento;
+use Modules\Financeiro\Enums\OrigemGeracaoPropina;
 use Modules\Financeiro\Models\Credito;
 use Modules\Financeiro\Models\Pagamento;
 use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Support\Dinheiro;
+use Modules\Financeiro\Support\PropinaVirtual;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 use Modules\Matricula\Models\Matricula;
 
@@ -32,19 +37,23 @@ class DistribuicaoDePagamentoService
     public function __construct(
         private RelogioDoTenant $relogio,
         private MoedaDoTenant $moedaDoTenant,
+        private GerarPropinasService $geracao,
+        private AplicarMultasService $multas,
     ) {
     }
 
     public function preVisualizarPagamento(Matricula $matricula, RegistarPagamentoDTO $dto): PlanoDePagamentoDTO
     {
         $this->validarData($dto->dataPagamento, $matricula);
+        $this->validarAntecipado($dto, $matricula);
 
         return $this->calcular(
             $dto->valor->unidadesMenores(),
             $dto->valorCredito->unidadesMenores(),
             $dto->dataPagamento,
-            $dto->distribuicao,
-            $this->propinasPagaveis($matricula),
+            // «Pagar até [mês]» é sempre automático: as propinas a gerar ainda não têm id para uma distribuição explícita.
+            $dto->ate_ano !== null ? null : $dto->distribuicao,
+            $this->propinasComGeracao($matricula, $dto->ate_ano, $dto->ate_mes),
             $dto->valorCredito->unidadesMenores() > 0 ? $this->creditosDisponiveis($matricula) : new Collection(),
             RegraCobranca::doTenant(),
         );
@@ -106,6 +115,148 @@ class DistribuicaoDePagamentoService
             ->where('estado', EstadoCredito::DISPONIVEL->value)
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * As propinas da matrícula a considerar no pagamento (existentes + as que o «Pagar até [mês]» geraria), já com a
+     * multa de HOJE calculada, sem gravar nada. Ordenadas da mais antiga para a mais recente. A confirmação grava as
+     * mesmas propinas e as mesmas multas (pelos serviços de geração e de multas), por isso os totais da prévia e do
+     * pagamento nunca diferem. Só lê.
+     *
+     * @return Collection<int, Propina>
+     */
+    public function propinasComGeracao(Matricula $matricula, ?int $ateAno, ?int $ateMes): Collection
+    {
+        $existentes = $this->propinasPagaveis($matricula);
+
+        if ($ateAno !== null) {
+            $cap = $ateAno * 12 + $ateMes;
+            $existentes = $existentes
+                ->filter(fn (Propina $p) => $this->ordinalDe($p->periodo_inicio->toDateString()) <= $cap)
+                ->values();
+        }
+
+        $geradas = $this->propinasGeradasVirtuais($matricula, $ateAno, $ateMes);
+
+        // `concat` (e não `merge`): o merge da Eloquent\Collection indexa por id e descartaria as propinas virtuais (id nulo).
+        $todas = $existentes->concat($geradas);
+
+        return $this->aplicarMultasVirtuais($todas)
+            ->sort(fn (Propina $a, Propina $b) => [$a->periodo_inicio->toDateString(), $a->ordem, $a->id] <=> [$b->periodo_inicio->toDateString(), $b->ordem, $b->id])
+            ->values();
+    }
+
+    /**
+     * O6/decision: sem «pagar antecipado», o «Pagar até» não pode apontar para um mês futuro ao mês corrente.
+     */
+    public function validarAntecipado(RegistarPagamentoDTO $dto, Matricula $matricula): void
+    {
+        $this->validarAntecipadoAte($dto->ate_ano, $dto->ate_mes);
+    }
+
+    public function validarAntecipadoAte(?int $ateAno, ?int $ateMes): void
+    {
+        if ($ateAno === null) {
+            return;
+        }
+
+        $regras = RegraCobranca::doTenant();
+
+        if ($regras->permite_pagamento_antecipado) {
+            return;
+        }
+
+        $hoje = $this->relogio->hoje();
+
+        if ($ateAno * 12 + $ateMes > $hoje->year * 12 + $hoje->month) {
+            throw ValidationException::withMessages([
+                'ate_mes' => 'A escola não permite pagamento antecipado: o «Pagar até» não pode ultrapassar o mês corrente ('
+                    . RotuloDePeriodo::competencia($hoje->year, $hoje->month) . ').',
+            ]);
+        }
+    }
+
+    /**
+     * Total a pagar hoje (capital em dívida + multas de hoje, em unidades menores) das propinas existentes e, com
+     * «Pagar até», das que seriam geradas até esse mês. É o valor que o ecrã de pagamento assume quando o pagamento
+     * parcial não é permitido. Só lê; usa o mesmo conjunto de propinas da pré-visualização.
+     */
+    public function totalDevido(Matricula $matricula, ?int $ateAno, ?int $ateMes): int
+    {
+        $this->validarAntecipadoAte($ateAno, $ateMes);
+
+        return (int) $this->propinasComGeracao($matricula, $ateAno, $ateMes)
+            ->sum(fn (Propina $propina) => $propina->saldo()->unidadesMenores() + $propina->multaPendente());
+    }
+
+    /**
+     * As propinas que o «Pagar até [mês]» geraria, como models em memória (sem id), ao preço actual do plano.
+     *
+     * @return Collection<int, Propina>
+     */
+    private function propinasGeradasVirtuais(Matricula $matricula, ?int $ateAno, ?int $ateMes): Collection
+    {
+        if ($ateAno === null) {
+            return new Collection();
+        }
+
+        $itens = $this->geracao->calcularParaMatricula($matricula, new PedidoGeracaoPropinasDTO(
+            ano_lectivo_id: (int) $matricula->ano_lectivo_id,
+            ambito: AmbitoGeracaoPropinas::MATRICULA,
+            origem: OrigemGeracaoPropina::MANUAL,
+            matricula_numero: $matricula->numero_registo_matricula,
+            ate_ano: $ateAno,
+            ate_mes: $ateMes,
+        ));
+
+        return (new Collection($itens))->map(fn (array $item) => PropinaVirtual::deItem($item))->values();
+    }
+
+    /**
+     * Sobre cada propina (real ou virtual) põe a multa que HOJE existiria, sem gravar. Com `multa_activa` desligado
+     * não nasce multa nova (as já criadas mantêm-se). Só substitui a relação quando a multa mudaria de valor.
+     *
+     * @param  Collection<int, Propina>  $propinas
+     * @return Collection<int, Propina>
+     */
+    private function aplicarMultasVirtuais(Collection $propinas): Collection
+    {
+        $regras = RegraCobranca::doTenant();
+
+        if (! $regras->multa_activa) {
+            return $propinas;
+        }
+
+        $escaloes = $regras->escaloes()->orderBy('ordem')->get();
+
+        if ($escaloes->isEmpty()) {
+            return $propinas;
+        }
+
+        $hoje = $this->relogio->hoje()->toDateString();
+
+        foreach ($propinas as $propina) {
+            $valor = $this->multas->multaQueAplicaria($propina, $hoje, $escaloes);
+
+            if ($valor === null) {
+                continue;
+            }
+
+            $existente = $propina->multa;
+
+            // Com multa já criada, clona-se a existente e muda-se SÓ o valor: `valor_pago` e `estado`
+            // (eventualmente alterados por isenção/redução ou por pagamentos) ficam intactos na prévia.
+            $multa = $existente !== null ? clone $existente : new PropinaMulta();
+            $multa->valor = Dinheiro::deUnidadesMenores($valor);
+            $propina->setRelation('multa', $multa);
+        }
+
+        return $propinas;
+    }
+
+    private function ordinalDe(string $data): int
+    {
+        return ((int) substr($data, 0, 4)) * 12 + ((int) substr($data, 5, 2));
     }
 
     /**

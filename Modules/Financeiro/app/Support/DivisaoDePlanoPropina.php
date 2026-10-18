@@ -28,12 +28,12 @@ final class DivisaoDePlanoPropina
 
         $this->exigirMesDeEfeitoValido($bloqueado, $mesEfeito);
 
-        $mesFimOriginal = (int) $bloqueado->mes_fim;
+        $dataFimOriginal = $bloqueado->data_fim;
         $alvos = $bloqueado->alvos()->get()
             ->map(fn (PlanoPropinaAlvo $alvo) => $alvo->only(['nivel_academico_id', 'curso_id', 'turno_id', 'turma_id']))
             ->all();
 
-        $bloqueado->update(['mes_fim' => $mesEfeito->startOfMonth()->subMonthNoOverflow()->month]);
+        $bloqueado->update(['data_fim' => $mesEfeito->subDay()->toDateString()]);
 
         $novo = PlanoPropina::create([
             'ano_lectivo_id' => $bloqueado->ano_lectivo_id,
@@ -42,8 +42,8 @@ final class DivisaoDePlanoPropina
             'periodicidade' => $bloqueado->periodicidade,
             'intervalo_meses' => $bloqueado->intervalo_meses,
             'valor' => $valorNovo,
-            'mes_inicio' => $mesEfeito->month,
-            'mes_fim' => $mesFimOriginal,
+            'data_inicio' => $mesEfeito->toDateString(),
+            'data_fim' => $dataFimOriginal->toDateString(),
             'estado' => $bloqueado->estado,
         ]);
 

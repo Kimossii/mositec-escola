@@ -50,6 +50,7 @@ class SincronizarPerfisDeSistemaAction
             // Propinas: `ajustar` entrou em F2 (via P1) e é também o que autoriza a geração retroactiva; `anular` em Pagamentos-A; `isentar-multa` em F5.
             Modulo::PROPINA->value => ['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar', 'isentar-multa'],
             Modulo::PAGAMENTO->value => ['ver', 'listar', 'criar', 'anular', 'exportar'],
+            Modulo::PAUSA_COBRANCA->value => ['ver', 'criar', 'editar', 'eliminar'],
         ],
         Perfil::FUNCIONARIO->value => [
             Modulo::USUARIO->value => ['ver', 'criar', 'editar'],

@@ -18,8 +18,8 @@ class CriarPlanoPropinaAction
                 'periodicidade' => $dto->periodicidade,
                 'intervalo_meses' => $dto->intervalo_meses,
                 'valor' => $dto->valor,
-                'mes_inicio' => $dto->mes_inicio,
-                'mes_fim' => $dto->mes_fim,
+                'data_inicio' => $dto->data_inicio,
+                'data_fim' => $dto->data_fim,
             ]);
 
             $plano->substituirAlvos($dto->alvos);

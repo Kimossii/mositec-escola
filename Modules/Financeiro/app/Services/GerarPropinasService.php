@@ -17,13 +17,18 @@ use Modules\Financeiro\DTO\ResultadoGeracaoPropinasDTO;
 use Modules\Financeiro\Enums\AmbitoGeracaoPropinas;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\OrigemGeracaoPropina;
+use Modules\Financeiro\Enums\TipoMulta;
+use Modules\Financeiro\Models\EscalaoMulta;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\RegraCobranca;
+use Modules\Financeiro\Services\PausasCobrancaService;
 use Modules\Financeiro\Support\ContextoDeGeracao;
 use Modules\Financeiro\Support\ElegibilidadeDePeriodos;
 use Modules\Financeiro\Support\ResolucaoDePlanosMemorizada;
 use Modules\Financeiro\Support\Dinheiro;
+use Modules\Financeiro\Support\Multa;
+use Modules\Financeiro\Support\PropinaVirtual;
 use Modules\Financeiro\Support\ResultadoResolucaoPlano;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 use Modules\Financeiro\Support\ViolacaoDeUnicidade;
@@ -54,12 +59,18 @@ class GerarPropinasService
     /** P5: máximo de matrículas por pedido de geração manual (pré-visualização ou confirmação). O comando não tem limite. */
     public const LIMITE_MATRICULAS_POR_PEDIDO = 500;
 
+    /** @var array<int, list<int>> ordinais dos meses isentos por ano lectivo */
+    private array $mesesIsentosPorAno = [];
+
     public function __construct(
         private ResolvePlanoAplicavel $resolver,
         private ElegibilidadeDePeriodos $elegibilidade,
         private SnapshotMonetario $snapshot,
         private RelogioDoTenant $relogio,
         private TenantContext $tenant,
+        private PausasCobrancaService $pausas,
+        private AplicarMultasService $multas,
+        private MoedaDoTenant $moeda,
     ) {
     }
 
@@ -82,6 +93,8 @@ class GerarPropinasService
                 $resultado->juntar($this->calcular($matricula, $pedido, $contexto, $this->activas((int) $matricula->id), $canceladas->get((int) $matricula->id, new Collection())));
             }
         }
+
+        $this->enriquecerTotais($resultado, $contexto);
 
         return $resultado;
     }
@@ -175,8 +188,55 @@ class GerarPropinasService
         //    confirmada muda a impressão e a memória do resolvedor é esquecida.
         $contexto->resolucao->sincronizar((int) $matricula->ano_lectivo_id, bloquear: true);
 
-        // 3. Calcular sobre o estado bloqueado e criar com Eloquent, uma a uma (L4: nada de inserções que ignorem
-        //    conflitos; PertenceAoTenant e as invariantes do model correm). Os índices únicos parciais de F1 são a rede de segurança.
+        $resultado = $this->gravar($matricula, $pedido, $contexto);
+
+        // Propinas geradas depois do limite já nascem com a multa devida (a lista e o detalhe mostram-na logo).
+        if ($resultado->criadas() !== []) {
+            $this->multas->executarParaMatricula((int) $matricula->id);
+        }
+
+        return $resultado;
+    }
+
+    /**
+     * Gera as propinas em falta de UMA matrícula dentro da transacção do chamador (não abre transacção própria).
+     * É o caminho do «Pagar até [mês]» (RegistarPagamentoAction): a matrícula já vem bloqueada, os planos são
+     * bloqueados em modo partilhado e a geração acontece na MESMA transacção do pagamento — se o pagamento
+     * falhar, as propinas geradas revertem com ele. Idempotente e do período mais antigo para o mais recente.
+     */
+    public function gerarParaMatriculaNaTransaccao(Matricula $matricula, PedidoGeracaoPropinasDTO $pedido): ResultadoGeracaoMatriculaDTO
+    {
+        // Ponto único de criação: o ano encerrado também trava no «Pagar até [mês]» (RegistarPagamentoAction).
+        $this->recusarAnoEncerrado($pedido->ano_lectivo_id);
+
+        $contexto = $this->contexto();
+        $contexto->resolucao->sincronizar((int) $matricula->ano_lectivo_id, bloquear: true);
+        $matricula->load(['aluno.dadosPessoa', 'turma']);
+
+        return $this->gravar($matricula, $pedido, $contexto);
+    }
+
+    /**
+     * O que a geração criaria para UMA matrícula, sem gravar nem bloquear (o mesmo `calcular()` da geração).
+     * Usado pela pré-visualização do pagamento: os itens devolvidos trazem valor, período, vencimento, limite
+     * e ordem — tudo o que a prévia precisa para montar as propinas «a gerar».
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function calcularParaMatricula(Matricula $matricula, PedidoGeracaoPropinasDTO $pedido): array
+    {
+        $contexto = $this->contexto();
+        $matricula->load(['aluno.dadosPessoa', 'turma']);
+
+        return $this->calcular($matricula, $pedido, $contexto, $this->activas((int) $matricula->id), $this->canceladas((int) $matricula->id))->criadas();
+    }
+
+    /**
+     * Calcula sobre o estado bloqueado e cria com Eloquent, uma a uma (L4: nada de inserções que ignorem
+     * conflitos; PertenceAoTenant e as invariantes do model correm). Os índices únicos parciais de F1 são a rede de segurança.
+     */
+    private function gravar(Matricula $matricula, PedidoGeracaoPropinasDTO $pedido, ContextoDeGeracao $contexto): ResultadoGeracaoMatriculaDTO
+    {
         $resultado = $this->calcular($matricula, $pedido, $contexto, $this->activas((int) $matricula->id), $this->canceladas((int) $matricula->id));
 
         foreach ($resultado->criadas() as $indice => $item) {
@@ -228,6 +288,80 @@ class GerarPropinasService
             : 'Erro inesperado ao gerar as propinas desta matrícula: nada foi gravado. Consulte os registos.');
 
         return $resultado;
+    }
+
+    /**
+     * Completa a pré-visualização com os totais de capital (sempre) e a estimativa de multa de hoje.
+     * Nada disto grava: a multa é só uma estimativa via {@see AplicarMultasService::multaQueAplicaria()} sobre
+     * uma propina em memória. Com uma única matrícula cada propina a criar leva a multa e a regra; com várias,
+     * calcula-se só um indicador barato (sem multa por linha) para o aviso «inclui multas estimadas».
+     */
+    private function enriquecerTotais(ResultadoGeracaoPropinasDTO $resultado, ContextoDeGeracao $contexto): void
+    {
+        $matriculas = $resultado->matriculas();
+
+        foreach ($matriculas as $matricula) {
+            $matricula->comTotalCapital(array_sum(array_column($matricula->criadas(), 'valor')));
+        }
+
+        // Leitura pura (nunca firstOrCreate): com multa_activa desligado ou sem escalões não há estimativa.
+        $regras = RegraCobranca::query()->first();
+        $escaloes = ($regras?->multa_activa ?? false) ? $regras->escaloes()->orderBy('ordem')->get() : null;
+        $temEscaloes = $escaloes !== null && $escaloes->isNotEmpty();
+        $hoje = $contexto->hoje->toDateString();
+
+        if (count($matriculas) === 1) {
+            $matricula = $matriculas[0];
+            $totalMulta = 0;
+
+            if ($temEscaloes) {
+                foreach ($matricula->criadas() as $indice => $item) {
+                    $propina = PropinaVirtual::deItem($item);
+                    $valor = $this->multas->multaQueAplicaria($propina, $hoje, $escaloes);
+
+                    if ($valor === null) {
+                        continue;
+                    }
+
+                    $escalao = $this->multas->escalaoAtingido($propina, $hoje, $escaloes);
+                    $matricula->comMulta($indice, $valor, $escalao !== null ? $this->regraDoEscalao($escalao) : '');
+                    $totalMulta += $valor;
+                }
+            }
+
+            $matricula->comTotalMulta($totalMulta);
+            $resultado->comIncluiMultasEstimadas($totalMulta > 0);
+
+            return;
+        }
+
+        $inclui = false;
+
+        if ($temEscaloes) {
+            foreach ($matriculas as $matricula) {
+                foreach ($matricula->criadas() as $item) {
+                    if ($this->multas->gerariaMultaHoje($item['data_limite'], $hoje, $escaloes)) {
+                        $inclui = true;
+
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        $resultado->comIncluiMultasEstimadas($inclui);
+    }
+
+    /**
+     * A regra da multa estimada, pronta a mostrar: «10% · escalão 2 (após 15 dias)» ou o valor fixo.
+     */
+    private function regraDoEscalao(EscalaoMulta $escalao): string
+    {
+        $quantia = $escalao->tipo === TipoMulta::PERCENTAGEM
+            ? Multa::pontosBaseParaPercentagem($escalao->valor) . '%'
+            : Dinheiro::deUnidadesMenores($escalao->valor)->formatar($this->moeda->atual());
+
+        return "{$quantia} · escalão {$escalao->ordem} (após {$escalao->dias_atraso} dias)";
     }
 
     private function contexto(): ContextoDeGeracao
@@ -416,10 +550,31 @@ class GerarPropinasService
         $porMes = $this->resolverMeses($turma, $contexto, $resultado);
 
         foreach ($this->periodosCandidatos($porMes, $resultado) as $candidato) {
+            if (! $this->dentroDoLimite($candidato['periodo'], $pedido)) {
+                continue;
+            }
+
             $this->avaliarPeriodo($matricula, $candidato['plano'], $candidato['periodo'], $pedido, $contexto, $activas, $canceladas, $resultado);
         }
 
         return $resultado;
+    }
+
+    /**
+     * Geração por mês: com «até ao mês X» só se geram os períodos cujo mês de início não ultrapassa o mês pedido.
+     *
+     * @param  array{ordem: int, meses: int, inicio: string, fim: string}  $periodo
+     */
+    private function dentroDoLimite(array $periodo, PedidoGeracaoPropinasDTO $pedido): bool
+    {
+        if ($pedido->ate_ano === null) {
+            return true;
+        }
+
+        $ano = (int) substr($periodo['inicio'], 0, 4);
+        $mes = (int) substr($periodo['inicio'], 5, 2);
+
+        return $ano * 12 + $mes <= $pedido->ate_ano * 12 + $pedido->ate_mes;
     }
 
     /**
@@ -430,8 +585,14 @@ class GerarPropinasService
     private function resolverMeses(Turma $turma, ContextoDeGeracao $contexto, ResultadoGeracaoMatriculaDTO $resultado): array
     {
         $porMes = [];
+        // Meses isentos por pausa de cobrança (cobra_propina = false) são saltados: nunca se gera propina neles.
+        $isentos = $this->mesesIsentos((int) $turma->ano_lectivo_id);
 
         foreach ($contexto->resolucao->mesesCobraveis((int) $turma->ano_lectivo_id) as $competencia) {
+            if (in_array($this->ordinal($competencia), $isentos, true)) {
+                continue;
+            }
+
             $resolucao = $contexto->resolucao->paraTurma($turma, $competencia['ano'], $competencia['mes']);
             $porMes[$this->ordinal($competencia)] = $resolucao;
             $rotulo = RotuloDePeriodo::competencia($competencia['ano'], $competencia['mes']);
@@ -593,6 +754,16 @@ class GerarPropinasService
     private function ordinal(array $competencia): int
     {
         return $competencia['ano'] * 12 + $competencia['mes'];
+    }
+
+    /**
+     * Ordinais (ano × 12 + mês) dos meses isentos por pausa de cobrança, memorizados por ano lectivo.
+     *
+     * @return list<int>
+     */
+    private function mesesIsentos(int $anoLectivoId): array
+    {
+        return $this->mesesIsentosPorAno[$anoLectivoId] ??= $this->pausas->mesesIsentos($anoLectivoId);
     }
 
     /**

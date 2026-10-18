@@ -11,7 +11,7 @@ class AtualizarPlanoPropinaAction
 {
     public const MENSAGEM_VALOR = 'Este plano já tem propinas geradas: o valor só muda em «Alterar preço», onde escolhe como tratar as propinas já geradas.';
 
-    public const MENSAGEM_CALENDARIO = 'Este plano já tem propinas geradas: a periodicidade e os meses de início e de fim não podem ser alterados, porque definem os períodos das propinas existentes.';
+    public const MENSAGEM_CALENDARIO = 'Este plano já tem propinas geradas: a periodicidade e as datas de início e de fim não podem ser alteradas, porque definem os períodos das propinas existentes.';
 
     public function executar(PlanoPropina $plano, PlanoPropinaDTO $dto): PlanoPropina
     {
@@ -29,8 +29,8 @@ class AtualizarPlanoPropinaAction
                 'periodicidade' => $dto->periodicidade,
                 'intervalo_meses' => $dto->intervalo_meses,
                 'valor' => $dto->valor,
-                'mes_inicio' => $dto->mes_inicio,
-                'mes_fim' => $dto->mes_fim,
+                'data_inicio' => $dto->data_inicio,
+                'data_fim' => $dto->data_fim,
             ]);
 
             $bloqueado->substituirAlvos($dto->alvos);
@@ -56,8 +56,8 @@ class AtualizarPlanoPropinaAction
 
         $calendarioMuda = $plano->periodicidade !== $dto->periodicidade
             || (int) $plano->intervalo_meses !== $dto->intervalo_meses
-            || (int) $plano->mes_inicio !== $dto->mes_inicio
-            || (int) $plano->mes_fim !== $dto->mes_fim;
+            || $plano->data_inicio?->toDateString() !== $dto->data_inicio->toDateString()
+            || $plano->data_fim?->toDateString() !== $dto->data_fim->toDateString();
 
         if ($calendarioMuda) {
             $erros['periodicidade'] = self::MENSAGEM_CALENDARIO;

@@ -105,7 +105,7 @@ trait ComPagamentosFinanceiro
     /**
      * @param  list<array{0: Propina|int, 1: int}>|null  $linhas  null = distribuição automática
      */
-    protected function pedidoPagamento(int $valor, ?array $linhas = null, int $credito = 0, string $data = '2026-10-16', ?string $referencia = null, ?int $metodoId = null): RegistarPagamentoDTO
+    protected function pedidoPagamento(int $valor, ?array $linhas = null, int $credito = 0, string $data = '2026-10-16', ?string $referencia = null, ?int $metodoId = null, ?int $ateAno = null, ?int $ateMes = null): RegistarPagamentoDTO
     {
         return new RegistarPagamentoDTO(
             metodoPagamentoId: $metodoId ?? (int) $this->metodoPagamento()->id,
@@ -114,6 +114,8 @@ trait ComPagamentosFinanceiro
             referencia: $referencia,
             distribuicao: $linhas === null ? null : $this->linhas($linhas),
             valorCredito: Dinheiro::deUnidadesMenores($credito),
+            ate_ano: $ateAno,
+            ate_mes: $ateMes,
         );
     }
 
@@ -130,9 +132,9 @@ trait ComPagamentosFinanceiro
      *
      * @param  list<array{0: Propina|int, 1: int}>|null  $linhas  null = automática
      */
-    protected function pagar(Matricula $matricula, int $valor, ?array $linhas = null, int $credito = 0, string $data = '2026-10-16', ?string $referencia = null): Pagamento
+    protected function pagar(Matricula $matricula, int $valor, ?array $linhas = null, int $credito = 0, string $data = '2026-10-16', ?string $referencia = null, ?int $ateAno = null, ?int $ateMes = null): Pagamento
     {
-        return app(RegistarPagamentoAction::class)->executar($matricula->fresh(), $this->pedidoPagamento($valor, $linhas, $credito, $data, $referencia));
+        return app(RegistarPagamentoAction::class)->executar($matricula->fresh(), $this->pedidoPagamento($valor, $linhas, $credito, $data, $referencia, null, $ateAno, $ateMes));
     }
 
     /**

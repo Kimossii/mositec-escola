@@ -41,8 +41,8 @@ class PlanoPropinaConsultaService
                 'periodicidade_descricao' => $plano->periodicidade_descricao,
                 'intervalo_meses' => $plano->intervalo_meses,
                 'valor' => $plano->valor->unidadesMenores(),
-                'mes_inicio' => $plano->mes_inicio,
-                'mes_fim' => $plano->mes_fim,
+                'data_inicio' => $plano->data_inicio->toDateString(),
+                'data_fim' => $plano->data_fim->toDateString(),
                 'periodos_total' => count($plano->periodos()),
                 'duracoes_periodos' => $plano->duracoesDosPeriodos(),
                 'ultimo_periodo_mais_curto' => $plano->ultimoPeriodoMaisCurto(),
@@ -136,7 +136,7 @@ class PlanoPropinaConsultaService
      */
     public function anosLectivos(): Collection
     {
-        return AnoLectivo::query()->orderByDesc('data_inicio')->get(['id', 'nome']);
+        return AnoLectivo::query()->orderByDesc('data_inicio')->get(['id', 'nome', 'data_inicio', 'data_fim']);
     }
 
     /**

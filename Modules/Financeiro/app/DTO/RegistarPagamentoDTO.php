@@ -34,9 +34,19 @@ final class RegistarPagamentoDTO
         ?string $observacao = null,
         ?array $distribuicao = null,
         ?Dinheiro $valorCredito = null,
+        public readonly ?int $ate_ano = null,
+        public readonly ?int $ate_mes = null,
     ) {
         if ($valor->unidadesMenores() <= 0) {
             throw new InvalidArgumentException('O valor do pagamento tem de ser maior que zero.');
+        }
+
+        if (($ate_ano === null) !== ($ate_mes === null)) {
+            throw new InvalidArgumentException('O mês «até» exige o ano e o mês em conjunto.');
+        }
+
+        if ($ate_mes !== null && ($ate_mes < 1 || $ate_mes > 12)) {
+            throw new InvalidArgumentException('O mês «até» tem de estar entre 1 e 12.');
         }
 
         $referencia = $referencia === null ? null : trim($referencia);
@@ -71,6 +81,8 @@ final class RegistarPagamentoDTO
             observacao: $dados['observacao'] ?? null,
             distribuicao: LinhaDeDistribuicao::doPedido((string) $dados['modo_distribuicao'], $dados['distribuicao'] ?? [], $moeda),
             valorCredito: Dinheiro::deDecimal($credito === '' ? '0' : $credito, $moeda),
+            ate_ano: isset($dados['ate_ano']) && $dados['ate_ano'] !== null ? (int) $dados['ate_ano'] : null,
+            ate_mes: isset($dados['ate_mes']) && $dados['ate_mes'] !== null ? (int) $dados['ate_mes'] : null,
         );
     }
 }

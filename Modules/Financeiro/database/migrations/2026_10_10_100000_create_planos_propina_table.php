@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('periodicidade_descricao');
             $table->unsignedTinyInteger('intervalo_meses');
             $table->unsignedBigInteger('valor');
-            $table->unsignedTinyInteger('mes_inicio');
-            $table->unsignedTinyInteger('mes_fim');
+            $table->date('data_inicio');
+            $table->date('data_fim');
             $table->unsignedTinyInteger('estado')->default(1);
             $table->string('estado_descricao')->default('Ativo');
             $table->foreignId('criado_por')->nullable()->constrained('users')->nullOnDelete();

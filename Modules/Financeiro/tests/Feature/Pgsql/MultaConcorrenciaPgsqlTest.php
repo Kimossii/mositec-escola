@@ -82,7 +82,6 @@ class MultaConcorrenciaPgsqlTest extends PgsqlConcorrenciaTestCase
     public function test_o_comando_filtra_paga_por_data_em_pgsql(): void
     {
         $this->regras();
-        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]); // L1 = 16/09
         ['turma' => $turma, 'plano' => $plano, 'matricula' => $matriculaA] = $this->cenarioPropinas();
         $emL1 = $this->propina($matriculaA, $plano);
         $matriculaB = $this->matriculaActiva($turma);
@@ -91,6 +90,7 @@ class MultaConcorrenciaPgsqlTest extends PgsqlConcorrenciaTestCase
         $this->pagar($matriculaA, 2_500_000, [[$emL1, 2_500_000]], 0, '2026-09-16'); // exactamente em L1
         $this->pagar($matriculaB, 2_500_000, [[$antesDeL1, 2_500_000]], 0, '2026-09-15'); // um dia antes de L1
 
+        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]); // L1 = 16/09
         app(AplicarMultasService::class)->executar();
 
         $this->assertSame(1, (int) $this->outraLigacao()->selectOne('select count(*) as n from propina_multas')->n);

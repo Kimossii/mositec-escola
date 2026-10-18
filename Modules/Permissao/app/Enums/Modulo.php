@@ -28,6 +28,7 @@ enum Modulo: int
     case MOEDA_CAMBIO = 21;
     case PROPINA = 22;
     case PAGAMENTO = 23;
+    case PAUSA_COBRANCA = 24;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -85,6 +86,7 @@ enum Modulo: int
             self::MOEDA_CAMBIO => 'moeda-cambio',
             self::PROPINA => 'propina',
             self::PAGAMENTO => 'pagamento',
+            self::PAUSA_COBRANCA => 'pausa-cobranca',
         };
     }
 
@@ -126,6 +128,7 @@ enum Modulo: int
             self::MOEDA_CAMBIO => 'Moeda e Câmbio',
             self::PROPINA => 'Propina',
             self::PAGAMENTO => 'Pagamento',
+            self::PAUSA_COBRANCA => 'Pausa de Cobrança',
         };
     }
 }

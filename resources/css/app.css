@@ -301,3 +301,39 @@ html[data-bs-theme='light'] .form-select.form-select-solid:not(:focus):not(:disa
 html[data-bs-theme='light'] .app-wrapper .card {
     box-shadow: 0 0 0 1px var(--mosi-contorno-cartao), 0 0 20px 0 rgba(76, 87, 125, 0.02);
 }
+
+/* Amarelo de aviso no tema claro. O Metronic pinta o texto do aviso com o próprio amarelo (#FFC700) sobre um fundo
+   amarelo-claro (#FFF8DD), contraste ~1,4:1: ilegível. Aqui o texto de aviso passa a um âmbar escuro (~5,6:1 sobre o
+   fundo claro) e o texto sobre o amarelo sólido a quase preto. Vale para QUALQUER uso das classes de aviso do tema,
+   por isso não se escolhem cores à mão nos componentes: usar badge-light-warning, alert-warning, text-warning, etc.
+   Só tema claro; o escuro mantém o padrão do Metronic. */
+html[data-bs-theme='light'] {
+    --mosi-aviso-texto: #8A5A00;
+    --mosi-aviso-sobre-solido: #1E1E2D;
+}
+
+html[data-bs-theme='light'] .badge-light-warning,
+html[data-bs-theme='light'] .alert-warning,
+html[data-bs-theme='light'] .alert-warning .alert-link,
+html[data-bs-theme='light'] .btn.btn-light-warning,
+html[data-bs-theme='light'] .btn.btn-light-warning i,
+html[data-bs-theme='light'] .btn.btn-light-warning .svg-icon,
+html[data-bs-theme='light'] .btn.btn-light-warning.dropdown-toggle:after,
+html[data-bs-theme='light'] .text-warning {
+    color: var(--mosi-aviso-texto) !important;
+}
+
+/* Texto sobre o amarelo sólido (badge-warning, btn-warning, bg-warning) e o botão claro no hover, que passa a amarelo
+   sólido: branco sobre #FFC700 também não se lê. */
+html[data-bs-theme='light'] .badge-warning,
+html[data-bs-theme='light'] .btn.btn-warning,
+html[data-bs-theme='light'] .btn.btn-warning i,
+html[data-bs-theme='light'] .text-inverse-warning,
+html[data-bs-theme='light'] .btn.btn-light-warning:hover:not(.btn-active),
+html[data-bs-theme='light'] .btn.btn-light-warning:hover:not(.btn-active) i,
+html[data-bs-theme='light'] .btn.btn-light-warning:active:not(.btn-active),
+html[data-bs-theme='light'] .btn.btn-light-warning:active:not(.btn-active) i,
+html[data-bs-theme='light'] .btn.btn-light-warning.active,
+html[data-bs-theme='light'] .btn.btn-light-warning.active i {
+    color: var(--mosi-aviso-sobre-solido) !important;
+}

@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\DTO;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Financeiro\Enums\Periodicidade;
 use Modules\Financeiro\Services\MoedaDoTenant;
@@ -18,8 +19,8 @@ class PlanoPropinaDTO
         public Periodicidade $periodicidade,
         public int $intervalo_meses,
         public Dinheiro $valor,
-        public int $mes_inicio,
-        public int $mes_fim,
+        public CarbonImmutable $data_inicio,
+        public CarbonImmutable $data_fim,
         public array $alvos,
         public ?int $ano_lectivo_id = null,
         public ?string $descricao = null,
@@ -29,15 +30,15 @@ class PlanoPropinaDTO
     public static function fromRequest(FormRequest $request): self
     {
         $dados = $request->validated();
-        $periodicidade = Periodicidade::from((int) $dados['periodicidade']);
 
         return new self(
             nome: $dados['nome'],
-            periodicidade: $periodicidade,
-            intervalo_meses: $periodicidade->meses() ?? (int) $dados['intervalo_meses'],
+            // Propina sempre mensal: a periodicidade e o intervalo deixaram de ser controlados pelo cliente.
+            periodicidade: Periodicidade::MENSAL,
+            intervalo_meses: 1,
             valor: Dinheiro::deDecimal((string) $dados['valor'], app(MoedaDoTenant::class)->atual()),
-            mes_inicio: (int) $dados['mes_inicio'],
-            mes_fim: (int) $dados['mes_fim'],
+            data_inicio: CarbonImmutable::parse((string) $dados['data_inicio']),
+            data_fim: CarbonImmutable::parse((string) $dados['data_fim']),
             alvos: AlvosDoPlano::paraGravar((array) ($dados['alvos'] ?? [])),
             ano_lectivo_id: isset($dados['ano_lectivo_id']) ? (int) $dados['ano_lectivo_id'] : null,
             descricao: ($dados['descricao'] ?? null) !== '' ? ($dados['descricao'] ?? null) : null,

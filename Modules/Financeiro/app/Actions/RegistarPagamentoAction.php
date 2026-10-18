@@ -10,11 +10,14 @@ use Illuminate\Validation\ValidationException;
 use Modules\Core\Enums\Estado;
 use Modules\Core\Services\GeradorSequencia;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
+use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
 use Modules\Financeiro\DTO\RegistarPagamentoDTO;
+use Modules\Financeiro\Enums\AmbitoGeracaoPropinas;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\EstadoCredito;
 use Modules\Financeiro\Enums\EstadoMulta;
 use Modules\Financeiro\Enums\EstadoPagamento;
+use Modules\Financeiro\Enums\OrigemGeracaoPropina;
 use Modules\Financeiro\Models\Credito;
 use Modules\Financeiro\Models\CreditoUtilizacao;
 use Modules\Financeiro\Models\MetodoPagamento;
@@ -24,7 +27,9 @@ use Modules\Financeiro\Models\PagamentoPropina;
 use Modules\Financeiro\Models\PagamentoSequencia;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\RegraCobranca;
+use Modules\Financeiro\Services\AplicarMultasService;
 use Modules\Financeiro\Services\DistribuicaoDePagamentoService;
+use Modules\Financeiro\Services\GerarPropinasService;
 use Modules\Financeiro\Services\RecalcularCredito;
 use Modules\Financeiro\Services\RecalcularPropina;
 use Modules\Financeiro\Services\SnapshotMonetario;
@@ -56,6 +61,8 @@ class RegistarPagamentoAction
         private GeradorSequencia $sequencia,
         private SnapshotMonetario $snapshot,
         private RelogioDoTenant $relogio,
+        private GerarPropinasService $geracao,
+        private AplicarMultasService $multas,
     ) {
     }
 
@@ -81,7 +88,27 @@ class RegistarPagamentoAction
         // O3: nem futura nem anterior à matrícula, com a data_matricula RELIDA sob o lock (a do pedido pode estar obsoleta).
         $this->distribuicao->validarData($dto->dataPagamento, $bloqueada);
 
-        // Em Aberto e Parcialmente Paga todas; Paga só as que têm multa pendente (valor > valor_pago).
+        // O6/decision: «Pagar até» um mês futuro é recusado sem «pagar antecipado».
+        $this->distribuicao->validarAntecipado($dto, $bloqueada);
+
+        // 2. «Pagar até [mês]»: gera as propinas em falta (idempotente, da mais antiga para a mais recente, ao preço
+        //    actual do plano), na MESMA transacção — se o pagamento falhar, as propinas geradas revertem com ele.
+        if ($dto->ate_ano !== null) {
+            $this->geracao->gerarParaMatriculaNaTransaccao($bloqueada, new PedidoGeracaoPropinasDTO(
+                ano_lectivo_id: (int) $bloqueada->ano_lectivo_id,
+                ambito: AmbitoGeracaoPropinas::MATRICULA,
+                origem: OrigemGeracaoPropina::MANUAL,
+                matricula_numero: $bloqueada->numero_registo_matricula,
+                ate_ano: $dto->ate_ano,
+                ate_mes: $dto->ate_mes,
+            ));
+        }
+
+        // 3. Multa automática no pagamento (só actua com multa_activa ligado), ainda antes de calcular a distribuição.
+        $this->multas->executarParaMatricula((int) $bloqueada->id);
+
+        // 4. Em Aberto e Parcialmente Paga todas; Paga só as que têm multa pendente (valor > valor_pago). Com «Pagar
+        //    até [mês]» ficam de fora as propinas de meses posteriores.
         $ids = Propina::query()
             ->where('matricula_id', $bloqueada->id)
             ->where(function (Builder $q) {
@@ -93,6 +120,7 @@ class RegistarPagamentoAction
                                 ->whereColumn('propina_multas.valor', '>', 'propina_multas.valor_pago'));
                     });
             })
+            ->when($dto->ate_ano !== null, fn (Builder $q) => $q->where('periodo_inicio', '<=', sprintf('%04d-%02d-01', $dto->ate_ano, $dto->ate_mes)))
             ->pluck('id')->map(fn ($id) => (int) $id)->all();
         $propinas = $this->bloqueioDePropinas->bloquear($ids); // relidas: o calcular volta a filtrar o estado
 
@@ -105,7 +133,7 @@ class RegistarPagamentoAction
             );
         }
 
-        // 2. Validações de negócio sobre o estado bloqueado.
+        // 5. Validações de negócio sobre o estado bloqueado.
         $metodo = MetodoPagamento::query()->find($dto->metodoPagamentoId);
 
         if ($metodo === null || (int) $metodo->estado !== Estado::ATIVO->value) {
@@ -124,16 +152,17 @@ class RegistarPagamentoAction
             $dto->valor->unidadesMenores(),
             $dto->valorCredito->unidadesMenores(),
             $dto->dataPagamento,
-            $dto->distribuicao,
+            // «Pagar até [mês]» é sempre automático: as propinas a gerar ainda não têm id para uma distribuição explícita.
+            $dto->ate_ano !== null ? null : $dto->distribuicao,
             $propinas,
             $creditos,
             RegraCobranca::doTenant(),
         );
 
-        // 3. Número: último bloqueio (a linha da sequência fica presa até ao commit; um rollback devolve-o).
+        // 6. Número: último bloqueio (a linha da sequência fica presa até ao commit; um rollback devolve-o).
         $numero = $this->sequencia->gerar(PagamentoSequencia::class, $this->relogio->hoje()->year);
 
-        // 4. Escritas (só criações).
+        // 7. Escritas (só criações).
         $pagamento = new Pagamento([
             'matricula_id' => $bloqueada->id,
             'metodo_pagamento_id' => $metodo->id,
@@ -181,7 +210,7 @@ class RegistarPagamentoAction
             ]);
         }
 
-        // 5. Caches (pontos únicos).
+        // 8. Caches (pontos únicos).
         $this->recalcularPropina->executarVarias($plano->propinasTocadas());
 
         foreach ($creditos->whereIn('id', $plano->creditosUsados()) as $credito) {

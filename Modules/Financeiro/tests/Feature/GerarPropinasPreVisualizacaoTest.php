@@ -12,11 +12,13 @@ use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
 use Modules\Financeiro\Enums\AmbitoGeracaoPropinas;
 use Modules\Financeiro\Enums\OrigemGeracaoPropina;
 use Modules\Financeiro\Enums\Periodicidade;
+use Modules\Financeiro\Enums\TipoMulta;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Services\GerarPropinasService;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Support\Dinheiro;
 use Modules\Financeiro\Tests\Concerns\ComDadosAcademicosFinanceiro;
+use Modules\Financeiro\Tests\Concerns\ComMultasFinanceiro;
 use Modules\Financeiro\Tests\Concerns\ComPropinasFinanceiro;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
@@ -30,6 +32,7 @@ use Tests\TestCase;
 class GerarPropinasPreVisualizacaoTest extends TestCase
 {
     use ComDadosAcademicosFinanceiro;
+    use ComMultasFinanceiro;
     use ComPropinasFinanceiro;
     use RefreshDatabase;
 
@@ -382,5 +385,56 @@ class GerarPropinasPreVisualizacaoTest extends TestCase
 
         $this->assertSame([], $resultado['matriculas']);
         $this->assertSame(0, $resultado['totais']['criadas']);
+    }
+
+    public function test_uma_unica_matricula_mostra_total_e_multa_estimada_com_regra_por_linha(): void
+    {
+        Carbon::setTestNow(CarbonImmutable::parse('2026-10-16 10:00:00', 'UTC'));
+        $this->multaActiva([[10, TipoMulta::PERCENTAGEM, 1000]]);
+        ['turma' => $turma, 'matricula' => $matricula] = $this->cenarioPropinas();
+
+        $resultado = $this->previa($this->pedido($turma));
+        $linha = $this->daMatricula($resultado, $matricula);
+
+        $this->assertSame(25_000_000, $linha['total_capital']);
+        $this->assertSame(250_000, $linha['total_multa']);
+        $this->assertSame(250_000, $linha['criadas'][0]['multa']);
+        $this->assertSame('10% · escalão 1 (após 10 dias)', $linha['criadas'][0]['multa_regra']);
+        $this->assertArrayNotHasKey('multa', $linha['criadas'][1]);
+        $this->assertSame(25_000_000, $resultado['totais']['capital']);
+        $this->assertSame(250_000, $resultado['totais']['multas']);
+        $this->assertTrue($resultado['inclui_multas_estimadas']);
+    }
+
+    public function test_sem_multa_activa_nao_estima_multas_mas_mostra_o_capital(): void
+    {
+        ['turma' => $turma, 'matricula' => $matricula] = $this->cenarioPropinas();
+
+        $resultado = $this->previa($this->pedido($turma));
+        $linha = $this->daMatricula($resultado, $matricula);
+
+        $this->assertSame(25_000_000, $linha['total_capital']);
+        $this->assertNull($linha['total_multa']);
+        $this->assertArrayNotHasKey('multa', $linha['criadas'][0]);
+        $this->assertSame(0, $resultado['totais']['multas']);
+        $this->assertFalse($resultado['inclui_multas_estimadas']);
+    }
+
+    public function test_varias_matriculas_nao_calculam_multa_por_linha_e_assinalam_inclusao(): void
+    {
+        Carbon::setTestNow(CarbonImmutable::parse('2026-10-16 10:00:00', 'UTC'));
+        $this->multaActiva([[10, TipoMulta::PERCENTAGEM, 1000]]);
+        ['turma' => $turma, 'matricula' => $matricula] = $this->cenarioPropinas();
+        $this->matriculaActiva($turma);
+
+        $resultado = $this->previa($this->pedido($turma));
+        $linha = $this->daMatricula($resultado, $matricula);
+
+        $this->assertCount(2, $resultado['matriculas']);
+        $this->assertArrayNotHasKey('multa', $linha['criadas'][0]);
+        $this->assertNull($linha['total_multa']);
+        $this->assertSame(0, $resultado['totais']['multas']);
+        $this->assertSame(50_000_000, $resultado['totais']['capital']);
+        $this->assertTrue($resultado['inclui_multas_estimadas']);
     }
 }

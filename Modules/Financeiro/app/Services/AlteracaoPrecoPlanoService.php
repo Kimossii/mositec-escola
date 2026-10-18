@@ -3,6 +3,7 @@
 namespace Modules\Financeiro\Services;
 
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -47,8 +48,6 @@ class AlteracaoPrecoPlanoService
     public const MENSAGEM_ANO_ENCERRADO = 'Não é possível alterar o preço de um plano de um ano lectivo encerrado.';
 
     public const MENSAGEM_VALOR_IGUAL = 'O novo valor tem de ser diferente do valor actual do plano.';
-
-    public const MENSAGEM_ANCORA = 'Com este mês de efeito, o calendário do plano novo não coincidiria com os meses que restam do plano actual (o mês de início repete-se noutro ano civil). Escolha outro mês de efeito ou altere o preço a partir do início do plano.';
 
     public const MENSAGEM_OUTRO_ANO = 'Foram encontradas propinas de outro ano lectivo associadas a este plano. A operação foi cancelada; contacte o suporte.';
 
@@ -162,10 +161,10 @@ class AlteracaoPrecoPlanoService
             valorNovo: $novo,
             nomePlanoNovo: $nomeNovo,
             planos: $inLoco
-                ? [$this->descricaoDoPlano('mesmo', $plano->nome, $novo, (int) $plano->mes_inicio, (int) $plano->mes_fim, $periodos)]
+                ? [$this->descricaoDoPlano('mesmo', $plano->nome, $novo, $plano->data_inicio, $plano->data_fim, $periodos)]
                 : [
-                    $this->descricaoDoPlano('antigo', $plano->nome, $plano->valor->unidadesMenores(), (int) $plano->mes_inicio, $mesEfeito->subMonthNoOverflow()->month, array_slice($periodos, 0, $indice)),
-                    $this->descricaoDoPlano('novo', (string) $nomeNovo, $novo, $mesEfeito->month, (int) $plano->mes_fim, $novosPeriodos),
+                    $this->descricaoDoPlano('antigo', $plano->nome, $plano->valor->unidadesMenores(), $plano->data_inicio, $mesEfeito->subDay(), array_slice($periodos, 0, $indice)),
+                    $this->descricaoDoPlano('novo', (string) $nomeNovo, $novo, $mesEfeito, $plano->data_fim, $novosPeriodos),
                 ],
             afectadas: $afectadas,
             inalteradas: $inalteradas,
@@ -280,23 +279,14 @@ class AlteracaoPrecoPlanoService
     }
 
     /**
-     * L6: as competências do plano novo (ancoradas no início do ano lectivo) têm de ser exactamente as que restam
-     * do antigo a partir de `mes_efeito`.
+     * As competências do plano novo derivam directamente das datas (de mes_efeito até ao fim do plano);
+     * o ano vem das datas, por isso o calendário coincide por construção com os meses que restam do antigo.
      *
      * @return list<array{ordem: int, meses: int, inicio: string, fim: string}>
      */
     private function periodosDoPlanoNovo(PlanoPropina $plano, CarbonImmutable $mesEfeito): array
     {
-        $inicioDoAno = $plano->anoLectivo->data_inicio;
-        $antigas = $plano->competencias();
-        $posicao = array_search(['ano' => $mesEfeito->year, 'mes' => $mesEfeito->month], $antigas, true);
-        $novas = CalendarioDePlano::competencias($mesEfeito->month, (int) $plano->mes_fim, $inicioDoAno);
-
-        if ($posicao === false || $novas !== array_slice($antigas, $posicao)) {
-            throw ValidationException::withMessages(['mes_efeito' => self::MENSAGEM_ANCORA]);
-        }
-
-        return CalendarioDePlano::periodos($mesEfeito->month, (int) $plano->mes_fim, (int) $plano->intervalo_meses, $inicioDoAno);
+        return CalendarioDePlano::periodos($mesEfeito, $plano->data_fim, (int) $plano->intervalo_meses);
     }
 
     private function motivoParaFicarInalterada(Propina $propina, ModoAlteracaoPreco $modo): ?string
@@ -338,14 +328,14 @@ class AlteracaoPrecoPlanoService
      * @param  list<array{ordem: int, meses: int, inicio: string, fim: string}>  $periodos
      * @return array<string, mixed>
      */
-    private function descricaoDoPlano(string $papel, string $nome, int $valor, int $mesInicio, int $mesFim, array $periodos): array
+    private function descricaoDoPlano(string $papel, string $nome, int $valor, CarbonInterface $dataInicio, CarbonInterface $dataFim, array $periodos): array
     {
         return [
             'papel' => $papel,
             'nome' => $nome,
             'valor' => $valor,
-            'mes_inicio' => $mesInicio,
-            'mes_fim' => $mesFim,
+            'data_inicio' => $dataInicio->toDateString(),
+            'data_fim' => $dataFim->toDateString(),
             'periodos' => array_map(fn (array $p) => [
                 'ordem' => $p['ordem'],
                 'periodo' => RotuloDePeriodo::periodo($p['inicio'], $p['fim']),
@@ -408,8 +398,8 @@ class AlteracaoPrecoPlanoService
                 'valor' => $plano->valor->unidadesMenores(),
                 'periodicidade' => $plano->periodicidade?->value,
                 'intervalo_meses' => (int) $plano->intervalo_meses,
-                'mes_inicio' => (int) $plano->mes_inicio,
-                'mes_fim' => (int) $plano->mes_fim,
+                'data_inicio' => $plano->data_inicio?->toDateString(),
+                'data_fim' => $plano->data_fim?->toDateString(),
                 'estado' => (int) $plano->estado,
                 'updated_at' => $plano->updated_at?->toDateTimeString(),
                 'alvos' => $alvos,

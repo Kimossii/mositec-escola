@@ -26,6 +26,12 @@ final class ResultadoGeracaoMatriculaDTO
     /** @var list<string> */
     private array $erros = [];
 
+    /** @var int|null capital total das propinas a criar (preenchido pelo serviço na pré-visualização). */
+    private ?int $totalCapital = null;
+
+    /** @var int|null multa estimada total (só na pré-visualização com uma única matrícula). */
+    private ?int $totalMulta = null;
+
     public function __construct(
         public readonly int $matricula_id,
         public readonly ?string $numero_registo = null,
@@ -87,6 +93,42 @@ final class ResultadoGeracaoMatriculaDTO
         $this->erros[] = $mensagem;
     }
 
+    public function comTotalCapital(int $capital): void
+    {
+        $this->totalCapital = $capital;
+    }
+
+    public function comTotalMulta(int $multa): void
+    {
+        $this->totalMulta = $multa;
+    }
+
+    /**
+     * Junta à propina a criar no índice a multa estimada de hoje e a regra que a produziria (só na
+     * pré-visualização com uma única matrícula).
+     */
+    public function comMulta(int $indice, int $multa, string $regra): void
+    {
+        $this->criadas[$indice]['multa'] = $multa;
+        $this->criadas[$indice]['multa_regra'] = $regra;
+    }
+
+    /**
+     * @return int capital total das propinas a criar (soma dos valores, se o serviço não o definiu).
+     */
+    public function totalCapital(): int
+    {
+        return $this->totalCapital ?? array_sum(array_column($this->criadas, 'valor'));
+    }
+
+    /**
+     * @return int|null multa estimada total; null quando não calculada (várias matrículas).
+     */
+    public function totalMulta(): ?int
+    {
+        return $this->totalMulta;
+    }
+
     /**
      * @return array{criadas: int, ignoradas: int, conflitos: int, sem_plano: int, erros: int}
      */
@@ -112,6 +154,8 @@ final class ResultadoGeracaoMatriculaDTO
             'aluno_nome' => $this->aluno_nome,
             'aluno_numero' => $this->aluno_numero,
             'turma_nome' => $this->turma_nome,
+            'total_capital' => $this->totalCapital(),
+            'total_multa' => $this->totalMulta(),
             'criadas' => $this->criadas,
             'ignoradas' => $this->ignoradas,
             'conflitos' => $this->conflitos,

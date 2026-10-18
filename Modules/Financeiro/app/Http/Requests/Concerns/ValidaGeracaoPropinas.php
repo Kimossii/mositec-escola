@@ -44,6 +44,13 @@ trait ValidaGeracaoPropinas
             if ($encerrado) {
                 $validador->errors()->add('ano_lectivo_id', 'Não é possível gerar propinas para um ano lectivo encerrado.');
             }
+
+            $temAno = $this->filled('ate_ano');
+            $temMes = $this->filled('ate_mes');
+
+            if ($temAno !== $temMes) {
+                $validador->errors()->add('ate_mes', 'Indique o ano e o mês «até» em conjunto.');
+            }
         }];
     }
 
@@ -81,6 +88,8 @@ trait ValidaGeracaoPropinas
             ],
             'incluir_periodos_anteriores' => ['sometimes', 'boolean'],
             'motivo_geracao' => [Rule::requiredIf(fn () => $this->boolean('incluir_periodos_anteriores')), 'nullable', 'string', 'max:500'],
+            'ate_ano' => ['sometimes', 'nullable', 'integer', 'between:2000,2100'],
+            'ate_mes' => ['sometimes', 'nullable', 'integer', 'between:1,12'],
         ];
     }
 
@@ -104,6 +113,9 @@ trait ValidaGeracaoPropinas
             'plano_propina_id.exists' => 'O plano escolhido é inválido, inactivo ou de outro ano lectivo.',
             'motivo_geracao.required' => 'Indique o motivo para gerar períodos anteriores à matrícula.',
             'motivo_geracao.max' => 'O motivo não pode ter mais de 500 caracteres.',
+            'ate_ano.integer' => 'O ano «até» é inválido.',
+            'ate_mes.integer' => 'O mês «até» é inválido.',
+            'ate_mes.between' => 'O mês «até» tem de estar entre 1 e 12.',
         ];
     }
 }

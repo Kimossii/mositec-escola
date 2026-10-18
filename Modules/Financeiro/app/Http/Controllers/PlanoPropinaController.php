@@ -44,7 +44,7 @@ class PlanoPropinaController extends Controller
         if (! $request->has('ano_lectivo_id')) {
             $filtros['ano_lectivo_id'] = $this->consulta->anoLectivoActualId();
         }
-
+       
         return Inertia::render('Financeiro/PlanosPropina/Index', [
             'planos' => $this->consulta->listar($filtros),
             'filtros' => $filtros,
@@ -63,9 +63,12 @@ class PlanoPropinaController extends Controller
     {
         $this->authorize('plano-propina.criar');
 
-        $this->service->criar($request);
+        $plano = $this->service->criar($request);
 
-        return redirect()->back()->with('success', 'Plano de propina criado com sucesso.');
+        // A lista mostra por defeito o ano lectivo actual: leva o utilizador ao ano do plano para o ver logo.
+        return redirect()
+            ->route('financeiro.configuracao.planos-propina.index', ['ano_lectivo_id' => $plano->ano_lectivo_id])
+            ->with('success', 'Plano de propina criado com sucesso.');
     }
 
     public function copiar(CopiarPlanosPropinaRequest $request)

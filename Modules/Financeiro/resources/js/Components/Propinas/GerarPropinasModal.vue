@@ -38,6 +38,7 @@ const vazio = () => ({
     matricula_numero: '',
     incluir_periodos_anteriores: false,
     motivo_geracao: '',
+    ate: '',
 });
 
 const form = reactive(vazio());
@@ -91,6 +92,12 @@ function payload() {
     if (form.incluir_periodos_anteriores) {
         dados.incluir_periodos_anteriores = true;
         dados.motivo_geracao = form.motivo_geracao;
+    }
+
+    if ((form.ate ?? '').trim() !== '') {
+        const [ano, mes] = form.ate.split('-');
+        dados.ate_ano = Number(ano);
+        dados.ate_mes = Number(mes);
     }
 
     return dados;
@@ -186,6 +193,12 @@ function confirmar() {
                             <label class="required fw-semibold fs-6 mb-2">Nº de registo da matrícula</label>
                             <input v-model="form.matricula_numero" type="text" class="form-control form-control-solid" maxlength="50" />
                             <div v-if="erro('matricula_numero')" class="text-danger fs-7 mt-1">{{ erro('matricula_numero') }}</div>
+                        </div>
+                        <div class="col-md-6 fv-row mb-7">
+                            <label class="fw-semibold fs-6 mb-2">Até à data</label>
+                            <input v-model="form.ate" type="date" class="form-control form-control-solid" />
+                            <div class="text-muted fs-7 mt-1">Opcional: gera só as propinas dos meses até esta data (o mês da data conta por inteiro).</div>
+                            <div v-if="erro('ate_mes')" class="text-danger fs-7 mt-1">{{ erro('ate_mes') }}</div>
                         </div>
 
                         <div class="col-md-6 fv-row mb-7">

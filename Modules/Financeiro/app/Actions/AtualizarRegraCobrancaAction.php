@@ -5,12 +5,17 @@ namespace Modules\Financeiro\Actions;
 use Illuminate\Support\Facades\DB;
 use Modules\Financeiro\DTO\RegraCobrancaDTO;
 use Modules\Financeiro\Models\RegraCobranca;
+use Modules\Financeiro\Services\AplicarMultasDiariasService;
 
 class AtualizarRegraCobrancaAction
 {
+    public function __construct(private AplicarMultasDiariasService $multasDoDia)
+    {
+    }
+
     public function executar(RegraCobrancaDTO $dto): RegraCobranca
     {
-        return DB::transaction(function () use ($dto) {
+        $regra = DB::transaction(function () use ($dto) {
             $regra = RegraCobranca::doTenant();
             // Serializa edições concorrentes da mesma regra (regra + escalões).
             $regra = RegraCobranca::query()->lockForUpdate()->findOrFail($regra->id);
@@ -44,5 +49,10 @@ class AtualizarRegraCobrancaAction
 
             return $regra->fresh();
         });
+
+        // Regras novas (ligar multas, escalões): o varrimento de hoje volta a poder correr na próxima visita.
+        $this->multasDoDia->esquecerDoDia();
+
+        return $regra;
     }
 }

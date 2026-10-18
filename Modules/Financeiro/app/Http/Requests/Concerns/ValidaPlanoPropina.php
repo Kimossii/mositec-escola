@@ -2,12 +2,11 @@
 
 namespace Modules\Financeiro\Http\Requests\Concerns;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Enum;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Tenancy\TenantContext;
-use Modules\Financeiro\Enums\Periodicidade;
 use Modules\Financeiro\Rules\ValorMonetario;
 use Modules\Financeiro\Services\PlanoPropinaConsultaService;
 use Modules\Financeiro\Support\AlvosDoPlano;
@@ -35,16 +34,9 @@ trait ValidaPlanoPropina
 
         return [
             'descricao' => ['nullable', 'string'],
-            'periodicidade' => ['required', new Enum(Periodicidade::class)],
-            'intervalo_meses' => [
-                Rule::requiredIf(fn () => (int) $this->input('periodicidade') === Periodicidade::OUTRA->value),
-                'nullable',
-                'integer',
-                'between:1,12',
-            ],
             'valor' => ['required', new ValorMonetario(false)],
-            'mes_inicio' => ['required', 'integer', 'between:1,12'],
-            'mes_fim' => ['required', 'integer', 'between:1,12'],
+            'data_inicio' => ['required', 'date'],
+            'data_fim' => ['required', 'date', 'after_or_equal:data_inicio'],
             'confirmar_plano_geral' => ['nullable', 'boolean'],
             'alvos' => ['nullable', 'array'],
             'alvos.*.nivel_academico_id' => ['nullable', 'integer', $existeNoTenant('niveis_academicos', true)],
@@ -65,14 +57,12 @@ trait ValidaPlanoPropina
             'nome.unique' => 'Já existe um plano de propina com este nome neste ano lectivo.',
             'ano_lectivo_id.required' => 'O ano lectivo é obrigatório.',
             'ano_lectivo_id.exists' => 'O ano lectivo escolhido é inválido.',
-            'periodicidade.required' => 'A periodicidade é obrigatória.',
-            'intervalo_meses.required' => 'Indique o intervalo, em meses, da periodicidade.',
-            'intervalo_meses.between' => 'O intervalo tem de estar entre 1 e 12 meses.',
             'valor.required' => 'O valor do plano é obrigatório.',
-            'mes_inicio.required' => 'O mês de início é obrigatório.',
-            'mes_inicio.between' => 'O mês de início tem de estar entre 1 e 12.',
-            'mes_fim.required' => 'O mês de fim é obrigatório.',
-            'mes_fim.between' => 'O mês de fim tem de estar entre 1 e 12.',
+            'data_inicio.required' => 'A data de início é obrigatória.',
+            'data_inicio.date' => 'A data de início é inválida.',
+            'data_fim.required' => 'A data de fim é obrigatória.',
+            'data_fim.date' => 'A data de fim é inválida.',
+            'data_fim.after_or_equal' => 'A data de fim não pode ser anterior à data de início.',
             'confirmar_plano_geral.boolean' => 'A confirmação do plano geral é inválida.',
             'alvos.*.nivel_academico_id.exists' => 'O nível académico escolhido é inválido.',
             'alvos.*.curso_id.exists' => 'O curso escolhido é inválido.',
@@ -107,16 +97,6 @@ trait ValidaPlanoPropina
     {
         $erros = $validator->errors();
 
-        if (! $erros->hasAny(['periodicidade', 'intervalo_meses', 'mes_inicio', 'mes_fim'])) {
-            $periodicidade = Periodicidade::from((int) $this->input('periodicidade'));
-            $intervalo = $periodicidade->meses() ?? (int) $this->input('intervalo_meses');
-            $meses = CalendarioDePlano::meses((int) $this->input('mes_inicio'), (int) $this->input('mes_fim'));
-
-            if ($intervalo > $meses) {
-                $validator->errors()->add('periodicidade', 'A periodicidade excede a duração do período de cobrança.');
-            }
-        }
-
         $temErroEmAlvos = collect($erros->keys())->contains(fn (string $chave) => str_starts_with($chave, 'alvos'));
 
         if ($temErroEmAlvos) {
@@ -144,11 +124,20 @@ trait ValidaPlanoPropina
             return;
         }
 
-        if ($erros->hasAny(['mes_inicio', 'mes_fim'])) {
+        if ($erros->hasAny(['data_inicio', 'data_fim'])) {
             return;
         }
 
-        $competencias = CalendarioDePlano::competencias((int) $this->input('mes_inicio'), (int) $this->input('mes_fim'), $ano->data_inicio);
+        $dataInicio = CarbonImmutable::parse((string) $this->input('data_inicio'));
+        $dataFim = CarbonImmutable::parse((string) $this->input('data_fim'));
+
+        if ($dataInicio < $ano->data_inicio->startOfDay() || $dataFim > $ano->data_fim->endOfDay()) {
+            $validator->errors()->add('data_inicio', 'As datas do plano têm de estar dentro do ano lectivo.');
+
+            return;
+        }
+
+        $competencias = CalendarioDePlano::competencias($dataInicio, $dataFim);
 
         if ($consulta->colisaoDeAlvos($ano->id, $alvos, $competencias, $ignorarPlanoId)) {
             $validator->errors()->add('alvos', 'Já existe outro plano deste ano lectivo, com período sobreposto, aplicável aos mesmos alvos.');

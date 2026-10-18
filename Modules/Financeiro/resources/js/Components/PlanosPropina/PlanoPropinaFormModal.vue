@@ -2,10 +2,9 @@
 import { computed, reactive, ref, watch } from 'vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
-import { decimalParaUnidadesMenores, formatarDinheiro, unidadesMenoresParaDecimal } from '../../Support/dinheiro';
-import { duracoesDosPeriodos, resumoPeriodos } from '../../Support/periodos';
+import { unidadesMenoresParaDecimal } from '../../Support/dinheiro';
+import { dataCurta, mesesDeDatas, rotuloCompetencia } from '../../Support/periodos';
 
-const OUTRA = 0;
 const AVISO_PLANO_GERAL = 'Este plano não tem alvos definidos e será aplicado a todas as turmas do ano lectivo. Confirme que pretende criar um plano geral.';
 
 const props = defineProps({
@@ -27,20 +26,15 @@ const placeholderValor = computed(() => props.moeda.decimais === 0
     ? 'ex: 25000'
     : 'ex: 25000 ou 25000,' + '50'.padEnd(props.moeda.decimais, '0').slice(0, props.moeda.decimais));
 
-const MESES = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-].map((label, indice) => ({ value: indice + 1, label }));
-
 const form = reactive({
     ano_lectivo_id: '',
     nome: '',
     descricao: '',
-    periodicidade: 1,
-    intervalo_meses: '',
+    periodicidade: 1, // mensal, fixo
+    intervalo_meses: 1,
     valor: '',
-    mes_inicio: 9,
-    mes_fim: 6,
+    data_inicio: '',
+    data_fim: '',
     alvos: [],
 });
 
@@ -53,6 +47,8 @@ const opcoesTurma = computed(() => [
     ...props.turmas.filter((t) => t.ano_lectivo_id === form.ano_lectivo_id).map((t) => ({ value: t.id, label: t.nome })),
 ]);
 
+const anoSelecionado = computed(() => props.anosLectivos.find((a) => a.id === form.ano_lectivo_id));
+
 function textoDoAlvo(a) {
     if (a.turma_id) return `Turma ${a.turma_nome}`;
 
@@ -61,49 +57,32 @@ function textoDoAlvo(a) {
 
 const alvosEliminados = computed(() => form.alvos.filter((a) => a.eliminado));
 
-// Plano com propinas: valor e calendário bloqueados (o servidor recusa na mesma).
+// Plano com propinas: valor e datas bloqueados (o servidor recusa na mesma).
 const calendarioBloqueado = computed(() => props.plano?.tem_propinas === true);
 
-// Q3: o valor é por período de cobrança; o último período pode ser mais curto e cobra o valor inteiro.
-// Os valores do enum Periodicidade são os meses de cada período (OUTRA = 0 usa o intervalo indicado).
-const intervaloEfectivo = computed(() => {
-    if (form.periodicidade === OUTRA) {
-        const meses = Number(form.intervalo_meses);
-        return Number.isInteger(meses) && meses >= 1 && meses <= 12 ? meses : null;
-    }
+// Resumo vivo: quantos meses (inteiros) o plano cobre, do primeiro ao último.
+const resumoDatas = computed(() => {
+    const meses = mesesDeDatas(form.data_inicio, form.data_fim);
 
-    return Number(form.periodicidade);
+    if (meses.length === 0) return '';
+
+    const primeiro = rotuloCompetencia(meses[0].ano, meses[0].mes);
+    const ultimo = rotuloCompetencia(meses[meses.length - 1].ano, meses[meses.length - 1].mes);
+
+    return `${meses.length} ${meses.length === 1 ? 'mês' : 'meses'} no plano: ${primeiro} … ${ultimo}. Cada mês tocado conta como mês inteiro; os meses isentos por uma pausa de cobrança não geram propina.`;
 });
-const duracoes = computed(() => (intervaloEfectivo.value === null ? [] : duracoesDosPeriodos(form.mes_inicio, form.mes_fim, intervaloEfectivo.value)));
-const ultimoPeriodoMaisCurto = computed(() => duracoes.value.length > 0 && duracoes.value[duracoes.value.length - 1] < intervaloEfectivo.value);
-const mesesDoUltimo = computed(() => duracoes.value[duracoes.value.length - 1]);
-const resumoCobranca = computed(() => {
-    if (duracoes.value.length === 0) return '';
-
-    const intervalo = intervaloEfectivo.value;
-    const partes = [`${intervalo} ${intervalo === 1 ? 'mês' : 'meses'} por período`, resumoPeriodos(duracoes.value)];
-    const valor = decimalParaUnidadesMenores(form.valor, props.moeda);
-
-    if (valor !== null) {
-        const quantidade = duracoes.value.length;
-        partes.push(`total ${quantidade} × ${formatarDinheiro(valor, props.moeda)} = ${formatarDinheiro(valor * BigInt(quantidade), props.moeda)}`);
-    }
-
-    return partes.join(' · ');
-});
-const rotuloPeriodicidade = computed(() => props.periodicidades.find((p) => p.value === form.periodicidade)?.label ?? '');
-const rotuloMes = (mes) => MESES.find((m) => m.value === mes)?.label ?? '';
 
 watch(() => props.show, (show) => {
     if (!show) return;
     form.ano_lectivo_id = props.plano?.ano_lectivo_id ?? props.anosLectivos[0]?.id ?? '';
     form.nome = props.plano?.nome ?? '';
     form.descricao = props.plano?.descricao ?? '';
-    form.periodicidade = props.plano?.periodicidade ?? 1;
-    form.intervalo_meses = props.plano && props.plano.periodicidade === OUTRA ? props.plano.intervalo_meses : '';
+    form.periodicidade = 1;
+    form.intervalo_meses = 1;
     form.valor = props.plano ? unidadesMenoresParaDecimal(props.plano.valor, props.moeda) : '';
-    form.mes_inicio = props.plano?.mes_inicio ?? 9;
-    form.mes_fim = props.plano?.mes_fim ?? 6;
+    const ano = props.anosLectivos.find((a) => a.id === form.ano_lectivo_id);
+    form.data_inicio = props.plano?.data_inicio ?? ano?.data_inicio ?? '';
+    form.data_fim = props.plano?.data_fim ?? ano?.data_fim ?? '';
     form.alvos = (props.plano?.alvos ?? []).map((a) => ({
         eliminado: a.eliminado === true,
         descricao: textoDoAlvo(a),
@@ -114,9 +93,12 @@ watch(() => props.show, (show) => {
     }));
 });
 
-// Ao mudar o ano lectivo (criação), as turmas escolhidas que já não existem nas opções são limpas.
+// Ao mudar o ano lectivo (criação), pré-preenche as datas com as do ano escolhido e limpa turmas que já não existem.
 watch(() => form.ano_lectivo_id, () => {
     if (props.plano) return;
+    const ano = props.anosLectivos.find((a) => a.id === form.ano_lectivo_id);
+    form.data_inicio = ano?.data_inicio ?? '';
+    form.data_fim = ano?.data_fim ?? '';
     const validas = new Set(opcoesTurma.value.map((o) => o.value));
     form.alvos.forEach((alvo) => {
         if (alvo.turma_id !== '' && !validas.has(alvo.turma_id)) alvo.turma_id = '';
@@ -179,10 +161,9 @@ function enviar(confirmado) {
     const payload = {
         nome: form.nome,
         descricao: form.descricao,
-        periodicidade: form.periodicidade,
         valor: form.valor,
-        mes_inicio: form.mes_inicio,
-        mes_fim: form.mes_fim,
+        data_inicio: form.data_inicio,
+        data_fim: form.data_fim,
         alvos: form.alvos.map((a) => ({
             nivel_academico_id: vazioParaNulo(a.nivel_academico_id),
             curso_id: vazioParaNulo(a.curso_id),
@@ -192,7 +173,6 @@ function enviar(confirmado) {
     };
 
     if (confirmado) payload.confirmar_plano_geral = true;
-    if (form.periodicidade === OUTRA) payload.intervalo_meses = form.intervalo_meses;
     if (!props.plano) payload.ano_lectivo_id = form.ano_lectivo_id;
 
     emit('submit', payload);
@@ -222,18 +202,7 @@ function enviar(confirmado) {
 
                     <div class="row">
                         <div class="col-md-4 fv-row mb-7">
-                            <label class="required fw-semibold fs-6 mb-2">Periodicidade</label>
-                            <input v-if="calendarioBloqueado" type="text" class="form-control form-control-solid" :value="rotuloPeriodicidade" disabled />
-                            <SelectSolid v-else v-model="form.periodicidade" :options="periodicidades" />
-                            <div class="text-danger fs-7 mt-1" v-if="errors.periodicidade">{{ errors.periodicidade }}</div>
-                        </div>
-                        <div v-if="form.periodicidade === OUTRA" class="col-md-4 fv-row mb-7">
-                            <label class="required fw-semibold fs-6 mb-2">Intervalo (meses)</label>
-                            <input v-model.number="form.intervalo_meses" type="number" min="1" max="12" class="form-control form-control-solid" :disabled="calendarioBloqueado" />
-                            <div class="text-danger fs-7 mt-1" v-if="errors.intervalo_meses">{{ errors.intervalo_meses }}</div>
-                        </div>
-                        <div class="col-md-4 fv-row mb-7">
-                            <label class="required fw-semibold fs-6 mb-2">Valor por período de cobrança ({{ moeda.simbolo }})</label>
+                            <label class="required fw-semibold fs-6 mb-2">Valor mensal ({{ moeda.simbolo }})</label>
                             <input v-model="form.valor" type="text" inputmode="decimal" class="form-control form-control-solid" :placeholder="placeholderValor" :disabled="calendarioBloqueado" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.valor">{{ errors.valor }}</div>
                         </div>
@@ -241,39 +210,30 @@ function enviar(confirmado) {
 
                     <div class="row">
                         <div class="col-md-4 fv-row mb-7">
-                            <label class="required fw-semibold fs-6 mb-2">Mês de início</label>
-                            <input v-if="calendarioBloqueado" type="text" class="form-control form-control-solid" :value="rotuloMes(form.mes_inicio)" disabled />
-                            <SelectSolid v-else v-model="form.mes_inicio" :options="MESES" />
-                            <div class="text-danger fs-7 mt-1" v-if="errors.mes_inicio">{{ errors.mes_inicio }}</div>
+                            <label class="required fw-semibold fs-6 mb-2">Aplica-se de</label>
+                            <input v-if="calendarioBloqueado" type="text" class="form-control form-control-solid" :value="dataCurta(form.data_inicio)" disabled />
+                            <input v-else v-model="form.data_inicio" type="date" class="form-control form-control-solid" :min="anoSelecionado?.data_inicio" :max="anoSelecionado?.data_fim" />
+                            <div class="text-danger fs-7 mt-1" v-if="errors.data_inicio">{{ errors.data_inicio }}</div>
                         </div>
                         <div class="col-md-4 fv-row mb-7">
-                            <label class="required fw-semibold fs-6 mb-2">Mês de fim</label>
-                            <input v-if="calendarioBloqueado" type="text" class="form-control form-control-solid" :value="rotuloMes(form.mes_fim)" disabled />
-                            <SelectSolid v-else v-model="form.mes_fim" :options="MESES" />
-                            <div class="text-danger fs-7 mt-1" v-if="errors.mes_fim">{{ errors.mes_fim }}</div>
+                            <label class="required fw-semibold fs-6 mb-2">até</label>
+                            <input v-if="calendarioBloqueado" type="text" class="form-control form-control-solid" :value="dataCurta(form.data_fim)" disabled />
+                            <input v-else v-model="form.data_fim" type="date" class="form-control form-control-solid" :min="anoSelecionado?.data_inicio" :max="anoSelecionado?.data_fim" />
+                            <div class="text-danger fs-7 mt-1" v-if="errors.data_fim">{{ errors.data_fim }}</div>
                         </div>
                         <div class="col-md-4 d-flex align-items-end mb-7">
                             <div class="form-text">
-                                O período pode atravessar o ano civil (ex.: Setembro → Junho). O valor é cobrado por cada período
-                                de cobrança. Para mudar o preço a meio do ano, crie outro plano com os mesmos alvos e o período seguinte.
+                                O plano vale de uma data a outra; cada mês tocado conta como mês inteiro. Para mudar o preço a meio do ano, use «Alterar preço».
                             </div>
                         </div>
                     </div>
 
                     <div v-if="calendarioBloqueado" class="alert alert-info fs-7 py-3 mb-4">
-                        Este plano já tem propinas geradas: o valor, a periodicidade e os meses de início e de fim ficam bloqueados.
+                        Este plano já tem propinas geradas: o valor e as datas de início e de fim ficam bloqueados.
                         Pode mudar o nome, a descrição e os alvos; essas alterações só afectam gerações futuras.
                     </div>
-                    <div v-if="resumoCobranca" class="bg-body-secondary rounded fs-7 px-4 py-3 mb-4">
-                        <span class="fw-semibold">Cobrança:</span> {{ resumoCobranca }}
-                    </div>
-                    <div v-if="ultimoPeriodoMaisCurto" class="alert alert-warning fs-7 py-3 mb-7">
-                        <template v-if="duracoes.length === 1">
-                            O período tem {{ mesesDoUltimo }} {{ mesesDoUltimo === 1 ? 'mês' : 'meses' }} (mais curto que o intervalo), mas é cobrado pelo valor integral de um período.
-                        </template>
-                        <template v-else>
-                            O último período tem só {{ mesesDoUltimo }} {{ mesesDoUltimo === 1 ? 'mês' : 'meses' }}, mas é cobrado pelo valor integral de um período.
-                        </template>
+                    <div v-if="resumoDatas" class="bg-body-secondary rounded fs-7 px-4 py-3 mb-4">
+                        {{ resumoDatas }}
                     </div>
 
                     <div class="fv-row mb-7">

@@ -8,6 +8,7 @@ use Modules\Core\Enums\Estado;
 use Modules\Curso\Models\Curso;
 use Modules\Financeiro\DTO\CopiarPlanosPropinaDTO;
 use Modules\Financeiro\DTO\ResumoCopiaPlanosDTO;
+use Modules\Financeiro\Enums\Periodicidade;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\PlanoPropinaAlvo;
 use Modules\Financeiro\Services\PlanoPropinaConsultaService;
@@ -28,10 +29,16 @@ class CopiarPlanosPropinaAction
 
     public function executar(CopiarPlanosPropinaDTO $dto): ResumoCopiaPlanosDTO
     {
+        $origem = AnoLectivo::findOrFail($dto->ano_origem_id);
         $destino = AnoLectivo::findOrFail($dto->ano_destino_id);
+        // Desloca as datas pela diferença entre o início dos dois anos lectivos (opção mais simples:
+        // um deslocamento em meses inteiros — nunca em dias: os anos bissextos deslocariam o fim do plano para o
+        // mês seguinte e o sinal ficaria trocado).
+        $deslocamento = ($destino->data_inicio->year * 12 + $destino->data_inicio->month)
+            - ($origem->data_inicio->year * 12 + $origem->data_inicio->month);
         $resumo = new ResumoCopiaPlanosDTO();
 
-        DB::transaction(function () use ($dto, $destino, $resumo) {
+        DB::transaction(function () use ($dto, $destino, $deslocamento, $resumo) {
             $planos = PlanoPropina::query()
                 ->where('ano_lectivo_id', $dto->ano_origem_id)
                 ->with('alvos')
@@ -39,7 +46,7 @@ class CopiarPlanosPropinaAction
                 ->get();
 
             foreach ($planos as $plano) {
-                $motivo = $this->motivoParaIgnorar($plano, $destino);
+                $motivo = $this->motivoParaIgnorar($plano, $destino, $deslocamento);
 
                 if ($motivo !== null) {
                     $resumo->ignorou($plano->nome, $motivo);
@@ -51,11 +58,12 @@ class CopiarPlanosPropinaAction
                     'ano_lectivo_id' => $destino->id,
                     'nome' => $plano->nome,
                     'descricao' => $plano->descricao,
-                    'periodicidade' => $plano->periodicidade,
-                    'intervalo_meses' => $plano->intervalo_meses,
+                    // Propina sempre mensal: a cópia normaliza a periodicidade e o intervalo para 1 mês.
+                    'periodicidade' => Periodicidade::MENSAL,
+                    'intervalo_meses' => 1,
                     'valor' => $plano->valor,
-                    'mes_inicio' => $plano->mes_inicio,
-                    'mes_fim' => $plano->mes_fim,
+                    'data_inicio' => $plano->data_inicio->addMonthsNoOverflow($deslocamento),
+                    'data_fim' => $plano->data_fim->addMonthsNoOverflow($deslocamento),
                     'estado' => Estado::INATIVO->value,
                 ]);
 
@@ -68,7 +76,7 @@ class CopiarPlanosPropinaAction
         return $resumo;
     }
 
-    private function motivoParaIgnorar(PlanoPropina $plano, AnoLectivo $destino): ?string
+    private function motivoParaIgnorar(PlanoPropina $plano, AnoLectivo $destino, int $deslocamento): ?string
     {
         if ($plano->estado !== Estado::ATIVO->value) {
             return 'Plano inactivo na origem.';
@@ -88,7 +96,10 @@ class CopiarPlanosPropinaAction
             return 'Já existe um plano com este nome no ano lectivo de destino.';
         }
 
-        $competencias = CalendarioDePlano::competencias($plano->mes_inicio, $plano->mes_fim, $destino->data_inicio);
+        $competencias = CalendarioDePlano::competencias(
+            $plano->data_inicio->addMonthsNoOverflow($deslocamento),
+            $plano->data_fim->addMonthsNoOverflow($deslocamento),
+        );
 
         if ($this->consulta->colisaoDeAlvos($destino->id, $alvos, $competencias, null)) {
             return 'Já existe outro plano no ano lectivo de destino, com período sobreposto, aplicável aos mesmos alvos.';

@@ -47,6 +47,10 @@ defineProps({
                             <span v-else-if="propina.tardia" class="badge badge-light-warning ms-1" title="Gerada depois da data de vencimento. Só passa a Em Atraso depois da data limite (vencimento mais tolerância).">Geração tardia</span>
                             <span v-if="propina.regenera_cancelada" class="badge badge-light-danger ms-1">Período cancelado</span>
                             <div v-if="propina.regenera_cancelada" class="text-danger fs-8">{{ propina.regenera_cancelada }}</div>
+                            <div v-if="propina.multa != null" class="text-danger mt-1">
+                                multa se pagar hoje: {{ formatarDinheiro(propina.multa, moeda) }}
+                                <span v-if="propina.multa_regra" class="text-muted fw-normal">({{ propina.multa_regra }})</span>
+                            </div>
                         </li>
                     </ul>
 
@@ -68,6 +72,28 @@ defineProps({
                         <li v-for="(erro, indice) in matricula.erros" :key="`e${indice}`">{{ erro }}</li>
                     </ul>
                 </div>
+            </div>
+        </div>
+
+        <div class="border-top pt-3 mt-3 d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div v-if="resultado.totais.multas > 0">
+                <div class="fw-bold text-gray-800">
+                    Total sem multa {{ resultado.previsualizacao ? 'a criar' : 'criado' }}: {{ formatarDinheiro(resultado.totais.capital, moeda) }}
+                </div>
+                <div class="fw-semibold text-danger">
+                    Multas estimadas hoje: {{ formatarDinheiro(resultado.totais.multas, moeda) }}
+                </div>
+                <div class="fw-bold text-gray-800">
+                    Total com multa: {{ formatarDinheiro(resultado.totais.capital + resultado.totais.multas, moeda) }}
+                </div>
+                <div class="text-muted fs-8">Multa de hoje. Será aplicada ao confirmar a geração.</div>
+            </div>
+            <div v-else class="fw-bold text-gray-800">
+                Total do capital {{ resultado.previsualizacao ? 'a criar' : 'criado' }}: {{ formatarDinheiro(resultado.totais.capital, moeda) }}
+            </div>
+            <div v-if="!(resultado.totais.multas > 0) && resultado.inclui_multas_estimadas" class="text-end text-muted fs-7">
+                O total inclui multas estimadas.
+                <div class="fs-8">Multa de hoje. Será aplicada ao confirmar a geração.</div>
             </div>
         </div>
     </div>

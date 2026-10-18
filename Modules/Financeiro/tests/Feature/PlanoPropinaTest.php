@@ -283,7 +283,7 @@ class PlanoPropinaTest extends TestCase
         $this->assertSame(0, $plano->alvos()->count());
     }
 
-    public function test_trimestral_em_dez_meses_e_aceite_e_da_quatro_periodos(): void
+    public function test_propina_e_sempre_mensal_independentemente_da_periodicidade_enviada(): void
     {
         $ano = $this->anoLectivo();
 
@@ -291,35 +291,10 @@ class PlanoPropinaTest extends TestCase
             ->post(route(self::BASE . 'store'), $this->payload($ano->id, ['periodicidade' => Periodicidade::TRIMESTRAL->value]))
             ->assertSessionHasNoErrors();
 
-        $this->assertSame(3, PlanoPropina::firstWhere('nome', 'Propina Mensal')->intervalo_meses);
-        $this->assertCount(4, PlanoPropina::firstWhere('nome', 'Propina Mensal')->periodos());
-    }
-
-    public function test_outra_periodicidade_exige_intervalo_e_usa_o_indicado(): void
-    {
-        $ano = $this->anoLectivo();
-        $this->actingAs($this->adminEscola())->from('/x');
-
-        $this->post(route(self::BASE . 'store'), $this->payload($ano->id, ['periodicidade' => Periodicidade::OUTRA->value]))
-            ->assertSessionHasErrors('intervalo_meses');
-
-        $this->post(route(self::BASE . 'store'), $this->payload($ano->id, ['periodicidade' => Periodicidade::OUTRA->value, 'intervalo_meses' => 5]))
-            ->assertSessionHasNoErrors();
-
-        $this->assertSame(5, PlanoPropina::firstWhere('nome', 'Propina Mensal')->intervalo_meses);
-    }
-
-    public function test_periodicidade_maior_que_o_periodo_e_rejeitada(): void
-    {
-        $ano = $this->anoLectivo();
-
-        $this->actingAs($this->adminEscola())->from('/x')
-            ->post(route(self::BASE . 'store'), $this->payload($ano->id, [
-                'periodicidade' => Periodicidade::TRIMESTRAL->value, 'mes_inicio' => 1, 'mes_fim' => 2,
-            ]))
-            ->assertSessionHasErrors(['periodicidade' => 'A periodicidade excede a duração do período de cobrança.']);
-
-        $this->assertSame(0, PlanoPropina::count());
+        $plano = PlanoPropina::firstWhere('nome', 'Propina Mensal');
+        $this->assertSame(Periodicidade::MENSAL, $plano->periodicidade);
+        $this->assertSame(1, $plano->intervalo_meses);
+        $this->assertCount(10, $plano->periodos());
     }
 
     #[DataProvider('camposInvalidos')]
@@ -347,7 +322,6 @@ class PlanoPropinaTest extends TestCase
             'valor três casas' => ['valor', '12.345'],
             'valor com milhares' => ['valor', '25.000,50'],
             'nome vazio' => ['nome', ''],
-            'periodicidade inexistente' => ['periodicidade', 99],
             'ano inexistente' => ['ano_lectivo_id', 999999],
         ];
     }
@@ -625,7 +599,7 @@ class PlanoPropinaTest extends TestCase
 
         $this->actingAs($this->adminEscola())
             ->put(route(self::BASE . 'update', $plano), $this->payload($b->id, [
-                'nome' => 'Propina Renomeada', 'valor' => '30000', 'periodicidade' => Periodicidade::SEMESTRAL->value,
+                'nome' => 'Propina Renomeada', 'valor' => '30000',
                 'alvos' => [['nivel_academico_id' => $nivel->id], ['curso_id' => $curso->id]],
             ]))
             ->assertSessionHasNoErrors();
@@ -633,8 +607,8 @@ class PlanoPropinaTest extends TestCase
         $plano->refresh();
         $this->assertSame('Propina Renomeada', $plano->nome);
         $this->assertSame(3_000_000, $plano->valor->unidadesMenores()); // 30000 em AOA
-        $this->assertSame(6, $plano->intervalo_meses);
-        $this->assertSame('Semestral', $plano->periodicidade_descricao);
+        $this->assertSame(1, $plano->intervalo_meses);
+        $this->assertSame('Mensal', $plano->periodicidade_descricao);
         $this->assertSame($a->id, $plano->ano_lectivo_id); // o ano não muda na edição
         $this->assertSame(2, $plano->alvos()->count());
     }

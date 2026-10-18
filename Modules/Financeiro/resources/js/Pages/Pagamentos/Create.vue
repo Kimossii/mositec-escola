@@ -5,11 +5,12 @@ import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import EstadoCobrancaBadge from '../../Components/Shared/EstadoCobrancaBadge.vue';
 import DistribuicaoResumo from '../../Components/Pagamentos/DistribuicaoResumo.vue';
 import { MODO_DISTRIBUICAO } from '../../Models/Pagamento';
-import { formatarDinheiro, unidadesMenoresParaDecimal } from '../../Support/dinheiro';
+import { decimalParaUnidadesMenores, formatarDinheiro, unidadesMenoresParaDecimal } from '../../Support/dinheiro';
 import { dataCurta } from '../../Support/periodos';
 
 const props = defineProps({
@@ -35,6 +36,7 @@ const form = reactive({
     referencia: '',
     observacao: '',
     valor_credito: '',
+    ate: '', // «Pagar até [mês]» (YYYY-MM), opcional
 });
 const opcoesMetodo = computed(() => props.metodos.map((m) => ({ value: m.id, label: m.nome })));
 
@@ -48,10 +50,73 @@ const errors = ref({});
 const ordemEnviada = ref([]); // propina_id de cada posição de `distribuicao` no último pedido: o servidor indexa os erros por posição (R-PA.4)
 const aPrever = ref(false);
 const processing = ref(false);
+const aConfirmar = ref(false); // modal «Registar este pagamento?» antes de gravar
+
+const mensagemDeConfirmacao = computed(() => {
+    const unidades = decimalParaUnidadesMenores(form.valor, props.moeda);
+    const valor = unidades === null ? form.valor : formatarDinheiro(unidades, props.moeda);
+    const metodo = opcoesMetodo.value.find((m) => m.value === form.metodo_pagamento_id)?.label ?? '—';
+
+    return `Registar o pagamento de ${valor} por ${metodo}? O pagamento fica registado e só pode ser corrigido anulando-o.`;
+});
+
+function confirmarNoModal() {
+    aConfirmar.value = false;
+    confirmar();
+}
 
 const tudoParaCredito = computed(() => plano.value !== null && plano.value.linhas.length === 0 && plano.value.excedente > 0);
 const podeConfirmar = computed(() => plano.value !== null && !processing.value && (!tudoParaCredito.value || confirmaTudoCredito.value));
 const bloqueadaPorAntecipado = (propina) => propina.futura && !situacao.value?.regras.permite_pagamento_antecipado;
+const temAte = computed(() => (form.ate ?? '').trim() !== '');
+const minMes = computed(() => (situacao.value?.matricula?.data_matricula ?? props.hoje).slice(0, 10));
+const ateAnoMes = () => (temAte.value ? form.ate.split('-') : null);
+
+// O valor a pagar vem das propinas (capital + multas de hoje), não se escreve: com pagamento parcial desligado fica
+// fixo no total em dívida; com parcial ligado vem sugerido e pode ser alterado.
+const totalDevido = ref(0); // unidades menores
+const totalPronto = ref(false);
+const valorEditado = ref(false);
+const valorFixo = computed(() => situacao.value !== null && !situacao.value.regras.permite_pagamento_parcial);
+// Sem pagamento antecipado, o «Pagar até» não passa do fim do mês corrente (o servidor revalida).
+const maxAte = computed(() => {
+    if (situacao.value === null || situacao.value.regras.permite_pagamento_antecipado) return undefined;
+    const [ano, mes] = props.hoje.split('-').map(Number);
+
+    return `${props.hoje.slice(0, 8)}${String(new Date(ano, mes, 0).getDate()).padStart(2, '0')}`;
+});
+
+function sincronizarValor() {
+    if (!totalPronto.value || (!valorFixo.value && valorEditado.value)) return;
+
+    const credito = decimalParaUnidadesMenores(form.valor_credito || '0', props.moeda) ?? 0n;
+    const aPagar = BigInt(totalDevido.value) - credito;
+    form.valor = aPagar > 0n ? unidadesMenoresParaDecimal(aPagar, props.moeda) : '';
+}
+
+async function carregarTotal() {
+    if (matricula.value === null) return;
+    const ate = ateAnoMes();
+
+    try {
+        const { data } = await axios.get(`/financeiro/pagamentos/matriculas/${matricula.value.id}/total-devido`, {
+            params: ate ? { ate_ano: Number(ate[0]), ate_mes: Number(ate[1]) } : {},
+        });
+        totalDevido.value = data.total_devido;
+        totalPronto.value = true;
+        errors.value = { ...errors.value, ate_mes: undefined };
+        sincronizarValor();
+    } catch (erro) {
+        if (erro.response?.status === 422) {
+            errors.value = { ...errors.value, ...primeiroErro(erro.response.data.errors) };
+            toast.error(Object.values(primeiroErro(erro.response.data.errors))[0]);
+        } else {
+            toast.error('Não foi possível calcular o total em dívida.');
+        }
+    }
+}
+watch(() => form.ate, carregarTotal);
+watch(() => form.valor_credito, sincronizarValor);
 const erroDaPropina = (propinaId) => {
     const posicao = ordemEnviada.value.indexOf(propinaId);
 
@@ -85,6 +150,10 @@ async function escolher(escolhida) {
     situacao.value = data.situacao;
     Object.keys(manual).forEach((chave) => delete manual[chave]);
     plano.value = null;
+    valorEditado.value = false;
+    totalPronto.value = false;
+    form.valor = '';
+    await carregarTotal();
     passo.value = 2;
 }
 
@@ -93,6 +162,8 @@ onMounted(() => {
 });
 
 function base() {
+    const ate = ateAnoMes();
+
     return {
         metodo_pagamento_id: form.metodo_pagamento_id,
         valor: form.valor,
@@ -100,11 +171,13 @@ function base() {
         referencia: form.referencia,
         observacao: form.observacao,
         valor_credito: form.valor_credito || '0',
+        ...(ate ? { ate_ano: Number(ate[0]), ate_mes: Number(ate[1]) } : {}),
     };
 }
 
 function pedidoDaEdicao() {
-    if (modo.value === MODO_DISTRIBUICAO.AUTOMATICA) {
+    // «Pagar até [mês]» é sempre automático: as propinas a gerar ainda não têm id para uma distribuição explícita.
+    if (modo.value === MODO_DISTRIBUICAO.AUTOMATICA || temAte.value) {
         return { ...base(), modo_distribuicao: MODO_DISTRIBUICAO.AUTOMATICA };
     }
 
@@ -137,7 +210,7 @@ async function preVisualizar() {
 
         errors.value = primeiroErro(erro.response.data.errors);
         toast.error(Object.values(errors.value)[0]);
-        passo.value = ['metodo_pagamento_id', 'valor', 'data_pagamento', 'referencia', 'observacao', 'valor_credito'].some((c) => errors.value[c]) ? 2 : 3;
+        passo.value = ['metodo_pagamento_id', 'valor', 'data_pagamento', 'referencia', 'observacao', 'valor_credito', 'ate_ano', 'ate_mes'].some((c) => errors.value[c]) ? 2 : 3;
     } finally {
         aPrever.value = false;
     }
@@ -146,10 +219,26 @@ async function preVisualizar() {
 /**
  * Confirma EXACTAMENTE o que o resumo mostrou (D19): distribuição explícita (crédito + dinheiro por propina), mesmo
  * vazia. O servidor revalida tudo sob bloqueio; se os dados mudaram entretanto, recusa e volta-se à distribuição.
+ * Com «Pagar até [mês]» a confirmação é automática (as propinas a gerar ainda não têm id).
  */
 function confirmar() {
     if (!podeConfirmar.value) return;
     processing.value = true;
+
+    if (temAte.value) {
+        router.post(`/financeiro/pagamentos/matriculas/${matricula.value.id}`, { ...base(), modo_distribuicao: MODO_DISTRIBUICAO.AUTOMATICA }, {
+            onError: (erros) => {
+                errors.value = erros;
+                toast.error(Object.values(erros)[0]);
+                passo.value = 2;
+            },
+            onFinish: () => {
+                processing.value = false;
+            },
+        });
+        return;
+    }
+
     const distribuicao = plano.value.linhas.map((l) => ({ propina_id: l.propina_id, valor: unidadesMenoresParaDecimal(l.credito + l.dinheiro + l.multa_credito + l.multa_dinheiro, props.moeda) }));
     ordemEnviada.value = distribuicao.map((l) => l.propina_id);
 
@@ -163,6 +252,16 @@ function confirmar() {
             processing.value = false;
         },
     });
+}
+
+/** Do passo 2 para a distribuição ou, com «Pagar até [mês]», directamente para o resumo automático. */
+function continuar() {
+    if (temAte.value) {
+        modo.value = MODO_DISTRIBUICAO.AUTOMATICA;
+        preVisualizar();
+    } else {
+        passo.value = 3;
+    }
 }
 </script>
 
@@ -211,7 +310,10 @@ function confirmar() {
                 <div class="row g-5">
                     <div class="col-12 col-md-4">
                         <label class="form-label required fw-semibold">Valor recebido ({{ moeda.simbolo }})</label>
-                        <input v-model="form.valor" type="text" inputmode="decimal" class="form-control form-control-solid" :class="{ 'is-invalid': errors.valor }" placeholder="Ex.: 25000,00" />
+                        <input v-model="form.valor" type="text" inputmode="decimal" :readonly="valorFixo" class="form-control form-control-solid" :class="{ 'is-invalid': errors.valor }" placeholder="Ex.: 25000,00" @input="valorEditado = true" />
+                        <div v-if="totalPronto && totalDevido === 0" class="text-muted fs-8">Não há valores em dívida para esta matrícula.</div>
+                        <div v-else-if="valorFixo && totalPronto" class="text-muted fs-8">Pagamento parcial não permitido: assume o total em dívida ({{ formatarDinheiro(totalDevido, moeda) }}, capital e multas).</div>
+                        <div v-else-if="totalPronto" class="text-muted fs-8">Sugerido: total em dívida ({{ formatarDinheiro(totalDevido, moeda) }}). Pode alterar.</div>
                         <div class="text-danger fs-7">{{ errors.valor }}</div>
                     </div>
                     <div class="col-12 col-md-4">
@@ -235,13 +337,19 @@ function confirmar() {
                         <div class="text-muted fs-8">Usado antes do dinheiro novo. Disponível: {{ formatarDinheiro(situacao.credito_disponivel, moeda) }}</div>
                         <div class="text-danger fs-7">{{ errors.valor_credito }}</div>
                     </div>
+                    <div v-if="situacao?.regras.permite_pagamento_antecipado" class="col-12 col-md-4">
+                        <label class="form-label fw-semibold">Adiantar meses até (data)</label>
+                        <input v-model="form.ate" type="date" :min="minMes" :max="maxAte" class="form-control form-control-solid" :class="{ 'is-invalid': errors.ate_mes }" />
+                        <div class="text-muted fs-8">Opcional. Por omissão paga o que já está em dívida. Escolha uma data para adiantar também os meses seguintes (as propinas em falta são geradas; o mês da data conta por inteiro).</div>
+                        <div class="text-danger fs-7">{{ errors.ate_mes }}</div>
+                    </div>
                     <div class="col-12">
                         <label class="form-label fw-semibold">Observação</label>
                         <textarea v-model="form.observacao" rows="2" maxlength="1000" class="form-control form-control-solid"></textarea>
                     </div>
                 </div>
                 <div class="d-flex justify-content-end mt-6">
-                    <button type="button" class="btn btn-primary" :disabled="!form.valor || !form.metodo_pagamento_id" @click="passo = 3">Continuar</button>
+                    <button type="button" class="btn btn-primary" :disabled="!form.valor || !form.metodo_pagamento_id" @click="continuar">{{ temAte ? 'Ver resumo' : 'Continuar' }}</button>
                 </div>
             </div>
         </div>
@@ -316,9 +424,20 @@ function confirmar() {
                 </div>
                 <div class="d-flex justify-content-between mt-6">
                     <button type="button" class="btn btn-light" :disabled="processing" @click="passo = 3">Voltar</button>
-                    <button type="button" class="btn btn-primary" :disabled="!podeConfirmar" @click="confirmar">{{ processing ? 'A registar…' : 'Confirmar pagamento' }}</button>
+                    <button type="button" class="btn btn-primary" :disabled="!podeConfirmar" @click="aConfirmar = true">{{ processing ? 'A registar…' : 'Confirmar pagamento' }}</button>
                 </div>
             </div>
         </div>
+
+        <ConfirmModal
+            :show="aConfirmar"
+            titulo="Registar pagamento"
+            :mensagem="mensagemDeConfirmacao"
+            texto-confirmar="Registar pagamento"
+            variante="primary"
+            :processando="processing"
+            @confirmar="confirmarNoModal"
+            @cancelar="aConfirmar = false"
+        />
     </div>
 </template>

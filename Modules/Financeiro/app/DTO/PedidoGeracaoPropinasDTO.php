@@ -23,9 +23,19 @@ final class PedidoGeracaoPropinasDTO
         public readonly ?int $plano_propina_id = null,
         public readonly bool $incluir_periodos_anteriores = false,
         public readonly ?string $motivo_geracao = null,
+        public readonly ?int $ate_ano = null,
+        public readonly ?int $ate_mes = null,
     ) {
         if ($origem === OrigemGeracaoPropina::RETROACTIVA) {
             throw new InvalidArgumentException('A origem Retroactiva atribui-se por período, nunca ao pedido.');
+        }
+
+        if (($ate_ano === null) !== ($ate_mes === null)) {
+            throw new InvalidArgumentException('O mês «até» exige o ano e o mês em conjunto.');
+        }
+
+        if ($ate_mes !== null && ($ate_mes < 1 || $ate_mes > 12)) {
+            throw new InvalidArgumentException('O mês «até» tem de estar entre 1 e 12.');
         }
 
         if ($incluir_periodos_anteriores && trim((string) $motivo_geracao) === '') {
@@ -68,6 +78,8 @@ final class PedidoGeracaoPropinasDTO
             plano_propina_id: isset($dados['plano_propina_id']) ? (int) $dados['plano_propina_id'] : null,
             incluir_periodos_anteriores: $incluir,
             motivo_geracao: $incluir ? trim((string) $dados['motivo_geracao']) : null,
+            ate_ano: isset($dados['ate_ano']) ? (int) $dados['ate_ano'] : null,
+            ate_mes: isset($dados['ate_mes']) ? (int) $dados['ate_mes'] : null,
         );
     }
 

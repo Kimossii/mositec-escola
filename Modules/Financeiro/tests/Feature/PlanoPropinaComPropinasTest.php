@@ -90,10 +90,8 @@ class PlanoPropinaComPropinasTest extends TestCase
     public static function alteracoesDeCalendario(): array
     {
         return [
-            'periodicidade' => [['periodicidade' => Periodicidade::TRIMESTRAL->value]],
             'mês de início' => [['mes_inicio' => 10]],
             'mês de fim' => [['mes_fim' => 7]],
-            'outra periodicidade' => [['periodicidade' => Periodicidade::OUTRA->value, 'intervalo_meses' => 2]],
         ];
     }
 
@@ -130,11 +128,11 @@ class PlanoPropinaComPropinasTest extends TestCase
         $plano = $this->plano($this->anoLectivo(), 'Sem Propinas');
 
         $this->actingAs($this->adminEscola())->from('/x')
-            ->put(route(self::BASE . 'update', $plano), $this->payload($plano, ['valor' => '30000', 'periodicidade' => Periodicidade::TRIMESTRAL->value]))
+            ->put(route(self::BASE . 'update', $plano), $this->payload($plano, ['valor' => '30000']))
             ->assertSessionHasNoErrors();
 
         $this->assertSame(3_000_000, $plano->fresh()->valor->unidadesMenores());
-        $this->assertSame(3, $plano->fresh()->intervalo_meses);
+        $this->assertSame(1, $plano->fresh()->intervalo_meses);
     }
 
     public function test_a_action_recusa_mesmo_sem_passar_pelo_pedido_http(): void

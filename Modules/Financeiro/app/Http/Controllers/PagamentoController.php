@@ -13,6 +13,7 @@ use Modules\Financeiro\DTO\MotivoDeAnulacaoDTO;
 use Modules\Financeiro\DTO\RegistarPagamentoDTO;
 use Modules\Financeiro\Http\Requests\AnularPagamentoRequest;
 use Modules\Financeiro\Http\Requests\PreVisualizarPagamentoRequest;
+use Modules\Financeiro\Http\Requests\TotalDevidoRequest;
 use Modules\Financeiro\Http\Requests\RegistarPagamentoRequest;
 use Modules\Financeiro\Models\Pagamento;
 use Modules\Financeiro\Services\DistribuicaoDePagamentoService;
@@ -73,6 +74,16 @@ class PagamentoController extends Controller
         $this->authorize('pagamento.criar');
 
         return response()->json(['situacao' => $this->consulta->situacao($matricula)]);
+    }
+
+    public function totalDevido(TotalDevidoRequest $request, Matricula $matricula): JsonResponse
+    {
+        $this->authorize('pagamento.criar');
+
+        $ateAno = $request->filled('ate_ano') ? $request->integer('ate_ano') : null;
+        $ateMes = $request->filled('ate_mes') ? $request->integer('ate_mes') : null;
+
+        return response()->json(['total_devido' => $this->distribuicao->totalDevido($matricula, $ateAno, $ateMes)]);
     }
 
     public function preVisualizar(PreVisualizarPagamentoRequest $request, Matricula $matricula): JsonResponse

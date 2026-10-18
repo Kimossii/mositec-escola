@@ -1,26 +1,41 @@
 /**
- * Espelho de CalendarioDePlano::duracoes (PHP): duração, em meses, de cada período de cobrança.
- * O último período pode ser mais curto. Não depende do ano lectivo. Intervalo inválido → [].
+ * Ajudantes de calendário de cobrança (espelho de CalendarioDePlano, em JS). Os planos valem de uma data a
+ * outra; cada mês tocado conta como mês inteiro. As competências (ano, mês) derivam-se das datas.
  */
-export function duracoesDosPeriodos(mesInicio, mesFim, intervalo) {
-    const n = Number(intervalo);
-    if (!Number.isInteger(n) || n < 1 || n > 12) return [];
+const MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-    const total = ((Number(mesFim) - Number(mesInicio) + 12) % 12) + 1;
-    const duracoes = Array(Math.floor(total / n)).fill(n);
-    if (total % n !== 0) duracoes.push(total % n);
+/** @returns {Array<{ano: number, mes: number}>} meses cobertos, do mês de dataInicio ao mês de dataFim, inclusive. */
+export function mesesDeDatas(dataInicio, dataFim) {
+    if (!dataInicio || !dataFim) return [];
 
-    return duracoes;
+    const [anoInicio, mesInicio] = String(dataInicio).slice(0, 7).split('-').map(Number);
+    const fim = String(dataFim).slice(0, 10);
+
+    const resultado = [];
+    let ano = anoInicio;
+    let mes = mesInicio;
+
+    while (true) {
+        resultado.push({ ano, mes });
+
+        const ultimoDia = new Date(ano, mes, 0).getDate();
+        const ultimo = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`;
+
+        if (ultimo >= fim) break;
+
+        mes += 1;
+        if (mes > 12) {
+            mes = 1;
+            ano += 1;
+        }
+    }
+
+    return resultado;
 }
 
-/** "4 períodos (3+3+3+1 meses)" / "1 período (12 meses)". */
-export function resumoPeriodos(duracoes) {
-    if (!duracoes?.length) return '';
-
-    const quantidade = duracoes.length === 1 ? '1 período' : `${duracoes.length} períodos`;
-    const meses = duracoes.length === 1 && duracoes[0] === 1 ? 'mês' : 'meses';
-
-    return `${quantidade} (${duracoes.join('+')} ${meses})`;
+/** "Set/2026". */
+export function rotuloCompetencia(ano, mes) {
+    return `${MESES_CURTOS[mes - 1]}/${ano}`;
 }
 
 /** "2026-09-10" → "10/09/2026". Sem `Date`: uma data civil não tem fuso e não pode recuar um dia. */
