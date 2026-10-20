@@ -37,8 +37,7 @@ class AlvosObsoletosTest extends TestCase
             'nome' => 'Propina',
             'periodicidade' => Periodicidade::MENSAL->value,
             'valor' => '25000',
-            'mes_inicio' => 9,
-            'mes_fim' => 6,
+            'data_inicio' => '2026-09-01', 'data_fim' => '2027-06-30',
             'alvos' => [],
         ], $sobrepor);
     }

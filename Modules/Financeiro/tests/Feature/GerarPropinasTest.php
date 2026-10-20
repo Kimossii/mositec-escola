@@ -153,7 +153,7 @@ class GerarPropinasTest extends TestCase
 
         $this->assertSame(['Dez/2026–Fev/2027', 'Mar–Mai/2027', 'Jun/2027'], array_column($linha['criadas'], 'periodo'));
         $this->assertSame('Set–Nov/2026', $linha['ignoradas'][0]['periodo']);
-        $this->assertStringContainsString('Já coberto pela propina de Out/2026', $linha['ignoradas'][0]['motivo']);
+        $this->assertStringContainsString('Já existe a propina de Out/2026', $linha['ignoradas'][0]['motivo']);
         $this->assertPropinasCoerentes();
     }
 

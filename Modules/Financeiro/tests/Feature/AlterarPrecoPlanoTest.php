@@ -81,9 +81,9 @@ class AlterarPrecoPlanoTest extends TestCase
         $alteracao = $this->alterarPreco($plano, '2027-02', 3_000_000, self::APLICAR, 'Actualização anual');
 
         $plano->refresh();
-        $novo = PlanoPropina::query()->where('nome', 'Propina Mensal (desde 02/2027)')->firstOrFail();
-        $this->assertSame([9, 1, 2_500_000], [$plano->mes_inicio, $plano->mes_fim, $plano->valor->unidadesMenores()]);
-        $this->assertSame([2, 6, 3_000_000, $plano->ano_lectivo_id], [$novo->mes_inicio, $novo->mes_fim, $novo->valor->unidadesMenores(), $novo->ano_lectivo_id]);
+        $novo = PlanoPropina::query()->where('nome', 'Propina Mensal – Fase 2')->firstOrFail();
+        $this->assertSame([9, 1, 2_500_000], [$plano->data_inicio->month, $plano->data_fim->month, $plano->valor->unidadesMenores()]);
+        $this->assertSame([2, 6, 3_000_000, $plano->ano_lectivo_id], [$novo->data_inicio->month, $novo->data_fim->month, $novo->valor->unidadesMenores(), $novo->ano_lectivo_id]);
 
         foreach (['fev_aberta' => 1, 'mar_parcial' => 2, 'mai_aberta' => 4, 'jun_aberta' => 5] as $chave => $ordem) {
             $p = $e[$chave]->fresh();
@@ -124,7 +124,7 @@ class AlterarPrecoPlanoTest extends TestCase
         $alteracao = $this->alterarPreco($plano, '2027-02', 3_000_000, self::MANTER);
 
         $this->assertSame($propinasAntes, $this->fotografia()['propinas']);
-        $this->assertSame(1, $plano->fresh()->mes_fim);
+        $this->assertSame(1, $plano->fresh()->data_fim->month);
         $this->assertNotNull($alteracao->plano_novo_id);
         $this->assertSame(0, $alteracao->total_propinas_afectadas);
         $this->assertSame(0, PropinaAjuste::query()->count());
@@ -148,7 +148,7 @@ class AlterarPrecoPlanoTest extends TestCase
 
         $this->assertNull($alteracao->plano_novo_id);
         $this->assertSame(1, PlanoPropina::query()->count());
-        $this->assertSame([9, 6, 3_000_000], [$plano->fresh()->mes_inicio, $plano->fresh()->mes_fim, $plano->fresh()->valor->unidadesMenores()]);
+        $this->assertSame([9, 6, 3_000_000], [$plano->fresh()->data_inicio->month, $plano->fresh()->data_fim->month, $plano->fresh()->valor->unidadesMenores()]);
 
         foreach (['set_aberta', 'out_parcial', 'fev_aberta', 'mar_parcial', 'mai_aberta', 'jun_aberta'] as $chave) {
             $p = $e[$chave]->fresh();
@@ -257,6 +257,7 @@ class AlterarPrecoPlanoTest extends TestCase
     {
         [$plano] = $this->estados();
         $impressao = $this->previa($plano, '2027-02', 3_000_000, self::APLICAR)->impressaoDigital;
+        $plano->propinas()->toBase()->update(['estado' => 3]); // sem dívida em aberto
         $plano->anoLectivo->forceFill(['estado' => EstadoAnoLectivo::ENCERRADO])->saveQuietly();
         $antes = $this->fotografia();
 

@@ -73,7 +73,7 @@ class AlteracaoPrecoPreVisualizacaoTest extends TestCase
         $previa = $this->previa($plano, '2027-02', 3_000_000, self::APLICAR);
 
         $this->assertFalse($previa->inLoco);
-        $this->assertSame('Propina Mensal (desde 02/2027)', $previa->nomePlanoNovo);
+        $this->assertSame('Propina Mensal – Fase 2', $previa->nomePlanoNovo);
         $this->assertSame([$e['fev_aberta']->id, $e['mar_parcial']->id, $e['mai_aberta']->id, $e['jun_aberta']->id], array_column($previa->afectadas, 'propina_id'));
         $this->assertSame([6, 7, 9, 10], array_column($previa->afectadas, 'ordem_antes'));
         $this->assertSame([1, 2, 4, 5], array_column($previa->afectadas, 'ordem_depois'));
@@ -87,9 +87,9 @@ class AlteracaoPrecoPreVisualizacaoTest extends TestCase
             'saldo_antes' => 8_000_000, 'saldo_depois' => 10_000_000, 'excesso' => 0,
         ], $previa->totais);
         $this->assertSame(['antigo', 'novo'], array_column($previa->planos, 'papel'));
-        $this->assertSame([9, 1], [$previa->planos[0]['mes_inicio'], $previa->planos[0]['mes_fim']]);
+        $this->assertSame(['2026-09-01', '2027-01-31'], [$previa->planos[0]['data_inicio'], $previa->planos[0]['data_fim']]);
         $this->assertCount(5, $previa->planos[0]['periodos']);
-        $this->assertSame([2, 6, 3_000_000], [$previa->planos[1]['mes_inicio'], $previa->planos[1]['mes_fim'], $previa->planos[1]['valor']]);
+        $this->assertSame(['2027-02-01', '2027-06-30', 3_000_000], [$previa->planos[1]['data_inicio'], $previa->planos[1]['data_fim'], $previa->planos[1]['valor']]);
         $this->assertSame('Fev/2027', $previa->planos[1]['periodos'][0]['periodo']);
         $this->assertSame(['id' => $plano->ano_lectivo_id, 'nome' => '2026/2027'], $previa->anoLectivo);
         $this->assertSame(0, $previa->propinasDeOutrosAnos);
@@ -157,24 +157,13 @@ class AlteracaoPrecoPreVisualizacaoTest extends TestCase
         $this->assertSame($antes, $this->fotografia());
     }
 
-    public function test_ancora_do_calendario_l6_recusa_um_plano_novo_que_cairia_noutro_ano_civil(): void
-    {
-        ['ano' => $ano, 'turma' => $turma] = $this->cenarioPropinas();
-        // Out → Set num ano que começa em Setembro: um plano novo "Set → Set" seria ancorado em Set/2026, não Set/2027.
-        $plano = $this->plano($ano, 'Out a Set', ['mes_inicio' => 10, 'mes_fim' => 9]);
-        $this->propina($this->matriculaActiva($turma), $plano, 1);
-
-        $this->assertRecusa('mes_efeito', 'calendário do plano novo', fn () => $this->previa($plano, '2027-09', 3_000_000, self::MANTER));
-        $this->assertFalse($this->previa($plano, '2027-08', 3_000_000, self::MANTER)->inLoco);
-    }
-
     public function test_candidata_sem_periodo_no_plano_novo_recusa(): void
     {
         ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
         $this->propina($matricula, $plano, 6);
         $junho = $this->propina($matricula, $plano, 10);
         // Como depois de um MANTER anterior a partir de Mai: Junho ficou neste plano, fora do seu calendário.
-        $plano->update(['mes_fim' => 4]);
+        $plano->update(['data_fim' => '2027-04-30']);
 
         $this->assertRecusa('mes_efeito', 'não corresponde a nenhum período do plano novo', fn () => $this->previa($plano, '2027-02', 3_000_000, self::APLICAR));
 
@@ -186,18 +175,18 @@ class AlteracaoPrecoPreVisualizacaoTest extends TestCase
     {
         ['ano' => $ano, 'plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
         $this->propina($matricula, $plano, 6);
-        $this->plano($ano, 'Propina Mensal (desde 02/2027)', ['estado' => Estado::INATIVO->value, 'mes_inicio' => 7, 'mes_fim' => 8]);
+        $this->plano($ano, 'Propina Mensal – Fase 2', ['estado' => Estado::INATIVO->value, 'mes_inicio' => 7, 'mes_fim' => 8]);
         $servico = app(AlteracaoPrecoPlanoService::class);
 
-        $this->assertSame('Propina Mensal (desde 02/2027) 2', $this->previa($plano, '2027-02', 3_000_000, self::APLICAR)->nomePlanoNovo);
+        $this->assertSame('Propina Mensal – Fase 3', $this->previa($plano, '2027-02', 3_000_000, self::APLICAR)->nomePlanoNovo);
 
         $plano->update(['nome' => str_repeat('A', 100)]);
         $longo = $servico->nomeDoPlanoNovo($plano->fresh(), $this->pedidoAlteracao('2027-02', 1, self::APLICAR)->mesEfeito);
         $this->assertSame(100, mb_strlen($longo));
-        $this->assertStringEndsWith(' (desde 02/2027)', $longo);
+        $this->assertStringEndsWith(' – Fase 2', $longo);
 
-        $plano->update(['nome' => 'Mensal (desde 01/2027)']);
-        $this->assertSame('Mensal (desde 03/2027)', $servico->nomeDoPlanoNovo($plano->fresh(), $this->pedidoAlteracao('2027-03', 1, self::APLICAR)->mesEfeito));
+        $plano->update(['nome' => 'Mensal – Fase 2']);
+        $this->assertSame('Mensal – Fase 3', $servico->nomeDoPlanoNovo($plano->fresh(), $this->pedidoAlteracao('2027-03', 1, self::APLICAR)->mesEfeito));
     }
 
     public function test_impressao_digital_estavel_e_sensivel_a_parametros_e_a_pagamentos(): void
@@ -279,9 +268,18 @@ class AlteracaoPrecoPreVisualizacaoTest extends TestCase
         $this->assertFalse($previa->exigeConfirmacaoValoresDiferentes());
     }
 
+    public function test_ano_lectivo_encerrado_com_divida_em_aberto_ainda_permite_alterar_o_preco(): void
+    {
+        [$plano] = $this->estados();
+        $plano->anoLectivo->forceFill(['estado' => EstadoAnoLectivo::ENCERRADO])->saveQuietly();
+
+        $this->assertNotNull($this->previa($plano->fresh(), '2027-02', 3_000_000, self::APLICAR));
+    }
+
     public function test_ano_lectivo_encerrado_bloqueia_a_alteracao_de_preco_em_qualquer_modo(): void
     {
         [$plano] = $this->estados();
+        $plano->propinas()->toBase()->update(['estado' => 3]); // sem dívida em aberto
         $plano->anoLectivo->forceFill(['estado' => EstadoAnoLectivo::ENCERRADO])->saveQuietly();
         $antes = $this->fotografia();
 
@@ -346,7 +344,7 @@ class AlteracaoPrecoPreVisualizacaoTest extends TestCase
             'estado do ano lectivo' => [fn (PlanoPropina $p, $c) => $p->anoLectivo->estado = EstadoAnoLectivo::ENCERRADO],
             'nome do plano' => [fn (PlanoPropina $p, $c) => $p->nome = 'Outro nome'],
             'descrição do plano' => [fn (PlanoPropina $p, $c) => $p->descricao = 'Outra descrição'],
-            'mes_fim do plano' => [fn (PlanoPropina $p, $c) => $p->mes_fim = 5],
+            'mes_fim do plano' => [fn (PlanoPropina $p, $c) => $p->data_fim = $p->data_fim->subMonth()],
             'estado do plano' => [fn (PlanoPropina $p, $c) => $p->estado = Estado::INATIVO->value],
             'um alvo do plano' => [fn (PlanoPropina $p, $c) => $p->alvos->first()->curso_id = 999],
             'ordem de uma candidata' => [fn (PlanoPropina $p, $c) => $c->first()->ordem = 99],

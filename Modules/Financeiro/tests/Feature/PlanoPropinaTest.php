@@ -42,14 +42,15 @@ class PlanoPropinaTest extends TestCase
 
     private function payload(int $anoId, array $sobrepor = []): array
     {
+        $y = (int) substr((string) (\Modules\AnoLectivo\Models\AnoLectivo::withoutGlobalScopes()->find($anoId)?->getRawOriginal("data_inicio") ?? "2026"), 0, 4);
+
         return array_merge([
             'ano_lectivo_id' => $anoId,
             'nome' => 'Propina Mensal',
             'descricao' => 'Plano regular',
             'periodicidade' => Periodicidade::MENSAL->value,
             'valor' => '25000',
-            'mes_inicio' => 9,
-            'mes_fim' => 6,
+            'data_inicio' => "{$y}-09-01", 'data_fim' => ($y + 1) . '-06-30',
             'alvos' => [],
             'confirmar_plano_geral' => true,
         ], $sobrepor);
@@ -274,8 +275,8 @@ class PlanoPropinaTest extends TestCase
         $this->assertNotNull($plano);
         $this->assertSame(2_500_000, $plano->valor->unidadesMenores()); // 25000 em AOA (2 casas)
         $this->assertSame(1, $plano->intervalo_meses);
-        $this->assertSame(9, $plano->mes_inicio);
-        $this->assertSame(6, $plano->mes_fim); // inicio > fim: atravessa o ano civil
+        $this->assertSame('2026-09-01', $plano->data_inicio->toDateString());
+        $this->assertSame('2027-06-30', $plano->data_fim->toDateString()); // atravessa o ano civil
         $this->assertSame('Mensal', $plano->periodicidade_descricao);
         $this->assertSame('Ativo', $plano->estado_descricao);
         $this->assertSame($this->tenant->id, $plano->tenant_id);
@@ -312,10 +313,10 @@ class PlanoPropinaTest extends TestCase
     public static function camposInvalidos(): array
     {
         return [
-            'mes_inicio 0' => ['mes_inicio', 0],
-            'mes_inicio 13' => ['mes_inicio', 13],
-            'mes_fim 0' => ['mes_fim', 0],
-            'mes_fim 13' => ['mes_fim', 13],
+            'data_inicio vazia' => ['data_inicio', ''],
+            'data_inicio inválida' => ['data_inicio', 'xx'],
+            'data_fim vazia' => ['data_fim', ''],
+            'data_fim anterior ao início' => ['data_fim', '2026-01-01'],
             'valor zero' => ['valor', '0'],
             'valor vazio' => ['valor', ''],
             'valor negativo' => ['valor', '-1'],
@@ -514,7 +515,7 @@ class PlanoPropinaTest extends TestCase
         $this->actingAs($this->adminEscola())->from('/x');
 
         $this->post(route(self::BASE . 'store'), $this->payload($ano->id, [
-            'nome' => 'Novo', 'mes_inicio' => 12, 'mes_fim' => 6, 'alvos' => [['nivel_academico_id' => $nivel->id]],
+            'nome' => 'Novo', 'data_inicio' => '2026-12-01', 'data_fim' => '2027-06-30', 'alvos' => [['nivel_academico_id' => $nivel->id]],
         ]))->assertSessionHasErrors(['alvos' => 'Já existe outro plano deste ano lectivo, com período sobreposto, aplicável aos mesmos alvos.']);
     }
 
@@ -526,11 +527,11 @@ class PlanoPropinaTest extends TestCase
         $this->actingAs($this->adminEscola());
 
         $this->post(route(self::BASE . 'store'), $this->payload($ano->id, [
-            'nome' => 'Fase 1', 'mes_inicio' => 9, 'mes_fim' => 12, 'valor' => '30000',
+            'nome' => 'Fase 1', 'data_inicio' => '2026-09-01', 'data_fim' => '2026-12-31', 'valor' => '30000',
             'alvos' => [['nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id]],
         ]))->assertSessionHasNoErrors();
         $this->post(route(self::BASE . 'store'), $this->payload($ano->id, [
-            'nome' => 'Fase 2', 'mes_inicio' => 1, 'mes_fim' => 6, 'valor' => '35000',
+            'nome' => 'Fase 2', 'data_inicio' => '2027-01-01', 'data_fim' => '2027-06-30', 'valor' => '35000',
             'alvos' => [['nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id]],
         ]))->assertSessionHasNoErrors();
 
@@ -546,7 +547,7 @@ class PlanoPropinaTest extends TestCase
         $this->from('/x')->post(route(self::BASE . 'store'), $this->payload($ano->id, ['nome' => 'Geral Sobreposto']))
             ->assertSessionHasErrors('alvos');
 
-        $this->post(route(self::BASE . 'store'), $this->payload($ano->id, ['nome' => 'Geral Fase 2', 'mes_inicio' => 1, 'mes_fim' => 6]))
+        $this->post(route(self::BASE . 'store'), $this->payload($ano->id, ['nome' => 'Geral Fase 2', 'data_inicio' => '2027-01-01', 'data_fim' => '2027-06-30']))
             ->assertSessionHasNoErrors();
     }
 
@@ -599,7 +600,7 @@ class PlanoPropinaTest extends TestCase
 
         $this->actingAs($this->adminEscola())
             ->put(route(self::BASE . 'update', $plano), $this->payload($b->id, [
-                'nome' => 'Propina Renomeada', 'valor' => '30000',
+                'nome' => 'Propina Renomeada', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-06-30', 'valor' => '30000',
                 'alvos' => [['nivel_academico_id' => $nivel->id], ['curso_id' => $curso->id]],
             ]))
             ->assertSessionHasNoErrors();

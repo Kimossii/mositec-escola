@@ -171,7 +171,7 @@ class AlterarPrecoPlanoIsolamentoAnoLectivoTest extends TestCase
 
         $this->alterarPreco($planoB->fresh(), '2027-09', 3_500_000, self::MANTER);
         $this->assertSame($dividaDoAnoAnterior, $this->propinasDe($matriculaA));
-        $this->assertSame([9, 6, 2_500_000], [$planoA->fresh()->mes_inicio, $planoA->fresh()->mes_fim, $planoA->fresh()->valor->unidadesMenores()]);
+        $this->assertSame([9, 6, 2_500_000], [$planoA->fresh()->data_inicio->month, $planoA->fresh()->data_fim->month, $planoA->fresh()->valor->unidadesMenores()]);
     }
 
     public function test_3_ano_futuro_com_plano_de_alvos_iguais_nao_e_tocado_nem_colide(): void
@@ -183,8 +183,8 @@ class AlterarPrecoPlanoIsolamentoAnoLectivoTest extends TestCase
 
         $this->assertSame($planoBAntes, $planoB->fresh()->getAttributes());
         $this->assertSame($planoA->ano_lectivo_id, $alteracao->planoNovo->ano_lectivo_id);
-        // O nome "Propina Mensal (desde 02/2027)" é único no ano A; o plano "Propina Mensal" de B não conta.
-        $this->assertSame('Propina Mensal (desde 02/2027)', $alteracao->planoNovo->nome);
+        // O nome "Propina Mensal – Fase 2" é único no ano A; o plano "Propina Mensal" de B não conta.
+        $this->assertSame('Propina Mensal – Fase 2', $alteracao->planoNovo->nome);
         $this->assertSame(2, PlanoPropina::query()->where('ano_lectivo_id', $planoA->ano_lectivo_id)->count());
         $this->assertSame(1, PlanoPropina::query()->where('ano_lectivo_id', $planoB->ano_lectivo_id)->count());
     }

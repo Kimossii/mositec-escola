@@ -29,7 +29,7 @@ class PlanoPropinaComPropinasTest extends TestCase
 
     private const MSG_VALOR = AtualizarPlanoPropinaAction::MENSAGEM_VALOR;
 
-    private const MSG_CALENDARIO = 'Este plano já tem propinas geradas: a periodicidade e os meses de início e de fim não podem ser alterados, porque definem os períodos das propinas existentes.';
+    private const MSG_CALENDARIO = 'Este plano já tem propinas geradas: a periodicidade e as datas de início e de fim não podem ser alteradas, porque definem os períodos das propinas existentes.';
 
     protected function setUp(): void
     {
@@ -45,8 +45,8 @@ class PlanoPropinaComPropinasTest extends TestCase
             'descricao' => null,
             'periodicidade' => $plano->periodicidade->value,
             'valor' => '25000',
-            'mes_inicio' => $plano->mes_inicio,
-            'mes_fim' => $plano->mes_fim,
+            'data_inicio' => $plano->data_inicio->toDateString(),
+            'data_fim' => $plano->data_fim->toDateString(),
             'alvos' => [],
             'confirmar_plano_geral' => true,
         ], $sobrepor);
@@ -84,14 +84,14 @@ class PlanoPropinaComPropinasTest extends TestCase
 
         $plano->refresh();
         $this->assertSame(Periodicidade::MENSAL, $plano->periodicidade);
-        $this->assertSame([1, 9, 6], [$plano->intervalo_meses, $plano->mes_inicio, $plano->mes_fim]);
+        $this->assertSame([1, 9, 6], [$plano->intervalo_meses, $plano->data_inicio->month, $plano->data_fim->month]);
     }
 
     public static function alteracoesDeCalendario(): array
     {
         return [
-            'mês de início' => [['mes_inicio' => 10]],
-            'mês de fim' => [['mes_fim' => 7]],
+            'data de início' => [['data_inicio' => '2026-10-01']],
+            'data de fim' => [['data_fim' => '2027-07-31']],
         ];
     }
 
@@ -143,8 +143,8 @@ class PlanoPropinaComPropinasTest extends TestCase
             periodicidade: Periodicidade::MENSAL,
             intervalo_meses: 1,
             valor: Dinheiro::deUnidadesMenores(3_000_000),
-            mes_inicio: 10,
-            mes_fim: 6,
+            data_inicio: \Carbon\CarbonImmutable::parse('2026-10-01'),
+            data_fim: \Carbon\CarbonImmutable::parse('2027-06-30'),
             alvos: [],
         );
 
@@ -156,7 +156,7 @@ class PlanoPropinaComPropinasTest extends TestCase
         }
 
         $this->assertSame(2_500_000, $plano->fresh()->valor->unidadesMenores());
-        $this->assertSame(9, $plano->fresh()->mes_inicio);
+        $this->assertSame(9, $plano->fresh()->data_inicio->month);
     }
 
     public function test_eliminar_um_plano_com_propinas_e_bloqueado(): void

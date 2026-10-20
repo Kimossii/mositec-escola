@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Tests\Concerns;
 
+use Carbon\CarbonImmutable;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Curso\Models\Curso;
@@ -76,14 +77,24 @@ trait ComDadosAcademicosFinanceiro
      */
     protected function plano(AnoLectivo $ano, string $nome, array $atributos = [], array $alvos = []): PlanoPropina
     {
+        // Compatibilidade: os testes descrevem o plano por mes_inicio/mes_fim; o modelo usa datas.
+        $mesInicio = $atributos['mes_inicio'] ?? 9;
+        $mesFim = $atributos['mes_fim'] ?? 6;
+        unset($atributos['mes_inicio'], $atributos['mes_fim']);
+        $inicioAno = CarbonImmutable::parse($ano->data_inicio)->startOfMonth();
+        $inicio = $inicioAno->setMonth($mesInicio);
+        $inicio = $inicio->lt($inicioAno) ? $inicio->addYear() : $inicio;
+        $fim = $inicio->setMonth($mesFim)->endOfMonth();
+        $fim = $fim->lt($inicio) ? $inicio->setMonth($mesFim)->addYear()->endOfMonth() : $fim;
+
         $plano = PlanoPropina::create(array_merge([
             'ano_lectivo_id' => $ano->id,
+            'data_inicio' => $inicio->toDateString(),
+            'data_fim' => $fim->toDateString(),
             'nome' => $nome,
             'periodicidade' => Periodicidade::MENSAL,
             'intervalo_meses' => 1,
             'valor' => Dinheiro::deUnidadesMenores(2_500_000),
-            'mes_inicio' => 9,
-            'mes_fim' => 6,
         ], $atributos));
 
         foreach ($alvos as $alvo) {

@@ -108,7 +108,7 @@ O1 referência única só entre pagamentos Confirmados (+ aviso se foi usada num
 ## 6. Decisões em aberto (só o dono decide — não inventar)
 
 - **O10** (Pagamentos-A): limite de "N dias de atraso" para registar pagamentos retroactivos, com permissão própria. Decidir **antes de F5**.
-- **F4**: confirmar (a) anos lectivos **encerrados bloqueados** na alteração de preço (assunção nossa; o plano permitia), (b) modo "no próprio plano" quando `mes_efeito` = início do plano (corrigir o texto do §14 da spec propinas), (c) coluna `ano_lectivo_id` em `alteracoes_preco_plano`, (d) nome do plano novo `"{nome} (desde MM/AAAA)"`.
+- **F4**: confirmar (a) anos lectivos **encerrados bloqueados** na alteração de preço (assunção nossa; o plano permitia), (b) modo "no próprio plano" quando `mes_efeito` = início do plano (corrigir o texto do §14 da spec propinas), (c) coluna `ano_lectivo_id` em `alteracoes_preco_plano`, (d) nome do plano novo `"{nome} – Fase N"`.
 - **O9** ressalva: segregação de funções (perfil de tesouraria sem "anular"; quem anula ≠ quem registou).
 - Adiados: trancamento de matrícula (4 perguntas por responder em `docs/superpowers/plans/2026-10-12-trancamento-matricula-plano.md`), limite de negociação por perfil, conversão de moedas (precisa de `bcmath` declarado no composer).
 - Cópia de planos de ano lectivo copia os dois planos resultantes de uma divisão (UX a ter em conta).

@@ -414,7 +414,7 @@ class GerarPropinasPreVisualizacaoTest extends TestCase
         $linha = $this->daMatricula($resultado, $matricula);
 
         $this->assertSame(25_000_000, $linha['total_capital']);
-        $this->assertNull($linha['total_multa']);
+        $this->assertSame(0, $linha['total_multa']);
         $this->assertArrayNotHasKey('multa', $linha['criadas'][0]);
         $this->assertSame(0, $resultado['totais']['multas']);
         $this->assertFalse($resultado['inclui_multas_estimadas']);

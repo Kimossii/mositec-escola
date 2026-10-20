@@ -54,21 +54,21 @@ class DivisaoEReassociacaoTest extends TestCase
         $turma = $this->turma($ano, $this->nivel('N2'));
         $plano = $this->plano($ano, 'Propina Mensal', ['descricao' => 'Desc'], [['nivel' => $nivel], ['turma' => $turma]]);
 
-        $novo = $this->dividir($plano, '2027-01', 3_000_000, 'Propina Mensal (desde 01/2027)');
+        $novo = $this->dividir($plano, '2027-01', 3_000_000, 'Propina Mensal – Fase 2');
         $plano->refresh();
 
-        $this->assertSame(9, $plano->mes_inicio);
-        $this->assertSame(12, $plano->mes_fim);
+        $this->assertSame(9, $plano->data_inicio->month);
+        $this->assertSame(12, $plano->data_fim->month);
         $this->assertSame(2_500_000, $plano->valor->unidadesMenores());
         $this->assertCount(4, $plano->periodos());
 
         $this->assertSame($plano->ano_lectivo_id, $novo->ano_lectivo_id);
-        $this->assertSame('Propina Mensal (desde 01/2027)', $novo->nome);
+        $this->assertSame('Propina Mensal – Fase 2', $novo->nome);
         $this->assertSame('Desc', $novo->descricao);
         $this->assertSame(Periodicidade::MENSAL, $novo->periodicidade);
         $this->assertSame(1, $novo->intervalo_meses);
-        $this->assertSame(1, $novo->mes_inicio);
-        $this->assertSame(6, $novo->mes_fim);
+        $this->assertSame(1, $novo->data_inicio->month);
+        $this->assertSame(6, $novo->data_fim->month);
         $this->assertSame(3_000_000, $novo->valor->unidadesMenores());
         $this->assertSame(Estado::ATIVO->value, $novo->estado);
         $this->assertSame($this->chavesDosAlvos($plano), $this->chavesDosAlvos($novo));
@@ -101,7 +101,7 @@ class DivisaoEReassociacaoTest extends TestCase
 
         $plano->refresh();
         $this->assertSame(2_800_000, $plano->valor->unidadesMenores());
-        $this->assertSame([9, 6], [$plano->mes_inicio, $plano->mes_fim]);
+        $this->assertSame([9, 6], [$plano->data_inicio->month, $plano->data_fim->month]);
     }
 
     public function test_dividir_e_alterar_valor_exigem_transaccao(): void
@@ -186,7 +186,7 @@ class DivisaoEReassociacaoTest extends TestCase
         }
 
         $plano->refresh();
-        $this->assertSame([9, 6], [$plano->mes_inicio, $plano->mes_fim]);
+        $this->assertSame([9, 6], [$plano->data_inicio->month, $plano->data_fim->month]);
         $this->assertSame(1, PlanoPropina::query()->count());
     }
 
@@ -212,7 +212,7 @@ class DivisaoEReassociacaoTest extends TestCase
             $this->assertStringContainsString('colisão', $e->getMessage());
         }
 
-        $this->assertSame(6, $plano->refresh()->mes_fim);
+        $this->assertSame(6, $plano->refresh()->data_fim->month);
         $this->assertSame(2, PlanoPropina::query()->count());
     }
 
@@ -226,7 +226,7 @@ class DivisaoEReassociacaoTest extends TestCase
 
         $this->assertNotSame($outro->ano_lectivo_id, $novo->ano_lectivo_id);
         $outro->refresh();
-        $this->assertSame([9, 6, 2_500_000], [$outro->mes_inicio, $outro->mes_fim, $outro->valor->unidadesMenores()]);
+        $this->assertSame([9, 6, 2_500_000], [$outro->data_inicio->month, $outro->data_fim->month, $outro->valor->unidadesMenores()]);
         $this->assertSame($this->chavesDosAlvos($plano), $this->chavesDosAlvos($outro));
     }
 

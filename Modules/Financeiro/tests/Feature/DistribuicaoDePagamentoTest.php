@@ -183,10 +183,17 @@ class DistribuicaoDePagamentoTest extends TestCase
     public function test_automatica_paga_da_mais_antiga_para_a_mais_recente_e_para_nas_futuras_sem_antecipado(): void
     {
         $this->regras(parcial: false, antecipado: false);
-        $plano = $this->previa(8_000_000);
+        $plano = $this->previa(5_000_000);
 
         $this->assertSame([$this->p['set']->id => [0, 2_500_000], $this->p['out']->id => [0, 2_500_000]], $this->porPropina($plano));
-        $this->assertSame(3_000_000, $plano->excedente, 'Novembro é futura: o resto vira crédito.');
+        $this->assertSame(0, $plano->excedente);
+
+        try {
+            $this->previa(8_000_000);
+            $this->fail('Sem antecipado, o excedente sobre a dívida é recusado.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertArrayHasKey('valor', $e->errors());
+        }
 
         $this->regras(parcial: false, antecipado: true);
         $this->assertSame(500_000, $this->previa(8_000_000)->excedente, 'Com antecipado paga também Novembro.');

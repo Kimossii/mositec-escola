@@ -82,7 +82,7 @@ trait ComPagamentosFinanceiro
         ])->refresh();
     }
 
-    protected function regras(bool $parcial = false, bool $antecipado = false): RegraCobranca
+    protected function regras(bool $parcial = false, bool $antecipado = true): RegraCobranca
     {
         $regras = RegraCobranca::doTenant();
         $regras->update(['permite_pagamento_parcial' => $parcial, 'permite_pagamento_antecipado' => $antecipado]);

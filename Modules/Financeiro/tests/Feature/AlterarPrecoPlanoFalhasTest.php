@@ -60,7 +60,7 @@ class AlterarPrecoPlanoFalhasTest extends TestCase
         $manter = ModoAlteracaoPreco::MANTER_GERADAS;
 
         return [
-            'encurtar o plano antigo' => ['2027-02', $aplicar, fn () => PlanoPropina::updating(fn (PlanoPropina $p) => $p->isDirty('mes_fim') ? throw new RuntimeException('Falha injectada: encurtar') : null)],
+            'encurtar o plano antigo' => ['2027-02', $aplicar, fn () => PlanoPropina::updating(fn (PlanoPropina $p) => $p->isDirty('data_fim') ? throw new RuntimeException('Falha injectada: encurtar') : null)],
             'criar o plano novo' => ['2027-02', $aplicar, fn () => PlanoPropina::creating(fn () => throw new RuntimeException('Falha injectada: plano novo'))],
             'mudar o valor in loco' => ['2026-09', $aplicar, fn () => PlanoPropina::updating(fn (PlanoPropina $p) => $p->isDirty('valor') ? throw new RuntimeException('Falha injectada: valor in loco') : null)],
             'reassociar a 2.ª propina' => ['2027-02', $aplicar, fn () => self::naPropina(2, fn (Propina $p) => $p->isDirty('plano_propina_id'), 'reassociar')],

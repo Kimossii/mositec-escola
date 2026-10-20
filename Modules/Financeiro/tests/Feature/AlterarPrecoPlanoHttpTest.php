@@ -151,7 +151,7 @@ class AlterarPrecoPlanoHttpTest extends TestCase
                 'motivo' => '  Actualização anual  ', 'impressao_digital' => $impressao,
             ])
             ->assertRedirect(route('financeiro.configuracao.planos-propina.index'))
-            ->assertSessionHas('success', fn (string $m) => str_contains($m, 'Propina Mensal (desde 02/2027)') && str_contains($m, '5 propina(s)'));
+            ->assertSessionHas('success', fn (string $m) => str_contains($m, 'Propina Mensal – Fase 2') && str_contains($m, '5 propina(s)'));
 
         $alteracao = AlteracaoPrecoPlano::query()->sole();
         $this->assertSame([$admin->id, 'Actualização anual', 5], [$alteracao->criado_por, $alteracao->motivo, $alteracao->total_propinas_afectadas]);

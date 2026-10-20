@@ -45,7 +45,7 @@ class AlteracaoPrecoPlanoService
 
     public const MENSAGEM_SEM_PROPINAS = 'Este plano ainda não tem propinas geradas: altere o valor em «Editar».';
 
-    public const MENSAGEM_ANO_ENCERRADO = 'Não é possível alterar o preço de um plano de um ano lectivo encerrado.';
+    public const MENSAGEM_ANO_ENCERRADO = 'Não é possível alterar o preço de um plano de um ano lectivo encerrado sem dívidas em aberto.';
 
     public const MENSAGEM_VALOR_IGUAL = 'O novo valor tem de ser diferente do valor actual do plano.';
 
@@ -68,8 +68,10 @@ class AlteracaoPrecoPlanoService
             throw ValidationException::withMessages(['valor' => self::MENSAGEM_SEM_PROPINAS]);
         }
 
-        // Decisão do dono: planos de anos encerrados ficam bloqueados (mesma consulta de «ano encerrado» da geração).
-        if (AnoLectivo::query()->whereKey($plano->ano_lectivo_id)->where('estado', EstadoAnoLectivo::ENCERRADO->value)->exists()) {
+        // Decisão do dono: planos de anos encerrados ficam bloqueados, EXCEPTO se ainda houver dívida (propinas Em Aberto
+        // ou Parcialmente Pagas) do plano, que pode ser corrigida.
+        if (AnoLectivo::query()->whereKey($plano->ano_lectivo_id)->where('estado', EstadoAnoLectivo::ENCERRADO->value)->exists()
+            && ! $plano->propinas()->whereIn('estado', [1, 2])->exists()) {
             throw ValidationException::withMessages(['plano' => self::MENSAGEM_ANO_ENCERRADO]);
         }
 
@@ -177,18 +179,17 @@ class AlteracaoPrecoPlanoService
     }
 
     /**
-     * "{nome} (desde MM/AAAA)", sem repetir um sufixo de uma divisão anterior, cortado para caber em 100 caracteres e
-     * com " 2", " 3"… se o nome já existir no ano lectivo do plano.
+     * "{nome} – Fase N": sem repetir o sufixo de uma divisão anterior, cortado para caber em 100 caracteres e com
+     * o primeiro N (a partir de 2) livre no ano lectivo do plano. As datas ficam nas colunas do plano.
      */
     public function nomeDoPlanoNovo(PlanoPropina $plano, CarbonImmutable $mesEfeito): string
     {
-        $base = (string) preg_replace('/ \(desde \d{2}\/\d{4}\)( \d+)?$/u', '', $plano->nome);
-        $sufixo = ' (desde ' . $mesEfeito->format('m/Y') . ')';
-        $n = 1;
+        $base = (string) preg_replace('/ – Fase \d+$/u', '', $plano->nome);
+        $n = 2;
 
         while (true) {
-            $final = $sufixo . ($n === 1 ? '' : " {$n}");
-            $nome = mb_substr($base, 0, self::NOME_MAXIMO - mb_strlen($final)) . $final;
+            $sufixo = " – Fase {$n}";
+            $nome = mb_substr($base, 0, self::NOME_MAXIMO - mb_strlen($sufixo)) . $sufixo;
 
             if (! PlanoPropina::query()->where('ano_lectivo_id', $plano->ano_lectivo_id)->where('nome', $nome)->exists()) {
                 return $nome;

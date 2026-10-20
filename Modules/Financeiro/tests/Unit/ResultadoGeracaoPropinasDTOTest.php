@@ -38,7 +38,7 @@ class ResultadoGeracaoPropinasDTOTest extends TestCase
         $resultado->juntar($this->matricula(3, erros: 1));
 
         $this->assertSame(
-            ['matriculas' => 3, 'criadas' => 2, 'ignoradas' => 3, 'conflitos' => 1, 'sem_plano' => 3, 'erros' => 1],
+            ['matriculas' => 3, 'criadas' => 2, 'ignoradas' => 3, 'conflitos' => 1, 'sem_plano' => 3, 'erros' => 1, 'capital' => 0, 'multas' => 0],
             $resultado->totais(),
         );
     }
@@ -59,7 +59,7 @@ class ResultadoGeracaoPropinasDTOTest extends TestCase
         $this->assertSame(4, $array['totais']['matriculas']);
         $this->assertFalse($resultado->toArray()['detalhe_truncado']);
         $this->assertSame(
-            ['matricula_id', 'numero_registo', 'aluno_nome', 'aluno_numero', 'turma_nome', 'criadas', 'ignoradas', 'conflitos', 'sem_plano', 'erros'],
+            ['matricula_id', 'numero_registo', 'aluno_nome', 'aluno_numero', 'turma_nome', 'total_capital', 'total_multa', 'criadas', 'ignoradas', 'conflitos', 'sem_plano', 'erros'],
             array_keys($array['matriculas'][0]),
         );
     }

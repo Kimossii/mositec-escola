@@ -114,6 +114,7 @@ class PagamentoConsultaTest extends TestCase
 
     public function test_pesquisa_de_matriculas_e_situacao(): void
     {
+        $this->regras(parcial: true, antecipado: false);
         $this->creditoDirecto($this->pagamentoDirecto($this->matricula, 700_000), 700_000);
 
         $this->assertSame([], $this->consulta()->pesquisarMatriculas('a'));

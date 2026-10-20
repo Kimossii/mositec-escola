@@ -103,7 +103,7 @@ class PagamentoAteMesTest extends TestCase
     {
         Carbon::setTestNow(CarbonImmutable::parse('2026-10-16 10:00:00', 'UTC'));
         ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
-        $this->regras();
+        $this->regras(antecipado: false);
         $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]); // 5%, L1 = 16/09; Set está em atraso
         $set = $this->propina($matricula, $plano, 1);
 
@@ -131,7 +131,7 @@ class PagamentoAteMesTest extends TestCase
     {
         Carbon::setTestNow(CarbonImmutable::parse('2026-10-16 10:00:00', 'UTC'));
         ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
-        $this->regras();
+        $this->regras(antecipado: false);
         $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]);
         $set = $this->propina($matricula, $plano, 1);
         $existente = $this->multa($set, 50_000);
@@ -147,7 +147,7 @@ class PagamentoAteMesTest extends TestCase
     {
         Carbon::setTestNow(CarbonImmutable::parse('2026-10-16 10:00:00', 'UTC'));
         ['matricula' => $matricula] = $this->cenarioPropinas();
-        $this->regras(); // antecipado desligado
+        $this->regras(antecipado: false); // antecipado desligado
 
         try {
             $this->pagar($matricula, 2_500_000, null, 0, '2026-10-16', null, 2027, 4);

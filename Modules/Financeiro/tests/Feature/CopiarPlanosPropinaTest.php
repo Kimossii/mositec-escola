@@ -50,8 +50,7 @@ class CopiarPlanosPropinaTest extends TestCase
             'periodicidade' => Periodicidade::TRIMESTRAL,
             'intervalo_meses' => 3,
             'valor' => Dinheiro::deUnidadesMenores(1_234_500),
-            'mes_inicio' => 9,
-            'mes_fim' => 6,
+            'data_inicio' => '2026-09-01', 'data_fim' => '2027-06-30',
         ], [['nivel' => $nivel, 'curso' => $curso, 'turno' => $turno], ['nivel' => $nivel]]);
 
         $admin = $this->adminEscola();
@@ -67,8 +66,8 @@ class CopiarPlanosPropinaTest extends TestCase
         $this->assertSame('Mensal', $copia->periodicidade_descricao);
         $this->assertSame(1, $copia->intervalo_meses);
         $this->assertSame(1_234_500, $copia->valor->unidadesMenores());
-        $this->assertSame(9, $copia->mes_inicio);
-        $this->assertSame(6, $copia->mes_fim);
+        $this->assertSame(9, $copia->data_inicio->month);
+        $this->assertSame(6, $copia->data_fim->month);
         $this->assertSame(Estado::INATIVO->value, $copia->estado);
         $this->assertSame('Inativo', $copia->estado_descricao);
         $this->assertSame($this->tenant->id, $copia->tenant_id);
@@ -146,8 +145,8 @@ class CopiarPlanosPropinaTest extends TestCase
         // Disjuntos na origem (Set-Dez/2026 e Jan-Set/2027); no destino (a começar em Jan/2027) ambos incluem Set/2027.
         $origem = $this->anoLectivo();
         $destino = $this->anoLectivo('2027', '2027-01-01', '2027-12-31');
-        $a = $this->plano($origem, 'Fase A', ['mes_inicio' => 9, 'mes_fim' => 12]);
-        $this->plano($origem, 'Fase B', ['mes_inicio' => 1, 'mes_fim' => 9]);
+        $a = $this->plano($origem, 'Fase A', ['data_inicio' => '2026-09-01', 'data_fim' => '2026-12-31']);
+        $this->plano($origem, 'Fase B', ['data_inicio' => '2026-12-01', 'data_fim' => '2027-06-30']);
 
         $this->copiar($origem->id, $destino->id)
             ->assertSessionHas('copia_planos.copiados.0.nome', 'Fase A')

@@ -60,7 +60,7 @@ class GeracaoDepoisDaAlteracaoPrecoTest extends TestCase
 
     private function planoNovo(): PlanoPropina
     {
-        return PlanoPropina::query()->where('nome', 'Propina Mensal (desde 02/2027)')->firstOrFail();
+        return PlanoPropina::query()->where('nome', 'Propina Mensal – Fase 2')->firstOrFail();
     }
 
     public function test_depois_de_manter_as_ja_geradas_ficam_e_as_novas_matriculas_nascem_ao_valor_novo(): void

@@ -55,7 +55,7 @@ class PropinaDetalheAjustesTest extends TestCase
                 ->where('propina.ajustes.0.valor_novo', 3_000_000)
                 ->where('propina.ajustes.0.valor_pago_no_momento', 0)
                 ->where('propina.ajustes.0.plano_anterior', 'Propina Mensal')
-                ->where('propina.ajustes.0.plano_novo', 'Propina Mensal (desde 02/2027)')
+                ->where('propina.ajustes.0.plano_novo', 'Propina Mensal – Fase 2')
                 ->where('propina.ajustes.0.modo_descricao', 'Aplicar às propinas já geradas')
                 ->where('propina.ajustes.0.mes_efeito', 'Fev/2027')
                 ->where('propina.ajustes.0.motivo', 'Subida anual')
