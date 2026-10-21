@@ -37,6 +37,7 @@ class CriarMatriculaAction
             $this->validador->validarTurma($turma, $dto->anoLectivoId);
             $this->validador->garantirEnquadramentoAcademico($aluno, $turma, $utilizadorId);
             $this->validador->validarMatriculaNaoDuplicada($aluno, $turma);
+            $this->validador->validarSituacaoFinanceira($aluno, $turma);
             $this->inscreverDisciplinas->garantirPlanoCurricularConfirmado($turma);
 
             $anoLectivoId = $turma->ano_lectivo_id;

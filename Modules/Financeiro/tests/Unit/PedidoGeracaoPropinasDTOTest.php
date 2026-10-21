@@ -26,7 +26,7 @@ class PedidoGeracaoPropinasDTOTest extends TestCase
     public function test_os_ambitos_manuais_nao_incluem_todas(): void
     {
         $this->assertNotContains(AmbitoGeracaoPropinas::TODAS, AmbitoGeracaoPropinas::manuais());
-        $this->assertCount(4, AmbitoGeracaoPropinas::manuais());
+        $this->assertCount(5, AmbitoGeracaoPropinas::manuais());
     }
 
     #[DataProvider('invalidos')]

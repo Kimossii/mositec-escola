@@ -11,6 +11,7 @@ import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import MatriculaFormModal from '../Components/MatriculaFormModal.vue';
 import InscricaoDisciplinaModal from '../Components/InscricaoDisciplinaModal.vue';
 import TrancamentoModal from '../Components/TrancamentoModal.vue';
+import FimDeMatriculaModal from '../Components/FimDeMatriculaModal.vue';
 import { ESTADO_MATRICULA, ESTADO_MATRICULA_LABEL, estadoMatriculaLabel, transicoesDisponiveis } from '../Models/Estado';
 
 const props = defineProps({
@@ -195,11 +196,12 @@ function cancelarAlteracaoEstado() {
     estadoAlvo.value = null;
 }
 
-function confirmarAlteracaoEstado() {
+function confirmarAlteracaoEstado(dataFim = null) {
     confirmandoEstado.value = true;
     const matricula = matriculaParaAlterarEstado.value;
     router.patch(`/alunos/${matricula.aluno_id}/matriculas/${matricula.id}/estado`, {
         estado: estadoAlvo.value,
+        ...(dataFim ? { data_fim: dataFim } : {}),
     }, {
         preserveScroll: true,
         onSuccess: () => {
@@ -592,11 +594,10 @@ function confirmarRenovacaoEmMassa() {
             @cancelar="fecharMatriculaModal"
         />
 
-        <ConfirmModal
+        <FimDeMatriculaModal
             :show="!!matriculaParaAlterarEstado"
-            titulo="Alterar Estado da Matrícula"
-            :mensagem="`Alterar o estado da matrícula ${matriculaParaAlterarEstado?.numero_registo_matricula} para '${estadoMatriculaLabel(estadoAlvo)}'?`"
-            texto-confirmar="Confirmar"
+            :matricula="matriculaParaAlterarEstado"
+            :estado="estadoAlvo"
             :processando="confirmandoEstado"
             @confirmar="confirmarAlteracaoEstado"
             @cancelar="cancelarAlteracaoEstado"

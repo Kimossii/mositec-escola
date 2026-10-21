@@ -5,7 +5,11 @@ namespace Modules\Financeiro\Providers;
 use Illuminate\Support\Facades\Event;
 use Modules\AnoLectivo\Support\DependenciasRegistadasDoAnoLectivo;
 use Modules\Core\Contracts\SituacaoDePropinasDoAluno;
+use Modules\Core\Contracts\PrevisaoCancelamentoAoTerminarMatricula;
+use Modules\Core\Contracts\VerificaNovaMatricula;
+use Modules\Financeiro\Support\PrevisaoDePropinasCanceladas;
 use Modules\Core\Contracts\VerificaTrancamentoMatricula;
+use Modules\Financeiro\Support\VerificacaoFinanceiraNovaMatricula;
 use Modules\Financeiro\Support\VerificacaoFinanceiraTrancamento;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
 use Modules\Financeiro\Console\AplicarMultasCommand;
@@ -70,6 +74,8 @@ class FinanceiroServiceProvider extends ModuleServiceProvider
         $this->app->tag([DependenciasDePlanosPropina::class], DependenciasRegistadasDoAnoLectivo::ETIQUETA);
         $this->app->tag([PropinasDaMatricula::class], DependenciasRegistadasDaMatricula::ETIQUETA);
         $this->app->tag([VerificacaoFinanceiraTrancamento::class], VerificaTrancamentoMatricula::ETIQUETA);
+        $this->app->tag([VerificacaoFinanceiraNovaMatricula::class], VerificaNovaMatricula::ETIQUETA);
+        $this->app->tag([PrevisaoDePropinasCanceladas::class], PrevisaoCancelamentoAoTerminarMatricula::ETIQUETA);
         $this->app->tag([PrecosDoCatalogo::class, PrecosDosPlanos::class, PrecosDasMultas::class], FontesDePrecos::ETIQUETA);
         $this->app->tag([PropinasReferenciam::class, PagamentosReferenciam::class], ReferenciasFinanceiras::ETIQUETA);
         // Pagamentos-A: as fontes reais do valor pago e do histórico de uma propina (contratos de F1).

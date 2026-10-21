@@ -394,6 +394,7 @@ class GerarPropinasService
         $consulta = Matricula::query()->where('ano_lectivo_id', $pedido->ano_lectivo_id);
 
         match ($pedido->ambito) {
+            AmbitoGeracaoPropinas::ALUNO => $consulta->whereHas('aluno', fn ($aluno) => $aluno->where('numero_matricula', $pedido->aluno_numero)),
             AmbitoGeracaoPropinas::MATRICULA => $consulta->where('numero_registo_matricula', $pedido->matricula_numero),
             AmbitoGeracaoPropinas::TURMA => $consulta->where('turma_id', $pedido->alvo_id),
             AmbitoGeracaoPropinas::NIVEL => $consulta->whereHas('turma', fn ($turma) => $turma->where('nivel_academico_id', $pedido->alvo_id)),
@@ -657,10 +658,6 @@ class GerarPropinasService
         return $candidatos;
     }
 
-    /**
-     * @param  array{ordem: int, meses: int, inicio: string, fim: string}  $periodo
-     * @param  Collection<int, Propina>  $activas
-     */
     /** @var array<int, list<array{0: string, 1: string}>> */
     private array $trancadosEmMemoria = [];
 
@@ -693,6 +690,10 @@ class GerarPropinasService
         })();
     }
 
+    /**
+     * @param  array{ordem: int, meses: int, inicio: string, fim: string}  $periodo
+     * @param  Collection<int, Propina>  $activas
+     */
     private function avaliarPeriodo(
         Matricula $matricula,
         PlanoPropina $plano,

@@ -3,6 +3,7 @@
 namespace Modules\Matricula\Services;
 
 use Modules\Aluno\Models\Aluno;
+use Modules\Core\Contracts\PrevisaoCancelamentoAoTerminarMatricula;
 use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
 use Modules\Matricula\Actions\ReactivarMatriculaAction;
 use Modules\Matricula\Actions\TrancarMatriculaAction;
@@ -63,6 +64,22 @@ class GestaoMatriculaService
     public function verificarTrancamento(Matricula $matricula, string $dataEfeito): array
     {
         return $this->trancarMatricula->verificar($matricula, \Carbon\CarbonImmutable::parse($dataEfeito))->toArray();
+    }
+
+    /**
+     * O que o fim da matrícula nessa data cancelaria (via contratos do Core, sem importar outros módulos).
+     *
+     * @return list<array{descricao: string, vencida: bool}>
+     */
+    public function previsaoDeFim(Matricula $matricula, string $dataFim): array
+    {
+        $itens = [];
+
+        foreach (app()->tagged(PrevisaoCancelamentoAoTerminarMatricula::ETIQUETA) as $previsao) {
+            $itens = [...$itens, ...$previsao->prever((int) $matricula->id, $dataFim)];
+        }
+
+        return $itens;
     }
 
     public function alterarEstado(

@@ -13,7 +13,12 @@ use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Services\AplicarMultasService;
+use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
+use Modules\Financeiro\Enums\AmbitoGeracaoPropinas;
+use Modules\Financeiro\Enums\OrigemGeracaoPropina;
 use Modules\Financeiro\Services\GerarPropinasService;
+use Modules\Financeiro\Support\PrevisaoDePropinasCanceladas;
+use Modules\Financeiro\Support\VerificacaoFinanceiraNovaMatricula;
 use Modules\Financeiro\Tests\Concerns\ComDadosAcademicosFinanceiro;
 use Modules\Financeiro\Tests\Concerns\ComMultasFinanceiro;
 use Modules\Financeiro\Tests\Concerns\ComPropinasFinanceiro;
@@ -191,5 +196,45 @@ class TrancamentoMatriculaTest extends TestCase
         $this->assertCount(1, $linhas);
         $this->assertSame(['exigir_regularizacao_trancamento' => true], $linhas[0]->detalhe['antes']);
         $this->assertSame(['exigir_regularizacao_trancamento' => false], $linhas[0]->detalhe['depois']);
+    }
+
+    public function test_nova_matricula_com_divida_de_ano_anterior_e_bloqueada_se_a_regra_estiver_activa(): void
+    {
+        ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+        $this->propina($matricula, $plano, 1);
+        $seguinte = $this->anoLectivo('2027/2028', '2027-09-01', '2028-07-31');
+        $verificacao = app(VerificacaoFinanceiraNovaMatricula::class);
+
+        $this->assertTrue($verificacao->verificar($matricula->aluno_id, $seguinte->id)->bloqueia());
+        $this->assertFalse($verificacao->verificar($matricula->aluno_id, $matricula->ano_lectivo_id)->bloqueia(), 'Só conta o que é de anos anteriores.');
+
+        RegraCobranca::doTenant()->update(['exigir_regularizacao_matricula' => false]);
+        $this->assertFalse($verificacao->verificar($matricula->aluno_id, $seguinte->id)->bloqueia());
+    }
+
+    public function test_gerar_por_numero_de_estudante(): void
+    {
+        ['ano' => $ano, 'matricula' => $matricula] = $this->cenarioPropinas();
+        $numero = $matricula->aluno->numero_matricula;
+
+        $pedido = new PedidoGeracaoPropinasDTO($ano->id, AmbitoGeracaoPropinas::ALUNO, OrigemGeracaoPropina::MANUAL, aluno_numero: $numero);
+        $resultado = app(GerarPropinasService::class)->preVisualizar($pedido)->toArray();
+
+        $this->assertCount(1, $resultado['matriculas']);
+        $this->assertSame($matricula->id, $resultado['matriculas'][0]['matricula_id']);
+    }
+
+    public function test_previsao_do_fim_da_matricula_lista_as_propinas_a_cancelar_e_assinala_as_vencidas(): void
+    {
+        ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+        $this->propina($matricula, $plano, 1); // Set: começou antes da data de fim, fica
+        $this->propina($matricula, $plano, 2); // Out: vencida (hoje 16/10)
+        $this->propina($matricula, $plano, 5); // Jan: futura
+
+        $itens = app(PrevisaoDePropinasCanceladas::class)->prever($matricula->id, '2026-09-30');
+
+        $this->assertCount(2, $itens);
+        $this->assertTrue($itens[0]['vencida']);
+        $this->assertFalse($itens[1]['vencida']);
     }
 }

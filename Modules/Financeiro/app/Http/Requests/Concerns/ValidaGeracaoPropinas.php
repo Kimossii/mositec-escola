@@ -2,6 +2,8 @@
 
 namespace Modules\Financeiro\Http\Requests\Concerns;
 
+use Closure;
+use Modules\Matricula\Models\Matricula;
 use Illuminate\Validation\Rule;
 use Illuminate\Contracts\Validation\Validator;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
@@ -68,6 +70,13 @@ trait ValidaGeracaoPropinas
         return [
             'ano_lectivo_id' => ['required', 'integer', $doTenant('ano_lectivos')],
             'ambito' => ['required', 'string', Rule::in(array_map(fn (AmbitoGeracaoPropinas $a) => $a->value, AmbitoGeracaoPropinas::manuais()))],
+            'aluno_numero' => [
+                Rule::requiredIf($ambito === AmbitoGeracaoPropinas::ALUNO->value), 'nullable', 'string', 'max:50',
+                Rule::exists('alunos', 'numero_matricula')->where(fn ($query) => $query->where('tenant_id', $tenantId)->whereNull('deleted_at')),
+                fn (string $atributo, mixed $valor, Closure $falha) => $ambito === AmbitoGeracaoPropinas::ALUNO->value
+                    && ! Matricula::query()->where('ano_lectivo_id', $anoId)->whereHas('aluno', fn ($a) => $a->where('numero_matricula', $valor))->exists()
+                    ? $falha('Este aluno não tem matrícula neste ano lectivo.') : null,
+            ],
             'matricula_numero' => [
                 Rule::requiredIf($ambito === AmbitoGeracaoPropinas::MATRICULA->value), 'nullable', 'string', 'max:50',
                 Rule::exists('matriculas', 'numero_registo_matricula')
@@ -103,6 +112,8 @@ trait ValidaGeracaoPropinas
             'ano_lectivo_id.exists' => 'O ano lectivo escolhido é inválido.',
             'ambito.required' => 'Escolha para quem gerar as propinas.',
             'ambito.in' => 'O âmbito escolhido é inválido.',
+            'aluno_numero.required' => 'Indique o número de estudante.',
+            'aluno_numero.exists' => 'Não há nenhum aluno com esse número de estudante.',
             'matricula_numero.required' => 'Indique o número de registo da matrícula.',
             'matricula_numero.exists' => 'Não há nenhuma matrícula com esse número neste ano lectivo.',
             'turma_id.required' => 'Escolha a turma.',

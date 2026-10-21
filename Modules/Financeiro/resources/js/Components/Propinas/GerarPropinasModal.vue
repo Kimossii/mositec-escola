@@ -24,6 +24,7 @@ const emit = defineEmits(['confirmar', 'cancelar']);
 
 const PRE_VISUALIZAR = '/financeiro/propinas/geracao/pre-visualizar';
 const AMBITOS = [
+    { value: 'aluno', label: 'Um aluno (nº de estudante)' },
     { value: 'turma', label: 'Uma turma' },
     { value: 'nivel', label: 'Um nível académico' },
     { value: 'plano', label: 'Todas as turmas de um plano' },
@@ -32,11 +33,12 @@ const AMBITOS = [
 
 const vazio = () => ({
     ano_lectivo_id: '',
-    ambito: 'turma',
+    ambito: 'aluno',
     turma_id: '',
     nivel_academico_id: '',
     plano_propina_id: '',
     matricula_numero: '',
+    aluno_numero: '',
     incluir_periodos_anteriores: false,
     motivo_geracao: '',
     ate: '',
@@ -87,6 +89,7 @@ function payload() {
 
     if (form.ambito === 'turma') dados.turma_id = form.turma_id;
     if (form.ambito === 'nivel') dados.nivel_academico_id = form.nivel_academico_id;
+    if (form.ambito === 'aluno') dados.aluno_numero = form.aluno_numero.trim();
     if (form.ambito === 'matricula') dados.matricula_numero = form.matricula_numero.trim();
     if (form.plano_propina_id !== '') dados.plano_propina_id = form.plano_propina_id;
 
@@ -203,6 +206,11 @@ function confirmar() {
                             <label class="required fw-semibold fs-6 mb-2">Nível académico</label>
                             <SelectSolid v-model="form.nivel_academico_id" :options="opcoesNivel" searchable />
                             <div v-if="erro('nivel_academico_id')" class="text-danger fs-7 mt-1">{{ erro('nivel_academico_id') }}</div>
+                        </div>
+                        <div v-if="form.ambito === 'aluno'" class="col-md-6 fv-row mb-7">
+                            <label class="required fw-semibold fs-6 mb-2">Nº de estudante</label>
+                            <input v-model="form.aluno_numero" type="text" class="form-control form-control-solid" maxlength="50" />
+                            <div v-if="erro('aluno_numero')" class="text-danger fs-7 mt-1">{{ erro('aluno_numero') }}</div>
                         </div>
                         <div v-if="form.ambito === 'matricula'" class="col-md-6 fv-row mb-7">
                             <label class="required fw-semibold fs-6 mb-2">Nº de registo da matrícula</label>

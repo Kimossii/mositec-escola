@@ -37,6 +37,9 @@ class AtualizarRegraCobrancaAction
             if ($dto->multa_activa !== null) {
                 $regra->multa_activa = $dto->multa_activa;
             }
+            if ($dto->exigir_regularizacao_matricula !== null) {
+                $regra->exigir_regularizacao_matricula = $dto->exigir_regularizacao_matricula;
+            }
             if ($dto->exigir_regularizacao_trancamento !== null) {
                 $regra->exigir_regularizacao_trancamento = $dto->exigir_regularizacao_trancamento;
             }

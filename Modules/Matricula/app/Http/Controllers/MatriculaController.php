@@ -8,6 +8,7 @@ use Inertia\Inertia;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Http\Requests\AlterarEstadoMatriculaRequest;
 use Modules\Matricula\Http\Requests\ReactivarMatriculaRequest;
@@ -80,6 +81,15 @@ class MatriculaController extends Controller
         return redirect()->back()->with('success', 'Estado da matrícula actualizado com sucesso.');
     }
 
+    public function previsaoDeFim(Request $request, Aluno $aluno, Matricula $matricula)
+    {
+        $this->authorize('matricula.editar');
+
+        $dataFim = (string) $request->query('data_fim', app(RelogioDoTenant::class)->hoje()->toDateString());
+
+        return response()->json(['propinas' => $this->service->previsaoDeFim($matricula, $dataFim)]);
+    }
+
     public function trancar(TrancarMatriculaRequest $request, Aluno $aluno, Matricula $matricula)
     {
         $this->service->trancar($matricula, $request->validated('data_efeito'), $request->validated('motivo'), (bool) $request->validated('confirmar_com_dividas'));
@@ -98,7 +108,7 @@ class MatriculaController extends Controller
     {
         $this->authorize('matricula.trancar');
 
-        return response()->json($this->service->verificarTrancamento($matricula, (string) $request->query('data_efeito', app(\Modules\Estabelecimento\Services\RelogioDoTenant::class)->hoje()->toDateString())));
+        return response()->json($this->service->verificarTrancamento($matricula, (string) $request->query('data_efeito', app(RelogioDoTenant::class)->hoje()->toDateString())));
     }
 
     public function renovar(RenovarMatriculaRequest $request, Aluno $aluno, Matricula $matricula)

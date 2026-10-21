@@ -13,6 +13,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/', [MatriculaController::class, 'store'])->middleware('can:matricula.criar')->name('store');
         Route::put('/{matricula}', [MatriculaController::class, 'update'])->middleware('can:matricula.editar')->name('update');
         Route::patch('/{matricula}/estado', [MatriculaController::class, 'alterarEstado'])->middleware('can:matricula.editar')->name('alterar-estado');
+        Route::get('/{matricula}/previsao-fim', [MatriculaController::class, 'previsaoDeFim'])->middleware('can:matricula.editar')->name('previsao-fim');
         Route::post('/{matricula}/trancar', [MatriculaController::class, 'trancar'])->middleware('can:matricula.trancar')->name('trancar');
         Route::post('/{matricula}/reactivar', [MatriculaController::class, 'reactivar'])->middleware('can:matricula.trancar')->name('reactivar');
         Route::get('/{matricula}/trancamento', [MatriculaController::class, 'verificarTrancamento'])->middleware('can:matricula.trancar')->name('trancamento');

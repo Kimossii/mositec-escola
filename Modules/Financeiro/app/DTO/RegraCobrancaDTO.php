@@ -22,6 +22,8 @@ class RegraCobrancaDTO
         public ?bool $multa_activa = null,
         /** null = não mexer na flag */
         public ?bool $exigir_regularizacao_trancamento = null,
+        /** null = não mexer na flag */
+        public ?bool $exigir_regularizacao_matricula = null,
         /** @var list<EscalaoMultaDTO>|null null = não mexer nos escalões */
         public ?array $escaloes = null,
     ) {
@@ -54,6 +56,7 @@ class RegraCobrancaDTO
             desconto_maximo_negociacao: (int) $dados['desconto_maximo_negociacao'],
             multa_activa: isset($dados['multa_activa']) ? (bool) $dados['multa_activa'] : null,
             exigir_regularizacao_trancamento: isset($dados['exigir_regularizacao_trancamento']) ? (bool) $dados['exigir_regularizacao_trancamento'] : null,
+            exigir_regularizacao_matricula: isset($dados['exigir_regularizacao_matricula']) ? (bool) $dados['exigir_regularizacao_matricula'] : null,
             escaloes: $escaloes,
         );
     }

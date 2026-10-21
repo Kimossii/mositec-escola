@@ -20,6 +20,7 @@ final class PedidoGeracaoPropinasDTO
         public readonly OrigemGeracaoPropina $origem,
         public readonly ?int $alvo_id = null,
         public readonly ?string $matricula_numero = null,
+        public readonly ?string $aluno_numero = null,
         public readonly ?int $plano_propina_id = null,
         public readonly bool $incluir_periodos_anteriores = false,
         public readonly ?string $motivo_geracao = null,
@@ -54,6 +55,10 @@ final class PedidoGeracaoPropinasDTO
             throw new InvalidArgumentException('O âmbito «todas as do plano» exige o plano.');
         }
 
+        if ($ambito === AmbitoGeracaoPropinas::ALUNO && trim((string) $aluno_numero) === '') {
+            throw new InvalidArgumentException('O âmbito aluno exige o número de estudante.');
+        }
+
         if ($ambito === AmbitoGeracaoPropinas::MATRICULA && trim((string) $matricula_numero) === '') {
             throw new InvalidArgumentException('O âmbito matrícula exige o número de registo da matrícula.');
         }
@@ -75,6 +80,7 @@ final class PedidoGeracaoPropinasDTO
                 default => null,
             },
             matricula_numero: $ambito === AmbitoGeracaoPropinas::MATRICULA ? trim((string) $dados['matricula_numero']) : null,
+            aluno_numero: $ambito === AmbitoGeracaoPropinas::ALUNO ? trim((string) $dados['aluno_numero']) : null,
             plano_propina_id: isset($dados['plano_propina_id']) ? (int) $dados['plano_propina_id'] : null,
             incluir_periodos_anteriores: $incluir,
             motivo_geracao: $incluir ? trim((string) $dados['motivo_geracao']) : null,

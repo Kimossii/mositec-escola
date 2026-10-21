@@ -22,6 +22,7 @@ class RegraCobranca extends Model
         'desconto_maximo_negociacao' => 0,
         'multa_activa' => false,
         'exigir_regularizacao_trancamento' => true,
+        'exigir_regularizacao_matricula' => true,
     ];
 
     protected $table = 'regras_cobranca';
@@ -36,6 +37,7 @@ class RegraCobranca extends Model
         'desconto_maximo_negociacao',
         'multa_activa',
         'exigir_regularizacao_trancamento',
+        'exigir_regularizacao_matricula',
     ];
 
     protected $hidden = ['tenant_id', 'criado_por', 'editado_por'];
@@ -50,6 +52,7 @@ class RegraCobranca extends Model
         'desconto_maximo_negociacao' => 'integer',
         'multa_activa' => 'boolean',
         'exigir_regularizacao_trancamento' => 'boolean',
+        'exigir_regularizacao_matricula' => 'boolean',
     ];
 
     protected static function booted(): void

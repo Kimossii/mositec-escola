@@ -7,6 +7,7 @@ use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
 use Modules\Aluno\Enums\EstadoEnquadramentoAcademicoEnum;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
+use Modules\Core\Contracts\VerificaNovaMatricula;
 use Modules\Core\Enums\Estado;
 use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -133,6 +134,18 @@ class ValidadorMatriculaService
      * quem chama TEM de estar dentro de uma (CriarMatriculaAction e
      * AtualizarMatriculaAction estão).
      */
+    /** Verificações de outros módulos (ex.: dívida de anos anteriores) via contrato do Core; só os bloqueios impedem. */
+    public function validarSituacaoFinanceira(Aluno $aluno, Turma $turma): void
+    {
+        foreach (app()->tagged(VerificaNovaMatricula::ETIQUETA) as $verificacao) {
+            $resultado = $verificacao->verificar((int) $aluno->id, (int) $turma->ano_lectivo_id);
+
+            if ($resultado->bloqueia()) {
+                throw ValidationException::withMessages(['aluno_id' => $resultado->bloqueios[0]['mensagem']]);
+            }
+        }
+    }
+
     public function validarMatriculaNaoDuplicada(
         Aluno $aluno,
         Turma $turma,

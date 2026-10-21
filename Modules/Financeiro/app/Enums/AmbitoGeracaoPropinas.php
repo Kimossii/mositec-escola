@@ -4,10 +4,11 @@ namespace Modules\Financeiro\Enums;
 
 /**
  * Que matrículas uma geração de propinas percorre. Não é persistido. TODAS é só do comando automático;
- * a geração manual escolhe uma matrícula, uma turma, um nível ou as turmas de um plano (spec §7.5).
+ * a geração manual escolhe um aluno (pelo nº de estudante), uma matrícula, uma turma, um nível ou as turmas de um plano (spec §7.5).
  */
 enum AmbitoGeracaoPropinas: string
 {
+    case ALUNO = 'aluno';
     case MATRICULA = 'matricula';
     case TURMA = 'turma';
     case NIVEL = 'nivel';
@@ -19,6 +20,6 @@ enum AmbitoGeracaoPropinas: string
      */
     public static function manuais(): array
     {
-        return [self::MATRICULA, self::TURMA, self::NIVEL, self::PLANO];
+        return [self::ALUNO, self::MATRICULA, self::TURMA, self::NIVEL, self::PLANO];
     }
 }
