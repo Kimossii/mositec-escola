@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Modules\Financeiro\Http\Controllers\CatalogoFinanceiroController;
 use Modules\Financeiro\Http\Controllers\CobrancaController;
 use Modules\Financeiro\Http\Controllers\CreditoController;
+use Modules\Financeiro\Http\Controllers\DividaController;
+use Modules\Financeiro\Http\Controllers\ReciboController;
+use Modules\Financeiro\Http\Controllers\RelatorioFinanceiroController;
 use Modules\Financeiro\Http\Controllers\MetodoPagamentoController;
 use Modules\Financeiro\Http\Controllers\MoedaCambioController;
 use Modules\Financeiro\Http\Controllers\PagamentoController;
@@ -105,6 +108,14 @@ Route::middleware(['auth'])->prefix('financeiro/cobrancas')->name('financeiro.co
     Route::get('/{cobranca}', [CobrancaController::class, 'show'])->whereNumber('cobranca')->middleware('can:cobranca.ver')->name('show');
     Route::post('/{cobranca}/pagar', [CobrancaController::class, 'pagar'])->whereNumber('cobranca')->middleware('can:cobranca.criar')->name('pagar');
     Route::patch('/{cobranca}/cancelar', [CobrancaController::class, 'cancelar'])->whereNumber('cobranca')->middleware('can:cobranca.cancelar')->name('cancelar');
+});
+
+Route::middleware(['auth'])->prefix('financeiro')->name('financeiro.')->group(function () {
+    Route::get('/dividas', [DividaController::class, 'index'])->middleware('can:propina.ver')->name('dividas.index');
+    Route::get('/dividas/exportar', [DividaController::class, 'exportar'])->middleware('can:pagamento.exportar')->name('dividas.exportar');
+    Route::get('/recibos', [ReciboController::class, 'index'])->middleware('can:pagamento.ver')->name('recibos.index');
+    Route::get('/relatorios', [RelatorioFinanceiroController::class, 'index'])->middleware('can:pagamento.exportar')->name('relatorios.index');
+    Route::get('/relatorios/recebimentos.csv', [RelatorioFinanceiroController::class, 'exportarRecebimentos'])->middleware('can:pagamento.exportar')->name('relatorios.recebimentos');
 });
 
 Route::middleware(['auth'])->prefix('financeiro/creditos')->name('financeiro.creditos.')->group(function () {

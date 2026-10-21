@@ -219,6 +219,8 @@ const totalPaginasPeriodos = computed(() => Math.max(1, Math.ceil(periodosFiltra
 const periodosDaPagina = computed(() => periodosFiltrados.value.slice((filtroPeriodos.pagina - 1) * POR_PAGINA, filtroPeriodos.pagina * POR_PAGINA));
 watch(() => [filtroPeriodos.pesquisa, filtroPeriodos.estado], () => { filtroPeriodos.pagina = 1; });
 
+const temHistorico = typeof window !== 'undefined' && window.history.length > 1;
+
 const filtros = reactive({
     ano_lectivo_id: props.filtrosMatricula.ano_lectivo_id ?? '',
     pesquisa: props.filtrosMatricula.pesquisa ?? '',
@@ -435,7 +437,8 @@ function confirmarEliminacao() {
 
 <template>
     <div class="app-container container-xxl py-6">
-        <BotaoVoltar href="/alunos" class="mb-4" />
+        <!-- Volta para onde o utilizador estava (Dívidas, lista de alunos, pagamento…); sem histórico, para a lista de alunos. -->
+        <BotaoVoltar :href="temHistorico ? null : '/alunos'" class="mb-4" />
 
         <div class="d-flex justify-content-between align-items-center mb-6">
             <div class="d-flex align-items-center gap-4">
