@@ -72,12 +72,17 @@ const totais = computed(() => {
     return { recebido_em_dinheiro: recebido, pago_com_credito: credito, total_liquidado: recebido + credito };
 });
 
-// Com muitas linhas, reduz-se a letra (e o espaçamento) em vez de cortar o conteúdo fora da folha.
+// Com muito conteúdo, reduz-se a letra (e o espaçamento) em vez de cortar o fim da via, onde ficam as assinaturas.
+// Conta as linhas da tabela e as linhas extra do cabeçalho de dados (método, referência, contactos, logótipo).
 const classeFolha = computed(() => {
-    const quantidade = linhas.value.length;
+    const extras = dadosMetodo.value.length
+        + (props.pagamento.referencia ? 1 : 0)
+        + (props.aluno.telefone || props.aluno.email ? 1 : 0)
+        + (props.escola.logotipo_url ? 2 : 0);
+    const peso = linhas.value.length + extras;
 
-    if (quantidade <= 6) return '';
-    if (quantidade <= 12) return 'recibo-folha--densa';
+    if (peso <= 5) return '';
+    if (peso <= 9) return 'recibo-folha--densa';
 
     return 'recibo-folha--compacta';
 });

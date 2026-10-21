@@ -18,6 +18,7 @@ const props = defineProps({
     moeda: { type: Object, required: true },
     hoje: { type: String, required: true },
     matriculaInicial: { type: Object, default: null },
+    voltarPara: { type: String, default: null },
 });
 defineOptions({ layout: AppLayout });
 
@@ -133,6 +134,24 @@ const podeConfirmar = computed(() => plano.value !== null && !processing.value &
 const bloqueadaPorAntecipado = (propina) => propina.futura && !situacao.value?.regras.permite_pagamento_antecipado;
 const temAte = computed(() => (form.ate ?? '').trim() !== '');
 
+// Meses já em dívida (do mais antigo para o mais recente): o operador escolhe quantos paga, sempre do mais antigo para a frente.
+// Só meses com algo por pagar (capital ou multa): um mês já pago não aparece.
+const mesesEmDivida = computed(() => (situacao.value?.propinas ?? []).filter((p) => !p.futura && p.total_em_divida > 0));
+const opcoesMesesAPagar = computed(() => {
+    const meses = mesesEmDivida.value;
+
+    return meses.map((p, i) => ({
+        value: i === meses.length - 1 ? '' : p.periodo_inicio,
+        label: i === meses.length - 1
+            ? `Todos os ${meses.length} meses em dívida (até ${p.periodo})`
+            : (i === 0 ? `Apenas ${p.periodo}` : `De ${meses[0].periodo} a ${p.periodo} (${i + 1} meses)`),
+    }));
+});
+const mesesAPagar = computed({
+    get: () => (opcoesMesesAPagar.value.some((o) => o.value !== '' && o.value === form.ate) ? form.ate : ''),
+    set: (valor) => { form.ate = valor; },
+});
+
 // Que mês(es) este pagamento cobre, em grande no topo: com o resumo calculado, os períodos que recebem valor; antes
 // disso, os períodos em dívida (e, com «Adiantar meses», o mês até onde se avança).
 const periodosAPagar = computed(() => {
@@ -142,9 +161,13 @@ const periodosAPagar = computed(() => {
             .map((l) => l.periodo);
     }
 
-    const emDivida = (situacao.value?.propinas ?? []).filter((p) => !p.futura).map((p) => p.periodo);
+    const emDivida = mesesEmDivida.value
+        .filter((p) => !temAte.value || p.periodo_inicio.slice(0, 7) <= form.ate.slice(0, 7))
+        .map((p) => p.periodo);
+    const ultimaEmDivida = mesesEmDivida.value.at(-1)?.periodo_inicio.slice(0, 7) ?? '';
 
-    return temAte.value ? [...emDivida, `até ${dataCurta(form.ate).slice(3)}`] : emDivida;
+    // «Até» além do último mês em dívida = adiantamento; dentro da dívida só limita quantos meses se pagam.
+    return temAte.value && form.ate.slice(0, 7) > ultimaEmDivida ? [...emDivida, `até ${dataCurta(form.ate).slice(3)}`] : emDivida;
 });
 const minMes = computed(() => (situacao.value?.matricula?.data_matricula ?? props.hoje).slice(0, 10));
 const ateAnoMes = () => (temAte.value ? form.ate.split('-') : null);
@@ -154,13 +177,31 @@ const ateAnoMes = () => (temAte.value ? form.ate.split('-') : null);
 const totalDevido = ref(0); // unidades menores
 const totalPronto = ref(false);
 const valorEditado = ref(false);
-const valorFixo = computed(() => situacao.value !== null && !situacao.value.regras.permite_pagamento_parcial);
+// Fixo no total só quando há algo em dívida; sem dívida e com pagamento antecipado o valor escreve-se (vira adiantamento).
+const valorFixo = computed(() => situacao.value !== null && !situacao.value.regras.permite_pagamento_parcial && !(totalPronto.value && totalDevido.value === 0));
+// Nada a regularizar e a escola não aceita adiantamentos: não há nada para registar.
+const semNadaAPagar = computed(() => totalPronto.value && totalDevido.value === 0 && situacao.value !== null && !situacao.value.regras.permite_pagamento_antecipado);
 // Sem pagamento antecipado, o «Pagar até» não passa do fim do mês corrente (o servidor revalida).
 const maxAte = computed(() => {
     if (situacao.value === null || situacao.value.regras.permite_pagamento_antecipado) return undefined;
     const [ano, mes] = props.hoje.split('-').map(Number);
 
     return `${props.hoje.slice(0, 8)}${String(new Date(ano, mes, 0).getDate()).padStart(2, '0')}`;
+});
+
+// A razão concreta (vem dos dados da matrícula, não de suposições).
+const motivoSemPagamento = computed(() => {
+    const c = situacao.value?.cobrancas;
+    const nome = matricula.value?.aluno_nome ?? 'O aluno';
+
+    if (!c || c.geradas === 0) {
+        return `Ainda não foram geradas propinas para esta matrícula. Gere-as em Financeiro → Propinas → Gerar propinas.`;
+    }
+    if (c.proxima) {
+        return `${nome} não tem propinas nem multas em dívida. A próxima propina (${c.proxima.periodo}) só pode ser paga a partir de ${dataCurta(c.proxima.inicio)}, porque a escola não permite pagamento antecipado.`;
+    }
+
+    return `${nome} está em dia: as ${c.geradas} propina(s) geradas para esta matrícula estão pagas e não há multas por liquidar.`;
 });
 
 function sincronizarValor() {
@@ -351,7 +392,7 @@ function continuar() {
 
 <template>
     <div class="app-container container-xxl py-6">
-        <BotaoVoltar href="/financeiro/pagamentos" />
+        <BotaoVoltar :href="voltarPara ?? '/financeiro/pagamentos'" />
         <h1 class="fs-2 fw-bold mb-6">Registar pagamento</h1>
 
         <div class="d-flex flex-wrap gap-3 mb-6">
@@ -385,7 +426,7 @@ function continuar() {
         <div v-if="passo > 1 && matricula" class="card bg-body-secondary mb-6">
             <div class="card-body py-4 d-flex justify-content-between align-items-center">
                 <div>
-                    <strong>{{ matricula.aluno_nome }}</strong> · matrícula {{ matricula.numero }} · {{ matricula.turma_nome ?? '—' }} · {{ matricula.ano_lectivo_nome ?? '—' }}
+                    <div class="text-uppercase fs-5 mb-1"><strong>{{ matricula.aluno_nome }}</strong> · nº de estudante {{ matricula.aluno_numero ?? '—' }} · matrícula {{ matricula.numero }} · {{ matricula.turma_nome ?? '—' }} · {{ matricula.ano_lectivo_nome ?? '—' }}</div>
                     <div class="fs-7 text-muted">
                         Crédito disponível do aluno: {{ formatarDinheiro(situacao?.credito_disponivel ?? 0, moeda) }} ·
                         Pagamento parcial {{ situacao?.regras.permite_pagamento_parcial ? 'permitido' : 'não permitido' }} ·
@@ -402,16 +443,34 @@ function continuar() {
         </div>
 
         <!-- 2. Valor e método -->
-        <div v-if="passo === 2" class="card">
+        <div v-if="passo === 2 && semNadaAPagar" class="card">
+            <div class="card-body text-center py-12">
+                <div class="mb-5"><i class="ki-duotone ki-shield-tick fs-5x text-success"><span class="path1"></span><span class="path2"></span></i></div>
+                <h3 class="fw-bold text-gray-900 mb-3">Sem valores por regularizar</h3>
+                <p class="text-gray-700 fs-6 mx-auto mb-8" style="max-width: 560px;">{{ motivoSemPagamento }}</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <button v-if="voltarPara" type="button" class="btn btn-light" @click="router.visit(voltarPara)">Voltar ao aluno</button>
+                    <button v-else type="button" class="btn btn-light" @click="passo = 1">Escolher outra matrícula</button>
+                    <a href="/financeiro/propinas" class="btn btn-primary" @click.prevent="router.visit('/financeiro/propinas')">Ver propinas</a>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="passo === 2 && !semNadaAPagar" class="card">
             <div class="card-body">
                 <div class="row g-5">
                     <div class="col-12 col-md-4">
                         <label class="form-label required fw-semibold">Valor recebido ({{ moeda.simbolo }})</label>
                         <input v-model="form.valor" type="text" inputmode="decimal" :readonly="valorFixo" class="form-control form-control-solid" :class="{ 'is-invalid': errors.valor }" placeholder="Ex.: 25000,00" @input="valorEditado = true" />
-                        <div v-if="totalPronto && totalDevido === 0" class="text-muted fs-8">Não há valores em dívida para esta matrícula.</div>
-                        <div v-else-if="valorFixo && totalPronto" class="text-muted fs-8">Pagamento parcial não permitido: assume o total em dívida ({{ formatarDinheiro(totalDevido, moeda) }}, capital e multas).</div>
+                        <div v-if="totalPronto && totalDevido === 0" class="text-muted fs-8">Não há valores em dívida: o valor recebido fica como pagamento adiantado.</div>
+                        <div v-else-if="valorFixo && totalPronto" class="text-muted fs-8">Pagamento parcial não permitido: assume o total {{ temAte ? 'dos meses escolhidos' : 'em dívida' }} ({{ formatarDinheiro(totalDevido, moeda) }}, capital e multas).</div>
                         <div v-else-if="totalPronto" class="text-muted fs-8">Sugerido: total em dívida ({{ formatarDinheiro(totalDevido, moeda) }}). Pode alterar.</div>
                         <div class="text-danger fs-7">{{ errors.valor }}</div>
+                    </div>
+                    <div v-if="mesesEmDivida.length > 1" class="col-12 col-md-4">
+                        <label class="form-label fw-semibold">Meses a pagar</label>
+                        <SelectSolid v-model="mesesAPagar" :options="opcoesMesesAPagar" />
+                        <div class="text-muted fs-8">Paga-se sempre do mês mais antigo para a frente, sem saltar meses.</div>
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label required fw-semibold">Método</label>

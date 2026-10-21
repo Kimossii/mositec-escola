@@ -64,6 +64,8 @@ class PagamentoController extends Controller
             'metodos' => $this->consulta->metodosActivos(),
             'moeda' => $this->moedaDoTenant->atual()->paraFrontend(),
             'hoje' => $this->relogio->hoje()->toDateString(),
+            // Para onde voltar (ex.: a ficha do aluno): lista branca: só a ficha de um aluno (sem barras duplas nem barras invertidas, logo sem redireccionamento externo).
+            'voltarPara' => preg_match('#^/alunos/\d+$#D', (string) $request->query('voltar')) === 1 ? (string) $request->query('voltar') : null,
             'matriculaInicial' => $request->filled('matricula') ? $this->consulta->resumoDaMatricula($request->integer('matricula')) : null,
         ]);
     }

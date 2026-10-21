@@ -234,11 +234,14 @@ function confirmar() {
                         </div>
                     </div>
 
-                    <div v-if="podeIncluirAnteriores" class="mb-7">
-                        <label class="form-check form-check-custom form-check-solid">
-                            <input v-model="form.incluir_periodos_anteriores" class="form-check-input" type="checkbox" />
-                            <span class="form-check-label">Incluir períodos anteriores ao mês da matrícula (geração retroactiva)</span>
-                        </label>
+                    <div v-if="podeIncluirAnteriores" class="bg-body-secondary rounded p-4 mb-7">
+                        <div class="form-check form-switch form-check-custom interruptor-visivel">
+                            <input id="incluir_periodos_anteriores" v-model="form.incluir_periodos_anteriores" class="form-check-input" type="checkbox" />
+                            <label for="incluir_periodos_anteriores" class="form-check-label fw-semibold text-gray-900">
+                                Incluir períodos anteriores ao mês da matrícula (geração retroactiva)
+                            </label>
+                        </div>
+                        <div class="form-text ms-12">Gera também as propinas dos meses anteriores à matrícula do aluno. Exige um motivo.</div>
                         <template v-if="form.incluir_periodos_anteriores">
                             <textarea v-model="form.motivo_geracao" class="form-control form-control-solid mt-3" rows="2" maxlength="500" placeholder="Motivo (obrigatório)"></textarea>
                             <div v-if="erro('motivo_geracao')" class="text-danger fs-7 mt-1">{{ erro('motivo_geracao') }}</div>
@@ -265,3 +268,17 @@ function confirmar() {
         @cancelar="aConfirmarGeracao = false"
     />
 </template>
+
+<style scoped>
+/* Interruptor bem visível nos dois temas: contorno forte quando desligado, verde quando ligado. */
+.interruptor-visivel .form-check-input {
+    width: 2.75rem;
+    height: 1.5rem;
+    border: 2px solid #64748B !important;
+    background-color: transparent !important;
+}
+.interruptor-visivel .form-check-input:checked {
+    background-color: #166534 !important;
+    border-color: #166534 !important;
+}
+</style>

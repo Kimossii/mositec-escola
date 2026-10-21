@@ -72,7 +72,7 @@ trait ValidaGeracaoPropinas
             'ambito' => ['required', 'string', Rule::in(array_map(fn (AmbitoGeracaoPropinas $a) => $a->value, AmbitoGeracaoPropinas::manuais()))],
             'aluno_numero' => [
                 Rule::requiredIf($ambito === AmbitoGeracaoPropinas::ALUNO->value), 'nullable', 'string', 'max:50',
-                Rule::exists('alunos', 'numero_matricula')->where(fn ($query) => $query->where('tenant_id', $tenantId)->whereNull('deleted_at')),
+                Rule::exists('alunos', 'numero_matricula')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
                 fn (string $atributo, mixed $valor, Closure $falha) => $ambito === AmbitoGeracaoPropinas::ALUNO->value
                     && ! Matricula::query()->where('ano_lectivo_id', $anoId)->whereHas('aluno', fn ($a) => $a->where('numero_matricula', $valor))->exists()
                     ? $falha('Este aluno não tem matrícula neste ano lectivo.') : null,

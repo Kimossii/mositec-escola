@@ -17,6 +17,7 @@ use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
 use Modules\Financeiro\Enums\AmbitoGeracaoPropinas;
 use Modules\Financeiro\Enums\OrigemGeracaoPropina;
 use Modules\Financeiro\Services\GerarPropinasService;
+use Modules\Financeiro\Services\PagamentoConsultaService;
 use Modules\Financeiro\Support\PrevisaoDePropinasCanceladas;
 use Modules\Financeiro\Support\VerificacaoFinanceiraNovaMatricula;
 use Modules\Financeiro\Tests\Concerns\ComDadosAcademicosFinanceiro;
@@ -236,5 +237,31 @@ class TrancamentoMatriculaTest extends TestCase
         $this->assertCount(2, $itens);
         $this->assertTrue($itens[0]['vencida']);
         $this->assertFalse($itens[1]['vencida']);
+    }
+
+    public function test_pesquisa_de_pagamento_esconde_matricula_terminada_sem_divida(): void
+    {
+        ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+        $nome = $matricula->aluno->dadosPessoa->nome_completo;
+        $consulta = app(PagamentoConsultaService::class);
+
+        $this->assertCount(1, $consulta->pesquisarMatriculas($nome), 'Activa aparece sempre.');
+
+        Matricula::query()->whereKey($matricula->id)->update(['estado' => EstadoMatriculaEnum::CANCELADA->value]);
+        $this->assertCount(0, $consulta->pesquisarMatriculas($nome), 'Cancelada sem dívida não aparece.');
+
+        $this->propina($matricula, $plano, 1);
+        $this->assertCount(1, $consulta->pesquisarMatriculas($nome), 'Cancelada com dívida continua pagável.');
+    }
+
+    public function test_pre_visualizar_geracao_por_numero_de_estudante_via_http(): void
+    {
+        ['ano' => $ano, 'matricula' => $matricula] = $this->cenarioPropinas();
+
+        $this->actingAs($this->adminEscola())->postJson('/financeiro/propinas/geracao/pre-visualizar', [
+            'ano_lectivo_id' => $ano->id,
+            'ambito' => 'aluno',
+            'aluno_numero' => $matricula->aluno->numero_matricula,
+        ])->assertOk()->assertJsonPath('resultado.matriculas.0.matricula_id', $matricula->id);
     }
 }

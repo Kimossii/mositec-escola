@@ -21,8 +21,8 @@
 .recibo-tabela tfoot th:not(.direita) { text-align: left; }
 .recibo-tabela .direita { text-align: right; }
 .recibo-tabela .vazio { text-align: center; color: #666; }
-.recibo-assinaturas { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-top: 6mm; }
-.carimbo { flex: 0 0 42mm; height: 24mm; border: 1px dashed #888; border-radius: 3px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 2px; }
+.recibo-assinaturas { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-top: 3mm; flex: none; }
+.carimbo { flex: 0 0 42mm; height: 20mm; border: 1px dashed #888; border-radius: 3px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 2px; }
 .recibo-logo { display: flex; justify-content: center; width: 100%; margin-bottom: 4px; position: relative; z-index: 1; }
 .recibo-logo img { display: block; margin: 0 auto; max-height: 13mm; max-width: 60mm; object-fit: contain; }
 .recibo-marca { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 60%; max-height: 75%; opacity: 0.09; pointer-events: none; z-index: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }

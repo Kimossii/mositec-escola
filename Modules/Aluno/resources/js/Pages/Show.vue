@@ -658,7 +658,7 @@ function confirmarEliminacao() {
                 <div class="card-toolbar">
                     <a
                         v-if="podeVerPropinas && situacaoPropinas?.tem_matricula_activa && podeRegistarPagamento"
-                        :href="`/financeiro/pagamentos/novo?matricula=${situacaoPropinas.matricula_id}`"
+                        :href="`/financeiro/pagamentos/novo?matricula=${situacaoPropinas.matricula_id}&voltar=${encodeURIComponent('/alunos/' + aluno.id)}`"
                         class="btn btn-sm btn-primary"
                     >
                         Registar pagamento

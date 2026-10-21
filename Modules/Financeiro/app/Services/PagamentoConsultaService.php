@@ -15,6 +15,10 @@ use Modules\Financeiro\Models\CreditoUtilizacao;
 use Modules\Financeiro\Models\MetodoPagamento;
 use Modules\Financeiro\Models\Pagamento;
 use Modules\Financeiro\Models\PagamentoMulta;
+use Modules\Financeiro\Enums\EstadoCobranca;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Financeiro\Services\CancelarPropinasFuturasDaMatricula;
+use Modules\Financeiro\Enums\EstadoMulta;
 use Modules\Financeiro\Models\PagamentoPropina;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaMulta;
@@ -325,6 +329,13 @@ class PagamentoConsultaService
                 ->orWhereHas('aluno', fn ($aluno) => $aluno->where(fn ($a) => $a
                     ->whereContem('numero_matricula', $termo)
                     ->orWhereHas('dadosPessoa', fn ($pessoa) => $pessoa->whereContem('nome_completo', $termo)))))
+            // Matrícula terminada (cancelada, concluída, transferida) só aparece se ainda deixou dívida por pagar.
+            ->where(fn ($estado) => $estado
+                ->whereNotIn('estado', array_map(fn (EstadoMatriculaEnum $e) => $e->value, CancelarPropinasFuturasDaMatricula::ESTADOS_TERMINAIS))
+                ->orWhereIn('id', Propina::query()->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value])->select('matricula_id'))
+                ->orWhereIn('id', Propina::query()->whereIn('id', PropinaMulta::query()
+                    ->whereIn('estado', [EstadoMulta::ACTIVA->value, EstadoMulta::REDUZIDA->value])
+                    ->whereColumn('valor_pago', '<', 'valor')->select('propina_id'))->select('matricula_id')))
             ->orderByDesc('id')
             ->limit(10)
             ->get()
@@ -385,6 +396,29 @@ class PagamentoConsultaService
                 'origem_data' => $c->origem?->data_pagamento?->toDateString(),
             ])->values()->all(),
             'credito_disponivel' => (int) $creditos->sum(fn (Credito $c) => $c->saldo()->unidadesMenores()),
+            'cobrancas' => $this->cobrancasDaMatricula($matricula, $hoje->toDateString()),
+        ];
+    }
+
+    /**
+     * Porque é que pode não haver nada a pagar: quantas propinas existem (activas), quantas estão pagas e qual é a
+     * próxima ainda por pagar (para a mensagem do ecrã de pagamento ser factual).
+     *
+     * @return array{geradas: int, pagas: int, proxima: ?array{periodo: string, inicio: string}}
+     */
+    private function cobrancasDaMatricula(Matricula $matricula, string $hoje): array
+    {
+        $activas = Propina::query()->where('matricula_id', $matricula->id)->activas();
+        $proxima = (clone $activas)->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value])
+            ->where('periodo_inicio', '>', $hoje)->orderBy('periodo_inicio')->first();
+
+        return [
+            'geradas' => (clone $activas)->count(),
+            'pagas' => (clone $activas)->where('estado', EstadoCobranca::PAGA->value)->count(),
+            'proxima' => $proxima === null ? null : [
+                'periodo' => RotuloDePeriodo::periodo($proxima->periodo_inicio->toDateString(), $proxima->periodo_fim->toDateString()),
+                'inicio' => $proxima->periodo_inicio->toDateString(),
+            ],
         ];
     }
 

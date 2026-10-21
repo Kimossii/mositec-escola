@@ -60,6 +60,9 @@ class GerarPropinasService
     /** P5: máximo de matrículas por pedido de geração manual (pré-visualização ou confirmação). O comando não tem limite. */
     public const LIMITE_MATRICULAS_POR_PEDIDO = 500;
 
+    /** Máximo de propinas a criar numa pré-visualização para estimar a multa linha a linha. */
+    public const LIMITE_LINHAS_COM_MULTA = 200;
+
     /** @var array<int, list<int>> ordinais dos meses isentos por ano lectivo */
     private array $mesesIsentosPorAno = [];
 
@@ -311,27 +314,35 @@ class GerarPropinasService
         $temEscaloes = $escaloes !== null && $escaloes->isNotEmpty();
         $hoje = $contexto->hoje->toDateString();
 
-        if (count($matriculas) === 1) {
-            $matricula = $matriculas[0];
-            $totalMulta = 0;
+        $totalCriadas = array_sum(array_map(fn ($m) => count($m->criadas()), $matriculas));
 
-            if ($temEscaloes) {
-                foreach ($matricula->criadas() as $indice => $item) {
-                    $propina = PropinaVirtual::deItem($item);
-                    $valor = $this->multas->multaQueAplicaria($propina, $hoje, $escaloes);
+        // Até ao limite, cada propina a criar leva a sua multa estimada e a regra; acima, só o indicador barato.
+        if ($totalCriadas <= self::LIMITE_LINHAS_COM_MULTA) {
+            $totalGeral = 0;
 
-                    if ($valor === null) {
-                        continue;
+            foreach ($matriculas as $matricula) {
+                $totalMulta = 0;
+
+                if ($temEscaloes) {
+                    foreach ($matricula->criadas() as $indice => $item) {
+                        $propina = PropinaVirtual::deItem($item);
+                        $valor = $this->multas->multaQueAplicaria($propina, $hoje, $escaloes);
+
+                        if ($valor === null) {
+                            continue;
+                        }
+
+                        $escalao = $this->multas->escalaoAtingido($propina, $hoje, $escaloes);
+                        $matricula->comMulta($indice, $valor, $escalao !== null ? $this->regraDoEscalao($escalao) : '');
+                        $totalMulta += $valor;
                     }
-
-                    $escalao = $this->multas->escalaoAtingido($propina, $hoje, $escaloes);
-                    $matricula->comMulta($indice, $valor, $escalao !== null ? $this->regraDoEscalao($escalao) : '');
-                    $totalMulta += $valor;
                 }
+
+                $matricula->comTotalMulta($totalMulta);
+                $totalGeral += $totalMulta;
             }
 
-            $matricula->comTotalMulta($totalMulta);
-            $resultado->comIncluiMultasEstimadas($totalMulta > 0);
+            $resultado->comIncluiMultasEstimadas($totalGeral > 0);
 
             return;
         }
@@ -394,7 +405,8 @@ class GerarPropinasService
         $consulta = Matricula::query()->where('ano_lectivo_id', $pedido->ano_lectivo_id);
 
         match ($pedido->ambito) {
-            AmbitoGeracaoPropinas::ALUNO => $consulta->whereHas('aluno', fn ($aluno) => $aluno->where('numero_matricula', $pedido->aluno_numero)),
+            // Por aluno só interessam as matrículas activas: as terminadas não são mostradas como «ignoradas».
+            AmbitoGeracaoPropinas::ALUNO => $consulta->where('estado', EstadoMatriculaEnum::ACTIVA->value)->whereHas('aluno', fn ($aluno) => $aluno->where('numero_matricula', $pedido->aluno_numero)),
             AmbitoGeracaoPropinas::MATRICULA => $consulta->where('numero_registo_matricula', $pedido->matricula_numero),
             AmbitoGeracaoPropinas::TURMA => $consulta->where('turma_id', $pedido->alvo_id),
             AmbitoGeracaoPropinas::NIVEL => $consulta->whereHas('turma', fn ($turma) => $turma->where('nivel_academico_id', $pedido->alvo_id)),

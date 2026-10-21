@@ -420,7 +420,7 @@ class GerarPropinasPreVisualizacaoTest extends TestCase
         $this->assertFalse($resultado['inclui_multas_estimadas']);
     }
 
-    public function test_varias_matriculas_nao_calculam_multa_por_linha_e_assinalam_inclusao(): void
+    public function test_varias_matriculas_pequenas_calculam_a_multa_por_linha_e_assinalam_inclusao(): void
     {
         Carbon::setTestNow(CarbonImmutable::parse('2026-10-16 10:00:00', 'UTC'));
         $this->multaActiva([[10, TipoMulta::PERCENTAGEM, 1000]]);
@@ -431,9 +431,9 @@ class GerarPropinasPreVisualizacaoTest extends TestCase
         $linha = $this->daMatricula($resultado, $matricula);
 
         $this->assertCount(2, $resultado['matriculas']);
-        $this->assertArrayNotHasKey('multa', $linha['criadas'][0]);
-        $this->assertNull($linha['total_multa']);
-        $this->assertSame(0, $resultado['totais']['multas']);
+        $this->assertArrayHasKey('multa', $linha['criadas'][0], 'Até ao limite, cada propina leva a sua multa estimada.');
+        $this->assertGreaterThan(0, $linha['total_multa']);
+        $this->assertSame(array_sum(array_column($resultado['matriculas'], 'total_multa')), $resultado['totais']['multas']);
         $this->assertSame(50_000_000, $resultado['totais']['capital']);
         $this->assertTrue($resultado['inclui_multas_estimadas']);
     }
