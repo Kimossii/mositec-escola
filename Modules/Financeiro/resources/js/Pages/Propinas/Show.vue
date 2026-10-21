@@ -118,13 +118,14 @@ function isentar(novoValor, motivo) {
                 <button v-if="podeCancelar" type="button" class="btn btn-light-danger" @click="abrirCancelamento">
                     Cancelar propina
                 </button>
-                <div v-else-if="can('propina.cancelar') && propina.cancelamento_bloqueado" class="text-muted fs-7" style="max-width: 360px">
-                    {{ propina.cancelamento_bloqueado }}
+                <!-- Paga, cancelada ou anulada: não há nada a cancelar, por isso não se mostra explicação. -->
+                <div v-else-if="can('propina.cancelar') && propina.cancelamento_bloqueado && ![3, 4, 5].includes(propina.estado)" class="text-muted fs-7" style="max-width: 360px">
+                    <span class="fw-semibold">Cancelamento indisponível.</span> {{ propina.cancelamento_bloqueado }}
                 </div>
                 <button v-if="podeAnular" type="button" class="btn btn-light-danger ms-2" @click="errors = {}; anularAberto = true">
                     Anular propina
                 </button>
-                <button v-if="can('propina.isentar-multa') && propina.multa && propina.multa.estado !== 4" type="button" class="btn btn-light-warning ms-2" @click="errors = {}; isentarAberto = true">
+                <button v-if="can('propina.isentar-multa') && propina.multa && propina.multa.estado !== 4 && propina.multa.pendente > 0" type="button" class="btn btn-light-warning ms-2" @click="errors = {}; isentarAberto = true">
                     Isentar/reduzir multa
                 </button>
                 <div v-else-if="can('propina.anular') && !podeCancelar && propina.anulacao_bloqueada" class="text-muted fs-7 mt-2" style="max-width: 360px">
@@ -144,6 +145,17 @@ function isentar(novoValor, motivo) {
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Valor actual</span><span>{{ formatarDinheiro(propina.valor, moeda) }}</span></div>
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Pago</span><span>{{ formatarDinheiro(propina.valor_pago, moeda) }}</span></div>
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Saldo</span><span class="fw-bold">{{ formatarDinheiro(propina.saldo, moeda) }}</span></div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Multa</span>
+                                <span v-if="propina.multa && propina.multa.estado !== 4 && propina.multa.valor > 0" class="text-end">
+                                    <span class="fw-bold" :class="propina.multa.pendente > 0 ? 'text-danger' : 'text-success'">{{ formatarDinheiro(propina.multa.valor, moeda) }}</span>
+                                    <div class="fs-8" :class="propina.multa.pendente > 0 ? 'text-danger' : 'text-success'">
+                                        {{ propina.multa.pendente > 0 ? (propina.multa.valor_pago > 0 ? `pendente ${formatarDinheiro(propina.multa.pendente, moeda)}` : 'por pagar') : 'paga' }}
+                                    </div>
+                                    <div v-if="propina.multa.regra" class="fs-8 text-muted">{{ propina.multa.regra }}</div>
+                                </span>
+                                <span v-else>—</span>
+                            </div>
                             <div class="d-flex justify-content-between"><span class="text-muted">Estado registado</span><span>{{ propina.estado_persistido_descricao }}</span></div>
                         </div>
                     </div>

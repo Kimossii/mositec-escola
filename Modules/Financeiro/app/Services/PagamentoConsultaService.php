@@ -24,6 +24,7 @@ use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Support\AnulacaoDePagamentos;
+use Modules\Financeiro\Support\Multa;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 use Modules\Financeiro\Support\TaxaCambio;
 use Modules\Matricula\Models\Matricula;
@@ -40,6 +41,7 @@ class PagamentoConsultaService
         private RelogioDoTenant $relogio,
         private DistribuicaoDePagamentoService $distribuicao,
         private AnulacaoDePagamentos $anulacao,
+        private MoedaDoTenant $moeda,
     ) {
     }
 
@@ -171,12 +173,16 @@ class PagamentoConsultaService
                 'plano_nome' => $d->propina->plano?->nome,
                 'valor' => $d->valor->unidadesMenores(),
                 'estado_propina_descricao' => $d->propina->estadoResolvido($this->relogio->hoje())->label(),
+                // Ainda há algo por pagar nesta propina (capital ou multa)? Então a interface oferece «Pagar».
+                'em_divida' => in_array($d->propina->estado, [EstadoCobranca::EM_ABERTO, EstadoCobranca::PARCIALMENTE_PAGA], true) || $d->propina->multaPendente() > 0,
             ])->values()->all(),
             'multas' => $pagamento->multas->map(fn (PagamentoMulta $d) => [
                 'propina_id' => $d->multa->propina_id,
                 'periodo' => RotuloDePeriodo::periodo($d->multa->propina->periodo_inicio->toDateString(), $d->multa->propina->periodo_fim->toDateString()),
                 'valor' => $d->valor->unidadesMenores(),
                 'estado_propina_descricao' => $d->multa->propina->estadoResolvido($this->relogio->hoje())->label(),
+                'regra' => $d->multa->tipo === null ? null : Multa::descreverRegra($d->multa->tipo, (int) $d->multa->valor_regra, $d->multa->escalao_ordem, $this->moeda->atual()),
+                'em_divida' => in_array($d->multa->propina->estado, [EstadoCobranca::EM_ABERTO, EstadoCobranca::PARCIALMENTE_PAGA], true) || $d->multa->propina->multaPendente() > 0,
             ])->values()->all(),
             'credito' => $credito === null ? null : [
                 'id' => $credito->id,
@@ -206,9 +212,23 @@ class PagamentoConsultaService
             'multas.multa.propina.plano',
             'utilizacoesCombinadas.propina.plano',
             'utilizacoesCombinadas.multa.propina.plano',
+            'cobrancas.cobranca.itens',
         ]);
 
         $periodos = [];
+
+        // Produtos e serviços pagos por este pagamento (uma linha por item, ao preço da venda).
+        $itens = [];
+
+        foreach ($pagamento->cobrancas as $linha) {
+            foreach ($linha->cobranca->itens as $item) {
+                $itens[] = [
+                    'descricao' => $item->nome . ($item->variante_nome ? " ({$item->variante_nome})" : '') . ($item->quantidade > 1 ? " × {$item->quantidade}" : ''),
+                    'valor' => $item->total->unidadesMenores(),
+                ];
+            }
+        }
+        $totalItens = array_sum(array_column($itens, 'valor'));
 
         $base = function (Propina $propina): array {
             return [
@@ -271,9 +291,10 @@ class PagamentoConsultaService
 
         return [
             'periodos' => array_values($periodos),
-            'recebido_em_dinheiro' => $recebido,
+            'itens' => $itens,
+            'recebido_em_dinheiro' => $recebido + $totalItens,
             'pago_com_credito' => $credito,
-            'total_liquidado' => $recebido + $credito,
+            'total_liquidado' => $recebido + $totalItens + $credito,
         ];
     }
 

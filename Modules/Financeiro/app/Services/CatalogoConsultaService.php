@@ -7,8 +7,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator as Paginador;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Modules\Curso\Models\Curso;
+use Modules\Financeiro\Enums\MomentoObrigatorio;
+use Modules\Financeiro\Models\CatalogoAlvo;
 use Modules\Financeiro\Models\Produto;
 use Modules\Financeiro\Models\Servico;
+use Modules\Turma\Models\NivelAcademico;
 
 /**
  * Listagem unificada do catálogo. Produto e Servico continuam entidades distintas: aqui só
@@ -55,8 +59,19 @@ class CatalogoConsultaService
                     $query->whereContem('nome', $pesquisa)->orWhereContem('codigo', $pesquisa);
                 });
             })
+            ->with($tipo === 'produto' ? ['variantes'] : [])
             ->get()
             ->map(fn ($item) => [
+                'obrigatorio' => (bool) $item->obrigatorio,
+                'momento_obrigatorio' => $item->momento_obrigatorio?->value,
+                'momento_obrigatorio_descricao' => $item->momento_obrigatorio_descricao,
+                'apenas_alunos_novos' => (bool) $item->apenas_alunos_novos,
+                'alvos_niveis' => $this->alvos($tipo, $item->id, 'nivel_academico_id'),
+                'alvos_cursos' => $this->alvos($tipo, $item->id, 'curso_id'),
+                'controla_stock' => $tipo === 'produto' ? (bool) $item->controla_stock : false,
+                'stock_quantidade' => $tipo === 'produto' ? (int) $item->stock_quantidade : 0,
+                'tem_variantes' => $tipo === 'produto' ? (bool) $item->tem_variantes : false,
+                'variantes' => $tipo === 'produto' ? $item->variantes->map(fn ($v) => ['nome' => $v->nome, 'stock_quantidade' => $v->stock_quantidade])->values()->all() : [],
                 'id' => $item->id,
                 'tipo' => $tipo,
                 'codigo' => $item->codigo,
@@ -66,5 +81,21 @@ class CatalogoConsultaService
                 'estado' => $item->estado,
                 'estado_descricao' => $item->estado_descricao,
             ]);
+    }
+
+    /** @return array{niveis: Collection, cursos: Collection, momentos: list<array{value: int, label: string}>} opções do formulário de obrigatoriedade */
+    public function opcoesDoFormulario(): array
+    {
+        return [
+            'niveis' => NivelAcademico::query()->orderBy('ordem')->orderBy('nome')->get(['id', 'nome']),
+            'cursos' => Curso::query()->orderBy('nome')->get(['id', 'nome']),
+            'momentos' => MomentoObrigatorio::opcoes(),
+        ];
+    }
+
+    /** @return list<int> */
+    private function alvos(string $tipo, int $itemId, string $coluna): array
+    {
+        return CatalogoAlvo::query()->where('item_tipo', $tipo)->where('item_id', $itemId)->whereNotNull($coluna)->pluck($coluna)->map(fn ($id) => (int) $id)->all();
     }
 }

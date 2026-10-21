@@ -29,6 +29,7 @@ enum Modulo: int
     case PROPINA = 22;
     case PAGAMENTO = 23;
     case PAUSA_COBRANCA = 24;
+    case COBRANCA = 25;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -55,6 +56,8 @@ enum Modulo: int
             // Um pagamento nunca se edita nem se elimina: anula-se (spec Pagamentos §8). As acções de crédito
             // reutilizam `criar` (aplicar) e `anular` (anular utilização).
             self::PAGAMENTO => ['ver', 'listar', 'criar', 'anular', 'exportar'],
+            // Cobranças de produtos e serviços: cria-se, cancela-se (sem pagamentos) e o pagamento anula-se em Pagamento.
+            self::COBRANCA => ['ver', 'listar', 'criar', 'cancelar', 'exportar'],
             // `trancar` cobre trancar e reactivar uma matrícula.
             self::MATRICULA => [...self::ACOES_BASE, 'trancar'],
             default => self::ACOES_BASE,
@@ -89,6 +92,7 @@ enum Modulo: int
             self::PROPINA => 'propina',
             self::PAGAMENTO => 'pagamento',
             self::PAUSA_COBRANCA => 'pausa-cobranca',
+            self::COBRANCA => 'cobranca',
         };
     }
 
@@ -131,6 +135,7 @@ enum Modulo: int
             self::PROPINA => 'Propina',
             self::PAGAMENTO => 'Pagamento',
             self::PAUSA_COBRANCA => 'Pausa de Cobrança',
+            self::COBRANCA => 'Cobrança',
         };
     }
 }

@@ -528,6 +528,7 @@ const financeiro = {
     items: [
         { href: '/financeiro/propinas', title: 'Propinas', permissao: 'propina.ver' },
         { href: '/financeiro/pagamentos', title: 'Pagamentos', permissao: 'pagamento.ver' },
+        { href: '/financeiro/cobrancas', title: 'Cobranças', permissao: 'cobranca.ver' },
         // { href: '#', title: 'Dívidas' },
         // { href: '#', title: 'Descontos / Bolsas' },
         // { href: '#', title: 'Recibos' },

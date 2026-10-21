@@ -9,6 +9,8 @@ use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Financeiro\Casts\DinheiroCast;
+use Modules\Financeiro\Enums\MomentoObrigatorio;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Bem físico do catálogo da escola. Entidade distinta de Servico (sem tabela genérica).
@@ -27,6 +29,12 @@ class Produto extends Model
         'descricao',
         'codigo',
         'preco',
+        'obrigatorio',
+        'momento_obrigatorio',
+        'apenas_alunos_novos',
+        'controla_stock',
+        'stock_quantidade',
+        'tem_variantes',
         'estado',
     ];
 
@@ -38,11 +46,29 @@ class Produto extends Model
 
     protected $casts = [
         'preco' => DinheiroCast::class,
+        'obrigatorio' => 'boolean',
+        'momento_obrigatorio' => MomentoObrigatorio::class,
+        'apenas_alunos_novos' => 'boolean',
+        'controla_stock' => 'boolean',
+        'stock_quantidade' => 'integer',
+        'tem_variantes' => 'boolean',
         'estado' => 'integer',
     ];
 
     public function scopeActivos(Builder $query): Builder
     {
         return $query->where('estado', Estado::ATIVO->value);
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $item) {
+            $item->momento_obrigatorio_descricao = $item->momento_obrigatorio?->label();
+        });
+    }
+
+    public function variantes(): HasMany
+    {
+        return $this->hasMany(ProdutoVariante::class)->orderBy('nome');
     }
 }

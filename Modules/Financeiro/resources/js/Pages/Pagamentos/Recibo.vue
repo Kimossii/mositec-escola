@@ -62,11 +62,20 @@ const linhas = computed(() => {
         }
     }
 
+    // Produtos e serviços (cobranças) só entram no recibo geral.
+    if (props.propinaId === null) {
+        for (const item of props.recibo.itens ?? []) {
+            linhas.push({ descricao: item.descricao, pagoCom: pagoCom(item.valor, 0), valor: item.valor });
+        }
+    }
+
     return linhas;
 });
 
+const valorDosItens = computed(() => (props.propinaId === null ? (props.recibo.itens ?? []).reduce((soma, item) => soma + item.valor, 0) : 0));
+
 const totais = computed(() => {
-    const recebido = periodosVisiveis.value.reduce((soma, periodo) => soma + periodo.capital_dinheiro + periodo.multa_dinheiro, 0);
+    const recebido = periodosVisiveis.value.reduce((soma, periodo) => soma + periodo.capital_dinheiro + periodo.multa_dinheiro, 0) + valorDosItens.value;
     const credito = periodosVisiveis.value.reduce((soma, periodo) => soma + periodo.capital_credito + periodo.multa_credito, 0);
 
     return { recebido_em_dinheiro: recebido, pago_com_credito: credito, total_liquidado: recebido + credito };
@@ -202,7 +211,7 @@ const dadosMetodo = computed(() => {
                             <td>{{ linha.pagoCom }}</td>
                             <td class="direita">{{ dinheiro(linha.valor) }}</td>
                         </tr>
-                        <tr v-if="linhas.length === 0"><td colspan="3" class="vazio">Sem propinas associadas (valor lançado como crédito).</td></tr>
+                        <tr v-if="linhas.length === 0"><td colspan="3" class="vazio">Sem propinas nem cobranças associadas (valor lançado como crédito).</td></tr>
                     </tbody>
                     <tfoot>
                         <tr><th colspan="2">Recebido em dinheiro</th><th class="direita">{{ dinheiro(totais.recebido_em_dinheiro) }}</th></tr>

@@ -24,6 +24,10 @@ class RegraCobrancaDTO
         public ?bool $exigir_regularizacao_trancamento = null,
         /** null = não mexer na flag */
         public ?bool $exigir_regularizacao_matricula = null,
+        /** null = não mexer na flag */
+        public ?bool $exigir_regularizacao_servicos = null,
+        /** null = não mexer na flag */
+        public ?bool $gerar_obrigatorios_ao_matricular = null,
         /** @var list<EscalaoMultaDTO>|null null = não mexer nos escalões */
         public ?array $escaloes = null,
     ) {
@@ -57,6 +61,8 @@ class RegraCobrancaDTO
             multa_activa: isset($dados['multa_activa']) ? (bool) $dados['multa_activa'] : null,
             exigir_regularizacao_trancamento: isset($dados['exigir_regularizacao_trancamento']) ? (bool) $dados['exigir_regularizacao_trancamento'] : null,
             exigir_regularizacao_matricula: isset($dados['exigir_regularizacao_matricula']) ? (bool) $dados['exigir_regularizacao_matricula'] : null,
+            exigir_regularizacao_servicos: isset($dados['exigir_regularizacao_servicos']) ? (bool) $dados['exigir_regularizacao_servicos'] : null,
+            gerar_obrigatorios_ao_matricular: isset($dados['gerar_obrigatorios_ao_matricular']) ? (bool) $dados['gerar_obrigatorios_ao_matricular'] : null,
             escaloes: $escaloes,
         );
     }

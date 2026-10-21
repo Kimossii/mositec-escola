@@ -6,6 +6,7 @@ use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Financeiro\Rules\ValorMonetario;
+use Modules\Financeiro\Support\CamposDoCatalogo;
 
 class CriarServicoRequest extends BaseRequest
 {
@@ -27,7 +28,7 @@ class CriarServicoRequest extends BaseRequest
                     ->where(fn ($query) => $query->where('tenant_id', app(TenantContext::class)->id())),
             ],
             'preco' => ['required', new ValorMonetario()],
-        ];
+        ] + CamposDoCatalogo::regras(false);
     }
 
     public function messages(): array
@@ -38,6 +39,6 @@ class CriarServicoRequest extends BaseRequest
             'codigo.unique' => 'Já existe um serviço com este código.',
             'codigo.max' => 'O código do serviço não pode ultrapassar 50 caracteres.',
             'preco.required' => 'O preço do serviço é obrigatório.',
-        ];
+        ] + CamposDoCatalogo::mensagens();
     }
 }

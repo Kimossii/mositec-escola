@@ -202,6 +202,23 @@ function guardar(payload) {
 
 // O filtro por omissão (ano lectivo activo) já vem calculado do backend em
 // filtrosMatricula — aqui só reflectimos o que o servidor devolveu.
+// Períodos da situação de propinas: pesquisa, estado e paginação no cliente (uma matrícula tem poucas dezenas).
+const POR_PAGINA = 6;
+const filtroPeriodos = reactive({ pesquisa: '', estado: '', pagina: 1 });
+const opcoesEstadoPeriodo = computed(() => [
+    { value: '', label: 'Todos os estados' },
+    ...[...new Map((props.situacaoPropinas?.periodos ?? []).map((p) => [p.estado, p.estado_descricao])).entries()].map(([value, label]) => ({ value, label })),
+]);
+const periodosFiltrados = computed(() => {
+    const termo = filtroPeriodos.pesquisa.trim().toLowerCase();
+
+    return (props.situacaoPropinas?.periodos ?? []).filter((p) => (filtroPeriodos.estado === '' || p.estado === filtroPeriodos.estado)
+        && (termo === '' || p.periodo.toLowerCase().includes(termo)));
+});
+const totalPaginasPeriodos = computed(() => Math.max(1, Math.ceil(periodosFiltrados.value.length / POR_PAGINA)));
+const periodosDaPagina = computed(() => periodosFiltrados.value.slice((filtroPeriodos.pagina - 1) * POR_PAGINA, filtroPeriodos.pagina * POR_PAGINA));
+watch(() => [filtroPeriodos.pesquisa, filtroPeriodos.estado], () => { filtroPeriodos.pagina = 1; });
+
 const filtros = reactive({
     ano_lectivo_id: props.filtrosMatricula.ano_lectivo_id ?? '',
     pesquisa: props.filtrosMatricula.pesquisa ?? '',
@@ -692,6 +709,15 @@ function confirmarEliminacao() {
                         </div>
                     </div>
 
+                    <div v-if="situacaoPropinas.periodos.length > POR_PAGINA" class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <input v-model="filtroPeriodos.pesquisa" type="search" class="form-control form-control-solid" placeholder="Pesquisar período (ex.: Mar/2026)" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <SelectSolid v-model="filtroPeriodos.estado" :options="opcoesEstadoPeriodo" />
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table align-middle table-row-dashed table-hover fs-7 gy-5 mb-0">
                             <thead>
@@ -702,24 +728,84 @@ function confirmarEliminacao() {
                                     <th class="text-end min-w-100px">Saldo</th>
                                     <th class="text-end min-w-100px">Multa</th>
                                     <th class="min-w-125px">Estado</th>
+                                    <th class="text-end min-w-100px">Acções</th>
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 fw-semibold">
                                 <tr v-if="situacaoPropinas.periodos.length === 0">
-                                    <td colspan="6" class="text-center text-muted py-6">Sem propinas registadas.</td>
+                                    <td colspan="7" class="text-center text-muted py-6">Sem propinas registadas.</td>
                                 </tr>
-                                <tr v-for="periodo in situacaoPropinas.periodos" :key="periodo.periodo">
+                                <tr v-else-if="periodosFiltrados.length === 0">
+                                    <td colspan="7" class="text-center text-muted py-6">Nenhum período corresponde ao filtro.</td>
+                                </tr>
+                                <tr v-for="periodo in periodosDaPagina" :key="periodo.periodo">
                                     <td class="text-gray-800">{{ periodo.periodo }}</td>
                                     <td class="text-end">{{ formatarDinheiro(periodo.valor, moeda) }}</td>
                                     <td class="text-end">{{ formatarDinheiro(periodo.pago, moeda) }}</td>
                                     <td class="text-end">{{ formatarDinheiro(periodo.saldo, moeda) }}</td>
-                                    <td class="text-end">{{ periodo.multa_pendente ? formatarDinheiro(periodo.multa_pendente, moeda) : '—' }}</td>
+                                    <td class="text-end">
+                                        <template v-if="periodo.multa_valor">
+                                            <span :class="periodo.multa_pendente ? 'text-danger' : 'text-success'">{{ formatarDinheiro(periodo.multa_valor, moeda) }}</span>
+                                            <div class="fs-8" :class="periodo.multa_pendente ? 'text-danger' : 'text-success'">
+                                                {{ periodo.multa_pendente ? (periodo.multa_paga ? `pendente ${formatarDinheiro(periodo.multa_pendente, moeda)}` : 'por pagar') : 'paga' }}
+                                            </div>
+                                            <div v-if="periodo.multa_regra" class="fs-8 text-muted">{{ periodo.multa_regra }}</div>
+                                        </template>
+                                        <span v-else>—</span>
+                                    </td>
                                     <td><EstadoCobrancaBadge :estado="periodo.estado" :estado-descricao="periodo.estado_descricao" /></td>
+                                    <td class="text-end text-nowrap">
+                                        <a
+                                            v-if="(periodo.saldo > 0 || periodo.multa_pendente > 0) && podeRegistarPagamento"
+                                            :href="`/financeiro/pagamentos/novo?matricula=${situacaoPropinas.matricula_id}&voltar=${encodeURIComponent('/alunos/' + aluno.id)}`"
+                                            class="btn btn-sm btn-light-primary"
+                                        >Pagar</a>
+                                        <a v-else :href="`/financeiro/propinas/${periodo.propina_id}`" class="btn btn-sm btn-light">Ver</a>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
+                    <div v-if="periodosFiltrados.length > POR_PAGINA" class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-muted fs-7">
+                            {{ (filtroPeriodos.pagina - 1) * POR_PAGINA + 1 }}–{{ Math.min(filtroPeriodos.pagina * POR_PAGINA, periodosFiltrados.length) }} de {{ periodosFiltrados.length }}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-light" :disabled="filtroPeriodos.pagina === 1" @click="filtroPeriodos.pagina--">Anterior</button>
+                            <button
+                                v-for="n in totalPaginasPeriodos" :key="n" type="button" class="btn btn-sm"
+                                :class="n === filtroPeriodos.pagina ? 'btn-primary' : 'btn-light'" @click="filtroPeriodos.pagina = n"
+                            >{{ n }}</button>
+                            <button type="button" class="btn btn-sm btn-light" :disabled="filtroPeriodos.pagina === totalPaginasPeriodos" @click="filtroPeriodos.pagina++">Seguinte</button>
+                        </div>
+                    </div>
                 </template>
+            </div>
+        </div>
+
+        <div v-if="podeVerPropinas" class="card mt-6">
+            <div class="card-header">
+                <h3 class="card-title fw-bold">Produtos e serviços por pagar</h3>
+                <div class="card-toolbar">
+                    <a
+                        v-if="can('cobranca.criar')"
+                        :href="`/financeiro/cobrancas/nova?${situacaoPropinas?.matricula_id ? `matricula=${situacaoPropinas.matricula_id}&` : ''}voltar=${encodeURIComponent('/alunos/' + aluno.id)}`"
+                        class="btn btn-sm btn-primary"
+                    >
+                        Nova cobrança
+                    </a>
+                </div>
+            </div>
+            <div class="card-body pt-0">
+                <div v-if="!situacaoPropinas?.cobrancas?.length" class="text-muted fs-6 py-3">Nada por pagar em produtos e serviços.</div>
+                <div v-for="c in situacaoPropinas?.cobrancas ?? []" :key="c.id" class="d-flex justify-content-between align-items-center py-3 border-bottom border-dashed">
+                    <div>
+                        <a :href="`/financeiro/cobrancas/${c.id}`" class="fw-bold fs-6">{{ c.descricao }}</a>
+                        <span class="badge ms-2" :class="c.obrigatoria ? 'badge-light-warning' : 'badge-light'">{{ c.obrigatoria ? 'Obrigatório' : 'Opcional' }}</span>
+                        <div v-if="c.data_limite" class="text-muted fs-7">Até {{ formatarData(c.data_limite) }}</div>
+                    </div>
+                    <div class="fw-bold">{{ formatarDinheiro(c.saldo, moeda) }}</div>
+                </div>
             </div>
         </div>
 

@@ -139,6 +139,11 @@ class Pagamento extends Model
         return $this->belongsTo(User::class, 'anulado_por');
     }
 
+    public function cobrancas(): HasMany
+    {
+        return $this->hasMany(PagamentoCobranca::class, 'pagamento_id')->orderBy('id');
+    }
+
     public function distribuicoes(): HasMany
     {
         return $this->hasMany(PagamentoPropina::class, 'pagamento_id')->orderBy('id');

@@ -8,6 +8,7 @@ use Modules\Core\DTO\ResultadoVerificacaoTrancamento;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\EstadoCredito;
 use Modules\Financeiro\Enums\EstadoMulta;
+use Modules\Financeiro\Models\Cobranca;
 use Modules\Financeiro\Models\Credito;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaMulta;
@@ -44,6 +45,12 @@ class VerificacaoFinanceiraTrancamento implements VerificaTrancamentoMatricula
             ->whereIn('estado', [EstadoMulta::ACTIVA->value, EstadoMulta::REDUZIDA->value])
             ->whereIn('propina_id', Propina::query()->where('matricula_id', $matriculaId)->select('id'))
             ->selectRaw('COALESCE(SUM(valor - valor_pago), 0) as total')->value('total');
+
+        // Produtos e serviços (cobranças) por pagar desta matrícula contam como dívida.
+        $capital += (int) Cobranca::query()
+            ->where('matricula_id', $matriculaId)
+            ->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value])
+            ->selectRaw('COALESCE(SUM(total - valor_pago), 0) as soma')->value('soma');
 
         $bloqueios = [];
         $avisos = [];

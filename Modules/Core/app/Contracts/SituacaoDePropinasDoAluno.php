@@ -17,7 +17,7 @@ interface SituacaoDePropinasDoAluno
     public function moeda(): array;
 
     /**
-     * Totais e últimos 6 períodos da matrícula activa do aluno.
+     * Totais e todos os períodos da matrícula activa do aluno (a interface pagina e filtra).
      *
      * @return array{
      *     tem_matricula_activa: bool,

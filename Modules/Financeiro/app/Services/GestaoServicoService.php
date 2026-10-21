@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Services;
 
+use Illuminate\Support\Facades\DB;
 use Modules\Core\Enums\Estado;
 use Modules\Financeiro\Actions\AlterarEstadoServicoAction;
 use Modules\Financeiro\Actions\AtualizarServicoAction;
@@ -24,12 +25,12 @@ class GestaoServicoService
 
     public function criar(CriarServicoRequest $request): Servico
     {
-        return $this->criarAction->executar(ServicoDTO::fromRequest($request));
+        return DB::transaction(fn () => $this->criarAction->executar(ServicoDTO::fromRequest($request)));
     }
 
     public function atualizar(Servico $servico, AtualizarServicoRequest $request): Servico
     {
-        return $this->atualizarAction->executar($servico, ServicoDTO::fromRequest($request));
+        return DB::transaction(fn () => $this->atualizarAction->executar($servico, ServicoDTO::fromRequest($request)));
     }
 
     public function alterarEstado(Servico $servico, Estado $estado): Servico

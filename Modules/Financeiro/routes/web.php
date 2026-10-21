@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Financeiro\Http\Controllers\CatalogoFinanceiroController;
+use Modules\Financeiro\Http\Controllers\CobrancaController;
 use Modules\Financeiro\Http\Controllers\CreditoController;
 use Modules\Financeiro\Http\Controllers\MetodoPagamentoController;
 use Modules\Financeiro\Http\Controllers\MoedaCambioController;
@@ -94,6 +95,16 @@ Route::middleware(['auth'])->prefix('financeiro/pagamentos')->name('financeiro.p
     Route::get('/{pagamento}/comprovativo', [PagamentoController::class, 'comprovativo'])->whereNumber('pagamento')->middleware('can:pagamento.ver')->name('comprovativo');
     Route::post('/{pagamento}/comprovativo', [PagamentoController::class, 'anexarComprovativo'])->whereNumber('pagamento')->middleware('can:pagamento.criar')->name('comprovativo.anexar');
     Route::patch('/{pagamento}/anular', [PagamentoController::class, 'anular'])->whereNumber('pagamento')->middleware('can:pagamento.anular')->name('anular');
+});
+
+Route::middleware(['auth'])->prefix('financeiro/cobrancas')->name('financeiro.cobrancas.')->group(function () {
+    Route::get('/', [CobrancaController::class, 'index'])->middleware('can:cobranca.ver')->name('index');
+    Route::get('/nova', [CobrancaController::class, 'create'])->middleware('can:cobranca.criar')->name('create');
+    Route::get('/matriculas', [CobrancaController::class, 'pesquisarMatriculas'])->middleware('can:cobranca.criar')->name('matriculas.pesquisar');
+    Route::post('/', [CobrancaController::class, 'store'])->middleware('can:cobranca.criar')->name('store');
+    Route::get('/{cobranca}', [CobrancaController::class, 'show'])->whereNumber('cobranca')->middleware('can:cobranca.ver')->name('show');
+    Route::post('/{cobranca}/pagar', [CobrancaController::class, 'pagar'])->whereNumber('cobranca')->middleware('can:cobranca.criar')->name('pagar');
+    Route::patch('/{cobranca}/cancelar', [CobrancaController::class, 'cancelar'])->whereNumber('cobranca')->middleware('can:cobranca.cancelar')->name('cancelar');
 });
 
 Route::middleware(['auth'])->prefix('financeiro/creditos')->name('financeiro.creditos.')->group(function () {

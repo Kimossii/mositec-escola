@@ -7,6 +7,7 @@ use Modules\AnoLectivo\Support\DependenciasRegistadasDoAnoLectivo;
 use Modules\Core\Contracts\SituacaoDePropinasDoAluno;
 use Modules\Core\Contracts\PrevisaoCancelamentoAoTerminarMatricula;
 use Modules\Core\Contracts\VerificaNovaMatricula;
+use Modules\Financeiro\Support\CobrancasReferenciam;
 use Modules\Financeiro\Support\PrevisaoDePropinasCanceladas;
 use Modules\Core\Contracts\VerificaTrancamentoMatricula;
 use Modules\Financeiro\Support\VerificacaoFinanceiraNovaMatricula;
@@ -17,6 +18,7 @@ use Modules\Financeiro\Console\CambioPlataformaCommand;
 use Modules\Financeiro\Console\GerarPropinasCommand;
 use Modules\Financeiro\Console\SincronizarFinanceiroCommand;
 use Modules\Financeiro\Listeners\CancelarPropinasAoTerminarMatricula;
+use Modules\Financeiro\Listeners\GerarCobrancasObrigatoriasAoActivarMatricula;
 use Modules\Financeiro\Listeners\GerarPropinasAoActivarMatricula;
 use Modules\Financeiro\Provisioning\ProvisionarConfiguracaoMonetaria;
 use Modules\Financeiro\Provisioning\ProvisionarRegrasCobranca;
@@ -77,7 +79,7 @@ class FinanceiroServiceProvider extends ModuleServiceProvider
         $this->app->tag([VerificacaoFinanceiraNovaMatricula::class], VerificaNovaMatricula::ETIQUETA);
         $this->app->tag([PrevisaoDePropinasCanceladas::class], PrevisaoCancelamentoAoTerminarMatricula::ETIQUETA);
         $this->app->tag([PrecosDoCatalogo::class, PrecosDosPlanos::class, PrecosDasMultas::class], FontesDePrecos::ETIQUETA);
-        $this->app->tag([PropinasReferenciam::class, PagamentosReferenciam::class], ReferenciasFinanceiras::ETIQUETA);
+        $this->app->tag([PropinasReferenciam::class, PagamentosReferenciam::class, CobrancasReferenciam::class], ReferenciasFinanceiras::ETIQUETA);
         // Pagamentos-A: as fontes reais do valor pago e do histórico de uma propina (contratos de F1).
         $this->app->tag([PagamentosDaPropina::class], FontesDePagamentoDePropina::ETIQUETA);
         $this->app->tag([HistoricoDosPagamentos::class], HistoricosDePagamentoDaPropina::ETIQUETA);
@@ -92,5 +94,6 @@ class FinanceiroServiceProvider extends ModuleServiceProvider
         Event::listen(MatriculaEstadoAlterado::class, CancelarPropinasAoTerminarMatricula::class);
         // Q7: depois do commit (ShouldHandleEventsAfterCommit); falhas registadas, nunca propagadas.
         Event::listen(MatriculaEstadoAlterado::class, GerarPropinasAoActivarMatricula::class);
+        Event::listen(MatriculaEstadoAlterado::class, GerarCobrancasObrigatoriasAoActivarMatricula::class);
     }
 }

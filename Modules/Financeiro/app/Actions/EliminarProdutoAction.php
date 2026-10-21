@@ -3,6 +3,7 @@
 namespace Modules\Financeiro\Actions;
 
 use Illuminate\Validation\ValidationException;
+use Modules\Financeiro\Models\CatalogoAlvo;
 use Modules\Financeiro\Models\Produto;
 use Modules\Financeiro\Support\ReferenciasFinanceiras;
 use Modules\Financeiro\Support\ViolacaoDeChave;
@@ -21,6 +22,9 @@ class EliminarProdutoAction
             ]);
         }
 
-        ViolacaoDeChave::comoValidacao(fn () => $produto->delete());
+        ViolacaoDeChave::comoValidacao(function () use ($produto) {
+            CatalogoAlvo::query()->where('item_tipo', 'produto')->where('item_id', $produto->id)->delete();
+            $produto->delete();
+        });
     }
 }

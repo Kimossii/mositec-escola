@@ -19,6 +19,7 @@ use Modules\Financeiro\Models\PropinaAjuste;
 use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Support\AnulacaoDePropinas;
 use Modules\Financeiro\Support\CancelamentoDePropinas;
+use Modules\Financeiro\Support\Multa;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 
 /**
@@ -34,6 +35,7 @@ class PropinaConsultaService
         private CancelamentoDePropinas $cancelamento,
         private AnulacaoDePropinas $anulacao,
         private PagamentoConsultaService $pagamentos,
+        private MoedaDoTenant $moeda,
     ) {
     }
 
@@ -284,6 +286,8 @@ class PropinaConsultaService
             'estado' => $multa->estado->value,
             'estado_descricao' => $multa->estado->label(),
             'bloqueada_automatico' => $multa->bloqueada_automatico,
+            // A regra que foi aplicada na altura (ex.: «20% · escalão 3»).
+            'regra' => $multa->tipo === null ? null : Multa::descreverRegra($multa->tipo, (int) $multa->valor_regra, $multa->escalao_ordem, $this->moeda->atual()),
         ];
     }
 

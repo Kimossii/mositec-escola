@@ -6,6 +6,7 @@ use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Financeiro\Rules\ValorMonetario;
+use Modules\Financeiro\Support\CamposDoCatalogo;
 
 class AtualizarProdutoRequest extends BaseRequest
 {
@@ -28,7 +29,7 @@ class AtualizarProdutoRequest extends BaseRequest
                     ->ignore($this->route('produto')?->id),
             ],
             'preco' => ['required', new ValorMonetario()],
-        ];
+        ] + CamposDoCatalogo::regras(true);
     }
 
     public function messages(): array
@@ -39,6 +40,6 @@ class AtualizarProdutoRequest extends BaseRequest
             'codigo.unique' => 'Já existe um produto com este código.',
             'codigo.max' => 'O código do produto não pode ultrapassar 50 caracteres.',
             'preco.required' => 'O preço do produto é obrigatório.',
-        ];
+        ] + CamposDoCatalogo::mensagens();
     }
 }

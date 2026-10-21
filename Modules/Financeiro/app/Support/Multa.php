@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Support;
 
+use Modules\Financeiro\Enums\TipoMulta;
 use InvalidArgumentException;
 
 /**
@@ -35,6 +36,18 @@ final class Multa
         }
 
         return $pontos;
+    }
+
+    /**
+     * A regra que foi aplicada, em texto: «20% · escalão 3» ou «1.500,00 Kz · escalão 1».
+     */
+    public static function descreverRegra(TipoMulta $tipo, int $valorRegra, ?int $escalaoOrdem, Moeda $moeda): string
+    {
+        $quantia = $tipo === TipoMulta::PERCENTAGEM
+            ? self::pontosBaseParaPercentagem($valorRegra) . '%'
+            : Dinheiro::deUnidadesMenores($valorRegra)->formatar($moeda);
+
+        return $escalaoOrdem === null ? $quantia : "{$quantia} · escalão {$escalaoOrdem}";
     }
 
     /**

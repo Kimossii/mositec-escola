@@ -209,13 +209,25 @@ function anularUtilizacao(motivo) {
                     <div class="card-body pt-0">
                         <p v-if="pagamento.distribuicoes.length === 0" class="text-muted mb-0">Nenhuma propina: o valor ficou todo como crédito do aluno.</p>
                         <table v-else class="table table-row-dashed align-middle fs-7 gy-2 mb-0">
-                            <thead><tr class="text-muted fw-bold text-uppercase"><th>Período</th><th>Plano</th><th>Estado</th><th class="text-end">Valor</th></tr></thead>
+                            <thead><tr class="text-muted fw-bold text-uppercase"><th>Período</th><th>Plano</th><th>Estado</th><th class="text-end">Valor</th><th class="text-end">Acções</th></tr></thead>
                             <tbody>
                                 <tr v-for="d in pagamento.distribuicoes" :key="d.propina_id">
                                     <td><Link :href="`/financeiro/propinas/${d.propina_id}`">{{ d.periodo }}</Link></td>
                                     <td>{{ d.plano_nome ?? '—' }}</td>
                                     <td>{{ d.estado_propina_descricao }}</td>
                                     <td class="text-end">{{ formatarDinheiro(d.valor, moeda) }}</td>
+                                    <td class="text-end text-nowrap">
+                                        <a
+                                            v-if="d.em_divida && can('pagamento.criar')"
+                                            :href="`/financeiro/pagamentos/novo?matricula=${pagamento.matricula_id}`"
+                                            class="btn btn-sm btn-light-primary"
+                                        >Pagar</a>
+                                        <a
+                                            v-else
+                                            :href="`/financeiro/pagamentos/${pagamento.id}/recibo/propinas/${d.propina_id}`"
+                                            target="_blank" class="btn btn-sm btn-light"
+                                        >Recibo</a>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -262,7 +274,10 @@ function anularUtilizacao(motivo) {
                         <tr v-for="m in pagamento.multas" :key="`multa-${m.propina_id}`">
                             <td><Link :href="`/financeiro/propinas/${m.propina_id}`">{{ m.periodo }}</Link></td>
                             <td>{{ m.estado_propina_descricao }}</td>
-                            <td class="text-end">{{ formatarDinheiro(m.valor, moeda) }}</td>
+                            <td class="text-end">
+                                {{ formatarDinheiro(m.valor, moeda) }}
+                                <div v-if="m.regra" class="text-muted fs-8">Multa aplicada: {{ m.regra }}</div>
+                            </td>
                         </tr>
                     </tbody>
                 </table>

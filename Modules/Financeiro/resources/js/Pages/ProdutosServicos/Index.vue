@@ -25,6 +25,7 @@ const props = defineProps({
     itens: { type: Object, required: true }, // paginador: { data, links, ... }
     filtros: { type: Object, default: () => ({}) },
     moeda: { type: Object, required: true },
+    opcoes: { type: Object, default: () => ({ niveis: [], cursos: [], momentos: [] }) },
 });
 defineOptions({ layout: AppLayout });
 
@@ -186,7 +187,12 @@ function confirmarEliminacao() {
                         </tr>
                         <tr v-for="item in itens.data" :key="`${item.tipo}-${item.id}`">
                             <td>{{ item.codigo ?? '—' }}</td>
-                            <td class="text-gray-800">{{ item.nome }}</td>
+                            <td class="text-gray-800">
+                                {{ item.nome }}
+                                <div v-if="item.obrigatorio" class="fs-8"><span class="badge badge-light-warning">Obrigatório · {{ item.momento_obrigatorio_descricao }}</span></div>
+                                <div v-if="item.controla_stock && !item.tem_variantes" class="fs-8 text-muted">Stock: {{ item.stock_quantidade }}</div>
+                                <div v-if="item.tem_variantes" class="fs-8 text-muted">{{ item.variantes.length }} tamanho(s)</div>
+                            </td>
                             <td>
                                 <span class="badge" :class="item.tipo === 'produto' ? 'badge-light-primary' : 'badge-light-info'">{{ ROTULO[item.tipo] }}</span>
                             </td>
@@ -236,6 +242,7 @@ function confirmarEliminacao() {
             :processing="processing"
             :errors="errors"
             :moeda="moeda"
+            :opcoes="opcoes"
             @submit="guardar"
             @cancelar="modalAberto = false"
         />

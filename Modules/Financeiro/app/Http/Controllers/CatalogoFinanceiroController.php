@@ -26,6 +26,7 @@ class CatalogoFinanceiroController extends Controller
             'itens' => $this->consulta->listar($filtros),
             'filtros' => $filtros,
             'moeda' => $this->moedaDoTenant->atual()->paraFrontend(),
+            'opcoes' => $this->consulta->opcoesDoFormulario(),
         ]);
     }
 }

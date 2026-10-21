@@ -8,7 +8,11 @@ use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Contracts\SituacaoDePropinasDoAluno;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Enums\EstadoCobranca;
+use Modules\Financeiro\Enums\EstadoMulta;
+use Modules\Financeiro\Enums\OrigemCobranca;
+use Modules\Financeiro\Models\Cobranca;
 use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Support\Multa;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
@@ -34,9 +38,10 @@ class SituacaoDePropinasDoAlunoService implements SituacaoDePropinasDoAluno
     public function doAluno(int $alunoId): array
     {
         $matricula = $this->matriculaActiva($alunoId);
+        $cobrancas = $this->cobrancasEmAberto($alunoId);
 
         if ($matricula === null) {
-            return $this->vazio();
+            return $this->vazio() + ['cobrancas' => $cobrancas];
         }
 
         $hoje = $this->relogio->hoje();
@@ -46,8 +51,36 @@ class SituacaoDePropinasDoAlunoService implements SituacaoDePropinasDoAluno
             'tem_matricula_activa' => true,
             'matricula_id' => $matricula->id,
             ...$this->totais($propinas, $hoje),
-            'periodos' => $propinas->take(-6)->map(fn (Propina $propina) => $this->periodo($propina, $hoje))->values()->all(),
+            'periodos' => $propinas->map(fn (Propina $propina) => $this->periodo($propina, $hoje))->values()->all(),
+            'cobrancas' => $cobrancas,
         ];
+    }
+
+    /**
+     * Produtos e serviços por pagar do aluno (todas as matrículas): obrigatórios e opcionais, para a ficha e as dívidas.
+     *
+     * @return list<array{id: int, descricao: string, total: int, saldo: int, obrigatoria: bool, data_limite: ?string, estado: int, estado_descricao: string}>
+     */
+    private function cobrancasEmAberto(int $alunoId): array
+    {
+        return Cobranca::query()
+            ->where('aluno_id', $alunoId)
+            ->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value])
+            ->with('itens')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Cobranca $c) => [
+                'id' => $c->id,
+                'descricao' => $c->itens->map(fn ($i) => $i->nome . ($i->quantidade > 1 ? " × {$i->quantidade}" : ''))->implode(', '),
+                'total' => $c->total->unidadesMenores(),
+                'saldo' => $c->saldo(),
+                'obrigatoria' => $c->origem === OrigemCobranca::OBRIGATORIO,
+                'data_limite' => $c->data_limite?->toDateString(),
+                'estado' => $c->estado->value,
+                'estado_descricao' => $c->estado_descricao,
+            ])
+            ->values()
+            ->all();
     }
 
     public function paraListaDeAlunos(array $alunoIds): array
@@ -203,14 +236,35 @@ class SituacaoDePropinasDoAlunoService implements SituacaoDePropinasDoAluno
         $estado = $propina->estadoResolvido($hoje);
 
         return [
+            'propina_id' => $propina->id,
             'periodo' => RotuloDePeriodo::periodo($propina->periodo_inicio->toDateString(), $propina->periodo_fim->toDateString()),
             'valor' => $propina->valor->unidadesMenores(),
             'pago' => $propina->valor_pago->unidadesMenores(),
             'saldo' => $propina->saldo()->unidadesMenores(),
             'multa_pendente' => $propina->multaPendente(),
+            // Multa aplicada (qualquer que seja o estado do pagamento) e quanto dela já foi paga: a coluna mostra as duas.
+            'multa_valor' => $this->multaValor($propina),
+            'multa_regra' => $this->multaRegra($propina),
+            'multa_paga' => $propina->multa === null || $propina->multa->estado === EstadoMulta::ANULADA ? 0 : $propina->multa->valor_pago->unidadesMenores(),
             'estado' => $estado->value,
             'estado_descricao' => $estado->label(),
         ];
+    }
+
+    private function multaRegra(Propina $propina): ?string
+    {
+        $multa = $propina->multa;
+
+        return $multa === null || $multa->tipo === null || $multa->estado === EstadoMulta::ANULADA
+            ? null
+            : Multa::descreverRegra($multa->tipo, (int) $multa->valor_regra, $multa->escalao_ordem, $this->moedaDoTenant->atual());
+    }
+
+    private function multaValor(Propina $propina): int
+    {
+        $multa = $propina->multa;
+
+        return $multa === null || $multa->estado === EstadoMulta::ANULADA || $multa->estado === EstadoMulta::ISENTA ? 0 : $multa->valor->unidadesMenores();
     }
 
     private function vazio(): array

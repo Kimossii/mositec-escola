@@ -11,6 +11,7 @@ const seccoesFinanceiro = [
         links: [
             { href: '/financeiro/propinas', label: 'Propinas', permissao: 'propina.ver' },
             { href: '/financeiro/pagamentos', label: 'Pagamentos', permissao: 'pagamento.ver' },
+            { href: '/financeiro/cobrancas', label: 'Cobranças', permissao: 'cobranca.ver' },
             // { href: '#', label: 'Dívidas' },
         ],
     },

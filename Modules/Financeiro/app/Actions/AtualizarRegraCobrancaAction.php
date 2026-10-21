@@ -37,6 +37,11 @@ class AtualizarRegraCobrancaAction
             if ($dto->multa_activa !== null) {
                 $regra->multa_activa = $dto->multa_activa;
             }
+            foreach (['exigir_regularizacao_servicos', 'gerar_obrigatorios_ao_matricular'] as $campo) {
+                if ($dto->{$campo} !== null) {
+                    $regra->{$campo} = $dto->{$campo};
+                }
+            }
             if ($dto->exigir_regularizacao_matricula !== null) {
                 $regra->exigir_regularizacao_matricula = $dto->exigir_regularizacao_matricula;
             }

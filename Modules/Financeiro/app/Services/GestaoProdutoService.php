@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Services;
 
+use Illuminate\Support\Facades\DB;
 use Modules\Core\Enums\Estado;
 use Modules\Financeiro\Actions\AlterarEstadoProdutoAction;
 use Modules\Financeiro\Actions\AtualizarProdutoAction;
@@ -24,12 +25,12 @@ class GestaoProdutoService
 
     public function criar(CriarProdutoRequest $request): Produto
     {
-        return $this->criarAction->executar(ProdutoDTO::fromRequest($request));
+        return DB::transaction(fn () => $this->criarAction->executar(ProdutoDTO::fromRequest($request)));
     }
 
     public function atualizar(Produto $produto, AtualizarProdutoRequest $request): Produto
     {
-        return $this->atualizarAction->executar($produto, ProdutoDTO::fromRequest($request));
+        return DB::transaction(fn () => $this->atualizarAction->executar($produto, ProdutoDTO::fromRequest($request)));
     }
 
     public function alterarEstado(Produto $produto, Estado $estado): Produto

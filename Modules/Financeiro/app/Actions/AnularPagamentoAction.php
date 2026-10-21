@@ -9,9 +9,11 @@ use Modules\Financeiro\DTO\MotivoDeAnulacaoDTO;
 use Modules\Financeiro\Enums\EstadoPagamento;
 use Modules\Financeiro\Models\Credito;
 use Modules\Financeiro\Models\Pagamento;
+use Modules\Financeiro\Models\PagamentoCobranca;
 use Modules\Financeiro\Models\PagamentoMulta;
 use Modules\Financeiro\Models\PagamentoPropina;
 use Modules\Financeiro\Models\PropinaMulta;
+use Modules\Financeiro\Services\RecalcularCobranca;
 use Modules\Financeiro\Services\RecalcularCredito;
 use Modules\Financeiro\Services\RecalcularPropina;
 use Modules\Financeiro\Support\AnulacaoDePagamentos;
@@ -33,6 +35,7 @@ class AnularPagamentoAction
         private RecalcularCredito $recalcularCredito,
         private RelogioDoTenant $relogio,
         private AnulacaoDePagamentos $anulacao,
+        private RecalcularCobranca $recalcularCobranca,
     ) {
     }
 
@@ -76,6 +79,11 @@ class AnularPagamentoAction
             }
 
             $this->recalcularPropina->executarVarias($propinas);
+
+            // Cobranças de produtos e serviços pagas por este pagamento voltam a Em Aberto.
+            $this->recalcularCobranca->executarVarias(
+                PagamentoCobranca::query()->where('pagamento_id', $bloqueado->id)->pluck('cobranca_id')->map(fn ($id) => (int) $id)->all(),
+            );
 
             return $bloqueado->fresh(['distribuicoes', 'multas', 'credito']);
         });

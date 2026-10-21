@@ -23,6 +23,8 @@ class RegraCobranca extends Model
         'multa_activa' => false,
         'exigir_regularizacao_trancamento' => true,
         'exigir_regularizacao_matricula' => true,
+        'exigir_regularizacao_servicos' => true,
+        'gerar_obrigatorios_ao_matricular' => true,
     ];
 
     protected $table = 'regras_cobranca';
@@ -38,6 +40,8 @@ class RegraCobranca extends Model
         'multa_activa',
         'exigir_regularizacao_trancamento',
         'exigir_regularizacao_matricula',
+        'exigir_regularizacao_servicos',
+        'gerar_obrigatorios_ao_matricular',
     ];
 
     protected $hidden = ['tenant_id', 'criado_por', 'editado_por'];
@@ -53,6 +57,8 @@ class RegraCobranca extends Model
         'multa_activa' => 'boolean',
         'exigir_regularizacao_trancamento' => 'boolean',
         'exigir_regularizacao_matricula' => 'boolean',
+        'exigir_regularizacao_servicos' => 'boolean',
+        'gerar_obrigatorios_ao_matricular' => 'boolean',
     ];
 
     protected static function booted(): void

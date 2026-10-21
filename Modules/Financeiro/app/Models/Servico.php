@@ -9,6 +9,7 @@ use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 use Modules\Financeiro\Casts\DinheiroCast;
+use Modules\Financeiro\Enums\MomentoObrigatorio;
 
 /**
  * Prestação do catálogo da escola (sem stock). Entidade distinta de Produto (sem tabela genérica).
@@ -27,6 +28,9 @@ class Servico extends Model
         'descricao',
         'codigo',
         'preco',
+        'obrigatorio',
+        'momento_obrigatorio',
+        'apenas_alunos_novos',
         'estado',
     ];
 
@@ -38,11 +42,21 @@ class Servico extends Model
 
     protected $casts = [
         'preco' => DinheiroCast::class,
+        'obrigatorio' => 'boolean',
+        'momento_obrigatorio' => MomentoObrigatorio::class,
+        'apenas_alunos_novos' => 'boolean',
         'estado' => 'integer',
     ];
 
     public function scopeActivos(Builder $query): Builder
     {
         return $query->where('estado', Estado::ATIVO->value);
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $item) {
+            $item->momento_obrigatorio_descricao = $item->momento_obrigatorio?->label();
+        });
     }
 }

@@ -33,6 +33,8 @@ function snapshot() {
         multa_activa: props.regra.multa_activa,
         exigir_regularizacao_trancamento: props.regra.exigir_regularizacao_trancamento,
         exigir_regularizacao_matricula: props.regra.exigir_regularizacao_matricula,
+        exigir_regularizacao_servicos: props.regra.exigir_regularizacao_servicos,
+        gerar_obrigatorios_ao_matricular: props.regra.gerar_obrigatorios_ao_matricular,
         // O valor_input vem pronto do servidor: "2,5" (percentagem) ou decimal da moeda.
         escaloes: props.escaloes.map((e) => ({ dias_atraso: e.dias_atraso, tipo: e.tipo, valor: e.valor_input })),
     };
@@ -198,6 +200,20 @@ function submeter() {
                     </div>
                     <div class="form-text mb-3">
                         Ligado, não se matricula um aluno que ainda deve propinas ou multas de anos lectivos anteriores.
+                    </div>
+                    <div class="form-check form-switch form-check-custom form-check-solid mb-2">
+                        <input id="exigir_regularizacao_servicos" v-model="form.exigir_regularizacao_servicos" type="checkbox" class="form-check-input" :disabled="!podeEditar">
+                        <label for="exigir_regularizacao_servicos" class="form-check-label fw-semibold">Exigir situação regularizada para emitir serviços</label>
+                    </div>
+                    <div class="form-text mb-3">
+                        Ligado, só se cobra um serviço (por exemplo, uma declaração) a quem não tem dívidas. Quem nunca foi matriculado nunca é cobrado.
+                    </div>
+                    <div class="form-check form-switch form-check-custom form-check-solid mb-2">
+                        <input id="gerar_obrigatorios_ao_matricular" v-model="form.gerar_obrigatorios_ao_matricular" type="checkbox" class="form-check-input" :disabled="!podeEditar">
+                        <label for="gerar_obrigatorios_ao_matricular" class="form-check-label fw-semibold">Gerar automaticamente os produtos e serviços obrigatórios ao matricular</label>
+                    </div>
+                    <div class="form-text mb-3">
+                        Ligado, os itens marcados como obrigatórios no catálogo ficam como dívida do aluno ao activar a matrícula. Desligado, cobram-se à mão.
                     </div>
                     <div class="form-text">
                         Ligado, só se tranca uma matrícula sem dívidas (propinas com período iniciado e multas em aberto). Desligado, permite trancar com dívidas, com confirmação.

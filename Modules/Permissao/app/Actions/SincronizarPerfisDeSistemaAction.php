@@ -51,6 +51,7 @@ class SincronizarPerfisDeSistemaAction
             Modulo::PROPINA->value => ['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar', 'isentar-multa'],
             Modulo::PAGAMENTO->value => ['ver', 'listar', 'criar', 'anular', 'exportar'],
             Modulo::PAUSA_COBRANCA->value => ['ver', 'criar', 'editar', 'eliminar'],
+            Modulo::COBRANCA->value => ['ver', 'listar', 'criar', 'cancelar', 'exportar'],
         ],
         Perfil::FUNCIONARIO->value => [
             Modulo::USUARIO->value => ['ver', 'criar', 'editar'],

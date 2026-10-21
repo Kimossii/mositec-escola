@@ -31,6 +31,8 @@ class AtualizarRegraCobrancaRequest extends BaseRequest
             'multa_activa' => 'sometimes|boolean',
             'exigir_regularizacao_trancamento' => 'sometimes|boolean',
             'exigir_regularizacao_matricula' => 'sometimes|boolean',
+            'exigir_regularizacao_servicos' => 'sometimes|boolean',
+            'gerar_obrigatorios_ao_matricular' => 'sometimes|boolean',
         ] + ($this->multaActivaNoPedido() ? [
             'escaloes' => [
                 'required',
