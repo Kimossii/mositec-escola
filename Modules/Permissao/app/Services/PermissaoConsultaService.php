@@ -4,6 +4,7 @@ namespace Modules\Permissao\Services;
 
 use Illuminate\Support\Collection;
 use Modules\Permissao\Models\Acao;
+use Modules\Permissao\Enums\Modulo as ModuloEnum;
 use Modules\Permissao\Models\Modulo;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Support\AcoesAplicaveis;
@@ -19,7 +20,7 @@ class PermissaoConsultaService
     public function listarPerfis(): Collection
     {
         return Role::withCount('users')
-            ->with(['permissoes.modulo:id,descricao', 'permissoes.acao:id,nome'])
+            ->with(['permissoes.modulo:id,nome,descricao', 'permissoes.acao:id,nome'])
             ->get()
             ->map(fn (Role $role) => [
                 'id' => $role->id,
@@ -29,6 +30,7 @@ class PermissaoConsultaService
                 'utilizadores_count' => $role->users_count,
                 'permissoes' => $role->permissoes->map(fn ($permissao) => [
                     'modulo' => $permissao->modulo->descricao,
+                    'slug' => ModuloEnum::tryFrom((int) $permissao->modulo->nome)?->slug(),
                     'acao' => $permissao->acao->nome,
                 ])->values(),
             ]);
@@ -97,6 +99,8 @@ class PermissaoConsultaService
         $idsPorNome = Acao::pluck('id', 'nome');
 
         return Modulo::orderBy('nome')->get(['id', 'nome', 'descricao'])->map(function (Modulo $modulo) use ($idsPorNome) {
+            // O front agrupa os módulos pelo menu a que pertencem, por slug (`nome` é o valor inteiro do enum).
+            $modulo->setAttribute('slug', ModuloEnum::tryFrom((int) $modulo->nome)?->slug());
             $modulo->setAttribute('acoes', collect($this->aplicaveis->doRegistro($modulo))
                 ->map(fn (string $nome) => $idsPorNome[$nome] ?? null)
                 ->filter()

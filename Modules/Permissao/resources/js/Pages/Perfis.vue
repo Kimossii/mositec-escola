@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -7,8 +7,9 @@ import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import PerfilForm from '../Components/PerfilForm.vue';
+import { agruparPorMenu } from '../Support/menusDosModulos';
 
-defineProps({
+const props = defineProps({
     perfis: {
         type: Array,
         required: true,
@@ -70,19 +71,29 @@ function confirmarEliminacao() {
     });
 }
 
-// Agrupa a lista plana [{ modulo, acao }] por módulo, pra render como matriz
-// Módulo × Ação (uma coluna por ação, igual à página de edição de permissões).
-function agruparPorModulo(permissoes) {
-    const grupos = new Map();
-    for (const { modulo, acao } of permissoes) {
-        if (!grupos.has(modulo)) grupos.set(modulo, []);
-        grupos.get(modulo).push(acao);
+// Permissões do perfil agrupadas pelo menu do sistema a que cada módulo pertence (só o que o perfil tem).
+function menusDoPerfil(permissoes) {
+    const porModulo = new Map();
+    for (const { modulo, slug, acao } of permissoes) {
+        if (!porModulo.has(modulo)) porModulo.set(modulo, { id: modulo, slug, descricao: modulo, acoesDoPerfil: [] });
+        porModulo.get(modulo).acoesDoPerfil.push(acao);
     }
-    return Array.from(grupos, ([modulo, acoes]) => ({ modulo, acoes }));
+
+    return agruparPorMenu([...porModulo.values()]).map((menu) => {
+        const modulos = menu.secoes.flatMap((secao) => secao.modulos);
+        const colunas = props.acoes.filter((acao) => modulos.some((m) => m.acoesDoPerfil.includes(acao)));
+
+        return { ...menu, modulos, colunas, total: modulos.reduce((t, m) => t + m.acoesDoPerfil.length, 0) };
+    });
 }
 
-function temAcao(grupo, acao) {
-    return grupo.acoes.includes(acao);
+// Menus recolhidos dentro do painel de cada perfil (chave "perfil|menu").
+const recolhidos = reactive(new Set());
+const estaRecolhido = (perfilId, menu) => recolhidos.has(`${perfilId}|${menu}`);
+function alternarRecolhido(perfilId, menu) {
+    const k = `${perfilId}|${menu}`;
+    if (recolhidos.has(k)) recolhidos.delete(k);
+    else recolhidos.add(k);
 }
 </script>
 
@@ -170,35 +181,51 @@ function temAcao(grupo, acao) {
                                                 Nenhuma permissão atribuída a este perfil.
                                             </div>
 
-                                            <div v-else class="table-responsive">
-                                                <table class="table table-permissoes align-middle mb-0">
-                                                    <thead>
-                                                        <tr class="text-muted fw-bold fs-6 text-uppercase">
-                                                            <th class="ps-6 min-w-200px">Módulo</th>
-                                                            <th v-for="acao in acoes" :key="acao" class="text-center">
-                                                                {{ acao }}
-                                                            </th>
-                                                        </tr>
-                                                    </thead>
+                                            <div v-else class="p-4">
+                                                <div v-for="menu in menusDoPerfil(perfil.permissoes)" :key="menu.menu" class="perfil-menu mb-4">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <div>
+                                                            <span class="text-muted fs-7 fw-semibold text-uppercase">Menu</span>
+                                                            <span class="fs-3 fw-bold text-gray-900 ms-2">{{ menu.menu }}</span>
+                                                            <span class="badge badge-light fs-7 ms-2">{{ menu.total }} permissões</span>
+                                                        </div>
+                                                        <button
+                                                            type="button" class="btn btn-sm btn-light-primary" :aria-expanded="!estaRecolhido(perfil.id, menu.menu)"
+                                                            @click="alternarRecolhido(perfil.id, menu.menu)"
+                                                        >
+                                                            {{ estaRecolhido(perfil.id, menu.menu) ? 'Mostrar' : 'Ocultar' }}
+                                                            <span class="seta" :class="{ 'seta--recolhida': estaRecolhido(perfil.id, menu.menu) }">&#9662;</span>
+                                                        </button>
+                                                    </div>
 
-                                                    <tbody class="text-gray-800 fw-semibold">
-                                                        <tr v-for="grupo in agruparPorModulo(perfil.permissoes)" :key="grupo.modulo">
-                                                            <td class="ps-6 fw-bold fs-6">{{ grupo.modulo }}</td>
-
-                                                            <td v-for="acao in acoes" :key="acao" class="text-center">
-                                                                <span v-if="temAcao(grupo, acao)" class="badge badge-circle badge-success">
-                                                                    <i class="ki-duotone ki-check fs-3 text-white"></i>
-                                                                </span>
-                                                                <span v-else class="badge badge-circle badge-danger">
-                                                                    <i class="ki-duotone ki-cross fs-3 text-white">
-                                                                        <span class="path1"></span>
-                                                                        <span class="path2"></span>
-                                                                    </i>
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
+                                                    <div v-show="!estaRecolhido(perfil.id, menu.menu)" class="table-responsive">
+                                                        <table class="table table-permissoes align-middle mb-0 fs-5">
+                                                            <thead>
+                                                                <tr class="text-muted fw-bold fs-7 text-uppercase">
+                                                                    <th class="min-w-250px">Módulo</th>
+                                                                    <th v-for="acao in menu.colunas" :key="acao" class="text-center text-capitalize">{{ acao }}</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody class="text-gray-800 fw-semibold">
+                                                                <template v-for="secao in menu.secoes" :key="secao.titulo ?? '-'">
+                                                                    <tr v-if="secao.titulo" class="perfil-secao"><td :colspan="menu.colunas.length + 1">{{ secao.titulo }}</td></tr>
+                                                                    <tr v-for="modulo in secao.modulos" :key="modulo.id">
+                                                                        <td :class="{ 'ps-4': secao.titulo }">
+                                                                            <div class="fw-bold fs-5 text-gray-900">{{ modulo.entrada }}</div>
+                                                                            <div class="text-muted fs-7 fw-semibold">{{ modulo.caminho }}</div>
+                                                                        </td>
+                                                                        <td v-for="acao in menu.colunas" :key="acao" class="text-center">
+                                                                            <span v-if="modulo.acoesDoPerfil.includes(acao)" class="badge badge-circle badge-success">
+                                                                                <i class="ki-duotone ki-check fs-3 text-white"></i>
+                                                                            </span>
+                                                                            <span v-else class="text-muted">&mdash;</span>
+                                                                        </td>
+                                                                    </tr>
+                                                                </template>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -257,5 +284,17 @@ function temAcao(grupo, acao) {
 .table-permissoes > thead > tr > th:not(:first-child),
 .table-permissoes > tbody > tr > td:not(:first-child) {
     border-left: 1px solid rgba(0, 0, 0, 0.14);
+}
+
+.seta { display: inline-block; margin-left: 0.35rem; transition: transform 0.15s ease; }
+.seta--recolhida { transform: rotate(-90deg); }
+.perfil-menu { border-left: 4px solid #166534; padding-left: 1rem; }
+.perfil-secao td {
+    background: rgba(100, 116, 139, 0.12);
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.75rem;
 }
 </style>
