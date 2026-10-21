@@ -4,6 +4,7 @@ namespace Modules\Financeiro\Services;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use LogicException;
@@ -121,7 +122,7 @@ class AplicarMultasService
      */
     public function multaQueAplicaria(Propina $propina, string $hoje, Collection $escaloes): ?int
     {
-        if (in_array($propina->estado, [EstadoCobranca::CANCELADA, EstadoCobranca::ANULADA], true)) {
+        if (in_array($propina->estado, [EstadoCobranca::CANCELADA, EstadoCobranca::ANULADA], true) || $this->matriculaTrancada($propina)) {
             return null;
         }
 
@@ -189,6 +190,8 @@ class AplicarMultasService
         // nem bloqueada manualmente. O catch-up continua: Em Aberto/Parcialmente Paga (capital_liquidado_em nulo) e
         // PAGA liquidada a partir de L₁ são candidatas.
         return Propina::query()
+            // Matrículas trancadas têm as multas congeladas (nenhuma nova até reactivar).
+            ->whereDoesntHave('matricula', fn (Builder $m) => $m->where('estado', EstadoMatriculaEnum::TRANCADA->value))
             ->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value, EstadoCobranca::PAGA->value])
             ->where('data_limite', '<=', $limite)
             ->where(function (Builder $q) use ($condicaoAtraso, $minDias) {
@@ -207,12 +210,18 @@ class AplicarMultasService
     /**
      * @param  Collection<int, EscalaoMulta>  $escaloes  por ordem crescente
      */
+    /** Multas congeladas enquanto a matrícula está trancada. */
+    private function matriculaTrancada(Propina $propina): bool
+    {
+        return $propina->matricula()->where('estado', EstadoMatriculaEnum::TRANCADA->value)->exists();
+    }
+
     private function aplicar(Propina $propina, Collection $escaloes, string $hoje): string
     {
         $bloqueada = $this->bloqueio->bloquear([(int) $propina->getKey()])->first()
             ?? throw new LogicException('A propina a avaliar não existe no tenant corrente.');
 
-        if (in_array($bloqueada->estado, [EstadoCobranca::CANCELADA, EstadoCobranca::ANULADA], true)) {
+        if (in_array($bloqueada->estado, [EstadoCobranca::CANCELADA, EstadoCobranca::ANULADA], true) || $this->matriculaTrancada($bloqueada)) {
             return 'ignorada';
         }
 

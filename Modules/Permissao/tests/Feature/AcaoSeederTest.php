@@ -39,7 +39,7 @@ class AcaoSeederTest extends TestCase
         $this->seed(AcaoSeeder::class);
 
         $this->assertSame($contagemInicial, Acao::count());
-        $this->assertSame(12, Acao::count());
+        $this->assertSame(13, Acao::count());
     }
 
     public function test_seeder_nao_apaga_role_permissoes_dependentes(): void

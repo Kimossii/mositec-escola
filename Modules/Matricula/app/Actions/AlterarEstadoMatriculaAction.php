@@ -40,6 +40,15 @@ class AlterarEstadoMatriculaAction
                 ]);
             }
 
+            // Trancar e reactivar têm acções próprias (data de efeito, motivo e verificação financeira).
+            if ($novoEstado === EstadoMatriculaEnum::TRANCADA || ($estadoActual === EstadoMatriculaEnum::TRANCADA && $novoEstado === EstadoMatriculaEnum::ACTIVA)) {
+                throw ValidationException::withMessages([
+                    'estado' => $novoEstado === EstadoMatriculaEnum::TRANCADA
+                        ? 'Para trancar uma matrícula use a acção «Trancar», que pede a data e o motivo.'
+                        : 'Para reactivar uma matrícula trancada use a acção «Reactivar».',
+                ]);
+            }
+
             $bloqueada->estado = $novoEstado;
             $bloqueada->editado_por = $utilizadorId;
 

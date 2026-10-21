@@ -34,6 +34,7 @@ use Modules\Financeiro\Support\RotuloDePeriodo;
 use Modules\Financeiro\Support\ViolacaoDeUnicidade;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
+use Modules\Matricula\Models\MatriculaHistorico;
 use Modules\Turma\Models\Turma;
 use Throwable;
 
@@ -660,6 +661,38 @@ class GerarPropinasService
      * @param  array{ordem: int, meses: int, inicio: string, fim: string}  $periodo
      * @param  Collection<int, Propina>  $activas
      */
+    /** @var array<int, list<array{0: string, 1: string}>> */
+    private array $trancadosEmMemoria = [];
+
+    /**
+     * Intervalos [de, até] (Y-m-d) em que a matrícula esteve trancada, a partir do histórico (data de efeito de cada
+     * Trancada → Activa). Um trancamento ainda aberto vai até 9999-12-31.
+     *
+     * @return list<array{0: string, 1: string}>
+     */
+    private function intervalosTrancados(Matricula $matricula): array
+    {
+        return $this->trancadosEmMemoria[$matricula->id] ??= (function () use ($matricula) {
+            $intervalos = [];
+            $abertura = null;
+
+            foreach (MatriculaHistorico::query()->where('matricula_id', $matricula->id)->whereNotNull('data_efeito')->orderBy('data_efeito')->orderBy('id')->get() as $linha) {
+                if ($linha->estado_novo === EstadoMatriculaEnum::TRANCADA) {
+                    $abertura = $linha->data_efeito->toDateString();
+                } elseif ($abertura !== null) {
+                    $intervalos[] = [$abertura, $linha->data_efeito->toDateString()];
+                    $abertura = null;
+                }
+            }
+
+            if ($abertura !== null) {
+                $intervalos[] = [$abertura, '9999-12-31'];
+            }
+
+            return $intervalos;
+        })();
+    }
+
     private function avaliarPeriodo(
         Matricula $matricula,
         PlanoPropina $plano,
@@ -708,6 +741,15 @@ class GerarPropinasService
             );
 
             return;
+        }
+
+        // Trancamento (D7): um período inteiramente dentro de um intervalo em que a matrícula esteve trancada não se gera.
+        foreach ($this->intervalosTrancados($matricula) as [$de, $ate]) {
+            if ($periodo['inicio'] >= $de && $periodo['fim'] <= $ate) {
+                $resultado->ignorada('Período trancado: a matrícula esteve trancada de ' . CarbonImmutable::parse($de)->format('d/m/Y') . ' a ' . ($ate === '9999-12-31' ? 'agora' : CarbonImmutable::parse($ate)->format('d/m/Y')) . '.', $rotulo, $plano->nome);
+
+                return;
+            }
         }
 
         $anterior = $this->elegibilidade->anteriorAMatricula($matricula->data_matricula, $periodo['fim']);

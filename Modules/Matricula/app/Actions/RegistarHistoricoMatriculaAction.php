@@ -13,12 +13,18 @@ class RegistarHistoricoMatriculaAction
         ?EstadoMatriculaEnum $estadoAnterior,
         EstadoMatriculaEnum $estadoNovo,
         ?int $utilizadorId = null,
+        ?string $dataEfeito = null,
+        ?string $motivo = null,
+        ?array $detalhe = null,
     ): void {
         MatriculaHistorico::create([
             'matricula_id' => $matricula->id,
             'estado_anterior' => $estadoAnterior?->value,
             'estado_novo' => $estadoNovo->value,
             'utilizador_id' => $utilizadorId,
+            'data_efeito' => $dataEfeito,
+            'motivo' => $motivo,
+            'detalhe' => $detalhe,
         ]);
     }
 }

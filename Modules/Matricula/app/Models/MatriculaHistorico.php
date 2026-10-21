@@ -21,11 +21,16 @@ class MatriculaHistorico extends Model
         'estado_anterior',
         'estado_novo',
         'utilizador_id',
+        'data_efeito',
+        'motivo',
+        'detalhe',
     ];
 
     protected $casts = [
         'estado_anterior' => EstadoMatriculaEnum::class,
         'estado_novo' => EstadoMatriculaEnum::class,
+        'data_efeito' => 'date',
+        'detalhe' => 'array',
         'created_at' => 'datetime',
     ];
 

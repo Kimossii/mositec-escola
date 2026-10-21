@@ -10,6 +10,7 @@ import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import MatriculaFormModal from '../Components/MatriculaFormModal.vue';
 import InscricaoDisciplinaModal from '../Components/InscricaoDisciplinaModal.vue';
+import TrancamentoModal from '../Components/TrancamentoModal.vue';
 import { ESTADO_MATRICULA, ESTADO_MATRICULA_LABEL, estadoMatriculaLabel, transicoesDisponiveis } from '../Models/Estado';
 
 const props = defineProps({
@@ -170,6 +171,19 @@ function guardarMatricula(payload) {
 const matriculaParaAlterarEstado = ref(null);
 const estadoAlvo = ref(null);
 const confirmandoEstado = ref(false);
+
+const trancamento = reactive({ aberto: false, matricula: null, modo: 'trancar' });
+
+function abrirTrancamento(matricula, modo) {
+    trancamento.matricula = matricula;
+    trancamento.modo = modo;
+    trancamento.aberto = true;
+}
+
+function concluirTrancamento() {
+    trancamento.aberto = false;
+    reinitMenu();
+}
 
 function pedirAlteracaoEstado(matricula, novoEstado) {
     matriculaParaAlterarEstado.value = matricula;
@@ -467,6 +481,18 @@ function confirmarRenovacaoEmMassa() {
                                         </a>
                                     </div>
                                     <div
+                                        v-if="matricula.estado === ESTADO_MATRICULA.ACTIVA && can('matricula.trancar')"
+                                        class="menu-item px-3"
+                                    >
+                                        <a href="#" class="menu-link px-3" @click.prevent="abrirTrancamento(matricula, 'trancar')">Trancar</a>
+                                    </div>
+                                    <div
+                                        v-if="matricula.estado === ESTADO_MATRICULA.TRANCADA && can('matricula.trancar')"
+                                        class="menu-item px-3"
+                                    >
+                                        <a href="#" class="menu-link px-3" @click.prevent="abrirTrancamento(matricula, 'reactivar')">Reactivar</a>
+                                    </div>
+                                    <div
                                         v-if="matricula.estado === ESTADO_MATRICULA.CONCLUIDA && can('matricula.criar')"
                                         class="menu-item px-3"
                                     >
@@ -584,6 +610,14 @@ function confirmarRenovacaoEmMassa() {
             :processando="confirmandoRenovacao"
             @confirmar="confirmarRenovacao"
             @cancelar="cancelarRenovacao"
+        />
+
+        <TrancamentoModal
+            :show="trancamento.aberto"
+            :matricula="trancamento.matricula"
+            :modo="trancamento.modo"
+            @fechar="trancamento.aberto = false"
+            @concluido="concluirTrancamento"
         />
 
         <InscricaoDisciplinaModal

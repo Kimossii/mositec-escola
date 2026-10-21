@@ -55,6 +55,8 @@ enum Modulo: int
             // Um pagamento nunca se edita nem se elimina: anula-se (spec Pagamentos §8). As acções de crédito
             // reutilizam `criar` (aplicar) e `anular` (anular utilização).
             self::PAGAMENTO => ['ver', 'listar', 'criar', 'anular', 'exportar'],
+            // `trancar` cobre trancar e reactivar uma matrícula.
+            self::MATRICULA => [...self::ACOES_BASE, 'trancar'],
             default => self::ACOES_BASE,
         };
     }

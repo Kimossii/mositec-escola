@@ -83,6 +83,23 @@
 
 **D15 — Encerramento do ano lectivo com matrículas TRANCADAS.** Ficam TRANCADA (é a verdade histórica) e deixam de ser reactiváveis (ano não ACTIVO). A verificação de duplicado (`validarMatriculaNaoDuplicada`, `CriarInscricaoDisciplinaAction`) passa a considerar TRANCADA como ocupada **apenas no mesmo ano lectivo**, para o aluno poder matricular-se no ano seguinte (ex.: repetir a classe). `RenovarMatriculaAction` continua a recusar TRANCADA (o aluno volta com matrícula nova). Q7 confirma.
 
+### 2.1-B Decisões do dono (2026-10-21) — PREVALECEM sobre D3–D9 onde divergem
+
+- **Q1:** dívida exigível = propinas de períodos já iniciados + multas que o comando diário ainda não aplicou (D3 confirmada).
+- **Q2 (revisto 2026-10-21, altera D4):** âmbito = **a matrícula a trancar** (o ano lectivo em causa). Razão do dono: o aluno só passa ao ano seguinte depois de regularizar as dívidas do anterior, logo não há dívida antiga a verificar. Sem configuração. Ressalva: o sistema não impede hoje matricular com dívida antiga; se a escola o permitir, essa dívida não bloqueia o trancamento.
+- **Q3:** sem excepção/override por utilizador.
+- **Q4:** crédito não abate sozinho: só aviso + utilização explícita (D3).
+- **Q5:** data de efeito retroactiva até ao último evento da matrícula, nunca futura; propina do mês em curso por inteiro (sem pró-rata).
+- **Q6 (altera D9):** trancamento só aceite com a situação do aluno regularizada (exigência activa). Trancada, a situação fica congelada: sem multas novas. Voltar exige nova confirmação de matrícula (D8). Quem não tranca segue em normalidade. Se a escola desactivar a exigência e trancar com dívida: multas CONGELAM na data do trancamento (recomendação minha — por confirmar pelo dono).
+- **Q7:** TRANCADA permanece TRANCADA ao encerrar o ano; o aluno volta com matrícula nova (D15).
+- **Q8:** auditoria genérica do tenant (D10), sem página de consulta na V1.
+- **Q9:** propinas futuras pagas antecipadamente mantêm-se; a escola decide à mão (D6).
+- **Q10:** inscrições em disciplinas ficam como estão.
+
+### 2.1-C Melhorias futuras anotadas (fora do âmbito)
+
+- **Impedir matrícula com dívida do ano anterior:** hoje a regra "só avança se regularizar" é da escola, não do sistema. Se a secretaria matricular um aluno com dívida antiga, essa dívida não bloqueia o trancamento (Q2 verifica só a matrícula a trancar). Uma regra própria na matrícula (bloqueio configurável) fica como melhoria futura, a pedir pelo dono.
+
 ### 2.2 Questões em aberto para o dono
 1. **Q1 — Dívida exigível:** confirma "período já iniciado" (D3) em vez de "vencida" ou "em atraso (após tolerância)"? Inclui multas que o comando ainda não aplicou (aplicação síncrona antes de verificar)?
 2. **Q2 — Âmbito:** dívidas do **aluno** (todas as matrículas, recomendado) ou só da **matrícula** a trancar?

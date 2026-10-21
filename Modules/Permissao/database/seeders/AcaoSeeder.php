@@ -27,6 +27,7 @@ class AcaoSeeder extends Seeder
             ['nome' => 'ajustar', 'numero' => 9],
             ['nome' => 'negociar', 'numero' => 10],
             ['nome' => 'isentar-multa', 'numero' => 11],
+            ['nome' => 'trancar', 'numero' => 12],
         ];
 
         foreach ($acoes as $acao) {

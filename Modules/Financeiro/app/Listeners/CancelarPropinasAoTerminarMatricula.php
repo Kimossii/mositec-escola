@@ -24,7 +24,7 @@ class CancelarPropinasAoTerminarMatricula
         $estado = EstadoMatriculaEnum::tryFrom($evento->estadoNovo);
 
         // Activa, Pendente e estados que o Financeiro não conhece (ex.: Trancada): nada a fazer aqui.
-        if ($estado === null || ! in_array($estado, CancelarPropinasFuturasDaMatricula::ESTADOS_TERMINAIS, true)) {
+        if ($estado === null || ! in_array($estado, CancelarPropinasFuturasDaMatricula::ESTADOS_QUE_CANCELAM, true)) {
             return;
         }
 

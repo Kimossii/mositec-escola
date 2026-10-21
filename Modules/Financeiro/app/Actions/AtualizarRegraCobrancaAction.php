@@ -3,14 +3,17 @@
 namespace Modules\Financeiro\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Modules\Core\Actions\RegistarAuditoriaTenantAction;
 use Modules\Financeiro\DTO\RegraCobrancaDTO;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Services\AplicarMultasDiariasService;
 
 class AtualizarRegraCobrancaAction
 {
-    public function __construct(private AplicarMultasDiariasService $multasDoDia)
-    {
+    public function __construct(
+        private AplicarMultasDiariasService $multasDoDia,
+        private RegistarAuditoriaTenantAction $auditoria,
+    ) {
     }
 
     public function executar(RegraCobrancaDTO $dto): RegraCobranca
@@ -19,6 +22,8 @@ class AtualizarRegraCobrancaAction
             $regra = RegraCobranca::doTenant();
             // Serializa edições concorrentes da mesma regra (regra + escalões).
             $regra = RegraCobranca::query()->lockForUpdate()->findOrFail($regra->id);
+
+            $antes = $this->instantaneo($regra);
 
             $regra->fill([
                 'dia_vencimento' => $dto->dia_vencimento,
@@ -31,6 +36,9 @@ class AtualizarRegraCobrancaAction
             ]);
             if ($dto->multa_activa !== null) {
                 $regra->multa_activa = $dto->multa_activa;
+            }
+            if ($dto->exigir_regularizacao_trancamento !== null) {
+                $regra->exigir_regularizacao_trancamento = $dto->exigir_regularizacao_trancamento;
             }
             $regra->save();
 
@@ -47,12 +55,25 @@ class AtualizarRegraCobrancaAction
                 ]);
             }
 
-            return $regra->fresh();
+            $regra = $regra->fresh();
+
+            // Auditoria do tenant: diff de todos os campos alterados (incluindo escalões), na mesma transacção.
+            $this->auditoria->executar('regra_cobranca.actualizada', 'regras_cobranca', (int) $regra->id, $antes, $this->instantaneo($regra));
+
+            return $regra;
         });
 
         // Regras novas (ligar multas, escalões): o varrimento de hoje volta a poder correr na próxima visita.
         $this->multasDoDia->esquecerDoDia();
 
         return $regra;
+    }
+
+    /** @return array<string, mixed> campos da regra + escalões, para o diff da auditoria */
+    private function instantaneo(RegraCobranca $regra): array
+    {
+        return $regra->only($regra->getFillable()) + [
+            'escaloes' => $regra->escaloes()->get(['ordem', 'dias_atraso', 'tipo', 'valor'])->map->only(['ordem', 'dias_atraso', 'tipo', 'valor'])->all(),
+        ];
     }
 }

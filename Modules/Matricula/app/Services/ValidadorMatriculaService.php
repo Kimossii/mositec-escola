@@ -142,10 +142,10 @@ class ValidadorMatriculaService
 
         $query = Matricula::query()
             ->where('aluno_id', $aluno->id)
-            ->whereIn('estado', [
-                EstadoMatriculaEnum::PENDENTE->value,
-                EstadoMatriculaEnum::ACTIVA->value,
-            ])
+            // Trancada ainda ocupa a identidade académica, mas só no mesmo ano lectivo (D15).
+            ->where(fn ($q) => $q
+                ->whereIn('estado', [EstadoMatriculaEnum::PENDENTE->value, EstadoMatriculaEnum::ACTIVA->value])
+                ->orWhere(fn ($t) => $t->where('estado', EstadoMatriculaEnum::TRANCADA->value)->where('ano_lectivo_id', $turma->ano_lectivo_id)))
             ->whereHas('turma', function ($query) use ($turma) {
                 $query->where('curso_id', $turma->curso_id)
                     ->where('nivel_academico_id', $turma->nivel_academico_id);

@@ -23,6 +23,9 @@ class CancelarPropinasFuturasDaMatricula
     /** @var list<EstadoMatriculaEnum> */
     public const ESTADOS_TERMINAIS = [EstadoMatriculaEnum::CANCELADA, EstadoMatriculaEnum::TRANSFERIDA, EstadoMatriculaEnum::CONCLUIDA];
 
+    /** Estados que cancelam as propinas futuras: os terminais e Trancada (que não é terminal). */
+    public const ESTADOS_QUE_CANCELAM = [EstadoMatriculaEnum::CANCELADA, EstadoMatriculaEnum::TRANSFERIDA, EstadoMatriculaEnum::CONCLUIDA, EstadoMatriculaEnum::TRANCADA];
+
     public function __construct(
         private BloqueioDePropinas $bloqueio,
         private CancelamentoDePropinas $cancelamento,
@@ -40,7 +43,7 @@ class CancelarPropinasFuturasDaMatricula
             throw new LogicException('Cancelar as propinas futuras de uma matrícula exige uma transacção aberta, com a matrícula bloqueada.');
         }
 
-        if (! in_array($matricula->estado, self::ESTADOS_TERMINAIS, true)) {
+        if (! in_array($matricula->estado, self::ESTADOS_QUE_CANCELAM, true)) {
             return [];
         }
 
@@ -79,6 +82,7 @@ class CancelarPropinasFuturasDaMatricula
             EstadoMatriculaEnum::CANCELADA => 'cancelada',
             EstadoMatriculaEnum::TRANSFERIDA => 'transferida',
             EstadoMatriculaEnum::CONCLUIDA => 'concluída',
+            EstadoMatriculaEnum::TRANCADA => 'trancada',
             default => throw new LogicException("A matrícula não está num estado terminal ({$estado->label()})."),
         };
         $data = CarbonImmutable::createFromFormat('!Y-m-d', $dataEfeito)->format('d/m/Y');

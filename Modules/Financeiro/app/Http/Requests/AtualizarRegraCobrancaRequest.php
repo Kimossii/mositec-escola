@@ -29,6 +29,7 @@ class AtualizarRegraCobrancaRequest extends BaseRequest
             'permite_negociacao' => 'required|boolean',
             'desconto_maximo_negociacao' => 'required|integer|between:0,100',
             'multa_activa' => 'sometimes|boolean',
+            'exigir_regularizacao_trancamento' => 'sometimes|boolean',
         ] + ($this->multaActivaNoPedido() ? [
             'escaloes' => [
                 'required',

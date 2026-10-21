@@ -68,12 +68,17 @@ class AcoesAplicaveisTest extends TestCase
     public function test_os_modulos_sem_acoes_proprias_aplicam_as_acoes_base(): void
     {
         foreach (ModuloEnum::cases() as $modulo) {
-            if (in_array($modulo, [ModuloEnum::PROPINA, ModuloEnum::PAGAMENTO], true)) {
+            if (in_array($modulo, [ModuloEnum::PROPINA, ModuloEnum::PAGAMENTO, ModuloEnum::MATRICULA], true)) {
                 continue;
             }
 
             $this->assertEqualsCanonicalizing(self::BASE, $modulo->acoesAplicaveis(), $modulo->name);
         }
+    }
+
+    public function test_matricula_aplica_as_acoes_base_mais_trancar(): void
+    {
+        $this->assertEqualsCanonicalizing([...self::BASE, 'trancar'], ModuloEnum::MATRICULA->acoesAplicaveis());
     }
 
     public function test_propina_aplica_so_as_suas_acoes(): void
@@ -93,7 +98,7 @@ class AcoesAplicaveisTest extends TestCase
         foreach (['confirmar', 'anular', 'cancelar', 'ajustar', 'negociar', 'isentar-multa'] as $nome) {
             $this->assertDatabaseHas('acoes', ['nome' => $nome]);
         }
-        $this->assertSame(12, Acao::count());
+        $this->assertSame(13, Acao::count());
     }
 
     public function test_grelha_do_perfil_mostra_so_acoes_aplicaveis(): void
@@ -103,9 +108,9 @@ class AcoesAplicaveisTest extends TestCase
         $this->actingAs($this->admin)->get("/permissoes/perfis/{$role->id}/permissoes")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->has('acoes', 10)
+                ->has('acoes', 11)
                 ->where('acoes.0.nome', 'ver')
-                ->has('modulos', 24)
+                ->has('modulos', 25)
                 ->where('modulos.0.acoes', fn ($ids) => collect($ids)->sort()->values()->all()
                     === Acao::whereIn('nome', self::BASE)->pluck('id')->sort()->values()->all()));
     }
@@ -117,7 +122,7 @@ class AcoesAplicaveisTest extends TestCase
         $this->actingAs($this->admin)->get("/permissoes/utilizadores/{$user->id}/permissoes")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->has('acoes', 10)
+                ->has('acoes', 11)
                 ->has('modulos.0.acoes', 6));
     }
 
@@ -128,7 +133,7 @@ class AcoesAplicaveisTest extends TestCase
 
         $this->actingAs($this->admin)->get("/permissoes/perfis/{$role->id}/permissoes")
             ->assertInertia(fn (Assert $page) => $page
-                ->has('acoes', 10)
+                ->has('acoes', 11)
                 ->where('modulos', function ($modulos) {
                     $porNome = collect($modulos)->keyBy('nome');
 
