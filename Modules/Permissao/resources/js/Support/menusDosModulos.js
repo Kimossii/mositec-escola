@@ -2,7 +2,7 @@
  * A que menu do sistema pertence cada módulo de permissões (espelha o menu superior/lateral: Académico, Pedagógico,
  * Financeiro, Configurações). A chave é o `slug` do módulo (o `nome` na BD é o inteiro do enum). Módulo sem entrada aqui cai em «Outros».
  */
-export const ORDEM_DOS_MENUS = ['Académico', 'Pedagógico', 'Financeiro', 'Configurações', 'Sistema', 'Outros'];
+export const ORDEM_DOS_MENUS = ['Académico', 'Pedagógico', 'Financeiro', 'Infraestrutura', 'Configurações', 'Sistema', 'Outros'];
 
 export const MENU_DE = {
     aluno: { menu: 'Académico', entrada: 'Alunos' },
@@ -27,7 +27,6 @@ export const MENU_DE = {
     'documento-pessoa': { menu: 'Configurações', secao: 'Utilizadores', entrada: 'Documentos pessoais' },
     autorizacao: { menu: 'Configurações', secao: 'Perfis & Permissões', entrada: 'Perfis e Permissões' },
     estabelecimento: { menu: 'Configurações', secao: 'Estabelecimento', entrada: 'Dados da Escola' },
-    infraestrutura: { menu: 'Configurações', secao: 'Estabelecimento', entrada: 'Infraestrutura' },
     'ano-lectivo': { menu: 'Configurações', secao: 'Ano Lectivo', entrada: 'Anos Lectivos' },
     'moeda-cambio': { menu: 'Configurações', secao: 'Financeiro', entrada: 'Moeda e Câmbio' },
     'plano-propina': { menu: 'Configurações', secao: 'Financeiro', entrada: 'Planos de Propina' },
@@ -35,6 +34,9 @@ export const MENU_DE = {
     'regra-cobranca': { menu: 'Configurações', secao: 'Financeiro', entrada: 'Regras de Cobrança' },
     'metodo-pagamento': { menu: 'Configurações', secao: 'Financeiro', entrada: 'Métodos de Pagamento' },
     'catalogo-financeiro': { menu: 'Configurações', secao: 'Financeiro', entrada: 'Produtos / Serviços' },
+
+    // Menu próprio na sidebar (Salas hoje; equipamentos, inventário e manutenção entram depois no mesmo módulo de permissões).
+    infraestrutura: { menu: 'Infraestrutura', entrada: 'Salas' },
 
     licenca: { menu: 'Sistema', entrada: 'Licenças' },
 };

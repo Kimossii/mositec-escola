@@ -90,11 +90,12 @@ class CobrancaConsultaService
     }
 
     /**
-     * Qualquer matrícula do aluno serve (uma Concluída pode pedir uma declaração): só se mostra o estado.
+     * Serve qualquer matrícula que o aluno chegou a ter (uma Concluída pode pedir uma declaração); as Canceladas ficam
+     * de fora, salvo `$incluirCanceladas` (ex.: acordo sobre a dívida que uma matrícula cancelada deixou).
      *
      * @return list<array<string, mixed>>
      */
-    public function pesquisarMatriculas(string $termo): array
+    public function pesquisarMatriculas(string $termo, bool $incluirCanceladas = false): array
     {
         $termo = trim($termo);
 
@@ -109,6 +110,7 @@ class CobrancaConsultaService
                 ->orWhereHas('aluno', fn ($a) => $a->where(fn ($x) => $x
                     ->whereContem('numero_matricula', $termo)
                     ->orWhereHas('dadosPessoa', fn ($p) => $p->whereContem('nome_completo', $termo)))))
+            ->when(! $incluirCanceladas, fn ($q) => $q->where('estado', '!=', EstadoMatriculaEnum::CANCELADA->value))
             ->orderByRaw('CASE WHEN estado = ? THEN 0 ELSE 1 END', [EstadoMatriculaEnum::ACTIVA->value])
             ->orderByDesc('id')
             ->limit(10)

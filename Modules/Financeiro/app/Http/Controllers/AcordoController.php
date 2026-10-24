@@ -63,7 +63,7 @@ class AcordoController extends Controller
     {
         $this->authorize('acordo.criar');
 
-        return response()->json(['matriculas' => $this->matriculas->pesquisarMatriculas((string) $request->query('q', ''))]);
+        return response()->json(['matriculas' => $this->matriculas->pesquisarMatriculas((string) $request->query('q', ''), incluirCanceladas: true)]);
     }
 
     public function propinas(Matricula $matricula): JsonResponse
