@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Financeiro\Http\Controllers\CatalogoFinanceiroController;
+use Modules\Financeiro\Http\Controllers\AcordoController;
 use Modules\Financeiro\Http\Controllers\BolsaController;
 use Modules\Financeiro\Http\Controllers\CobrancaController;
 use Modules\Financeiro\Http\Controllers\CreditoController;
@@ -126,6 +127,16 @@ Route::middleware(['auth'])->prefix('financeiro/bolsas')->name('financeiro.bolsa
     Route::put('/{bolsa}', [BolsaController::class, 'update'])->whereNumber('bolsa')->middleware('can:bolsa.editar')->name('update');
     Route::patch('/{bolsa}/terminar', [BolsaController::class, 'terminar'])->whereNumber('bolsa')->middleware('can:bolsa.editar')->name('terminar');
     Route::post('/{bolsa}/aplicar', [BolsaController::class, 'aplicar'])->whereNumber('bolsa')->middleware('can:bolsa.editar')->name('aplicar');
+});
+
+Route::middleware(['auth'])->prefix('financeiro/acordos')->name('financeiro.acordos.')->group(function () {
+    Route::get('/', [AcordoController::class, 'index'])->middleware('can:acordo.ver')->name('index');
+    Route::get('/novo', [AcordoController::class, 'create'])->middleware('can:acordo.criar')->name('create');
+    Route::get('/matriculas', [AcordoController::class, 'pesquisarMatriculas'])->middleware('can:acordo.criar')->name('matriculas.pesquisar');
+    Route::get('/matriculas/{matricula}/propinas', [AcordoController::class, 'propinas'])->whereNumber('matricula')->middleware('can:acordo.criar')->name('matriculas.propinas');
+    Route::post('/', [AcordoController::class, 'store'])->middleware('can:acordo.criar')->name('store');
+    Route::get('/{acordo}', [AcordoController::class, 'show'])->whereNumber('acordo')->middleware('can:acordo.ver')->name('show');
+    Route::patch('/{acordo}/encerrar', [AcordoController::class, 'encerrar'])->whereNumber('acordo')->middleware('can:acordo.cancelar')->name('encerrar');
 });
 
 Route::middleware(['auth'])->prefix('financeiro/creditos')->name('financeiro.creditos.')->group(function () {

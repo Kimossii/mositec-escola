@@ -40,6 +40,7 @@ class ModuloSeeder extends Seeder
             ['nome' => 24, 'descricao' => 'Pausa de Cobranca'],
             ['nome' => 25, 'descricao' => 'Cobranca'],
             ['nome' => 26, 'descricao' => 'Bolsa'],
+            ['nome' => 27, 'descricao' => 'Acordo de Divida'],
         ];
 
         foreach ($modulos as $modulo) {

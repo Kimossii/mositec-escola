@@ -4,6 +4,7 @@ namespace Modules\Financeiro\Services;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Financeiro\Models\AcordoPropina;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -192,6 +193,8 @@ class AplicarMultasService
         return Propina::query()
             // Matrículas trancadas têm as multas congeladas (nenhuma nova até reactivar).
             ->whereDoesntHave('matricula', fn (Builder $m) => $m->where('estado', EstadoMatriculaEnum::TRANCADA->value))
+            // Propinas num acordo de pagamento activo também têm as multas congeladas.
+            ->whereNotIn('id', AcordoPropina::idsEmAcordoActivo())
             ->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value, EstadoCobranca::PAGA->value])
             ->where('data_limite', '<=', $limite)
             ->where(function (Builder $q) use ($condicaoAtraso, $minDias) {
@@ -213,7 +216,8 @@ class AplicarMultasService
     /** Multas congeladas enquanto a matrícula está trancada. */
     private function matriculaTrancada(Propina $propina): bool
     {
-        return $propina->matricula()->where('estado', EstadoMatriculaEnum::TRANCADA->value)->exists();
+        return $propina->matricula()->where('estado', EstadoMatriculaEnum::TRANCADA->value)->exists()
+            || AcordoPropina::idsEmAcordoActivo()->where('propina_id', $propina->id)->exists();
     }
 
     private function aplicar(Propina $propina, Collection $escaloes, string $hoje): string

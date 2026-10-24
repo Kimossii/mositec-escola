@@ -39,6 +39,7 @@ use Modules\Financeiro\Services\SnapshotMonetario;
 use Modules\Financeiro\Support\BloqueioDePagamentos;
 use Modules\Financeiro\Support\BloqueioDePropinas;
 use Modules\Financeiro\Support\Dinheiro;
+use Modules\Financeiro\Support\RegrasDoPagamento;
 use Modules\Financeiro\Support\ViolacaoDeUnicidade;
 use Modules\Matricula\Models\Matricula;
 
@@ -181,7 +182,7 @@ class RegistarPagamentoAction
             $dto->ate_ano !== null ? null : $dto->distribuicao,
             $propinas,
             $creditos,
-            RegraCobranca::doTenant(),
+            RegrasDoPagamento::paraMatricula((int) $bloqueada->id),
         );
 
         // 6. Número: último bloqueio (a linha da sequência fica presa até ao commit; um rollback devolve-o).

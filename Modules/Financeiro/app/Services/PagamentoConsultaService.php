@@ -15,16 +15,20 @@ use Modules\Financeiro\Models\CreditoUtilizacao;
 use Modules\Financeiro\Models\MetodoPagamento;
 use Modules\Financeiro\Models\Pagamento;
 use Modules\Financeiro\Models\PagamentoMulta;
+use Modules\Financeiro\Enums\EstadoAcordo;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Financeiro\Services\CancelarPropinasFuturasDaMatricula;
 use Modules\Financeiro\Enums\EstadoMulta;
+use Modules\Financeiro\Models\Acordo;
 use Modules\Financeiro\Models\PagamentoPropina;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Support\AnulacaoDePagamentos;
 use Modules\Financeiro\Support\Multa;
+use Modules\Financeiro\Support\ProgressoDoAcordo;
+use Modules\Financeiro\Support\RegrasDoPagamento;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 use Modules\Financeiro\Support\TaxaCambio;
 use Modules\Matricula\Models\Matricula;
@@ -377,7 +381,7 @@ class PagamentoConsultaService
     public function situacao(Matricula $matricula): array
     {
         $hoje = $this->relogio->hoje();
-        $regras = RegraCobranca::doTenant();
+        $regras = RegrasDoPagamento::paraMatricula((int) $matricula->id);
         $propinas = $this->distribuicao->propinasPagaveis($matricula)
             ->sort(fn (Propina $a, Propina $b) => [$a->periodo_inicio->toDateString(), $a->ordem, $a->id] <=> [$b->periodo_inicio->toDateString(), $b->ordem, $b->id])
             ->values();
@@ -418,7 +422,26 @@ class PagamentoConsultaService
             ])->values()->all(),
             'credito_disponivel' => (int) $creditos->sum(fn (Credito $c) => $c->saldo()->unidadesMenores()),
             'cobrancas' => $this->cobrancasDaMatricula($matricula, $hoje->toDateString()),
+            'acordo' => $this->acordoActivo($matricula),
         ];
+    }
+
+    /**
+     * O acordo de pagamento activo da matrícula, para o ecrã de pagamento explicar porque o pagamento parcial é permitido.
+     *
+     * @return array{id: int, em_falta: int, proxima: ?array{ordem: int, data_vencimento: string, em_falta: int}}|null
+     */
+    private function acordoActivo(Matricula $matricula): ?array
+    {
+        $acordo = Acordo::query()->where('matricula_id', $matricula->id)->where('estado', EstadoAcordo::ACTIVO->value)->first();
+
+        if ($acordo === null) {
+            return null;
+        }
+
+        $p = app(ProgressoDoAcordo::class)->de($acordo);
+
+        return ['id' => $acordo->id, 'em_falta' => $p['em_falta'], 'proxima' => $p['proxima']];
     }
 
     /**

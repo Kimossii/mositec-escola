@@ -437,6 +437,15 @@ function continuar() {
             </div>
         </div>
 
+        <div v-if="passo >= 2 && situacao?.acordo" class="alert alert-primary d-flex flex-wrap justify-content-between align-items-center mb-6">
+            <div>
+                <strong>Acordo de pagamento activo (#{{ situacao.acordo.id }}).</strong>
+                Pode pagar qualquer valor: abate a dívida do mês mais antigo para a frente.
+                <span v-if="situacao.acordo.proxima">Próxima prestação: {{ situacao.acordo.proxima.ordem }}.ª, {{ dataCurta(situacao.acordo.proxima.data_vencimento) }} (em falta até lá: {{ formatarDinheiro(situacao.acordo.proxima.em_falta, moeda) }}).</span>
+            </div>
+            <a :href="`/financeiro/acordos/${situacao.acordo.id}`" class="btn btn-sm btn-light-primary">Ver acordo</a>
+        </div>
+
         <div v-if="passo >= 2 && matricula !== null && periodosAPagar.length > 0" class="rounded bg-light-primary px-6 py-5 mb-6">
             <div class="text-muted fs-7 fw-semibold text-uppercase mb-1">{{ plano !== null ? 'Este pagamento cobre' : 'Em dívida' }}</div>
             <h1 class="fs-1 fw-bold text-gray-900 mb-0">{{ periodosAPagar.join(' · ') }}</h1>

@@ -20,6 +20,7 @@ export const MENU_DE = {
     pagamento: { menu: 'Financeiro', entrada: 'Pagamentos' },
     cobranca: { menu: 'Financeiro', entrada: 'Cobranças' },
     bolsa: { menu: 'Financeiro', entrada: 'Bolsas' },
+    acordo: { menu: 'Financeiro', entrada: 'Acordos de dívida' },
 
     usuario: { menu: 'Configurações', secao: 'Utilizadores', entrada: 'Todos os Utilizadores' },
     'senha-utilizador': { menu: 'Configurações', secao: 'Utilizadores', entrada: 'Redefinir senha' },

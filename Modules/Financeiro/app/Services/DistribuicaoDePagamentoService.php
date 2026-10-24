@@ -23,6 +23,7 @@ use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Support\Dinheiro;
 use Modules\Financeiro\Support\PropinaVirtual;
+use Modules\Financeiro\Support\RegrasDoPagamento;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 use Modules\Matricula\Models\Matricula;
 
@@ -55,7 +56,7 @@ class DistribuicaoDePagamentoService
             $dto->ate_ano !== null ? null : $dto->distribuicao,
             $this->propinasComGeracao($matricula, $dto->ate_ano, $dto->ate_mes),
             $dto->valorCredito->unidadesMenores() > 0 ? $this->creditosDisponiveis($matricula) : new Collection(),
-            RegraCobranca::doTenant(),
+            RegrasDoPagamento::paraMatricula((int) $matricula->id),
         );
     }
 
@@ -68,7 +69,7 @@ class DistribuicaoDePagamentoService
             $dto->distribuicao,
             $this->propinasPagaveis($matricula),
             $this->creditosDisponiveis($matricula),
-            RegraCobranca::doTenant(),
+            RegrasDoPagamento::paraMatricula((int) $matricula->id),
         );
     }
 

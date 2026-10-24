@@ -531,6 +531,7 @@ const financeiro = {
         { href: '/financeiro/cobrancas', title: 'Cobranças', permissao: 'cobranca.ver' },
         { href: '/financeiro/dividas', title: 'Dívidas', permissao: 'propina.ver' },
         { href: '/financeiro/bolsas', title: 'Bolsas', permissao: 'bolsa.ver' },
+        { href: '/financeiro/acordos', title: 'Acordos de dívida', permissao: 'acordo.ver' },
         { href: '/financeiro/recibos', title: 'Recibos', permissao: 'pagamento.ver' },
         { href: '/financeiro/relatorios', title: 'Relatórios financeiros', permissao: 'pagamento.exportar' },
         // { href: '#', title: 'Dívidas' },

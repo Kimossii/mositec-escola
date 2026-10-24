@@ -31,6 +31,7 @@ enum Modulo: int
     case PAUSA_COBRANCA = 24;
     case COBRANCA = 25;
     case BOLSA = 26;
+    case ACORDO = 27;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -61,6 +62,8 @@ enum Modulo: int
             self::COBRANCA => ['ver', 'listar', 'criar', 'cancelar', 'exportar'],
             // Bolsas de estudo: cria-se, edita-se (a edição termina-a ou aplica-a) e nunca se elimina.
             self::BOLSA => ['ver', 'listar', 'criar', 'editar'],
+            // Acordos de pagamento em prestações: cria-se e cancela-se (ou quebra-se); nunca se edita nem elimina.
+            self::ACORDO => ['ver', 'listar', 'criar', 'cancelar'],
             // `trancar` cobre trancar e reactivar uma matrícula.
             self::MATRICULA => [...self::ACOES_BASE, 'trancar'],
             default => self::ACOES_BASE,
@@ -97,6 +100,7 @@ enum Modulo: int
             self::PAUSA_COBRANCA => 'pausa-cobranca',
             self::COBRANCA => 'cobranca',
             self::BOLSA => 'bolsa',
+            self::ACORDO => 'acordo',
         };
     }
 
@@ -141,6 +145,7 @@ enum Modulo: int
             self::PAUSA_COBRANCA => 'Pausa de Cobrança',
             self::COBRANCA => 'Cobrança',
             self::BOLSA => 'Bolsa',
+            self::ACORDO => 'Acordo de Dívida',
         };
     }
 }
