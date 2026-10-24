@@ -106,6 +106,24 @@ class PagamentoConsultaService
         });
     }
 
+    /**
+     * Últimos pagamentos confirmados, para o Dashboard. Valor em unidades menores.
+     *
+     * @return list<array{numero: string, data: string|null, valor: int, aluno: string|null}>
+     */
+    public function ultimos(int $quantidade = 5): array
+    {
+        return $this->base([], false)->where('estado', EstadoPagamento::CONFIRMADO->value)
+            ->with('matricula.aluno.dadosPessoa')
+            ->orderByDesc('data_pagamento')->orderByDesc('id')->limit($quantidade)->get()
+            ->map(fn (Pagamento $p) => [
+                'numero' => $p->numero,
+                'data' => $p->data_pagamento?->toDateString(),
+                'valor' => $p->valor?->unidadesMenores() ?? 0,
+                'aluno' => $p->matricula?->aluno?->dadosPessoa?->nome_completo,
+            ])->all();
+    }
+
     public function listar(array $filtros = []): LengthAwarePaginator
     {
         return $this->base($filtros, true)

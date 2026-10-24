@@ -85,4 +85,35 @@ class DividasRecibosRelatoriosTest extends TestCase
             $this->actingAs($admin)->get("/financeiro/{$lista}")->assertOk()->assertInertia(fn (Assert $p) => $p->loadDeferredProps(fn (Assert $c) => $c->has('indicadores')));
         }
     }
+
+    public function test_dashboard_com_dados_mostra_graficos_e_ultimos_pagamentos(): void
+    {
+        ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+        $set = $this->propina($matricula, $plano, 1, ['data_vencimento' => '2026-10-10']);
+        $this->pagar($matricula, 2_500_000, [[$set, 2_500_000]]);
+
+        $this->actingAs($this->adminEscola())->get('/')->assertOk()->assertInertia(fn (Assert $page) => $page->loadDeferredProps(fn (Assert $c) => $c
+            ->has('graficos.propinas_mes')
+            ->has('ultimosPagamentos', 1)
+            ->has('resumo')
+            ->has('risco.alunos')
+            ->has('previsao.semanas', 5)
+            ->where('calendario.dias.0.emitido', 2_500_000)
+            ->where('calendario.dias.0.tardias', 1)
+            ->where('calendario.dias.0.dias_de_atraso', 6)
+            ->where('ultimosPagamentos.0.valor', 2_500_000)));
+    }
+
+    public function test_dashboard_lista_aluno_em_risco_com_dois_meses_em_atraso_e_sem_acordo(): void
+    {
+        ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+        $this->propina($matricula, $plano, 1);
+        $this->propina($matricula, $plano, 2);
+
+        $this->actingAs($this->adminEscola())->get('/')->assertOk()->assertInertia(fn (Assert $page) => $page->loadDeferredProps(fn (Assert $c) => $c
+            ->where('risco.total', 1)
+            ->where('risco.alunos.0.motivo', 'Sem acordo')
+            ->where('risco.alunos.0.meses', 2)
+            ->has('resumo', 2)));
+    }
 }

@@ -78,6 +78,119 @@ class PropinaConsultaService
         return $this->totais->lembrar('propinas', $filtros, fn () => $this->calcularIndicadores($filtros));
     }
 
+    /**
+     * Emitido e recebido por mês de vencimento (propinas activas), do mais antigo para o mais recente. Unidades menores.
+     *
+     * @return list<array{mes: string, emitido: int, recebido: int}>
+     */
+    public function porMes(array $filtros = []): array
+    {
+        return $this->totais->lembrar('propinas-por-mes', $filtros, function () use ($filtros) {
+            $meses = [];
+
+            $dias = $this->base($filtros, false)->whereIn('estado', Propina::ESTADOS_ACTIVOS)
+                ->selectRaw('data_vencimento as dia, SUM(valor) as emitido_dia, SUM(valor_pago) as recebido_dia')
+                ->groupBy('data_vencimento')->get();
+
+            foreach ($dias as $linha) {
+                $mes = substr((string) $linha->getRawOriginal('dia'), 0, 7);
+                $meses[$mes] ??= ['mes' => $mes, 'emitido' => 0, 'recebido' => 0];
+                $meses[$mes]['emitido'] += (int) $linha->emitido_dia;
+                $meses[$mes]['recebido'] += (int) $linha->recebido_dia;
+            }
+
+            ksort($meses);
+
+            return array_values($meses);
+        });
+    }
+
+    /**
+     * Previsão de caixa: o que vence nos próximos `$dias` dias, por semana, e quanto se prevê receber aplicando a taxa
+     * histórica de cobrança (recebido/emitido das propinas vencidas nos últimos 90 dias; `null` sem histórico).
+     * Unidades menores.
+     *
+     * @return array{semanas: list<array{inicio: string, a_vencer: int, previsto: int|null}>, a_vencer: int, previsto: int|null, taxa: int|null, em_atraso: int}
+     */
+    public function previsaoDeCaixa(int $dias = 30): array
+    {
+        return $this->totais->lembrar('previsao-de-caixa', ['dias' => $dias], function () use ($dias) {
+            $hoje = $this->relogio->hoje();
+            $fim = $hoje->addDays($dias);
+
+            $historico = Propina::query()->whereIn('estado', Propina::ESTADOS_ACTIVOS)
+                ->whereBetween('data_vencimento', [$hoje->subDays(90)->toDateString(), $hoje->subDay()->toDateString()])
+                ->selectRaw('COALESCE(SUM(valor), 0) as emitido_h, COALESCE(SUM(valor_pago), 0) as pago_h')->first();
+            $taxa = (int) $historico->emitido_h > 0 ? min(1.0, (int) $historico->pago_h / (int) $historico->emitido_h) : null;
+
+            $porDia = Propina::query()->whereIn('estado', [EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value])
+                ->whereBetween('data_vencimento', [$hoje->toDateString(), $fim->toDateString()])
+                ->selectRaw('data_vencimento as dia, SUM(valor - valor_pago) as saldo_dia')
+                ->groupBy('data_vencimento')->get();
+
+            $semanas = [];
+            for ($i = 0; $i * 7 <= $dias; $i++) {
+                $semanas[$i] = ['inicio' => $hoje->addDays($i * 7)->toDateString(), 'a_vencer' => 0, 'previsto' => $taxa === null ? null : 0];
+            }
+
+            foreach ($porDia as $linha) {
+                $indice = intdiv((int) $hoje->diffInDays(CarbonImmutable::parse(substr((string) $linha->getRawOriginal('dia'), 0, 10)), false), 7);
+                $semanas[$indice]['a_vencer'] += (int) $linha->saldo_dia;
+            }
+
+            foreach ($semanas as &$semana) {
+                $semana['previsto'] = $taxa === null ? null : (int) round($semana['a_vencer'] * $taxa);
+            }
+            unset($semana);
+
+            $total = array_sum(array_column($semanas, 'a_vencer'));
+            $atraso = (int) Propina::query()->comEstadoResolvido(EstadoCobranca::EM_ATRASO, $hoje)->selectRaw('COALESCE(SUM(valor - valor_pago), 0) as saldo_atraso')->first()->saldo_atraso;
+
+            return [
+                'semanas' => array_values($semanas),
+                'a_vencer' => $total,
+                'previsto' => $taxa === null ? null : (int) round($total * $taxa),
+                'taxa' => $taxa === null ? null : (int) round($taxa * 100),
+                'em_atraso' => $atraso,
+            ];
+        });
+    }
+
+    /**
+     * Vencimentos do mês corrente, dia a dia (propinas activas): quantas, quanto se emitiu, quanto já foi recebido
+     * e quantas foram liquidadas depois do vencimento (e com quantos dias de atraso, no máximo). Unidades menores. Só dias com vencimentos.
+     *
+     * @return array{mes: string, dias: list<array{dia: string, quantidade: int, emitido: int, recebido: int, tardias: int, dias_de_atraso: int}>}
+     */
+    public function calendarioDoMes(): array
+    {
+        return $this->totais->lembrar('calendario-do-mes', [], function () {
+            $hoje = $this->relogio->hoje();
+
+            $dias = Propina::query()->whereIn('estado', Propina::ESTADOS_ACTIVOS)
+                ->whereBetween('data_vencimento', [$hoje->startOfMonth()->toDateString(), $hoje->endOfMonth()->toDateString()])
+                ->selectRaw('data_vencimento as dia, COUNT(*) as n, SUM(valor) as emitido_dia, SUM(valor_pago) as recebido_dia, SUM(CASE WHEN capital_liquidado_em > data_vencimento THEN 1 ELSE 0 END) as tarde_n, MAX(CASE WHEN capital_liquidado_em > data_vencimento THEN capital_liquidado_em END) as ultima_tardia')
+                ->groupBy('data_vencimento')->orderBy('data_vencimento')->get();
+
+            return [
+                'mes' => $hoje->format('Y-m'),
+                'dias' => $dias->map(function ($linha) {
+                    $dia = substr((string) $linha->getRawOriginal('dia'), 0, 10);
+                    $tardia = $linha->getRawOriginal('ultima_tardia');
+
+                    return [
+                        'dia' => $dia,
+                        'quantidade' => (int) $linha->n,
+                        'emitido' => (int) $linha->emitido_dia,
+                        'recebido' => (int) $linha->recebido_dia,
+                        'tardias' => (int) $linha->tarde_n,
+                        'dias_de_atraso' => $tardia === null ? 0 : (int) CarbonImmutable::parse($dia)->diffInDays(CarbonImmutable::parse(substr((string) $tardia, 0, 10))),
+                    ];
+                })->all(),
+            ];
+        });
+    }
+
     /** @return array<string, int> */
     private function calcularIndicadores(array $filtros): array
     {
