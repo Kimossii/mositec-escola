@@ -5,10 +5,12 @@ namespace Modules\Financeiro\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Modules\Core\Exportacao\Exportador;
+use Modules\Core\Exportacao\TabelaExportavel;
+use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Services\RelatorioFinanceiroService;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RelatorioFinanceiroController extends Controller
 {
@@ -30,21 +32,24 @@ class RelatorioFinanceiroController extends Controller
         ]);
     }
 
-    public function exportarRecebimentos(Request $request): StreamedResponse
+    public function exportarRecebimentos(Request $request, Exportador $exportador)
     {
         $this->authorize('pagamento.exportar');
 
+        $request->validate(['formato' => ['required', 'string']]);
         [$de, $ate] = $this->periodo($request);
-        $linhas = $this->relatorio->recebimentosCsv($de, $ate);
+        $moeda = $this->moeda->atual();
+        $linhas = array_map(fn (array $l) => [...$l, 'valor' => $l['valor'] / $moeda->fator()], $this->relatorio->recebimentos($de, $ate));
 
-        return response()->streamDownload(function () use ($linhas) {
-            $f = fopen('php://output', 'w');
-            fwrite($f, "\xEF\xBB\xBF");
-            foreach ($linhas as $linha) {
-                fputcsv($f, $linha, ';');
-            }
-            fclose($f);
-        }, "recebimentos-{$de}-{$ate}.csv", ['Content-Type' => 'text/csv; charset=UTF-8']);
+        $tabela = new TabelaExportavel(
+            titulo: 'Recebimentos',
+            colunas: ['numero' => 'Nº', 'data' => 'Data', 'aluno' => 'Aluno', 'numero_aluno' => 'Nº aluno', 'matricula' => 'Matrícula', 'metodo' => 'Método', 'referencia' => 'Referência', 'valor' => "Valor ({$moeda->simbolo})"],
+            linhas: $linhas,
+            subtitulo: "Período {$de} a {$ate} · só pagamentos confirmados",
+            entidade: Estabelecimento::current()?->nome,
+        );
+
+        return $exportador->responder($tabela, $request->query('formato'), "recebimentos-{$de}-{$ate}");
     }
 
     /** @return array{0: string, 1: string} início do mês corrente → hoje, por omissão */

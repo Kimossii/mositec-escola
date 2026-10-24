@@ -3,6 +3,7 @@
 namespace Modules\Usuario\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Core\Contracts\ProcuraFotosDeAlunos;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
@@ -25,19 +26,7 @@ class UsuarioConsultaService
      */
     public function listar(?Perfil $perfil = null, array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
-        return User::with('roles')
-            ->when($perfil, fn ($query) => $query->whereHas('roles', fn ($query) => $query->where('nome', $perfil->value)))
-            ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
-                $query->where(function ($query) use ($pesquisa) {
-                    $query->whereContem('name', $pesquisa)
-                        ->orWhereContem('email', $pesquisa)
-                        ->orWhereContem('numero_matricula', $pesquisa);
-                });
-            })
-            ->when(
-                ($filtros['estado'] ?? '') !== '',
-                fn ($query) => $query->where('estado', (int) $filtros['estado']),
-            )
+        return $this->consulta($perfil, $filtros)
             ->orderBy('name')
             ->orderBy('id')
             ->paginate($porPagina)
@@ -62,6 +51,45 @@ class UsuarioConsultaService
         $pagina->setCollection($pagina->getCollection()->map(
             fn (array $linha) => isset($fotos[$linha['matricula']]) ? [...$linha, 'avatar' => $fotos[$linha['matricula']]] : $linha,
         ));
+    }
+
+    /** Utilizadores (com perfis) que cumprem o perfil e os filtros, sem ordem nem paginação. */
+    private function consulta(?Perfil $perfil, array $filtros): Builder
+    {
+        return User::with('roles')
+            ->when($perfil, fn ($query) => $query->whereHas('roles', fn ($query) => $query->where('nome', $perfil->value)))
+            ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
+                $query->where(function ($query) use ($pesquisa) {
+                    $query->whereContem('name', $pesquisa)
+                        ->orWhereContem('email', $pesquisa)
+                        ->orWhereContem('numero_matricula', $pesquisa);
+                });
+            })
+            ->when(
+                ($filtros['estado'] ?? '') !== '',
+                fn ($query) => $query->where('estado', (int) $filtros['estado']),
+            );
+    }
+
+    /**
+     * Todos os utilizadores que cumprem o perfil e os filtros (mesma ordem da lista), para exportar. Sem `$incluirAdministradores`, os administradores ficam de fora. Para no limite de
+     * linhas exportáveis + 1, o suficiente para o exportador recusar um resultado demasiado grande.
+     *
+     * @return list<array{nome: string, email: ?string, matricula: ?string, perfis: string, estado: string, criado_em: string}>
+     */
+    public function paraExportacao(?Perfil $perfil, array $filtros, int $limite, bool $incluirAdministradores = true): array
+    {
+        return $this->consulta($perfil, $filtros)
+            ->when(! $incluirAdministradores, fn ($query) => $query->whereDoesntHave('roles', fn ($roles) => $roles->where('nome', Perfil::ADMIN_ESCOLA->value)))
+            ->orderBy('name')->orderBy('id')->limit($limite)->get()
+            ->map(fn (User $user) => [
+                'nome' => $user->name,
+                'email' => $user->email,
+                'matricula' => $user->numero_matricula,
+                'perfis' => $user->roles->pluck('descricao')->filter()->implode(', '),
+                'estado' => (int) $user->estado === 1 ? 'Ativo' : 'Inativo',
+                'criado_em' => $user->created_at?->format('d/m/Y H:i') ?? '',
+            ])->all();
     }
 
     public function dadosDeApoio(): array

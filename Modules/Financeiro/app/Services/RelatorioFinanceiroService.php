@@ -70,17 +70,17 @@ class RelatorioFinanceiroService
         ];
     }
 
-    /** @return list<list<string|int>> linhas do CSV de recebimentos (cabeçalho incluído) */
-    public function recebimentosCsv(string $de, string $ate): array
+    /** @return list<array<string, string|int>> recebimentos confirmados do período, com o valor em unidades menores */
+    public function recebimentos(string $de, string $ate): array
     {
-        $linhas = [['Nº', 'Data', 'Aluno', 'Nº aluno', 'Matrícula', 'Método', 'Referência', 'Valor (unidades menores)']];
+        $linhas = [];
 
         foreach (Pagamento::query()->with(['matricula.aluno.dadosPessoa', 'metodo'])->where('estado', EstadoPagamento::CONFIRMADO->value)
             ->whereBetween('data_pagamento', [$de, $ate])->orderBy('data_pagamento')->orderBy('id')->get() as $p) {
             $linhas[] = [
-                $p->numero, $p->data_pagamento->toDateString(), $p->matricula?->aluno?->dadosPessoa?->nome_completo ?? '',
-                $p->matricula?->aluno?->numero_matricula ?? '', $p->matricula?->numero_registo_matricula ?? '',
-                $p->metodo?->nome ?? '', $p->referencia ?? '', $p->valor->unidadesMenores(),
+                'numero' => $p->numero, 'data' => $p->data_pagamento->toDateString(), 'aluno' => $p->matricula?->aluno?->dadosPessoa?->nome_completo ?? '',
+                'numero_aluno' => $p->matricula?->aluno?->numero_matricula ?? '', 'matricula' => $p->matricula?->numero_registo_matricula ?? '',
+                'metodo' => $p->metodo?->nome ?? '', 'referencia' => $p->referencia ?? '', 'valor' => $p->valor->unidadesMenores(),
             ];
         }
 

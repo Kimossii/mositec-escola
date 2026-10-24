@@ -1,6 +1,7 @@
 <script setup>
 import { computed, reactive, watch } from 'vue';
 import { Link, router, Deferred } from '@inertiajs/vue3';
+import MenuExportar from '@/Components/Shared/MenuExportar.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import { can } from '@/Composables/usePermissoes';
@@ -50,7 +51,6 @@ watch(filtros, (valor) => {
     clearTimeout(debounceId);
     debounceId = setTimeout(() => router.get(BASE, valor, { preserveState: true, preserveScroll: true, replace: true }), 300);
 });
-const exportarHref = computed(() => `${BASE}/exportar?${new URLSearchParams(Object.fromEntries(Object.entries(filtros).filter(([, v]) => v !== ''))).toString()}`);
 </script>
 
 <template>
@@ -62,7 +62,7 @@ const exportarHref = computed(() => `${BASE}/exportar?${new URLSearchParams(Obje
                     Matrículas com valores por pagar: propinas de períodos já iniciados, multas e produtos ou serviços. Da maior dívida para a menor.
                 </p>
             </div>
-            <a v-if="can('pagamento.exportar')" :href="exportarHref" class="btn btn-light-primary">Exportar CSV</a>
+            <MenuExportar v-if="can('pagamento.exportar')" :url="`${BASE}/exportar`" :params="filtros" />
         </div>
 
         <Deferred data="totais">

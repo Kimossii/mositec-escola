@@ -1,9 +1,9 @@
 <script setup>
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { can } from '@/Composables/usePermissoes';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
-import UsuarioExportModal from './UsuarioExportModal.vue';
+import MenuExportar from '@/Components/Shared/MenuExportar.vue';
 import UsuarioCreateModal from './UsuarioCreateModal.vue';
 
 const props = defineProps({
@@ -34,6 +34,13 @@ const consulta = reactive({
 });
 
 const pagina = usePage();
+
+// A exportação leva o mesmo perfil (pelo endereço da lista) e filtros que o ecrã mostra.
+const paramsExportacao = computed(() => ({
+    perfil: new URL(pagina.url, window.location.origin).pathname.split('/').filter(Boolean)[1] ?? '',
+    pesquisa: consulta.pesquisa,
+    estado: consulta.estado,
+}));
 let debounceId = null;
 
 // Pesquisa e filtro correm no servidor (a tabela só tem a página actual).
@@ -73,10 +80,7 @@ watch(consulta, (valor) => {
             <!--end::Filter-->
 
             <!--begin::Export-->
-            <button type="button" class="btn btn-light-primary me-3" data-bs-toggle="modal" data-bs-target="#kt_modal_export_users">
-                <i class="ki-duotone ki-exit-up fs-2"><span class="path1"></span><span class="path2"></span></i>
-                Exportar
-            </button>
+            <MenuExportar v-if="can('usuario.exportar')" url="/usuarios/exportar" :params="paramsExportacao" class="me-3" />
             <!--end::Export-->
 
             <!--begin::Add user-->
@@ -88,8 +92,7 @@ watch(consulta, (valor) => {
         </div>
         <!--end::Toolbar-->
 
-        <UsuarioExportModal />
-        <UsuarioCreateModal
+                <UsuarioCreateModal
             :form-component="formComponent"
             :utilizador="utilizadorEmEdicao"
             :perfis="perfis"

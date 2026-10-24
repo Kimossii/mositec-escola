@@ -10,6 +10,7 @@ use Modules\Usuario\Http\Controllers\UsuarioController;
 Route::middleware(['auth'])->prefix('usuarios')->group(function () {
 
     Route::get('/', [UsuarioController::class, 'index'])->middleware('can:usuario.ver')->name('usuario.index');
+    Route::get('/exportar', [UsuarioController::class, 'exportar'])->middleware('can:usuario.exportar')->name('usuario.exportar');
     Route::post('/cadastrarUsuario', [UsuarioController::class, 'store'])->name('usuario.store');
     Route::get('/{user}/editar', [UsuarioController::class, 'edit'])->middleware('can:usuario.ver')->name('usuario.edit');
     Route::put('/{user}', [UsuarioController::class, 'update'])->name('usuario.update');

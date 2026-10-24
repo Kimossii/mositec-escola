@@ -49,7 +49,7 @@ class DividasRecibosRelatoriosTest extends TestCase
             ->loadDeferredProps(fn (Assert $carregado) => $carregado->where('totais.matriculas', 1)->where('totais.propinas', 2_500_000)));
 
         $this->actingAs($admin)->get('/financeiro/dividas?tipo=cobrancas')->assertOk()->assertInertia(fn (Assert $page) => $page->loadDeferredProps(fn (Assert $c) => $c->where('totais.matriculas', 0)));
-        $this->actingAs($admin)->get('/financeiro/dividas/exportar')->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $this->actingAs($admin)->get('/financeiro/dividas/exportar?formato=csv')->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
 
         $this->actingAs($admin)->get('/financeiro/propinas')->assertOk()->assertInertia(fn (Assert $page) => $page->loadDeferredProps(fn (Assert $c) => $c
             ->where('indicadores.propinas', 2)
@@ -66,7 +66,7 @@ class DividasRecibosRelatoriosTest extends TestCase
                 ->where('relatorio.recebido.propinas', 2_500_000)
                 ->where('relatorio.divida.total', 2_500_000)
                 ->has('relatorio.por_metodo', 1)));
-        $this->actingAs($admin)->get('/financeiro/relatorios/recebimentos.csv?de=2026-10-01&ate=2026-10-31')->assertOk();
+        $this->actingAs($admin)->get('/financeiro/relatorios/recebimentos/exportar?formato=excel&de=2026-10-01&ate=2026-10-31')->assertOk();
     }
 
     public function test_indicadores_diferidos_das_listas_do_financeiro(): void
