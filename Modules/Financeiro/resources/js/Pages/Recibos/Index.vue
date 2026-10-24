@@ -2,6 +2,7 @@
 import { computed, reactive, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
@@ -68,6 +69,7 @@ watch(filtros, (valor) => {
                     <div class="col-6 col-md-1"><label class="fw-semibold fs-7 text-muted mb-1">Até</label><input v-model="filtros.data_ate" type="date" class="form-control form-control-solid px-2" /></div>
         </FiltrosRecolhiveis>
 
+        <ListaComVistas chave="financeiro-recibos" prefixo="/financeiro/recibos">
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -103,5 +105,6 @@ watch(filtros, (valor) => {
             </div>
             <div v-if="recibos.data.length" class="card-footer d-flex justify-content-end"><Pagination :links="recibos.links" /></div>
         </div>
+        </ListaComVistas>
     </div>
 </template>

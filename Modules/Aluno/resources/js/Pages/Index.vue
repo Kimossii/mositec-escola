@@ -4,6 +4,7 @@ import { router } from '@inertiajs/vue3';
 import axios from 'axios';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
@@ -269,6 +270,7 @@ async function alternarLinha(aluno) {
             <div v-if="criterio" class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">{{ opcoesCriterio.find((o) => o.value === criterio)?.label }}</label><SelectSolid v-model="valorSegundoSelect" :options="opcoesSegundoSelect" searchable /></div>
         </FiltrosRecolhiveis>
 
+        <ListaComVistas chave="academico-alunos" prefixo="/alunos">
         <div class="card">
             <div class="card-body p-0">
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
@@ -429,6 +431,7 @@ async function alternarLinha(aluno) {
                 <Pagination :links="alunos.links" />
             </div>
         </div>
+        </ListaComVistas>
 
         <AlunoFormModal
             :show="modalAberto"

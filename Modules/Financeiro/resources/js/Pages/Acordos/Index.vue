@@ -2,6 +2,7 @@
 import { computed, reactive, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
@@ -56,6 +57,7 @@ const badge = (a) => ({ Cumprido: 'badge-light-success', 'Em atraso': 'badge-lig
                     <div class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">Estado</label><SelectSolid v-model="filtros.estado" :options="opcoesEstado" /></div>
         </FiltrosRecolhiveis>
 
+        <ListaComVistas chave="financeiro-acordos" prefixo="/financeiro/acordos">
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -90,5 +92,6 @@ const badge = (a) => ({ Cumprido: 'badge-light-success', 'Em atraso': 'badge-lig
             </div>
             <div v-if="acordos.data.length" class="card-footer d-flex justify-content-end"><Pagination :links="acordos.links" /></div>
         </div>
+        </ListaComVistas>
     </div>
 </template>

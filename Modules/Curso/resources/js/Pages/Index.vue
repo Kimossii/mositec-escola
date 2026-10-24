@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
@@ -142,6 +143,7 @@ function confirmarAlteracaoEstado() {
             </div>
         </FiltrosRecolhiveis>
 
+        <ListaComVistas chave="academico-cursos" prefixo="/cursos">
         <div class="card">
             <div class="card-body p-0">
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
@@ -205,6 +207,7 @@ function confirmarAlteracaoEstado() {
                 <Pagination :links="cursos.links" />
             </div>
         </div>
+        </ListaComVistas>
 
         <CursoFormModal
             :show="modalAberto"

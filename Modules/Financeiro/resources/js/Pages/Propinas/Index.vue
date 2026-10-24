@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { Link, router, usePage, Deferred } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import { can } from '@/Composables/usePermissoes';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
@@ -218,6 +219,7 @@ function gerar(payload) {
             </div>
         </div>
 
+        <ListaComVistas chave="financeiro-propinas" prefixo="/financeiro/propinas">
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -308,6 +310,7 @@ function gerar(payload) {
                 <Pagination :links="propinas.links" />
             </div>
         </div>
+        </ListaComVistas>
 
         <GerarPropinasModal
             :show="geracaoAberta"

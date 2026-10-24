@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
@@ -247,6 +248,7 @@ function confirmarEliminacao() {
             </div>
         </div>
 
+        <ListaComVistas chave="financeiro-planos-propina" prefixo="/financeiro/configuracao/planos-propina">
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -326,6 +328,7 @@ function confirmarEliminacao() {
                 <Pagination :links="planos.links" />
             </div>
         </div>
+        </ListaComVistas>
 
         <PlanoPropinaFormModal
             :show="modalAberto"
