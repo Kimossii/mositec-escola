@@ -202,4 +202,28 @@ class GeradorSequenciaTest extends TestCase
         $this->assertSame(2, MatriculaSequencia::firstOrFail()->ultimo_numero);
         $this->assertSame(1, MatriculaRegistoSequencia::firstOrFail()->ultimo_numero);
     }
+
+    public function test_o_ano_pode_ser_indicado_e_cada_ano_tem_a_sua_sequencia(): void
+    {
+        $this->assertSame('2031-0001', $this->gerador()->gerar(MatriculaSequencia::class, 2031));
+        $this->assertSame('2031-0002', $this->gerador()->gerar(MatriculaSequencia::class, 2031));
+        $this->assertSame('2030-0001', $this->gerador()->gerar(MatriculaSequencia::class, 2030));
+        $this->assertSame(now()->year . '-0001', $this->gerarEmA(), 'Sem ano, usa o ano corrente (comportamento anterior).');
+    }
+
+    public function test_ano_fora_do_intervalo_e_recusado_sem_criar_linhas(): void
+    {
+        foreach ([0, -1, 1999, 10000] as $ano) {
+            try {
+                $this->gerador()->gerar(MatriculaSequencia::class, $ano);
+                $this->fail("O ano {$ano} devia ser recusado.");
+            } catch (InvalidArgumentException $e) {
+                $this->assertStringContainsString((string) $ano, $e->getMessage());
+            }
+        }
+
+        $this->assertSame(0, DB::table('matricula_sequencias')->count());
+        $this->assertSame('2000-0001', $this->gerador()->gerar(MatriculaSequencia::class, 2000));
+        $this->assertSame('9999-0001', $this->gerador()->gerar(MatriculaSequencia::class, 9999));
+    }
 }

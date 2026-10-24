@@ -13,6 +13,8 @@ const props = defineProps({
     // Acrescenta uma caixa de pesquisa no topo do dropdown, que filtra as
     // opções pelo `label` — útil quando a lista é longa (ex.: Turmas).
     searchable: { type: Boolean, default: false },
+    // Altura máxima da lista aberta, em px. Em formulários longos uma lista alta abre para cima e tapa o ecrã.
+    alturaMaxima: { type: Number, default: 300 },
 });
 
 const termo = ref('');
@@ -44,7 +46,7 @@ function selecionar(valor) {
         <button type="button" class="form-select form-select-solid text-start" data-bs-toggle="dropdown" aria-expanded="false">
             {{ rotuloSelecionado }}
         </button>
-        <ul class="dropdown-menu w-100 p-0" style="max-height: 300px; overflow-y: auto;">
+        <ul class="dropdown-menu w-100 p-0" :style="{ maxHeight: `${alturaMaxima}px`, overflowY: 'auto' }">
             <li v-if="searchable" class="p-2 border-bottom bg-body" style="position: sticky; top: 0;">
                 <input
                     v-model="termo"

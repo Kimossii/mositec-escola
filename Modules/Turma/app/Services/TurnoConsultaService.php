@@ -10,7 +10,7 @@ use Modules\Turma\Models\Turno;
 
 class TurnoConsultaService
 {
-    public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         return Turno::where('estabelecimento_id', Estabelecimento::current()?->id)
             ->with(['turnoHorarios.horario'])

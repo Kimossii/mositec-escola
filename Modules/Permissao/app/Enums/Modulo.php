@@ -21,6 +21,54 @@ enum Modulo: int
     case PLANO_CURRICULAR = 14;
     case DOCUMENTO_PESSOA = 15;
     case SENHA_UTILIZADOR = 16;
+    case REGRA_COBRANCA = 17;
+    case METODO_PAGAMENTO = 18;
+    case CATALOGO_FINANCEIRO = 19;
+    case PLANO_PROPINA = 20;
+    case MOEDA_CAMBIO = 21;
+    case PROPINA = 22;
+    case PAGAMENTO = 23;
+    case PAUSA_COBRANCA = 24;
+    case COBRANCA = 25;
+    case BOLSA = 26;
+    case ACORDO = 27;
+
+    /**
+     * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
+     * permissões — as que existiam antes de haver acções por módulo.
+     */
+    public const ACOES_BASE = ['ver', 'criar', 'editar', 'eliminar', 'listar', 'exportar'];
+
+    /**
+     * Fonte única das acções aplicáveis a cada módulo. A grelha de permissões
+     * só mostra estas, e o servidor rejeita conceder/negar qualquer outra.
+     *
+     * Por omissão, todos os módulos aplicam ACOES_BASE. Um módulo com acções
+     * próprias declara-as aqui (lista explícita, sem herdar a base). Ver
+     * docs/superpowers/plans/2026-10-12-divida-catalogo-acoes-fk.md.
+     *
+     * @return list<string> nomes de `acoes.nome`
+     */
+    public function acoesAplicaveis(): array
+    {
+        return match ($this) {
+            // Uma propina nunca se edita nem se elimina (cancela-se, anula-se ou ajusta-se). Sem `negociar`
+            // (spec de Dívidas, inexistente). `isentar-multa` entra com as multas (F5).
+            self::PROPINA => ['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar', 'isentar-multa'],
+            // Um pagamento nunca se edita nem se elimina: anula-se (spec Pagamentos §8). As acções de crédito
+            // reutilizam `criar` (aplicar) e `anular` (anular utilização).
+            self::PAGAMENTO => ['ver', 'listar', 'criar', 'anular', 'exportar'],
+            // Cobranças de produtos e serviços: cria-se, cancela-se (sem pagamentos) e o pagamento anula-se em Pagamento.
+            self::COBRANCA => ['ver', 'listar', 'criar', 'cancelar', 'exportar'],
+            // Bolsas de estudo: cria-se, edita-se (a edição termina-a ou aplica-a) e nunca se elimina.
+            self::BOLSA => ['ver', 'listar', 'criar', 'editar'],
+            // Acordos de pagamento em prestações: cria-se e cancela-se (ou quebra-se); nunca se edita nem elimina.
+            self::ACORDO => ['ver', 'listar', 'criar', 'cancelar'],
+            // `trancar` cobre trancar e reactivar uma matrícula.
+            self::MATRICULA => [...self::ACOES_BASE, 'trancar'],
+            default => self::ACOES_BASE,
+        };
+    }
 
     public function slug(): string
     {
@@ -42,6 +90,17 @@ enum Modulo: int
             self::PLANO_CURRICULAR => 'plano-curricular',
             self::DOCUMENTO_PESSOA => 'documento-pessoa',
             self::SENHA_UTILIZADOR => 'senha-utilizador',
+            self::REGRA_COBRANCA => 'regra-cobranca',
+            self::METODO_PAGAMENTO => 'metodo-pagamento',
+            self::CATALOGO_FINANCEIRO => 'catalogo-financeiro',
+            self::PLANO_PROPINA => 'plano-propina',
+            self::MOEDA_CAMBIO => 'moeda-cambio',
+            self::PROPINA => 'propina',
+            self::PAGAMENTO => 'pagamento',
+            self::PAUSA_COBRANCA => 'pausa-cobranca',
+            self::COBRANCA => 'cobranca',
+            self::BOLSA => 'bolsa',
+            self::ACORDO => 'acordo',
         };
     }
 
@@ -76,6 +135,17 @@ enum Modulo: int
             self::PLANO_CURRICULAR => 'Plano Curricular',
             self::DOCUMENTO_PESSOA => 'Documento Pessoa',
             self::SENHA_UTILIZADOR => 'Senha de Utilizador',
+            self::REGRA_COBRANCA => 'Regra de Cobrança',
+            self::METODO_PAGAMENTO => 'Método de Pagamento',
+            self::CATALOGO_FINANCEIRO => 'Catálogo Financeiro',
+            self::PLANO_PROPINA => 'Plano de Propina',
+            self::MOEDA_CAMBIO => 'Moeda e Câmbio',
+            self::PROPINA => 'Propina',
+            self::PAGAMENTO => 'Pagamento',
+            self::PAUSA_COBRANCA => 'Pausa de Cobrança',
+            self::COBRANCA => 'Cobrança',
+            self::BOLSA => 'Bolsa',
+            self::ACORDO => 'Acordo de Dívida',
         };
     }
 }

@@ -29,6 +29,7 @@ class Matricula extends Model
         'data_matricula',
         'data_fim',
         'estado',
+        'estado_descricao',
         'observacoes',
         'criado_por',
         'editado_por',
@@ -39,6 +40,13 @@ class Matricula extends Model
         'data_fim' => 'date',
         'estado' => EstadoMatriculaEnum::class,
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $matricula) {
+            $matricula->estado_descricao = $matricula->estado?->label();
+        });
+    }
 
     public function aluno(): BelongsTo
     {

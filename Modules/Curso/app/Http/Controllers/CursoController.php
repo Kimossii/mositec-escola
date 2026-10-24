@@ -29,6 +29,7 @@ class CursoController extends Controller
 
         return Inertia::render('Curso/Index', [
             'cursos' => $this->consulta->listar($filtros),
+            'indicadores' => Inertia::defer(fn () => $this->consulta->indicadores()),
             'filtros' => $filtros,
         ]);
     }

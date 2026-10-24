@@ -7,6 +7,7 @@ use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Storage;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Aluno\Models\Aluno;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use InvalidArgumentException;
 use Modules\Core\Enums\Estado;
 use Modules\Core\Tenancy\CaminhoTenant;
@@ -63,8 +64,35 @@ class AlunoConsultaService
         ]);
     }
 
-    public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    /** Valor especial do filtro de ano lectivo: alunos sem nenhuma matrícula. */
+    public const SEM_MATRICULA = 'sem_matricula';
+
+    /**
+     * Números para os cartões da lista (ano lectivo escolhido): total, com matrícula activa, sem matrícula e inactivos.
+     *
+     * @return array<string, int>
+     */
+    public function indicadores(array $filtros = []): array
     {
+        $ano = is_numeric($filtros['ano_lectivo_id'] ?? null) ? (int) $filtros['ano_lectivo_id'] : null;
+        $doAno = fn ($q) => $q->when($ano !== null, fn ($m) => $m->where('ano_lectivo_id', $ano));
+
+        return [
+            'total' => Aluno::query()->count(),
+            'com_matricula_activa' => Aluno::query()->whereHas('matriculas', fn ($q) => $doAno($q)->where('estado', EstadoMatriculaEnum::ACTIVA->value))->count(),
+            'sem_matricula' => Aluno::query()->whereDoesntHave('matriculas', fn ($q) => $doAno($q)->where('estado', '!=', EstadoMatriculaEnum::CANCELADA->value))->count(),
+            'inactivos' => Aluno::query()->where('estado', '!=', 1)->count(),
+        ];
+    }
+
+    public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
+    {
+        $semMatricula = ($filtros['ano_lectivo_id'] ?? null) === self::SEM_MATRICULA;
+        if ($semMatricula) {
+            // Sem matrícula não há ano/turma/curso/nível a filtrar.
+            $filtros = array_diff_key($filtros, array_flip(['ano_lectivo_id', 'turma_id', 'curso_id', 'nivel_academico_id']));
+        }
+
         return Aluno::with('dadosPessoa')
             ->where('estabelecimento_id', Estabelecimento::current()?->id)
             ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
@@ -76,6 +104,7 @@ class AlunoConsultaService
                         });
                 });
             })
+            ->when($semMatricula, fn ($query) => $query->whereDoesntHave('matriculas'))
             ->when(
                 ($filtros['ano_lectivo_id'] ?? null) || ($filtros['turma_id'] ?? null) || ($filtros['curso_id'] ?? null) || ($filtros['nivel_academico_id'] ?? null),
                 function ($query) use ($filtros) {
@@ -113,8 +142,10 @@ class AlunoConsultaService
      */
     public function turmasDisponiveis(array $filtros = []): SupportCollection
     {
+        $anoLectivoId = $filtros['ano_lectivo_id'] ?? null;
+
         return Turma::with(['anoLectivo', 'curso', 'nivelAcademico'])
-            ->when($filtros['ano_lectivo_id'] ?? null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))
+            ->when($anoLectivoId !== self::SEM_MATRICULA ? $anoLectivoId : null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))
             ->whereHas('anoLectivo', fn ($query) => $query->where('estabelecimento_id', Estabelecimento::current()?->id))
             ->orderByDesc('ano_lectivo_id')
             ->orderBy('codigo')

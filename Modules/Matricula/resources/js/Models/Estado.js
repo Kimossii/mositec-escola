@@ -10,6 +10,7 @@ export const ESTADO_MATRICULA = Object.freeze({
     CANCELADA: 3,
     CONCLUIDA: 4,
     TRANSFERIDA: 5,
+    TRANCADA: 6,
 });
 
 export const ESTADO_MATRICULA_LABEL = Object.freeze({
@@ -18,11 +19,14 @@ export const ESTADO_MATRICULA_LABEL = Object.freeze({
     [ESTADO_MATRICULA.CANCELADA]: 'Cancelada',
     [ESTADO_MATRICULA.CONCLUIDA]: 'Concluída',
     [ESTADO_MATRICULA.TRANSFERIDA]: 'Transferida',
+    [ESTADO_MATRICULA.TRANCADA]: 'Trancada',
 });
 
 export const TRANSICOES_MATRICULA = Object.freeze({
     [ESTADO_MATRICULA.PENDENTE]: [ESTADO_MATRICULA.ACTIVA, ESTADO_MATRICULA.CANCELADA],
+    // Trancar e reactivar têm modal próprio (data, motivo, verificação financeira): não entram no menu genérico.
     [ESTADO_MATRICULA.ACTIVA]: [ESTADO_MATRICULA.CONCLUIDA, ESTADO_MATRICULA.CANCELADA, ESTADO_MATRICULA.TRANSFERIDA],
+    [ESTADO_MATRICULA.TRANCADA]: [ESTADO_MATRICULA.CANCELADA, ESTADO_MATRICULA.TRANSFERIDA],
     [ESTADO_MATRICULA.CANCELADA]: [],
     [ESTADO_MATRICULA.CONCLUIDA]: [],
     [ESTADO_MATRICULA.TRANSFERIDA]: [],
@@ -37,6 +41,7 @@ export const estadoMatriculaBadgeClass = (estado) => {
         case ESTADO_MATRICULA.CANCELADA: return 'badge-light-danger';
         case ESTADO_MATRICULA.CONCLUIDA: return 'badge-light-info';
         case ESTADO_MATRICULA.TRANSFERIDA: return 'badge-light-primary';
+        case ESTADO_MATRICULA.TRANCADA: return 'badge-light-dark';
         default: return 'badge-light-secondary';
     }
 };

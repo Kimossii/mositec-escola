@@ -3,6 +3,7 @@
 namespace Modules\Matricula\Actions;
 
 use Illuminate\Validation\ValidationException;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\InscricaoDisciplina;
@@ -11,6 +12,10 @@ use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
 
 class CriarInscricaoDisciplinaAction
 {
+    public function __construct(private RelogioDoTenant $relogio)
+    {
+    }
+
     public function executar(
         Matricula $matricula,
         PlanoCurricularDisciplina $planoCurricularDisciplina,
@@ -40,7 +45,7 @@ class CriarInscricaoDisciplinaAction
         return InscricaoDisciplina::create([
             'matricula_id' => $matricula->id,
             'plano_curricular_disciplina_id' => $planoCurricularDisciplina->id,
-            'data_inscricao' => now()->toDateString(),
+            'data_inscricao' => $this->relogio->hoje()->toDateString(),
             'estado' => EstadoInscricaoDisciplinaEnum::INSCRITA->value,
             'criado_por' => $utilizadorId,
         ]);

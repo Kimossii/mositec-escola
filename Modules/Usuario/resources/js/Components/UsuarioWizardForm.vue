@@ -1,4 +1,5 @@
 <script setup>
+import PermissoesPorMenu from '../../../../Permissao/resources/js/Components/PermissoesPorMenu.vue';
 import { computed, reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -72,18 +73,18 @@ const roleIdDoPerfilSelecionado = computed(() => props.perfis.find((p) => p.slug
 // personalizadas fazem-se depois do cadastro, na tela de Permissões do utilizador.
 const permissoesDoPerfil = computed(() => {
     const concedidas = props.permissoesPorPerfil[roleIdDoPerfilSelecionado.value] ?? [];
-    return props.modulos.map((modulo) => {
-        // Todas as ações do catálogo, cada uma marcada como concedida ou não pelo perfil.
-        const acoes = props.acoes.map((acao) => ({
-            ...acao,
-            concedida: concedidas.some((p) => p.modulo_id === modulo.id && p.acao_id === acao.id),
-        }));
-        return { modulo, acoes, total: acoes.filter((a) => a.concedida).length };
+
+    // Formato do painel partilhado: só o que o perfil concede.
+    return concedidas.flatMap((p) => {
+        const modulo = props.modulos.find((m) => m.id === p.modulo_id);
+        const acao = props.acoes.find((a) => a.id === p.acao_id);
+
+        return modulo && acao ? [{ modulo: modulo.descricao, slug: modulo.slug, acao: acao.nome }] : [];
     });
 });
+const nomesDasAcoes = computed(() => props.acoes.map((a) => a.nome));
 
 const descricaoDoPerfil = computed(() => props.perfis.find((p) => p.slug === perfilSelecionado.value)?.descricao ?? '');
-const modulosComAcesso = computed(() => permissoesDoPerfil.value.filter((m) => m.total > 0).length);
 
 function validarAntesDeAvancar() {
     if (!alunoPronto.value) {
@@ -260,51 +261,12 @@ function guardar() {
                     <span class="text-muted fs-7 fw-semibold text-uppercase">Perfil</span>
                     <span class="badge badge-light-primary fs-7 fw-bold">{{ descricaoDoPerfil }}</span>
                 </div>
-                <div class="fs-7 text-muted">
-                    <span class="text-success fw-bold">{{ modulosComAcesso }}</span> {{ modulosComAcesso === 1 ? 'módulo com acesso' : 'módulos com acesso' }} ·
-                    <span class="text-danger fw-bold">{{ permissoesDoPerfil.length - modulosComAcesso }}</span> sem acesso
-                </div>
             </div>
             <p class="text-muted fs-7">
                 Permissões do perfil escolhido (só leitura). Podem ser personalizadas depois do cadastro, na tela de Permissões do utilizador.
             </p>
             <div class="overflow-auto pe-1" style="max-height: 420px">
-                <div class="row g-4">
-                    <div v-for="item in permissoesDoPerfil" :key="item.modulo.id" class="col-12 col-md-6 col-xl-4">
-                        <div class="card h-100 bg-body-secondary border" :class="item.total === 0 ? 'border-danger' : ''">
-                            <div class="card-body p-4">
-                                <div class="d-flex align-items-center justify-content-between mb-3">
-                                    <div class="d-flex align-items-center gap-2 fw-bold fs-6 text-gray-800">
-                                        <i class="ki-duotone ki-shield-tick fs-3 text-primary"><span class="path1"></span><span class="path2"></span></i>
-                                        {{ item.modulo.descricao }}
-                                    </div>
-                                    <span
-                                        class="badge fw-bold"
-                                        :class="item.total === acoes.length ? 'badge-light-success' : item.total === 0 ? 'badge-light-danger' : 'badge-light-primary'"
-                                    >{{ item.total }}/{{ acoes.length }}</span>
-                                </div>
-                                <ul class="list-unstyled mb-0">
-                                    <li
-                                        v-for="acao in item.acoes"
-                                        :key="acao.id"
-                                        class="d-flex align-items-center justify-content-between py-2 border-top border-gray-300"
-                                    >
-                                        <span class="text-capitalize fw-semibold" :class="acao.concedida ? 'text-gray-800' : 'text-muted'">{{ acao.nome }}</span>
-                                        <span class="d-flex align-items-center gap-2">
-                                            <span class="fs-8" :class="acao.concedida ? 'text-success' : 'text-danger'">{{ acao.concedida ? 'Permitido' : 'Sem permissão' }}</span>
-                                            <span
-                                                class="d-inline-flex align-items-center justify-content-center rounded text-white fw-bold"
-                                                :class="acao.concedida ? 'bg-success' : 'bg-danger'"
-                                                style="width: 20px; height: 20px; font-size: 13px; line-height: 1"
-                                                :aria-label="acao.concedida ? 'Permitido' : 'Sem permissão'"
-                                            >{{ acao.concedida ? '✓' : '✕' }}</span>
-                                        </span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PermissoesPorMenu :permissoes="permissoesDoPerfil" :acoes="nomesDasAcoes" :total-modulos="modulos.length" />
             </div>
 
             <div class="d-flex justify-content-between pt-5">

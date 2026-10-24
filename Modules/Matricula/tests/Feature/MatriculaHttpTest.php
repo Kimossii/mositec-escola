@@ -508,15 +508,15 @@ class MatriculaHttpTest extends TestCase
 
         $this->get(route('matriculas.index'))->assertInertia(fn (Assert $page) => $page
             ->component('Matricula/Index')
-            ->has('matriculas.data', 10)
+            ->has('matriculas.data', 15)
             ->where('matriculas.current_page', 1)
-            ->where('matriculas.last_page', 3)
+            ->where('matriculas.last_page', 2)
             ->where('matriculas.total', 25)
         );
 
-        $this->get(route('matriculas.index', ['page' => 3]))->assertInertia(fn (Assert $page) => $page
-            ->has('matriculas.data', 5)
-            ->where('matriculas.current_page', 3)
+        $this->get(route('matriculas.index', ['page' => 2]))->assertInertia(fn (Assert $page) => $page
+            ->has('matriculas.data', 10)
+            ->where('matriculas.current_page', 2)
         );
     }
 

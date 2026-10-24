@@ -41,6 +41,7 @@ class TurmaController extends Controller
 
         return Inertia::render('Turma/Turmas/Index', array_merge([
             'turmas' => $this->consulta->listar($filtros),
+            'indicadores' => Inertia::defer(fn () => $this->consulta->indicadores($filtros)),
             'filtros' => $filtros,
         ], $this->consulta->opcoesFormulario()));
     }

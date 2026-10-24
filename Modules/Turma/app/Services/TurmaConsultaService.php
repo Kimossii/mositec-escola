@@ -14,7 +14,24 @@ use Modules\Turma\Models\Turno;
 
 class TurmaConsultaService
 {
-    public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    /**
+     * Números para os cartões da lista (ano lectivo escolhido): total, activas, inactivas e cursos com turmas.
+     *
+     * @return array<string, int>
+     */
+    public function indicadores(array $filtros = []): array
+    {
+        $base = fn () => Turma::query()->when(is_numeric($filtros['ano_lectivo_id'] ?? null), fn ($q) => $q->where('ano_lectivo_id', (int) $filtros['ano_lectivo_id']));
+
+        return [
+            'total' => $base()->count(),
+            'activas' => $base()->where('estado', 1)->count(),
+            'inactivas' => $base()->where('estado', '!=', 1)->count(),
+            'cursos' => (int) $base()->whereNotNull('curso_id')->distinct()->count('curso_id'),
+        ];
+    }
+
+    public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         return Turma::with(['nivelAcademico', 'curso', 'turno', 'anoLectivo'])
             ->when($filtros['ano_lectivo_id'] ?? null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))

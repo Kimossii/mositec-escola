@@ -56,6 +56,7 @@ return [
         'licencas', // legado; ver spec §18
         'super_admins', // Plataforma MosiTec: operadores, sem escola
         'plataforma_auditoria', // Plataforma MosiTec: rasto das acções, sobrevive aos tenants
+        'cambios_plataforma', // Financeiro: câmbio padrão da plataforma, partilhado por todas as escolas
     ],
 
     /*

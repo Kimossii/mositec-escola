@@ -55,7 +55,7 @@ class ComTenantEmbrulhadosTest extends TestCase
 
     private function processarFila(): void
     {
-        Artisan::call('queue:work', ['--stop-when-empty' => true, '--tries' => 1, '--sleep' => 0]);
+        Artisan::call('queue:work', ['--stop-when-empty' => true, '--tries' => 1, '--sleep' => 0, '--memory' => 4096]);
     }
 
     public function test_listener_em_fila_corre_no_tenant_que_o_despachou(): void

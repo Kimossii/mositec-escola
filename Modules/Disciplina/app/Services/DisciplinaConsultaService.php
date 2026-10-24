@@ -8,7 +8,7 @@ use Modules\Estabelecimento\Models\Estabelecimento;
 
 class DisciplinaConsultaService
 {
-    public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         return Disciplina::where('estabelecimento_id', Estabelecimento::current()?->id)
             ->when(($filtros['estado'] ?? '') !== '', fn ($query) => $query->where('estado', $filtros['estado']))

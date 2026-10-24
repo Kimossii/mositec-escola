@@ -30,6 +30,17 @@ class ModuloSeeder extends Seeder
             ['nome' => 14, 'descricao' => 'Plano Curricular'],
             ['nome' => 15, 'descricao' => 'Documento Pessoa'],
             ['nome' => 16, 'descricao' => 'Senha de Utilizador'],
+            ['nome' => 17, 'descricao' => 'Regra de Cobranca'],
+            ['nome' => 18, 'descricao' => 'Metodo de Pagamento'],
+            ['nome' => 19, 'descricao' => 'Catalogo Financeiro'],
+            ['nome' => 20, 'descricao' => 'Plano de Propina'],
+            ['nome' => 21, 'descricao' => 'Moeda e Cambio'],
+            ['nome' => 22, 'descricao' => 'Propina'],
+            ['nome' => 23, 'descricao' => 'Pagamento'],
+            ['nome' => 24, 'descricao' => 'Pausa de Cobranca'],
+            ['nome' => 25, 'descricao' => 'Cobranca'],
+            ['nome' => 26, 'descricao' => 'Bolsa'],
+            ['nome' => 27, 'descricao' => 'Acordo de Divida'],
         ];
 
         foreach ($modulos as $modulo) {

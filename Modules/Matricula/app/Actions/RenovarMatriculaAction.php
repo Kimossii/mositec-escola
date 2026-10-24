@@ -7,6 +7,7 @@ use Illuminate\Validation\ValidationException;
 use Modules\Aluno\Enums\EstadoEnquadramentoAcademicoEnum;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Enums\Estado;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
@@ -18,6 +19,7 @@ class RenovarMatriculaAction
     public function __construct(
         private AlterarEstadoMatriculaAction $alterarEstado,
         private CriarMatriculaAction $criarMatricula,
+        private RelogioDoTenant $relogio,
     ) {
     }
 
@@ -92,7 +94,7 @@ class RenovarMatriculaAction
             ->where('nivel_academico_id', $turmaAnterior->nivel_academico_id)
             ->update([
                 'estado' => EstadoEnquadramentoAcademicoEnum::CONCLUIDO->value,
-                'data_fim' => now()->toDateString(),
+                'data_fim' => $this->relogio->hoje()->toDateString(),
             ]);
     }
 

@@ -12,7 +12,9 @@ use Modules\Aluno\Models\Aluno;
 use Modules\Aluno\Services\AlunoConsultaService;
 use Modules\Aluno\Services\GestaoAlunoService;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Core\Contracts\SituacaoDePropinasDoAluno;
 use Modules\Core\Enums\Estado;
+use Modules\Core\Services\ProvinciaMunicipioService;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Services\MatriculaConsultaService;
 
@@ -22,6 +24,8 @@ class AlunoController extends Controller
         private GestaoAlunoService $service,
         private AlunoConsultaService $consulta,
         private MatriculaConsultaService $matriculaConsulta,
+        private ProvinciaMunicipioService $provinciaMunicipio,
+        private SituacaoDePropinasDoAluno $propinas,
     ) {
     }
 
@@ -38,13 +42,23 @@ class AlunoController extends Controller
             $filtros['ano_lectivo_id'] = AnoLectivo::current(Estabelecimento::current()?->id)?->id;
         }
 
+        $alunos = $this->consulta->listar($filtros);
+        $podeVerPropinas = $request->user()?->can('propina.ver') ?? false;
+
         return Inertia::render('Aluno/Index', [
-            'alunos' => $this->consulta->listar($filtros),
+            // Diferido: os cartões chegam depois de a lista abrir.
+            'indicadores' => Inertia::defer(fn () => $this->consulta->indicadores($filtros)),
+            'alunos' => $alunos,
             'filtros' => $filtros,
             'anosLectivosDisponiveis' => $this->consulta->anosLectivosDisponiveis(),
             'turmasDisponiveis' => $this->consulta->turmasDisponiveis($filtros),
             'cursosDisponiveis' => $this->consulta->cursosDisponiveis(),
             'niveisAcademicosDisponiveis' => $this->consulta->niveisAcademicosDisponiveis(),
+            'provincias' => $this->provinciaMunicipio->provincias(),
+            'municipiosPorProvincia' => $this->provinciaMunicipio->municipiosPorProvincia(),
+            'podeVerPropinas' => $podeVerPropinas,
+            'situacoesPropinas' => $podeVerPropinas ? $this->propinas->paraListaDeAlunos($alunos->getCollection()->pluck('id')->all()) : [],
+            'moeda' => $podeVerPropinas ? $this->propinas->moeda() : null,
         ]);
     }
 
@@ -64,6 +78,7 @@ class AlunoController extends Controller
         ];
 
         $matriculasActivas = $this->matriculaConsulta->matriculasActivasNoAnoLectivo($aluno);
+        $podeVerPropinas = $request->user()?->can('propina.ver') ?? false;
 
         return Inertia::render('Aluno/Show', [
             'aluno' => $aluno->load('dadosPessoa'),
@@ -76,6 +91,12 @@ class AlunoController extends Controller
             'turmasDisponiveis' => $this->matriculaConsulta->turmasDisponiveis(),
             'anosLectivosComMatricula' => $this->matriculaConsulta->anosLectivosComMatricula($aluno),
             'filtrosMatricula' => $filtrosMatricula,
+            'provincias' => $this->provinciaMunicipio->provincias(),
+            'municipiosPorProvincia' => $this->provinciaMunicipio->municipiosPorProvincia(),
+            'podeVerPropinas' => $podeVerPropinas,
+            'situacaoPropinas' => $podeVerPropinas ? $this->propinas->doAluno($aluno->id) : null,
+            'podeRegistarPagamento' => $request->user()?->can('pagamento.criar') ?? false,
+            'moeda' => $podeVerPropinas ? $this->propinas->moeda() : null,
         ]);
     }
 

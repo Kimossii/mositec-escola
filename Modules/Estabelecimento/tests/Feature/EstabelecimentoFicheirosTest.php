@@ -18,7 +18,7 @@ class EstabelecimentoFicheirosTest extends TestCase
         Storage::fake('public');
 
         $estabelecimento = app(AtualizarLogotipoEstabelecimentoAction::class)
-            ->executar(Estabelecimento::current(), UploadedFile::fake()->image('logo.png'));
+            ->executar(Estabelecimento::current(), $this->imagemFalsa('logo.png'));
 
         $this->assertStringStartsWith("tenants/{$this->tenant->id}/estabelecimento/logotipos/", $estabelecimento->logotipo_path);
         Storage::disk('public')->assertExists($estabelecimento->logotipo_path);
@@ -31,9 +31,9 @@ class EstabelecimentoFicheirosTest extends TestCase
         $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
 
         $deB = $this->noTenant($outro, fn () => app(AtualizarLogotipoEstabelecimentoAction::class)
-            ->executar(Estabelecimento::current(), UploadedFile::fake()->image('logo.png')));
+            ->executar(Estabelecimento::current(), $this->imagemFalsa('logo.png')));
         $deA = app(AtualizarLogotipoEstabelecimentoAction::class)
-            ->executar(Estabelecimento::current(), UploadedFile::fake()->image('logo.png'));
+            ->executar(Estabelecimento::current(), $this->imagemFalsa('logo.png'));
 
         $this->assertStringStartsWith("tenants/{$outro->id}/estabelecimento/logotipos/", $deB->logotipo_path);
         $this->assertStringStartsWith("tenants/{$this->tenant->id}/estabelecimento/logotipos/", $deA->logotipo_path);
@@ -44,8 +44,8 @@ class EstabelecimentoFicheirosTest extends TestCase
         Storage::fake('public');
         $action = app(AtualizarLogotipoEstabelecimentoAction::class);
 
-        $primeiro = $action->executar(Estabelecimento::current(), UploadedFile::fake()->image('um.png'))->logotipo_path;
-        $segundo = $action->executar(Estabelecimento::current(), UploadedFile::fake()->image('dois.png'))->logotipo_path;
+        $primeiro = $action->executar(Estabelecimento::current(), $this->imagemFalsa('um.png'))->logotipo_path;
+        $segundo = $action->executar(Estabelecimento::current(), $this->imagemFalsa('dois.png'))->logotipo_path;
 
         Storage::disk('public')->assertMissing($primeiro);
         Storage::disk('public')->assertExists($segundo);
@@ -58,7 +58,7 @@ class EstabelecimentoFicheirosTest extends TestCase
         $estabelecimento = Estabelecimento::current();
         $estabelecimento->forceFill(['logotipo_path' => 'tenants/999/estabelecimento/logotipos/alheio.png'])->save();
 
-        app(AtualizarLogotipoEstabelecimentoAction::class)->executar($estabelecimento, UploadedFile::fake()->image('novo.png'));
+        app(AtualizarLogotipoEstabelecimentoAction::class)->executar($estabelecimento, $this->imagemFalsa('novo.png'));
 
         Storage::disk('public')->assertExists('tenants/999/estabelecimento/logotipos/alheio.png');
     }

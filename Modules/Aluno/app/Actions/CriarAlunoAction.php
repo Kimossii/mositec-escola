@@ -31,6 +31,8 @@ class CriarAlunoAction
                     'data_nascimento' => $dto->dataNascimento,
                     'sexo' => $dto->sexo,
                     'numero_identificacao' => $dto->numeroIdentificacao,
+                    'provincia_nascimento' => $dto->provinciaNascimento,
+                    'municipio_nascimento' => $dto->municipioNascimento,
                     'tipo_pessoa' => DadosPessoa::TIPO_ALUNO,
                 ]);
 

@@ -5,6 +5,8 @@ defineProps({
     mensagem: { type: String, required: true },
     textoConfirmar: { type: String, default: 'Eliminar' },
     processando: { type: Boolean, default: false },
+    // Cor do botão de confirmar: 'danger' para acções destrutivas (padrão), 'primary' para confirmações neutras.
+    variante: { type: String, default: 'danger' },
 });
 const emit = defineEmits(['confirmar', 'cancelar']);
 </script>
@@ -19,7 +21,7 @@ const emit = defineEmits(['confirmar', 'cancelar']);
                     <button type="button" class="btn btn-light-primary me-2" :disabled="processando" @click="emit('cancelar')">
                         Cancelar
                     </button>
-                    <button type="button" class="btn btn-danger" :disabled="processando" @click="emit('confirmar')">
+                    <button type="button" :class="['btn', `btn-${variante}`]" :disabled="processando" @click="emit('confirmar')">
                         {{ textoConfirmar }}
                     </button>
                 </div>

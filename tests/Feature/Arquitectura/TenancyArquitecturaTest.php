@@ -27,13 +27,15 @@ class TenancyArquitecturaTest extends TestCase
      * PertenceAoTenant, e os métodos "Quietly" e withoutEvents desligam-nos). Só estas excepções:
      *  - as duas sincronizações de permissões constroem as linhas com o tenant_id do contexto
      *    (provado em PermissaoTenancyTest::test_sincronizar_permissoes_grava_tenant_id_nas_escritas_em_massa);
-     *  - o gerador de sequências faz upsert com o tenant_id do contexto.
+     *  - o gerador de sequências faz upsert com o tenant_id do contexto;
+     *  - o AplicarMultasService usa insertOrIgnore com o tenant_id do contexto (spec Propinas §15.5, criação idempotente).
      * Qualquer outra ocorrência é violação.
      */
     private const EXCEPCOES_ELOQUENT = [
         'Modules/Permissao/app/Actions/SincronizarPermissoesPerfilAction.php',
         'Modules/Permissao/app/Actions/SincronizarPermissoesUtilizadorAction.php',
         'Modules/Core/app/Services/GeradorSequencia.php',
+        'Modules/Financeiro/app/Services/AplicarMultasService.php',
     ];
 
     /**
@@ -417,6 +419,7 @@ class TenancyArquitecturaTest extends TestCase
     private const COMANDOS_DA_PLATAFORMA = [
         'Modules/Plataforma/app/Console/CriarSuperAdminCommand.php',
         'Modules/Plataforma/app/Console/RedefinirSuperAdminCommand.php',
+        'Modules/Financeiro/app/Console/CambioPlataformaCommand.php',
     ];
 
     private function declaraClasse(string $conteudo, string $padraoHerancaOuInterface): bool

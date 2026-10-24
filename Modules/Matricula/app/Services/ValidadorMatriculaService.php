@@ -7,6 +7,7 @@ use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
 use Modules\Aluno\Enums\EstadoEnquadramentoAcademicoEnum;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
+use Modules\Core\Contracts\VerificaNovaMatricula;
 use Modules\Core\Enums\Estado;
 use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -133,6 +134,18 @@ class ValidadorMatriculaService
      * quem chama TEM de estar dentro de uma (CriarMatriculaAction e
      * AtualizarMatriculaAction estão).
      */
+    /** Verificações de outros módulos (ex.: dívida de anos anteriores) via contrato do Core; só os bloqueios impedem. */
+    public function validarSituacaoFinanceira(Aluno $aluno, Turma $turma): void
+    {
+        foreach (app()->tagged(VerificaNovaMatricula::ETIQUETA) as $verificacao) {
+            $resultado = $verificacao->verificar((int) $aluno->id, (int) $turma->ano_lectivo_id);
+
+            if ($resultado->bloqueia()) {
+                throw ValidationException::withMessages(['aluno_id' => $resultado->bloqueios[0]['mensagem']]);
+            }
+        }
+    }
+
     public function validarMatriculaNaoDuplicada(
         Aluno $aluno,
         Turma $turma,
@@ -142,10 +155,10 @@ class ValidadorMatriculaService
 
         $query = Matricula::query()
             ->where('aluno_id', $aluno->id)
-            ->whereIn('estado', [
-                EstadoMatriculaEnum::PENDENTE->value,
-                EstadoMatriculaEnum::ACTIVA->value,
-            ])
+            // Trancada ainda ocupa a identidade académica, mas só no mesmo ano lectivo (D15).
+            ->where(fn ($q) => $q
+                ->whereIn('estado', [EstadoMatriculaEnum::PENDENTE->value, EstadoMatriculaEnum::ACTIVA->value])
+                ->orWhere(fn ($t) => $t->where('estado', EstadoMatriculaEnum::TRANCADA->value)->where('ano_lectivo_id', $turma->ano_lectivo_id)))
             ->whereHas('turma', function ($query) use ($turma) {
                 $query->where('curso_id', $turma->curso_id)
                     ->where('nivel_academico_id', $turma->nivel_academico_id);

@@ -55,7 +55,7 @@ class AlunoFotoTest extends TestCase
 
     private function alunoComFoto(): Aluno
     {
-        return app(CriarAlunoAction::class)->executar($this->dto(), UploadedFile::fake()->image('foto.jpg'));
+        return app(CriarAlunoAction::class)->executar($this->dto(), $this->imagemFalsa('foto.jpg'));
     }
 
     public function test_a_foto_e_gravada_no_disco_privado_com_prefixo_do_tenant(): void
@@ -149,7 +149,7 @@ class AlunoFotoTest extends TestCase
         $aluno = $this->alunoComFoto();
         $antiga = $aluno->foto_path;
 
-        $actualizado = app(AtualizarAlunoAction::class)->executar($aluno, $this->dto(), UploadedFile::fake()->image('nova.jpg'));
+        $actualizado = app(AtualizarAlunoAction::class)->executar($aluno, $this->dto(), $this->imagemFalsa('nova.jpg'));
 
         Storage::disk('privado')->assertMissing($antiga);
         Storage::disk('privado')->assertExists($actualizado->foto_path);
@@ -188,7 +188,7 @@ class AlunoFotoTest extends TestCase
         Storage::disk('privado')->put('tenants/999/alunos/fotos/alheia.jpg', 'x');
         $aluno->forceFill(['foto_path' => 'tenants/999/alunos/fotos/alheia.jpg'])->save();
 
-        app(AtualizarAlunoAction::class)->executar($aluno, $this->dto(), UploadedFile::fake()->image('nova.jpg'));
+        app(AtualizarAlunoAction::class)->executar($aluno, $this->dto(), $this->imagemFalsa('nova.jpg'));
 
         Storage::disk('privado')->assertExists('tenants/999/alunos/fotos/alheia.jpg');
     }

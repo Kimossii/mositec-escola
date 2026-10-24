@@ -9,6 +9,7 @@ enum EstadoMatriculaEnum: int
     case CANCELADA = 3;
     case CONCLUIDA = 4;
     case TRANSFERIDA = 5;
+    case TRANCADA = 6;
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum EstadoMatriculaEnum: int
             self::CANCELADA => 'Cancelada',
             self::CONCLUIDA => 'Concluída',
             self::TRANSFERIDA => 'Transferida',
+            self::TRANCADA => 'Trancada',
         };
     }
 
@@ -33,6 +35,14 @@ enum EstadoMatriculaEnum: int
                 self::CONCLUIDA,
                 self::CANCELADA,
                 self::TRANSFERIDA,
+                self::TRANCADA,
+            ], true),
+
+            // Trancada sai por reactivação (acção dedicada), desistência ou transferência.
+            self::TRANCADA => in_array($estado, [
+                self::ACTIVA,
+                self::CANCELADA,
+                self::TRANSFERIDA,
             ], true),
 
             self::CANCELADA,
@@ -45,7 +55,7 @@ enum EstadoMatriculaEnum: int
     {
         return match ($this) {
             self::CANCELADA, self::CONCLUIDA, self::TRANSFERIDA => true,
-            self::PENDENTE, self::ACTIVA => false,
+            self::PENDENTE, self::ACTIVA, self::TRANCADA => false,
         };
     }
 }

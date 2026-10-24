@@ -4,6 +4,7 @@ namespace Modules\Estabelecimento\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Inertia\Inertia;
+use Modules\Core\Services\ProvinciaMunicipioService;
 use Modules\Estabelecimento\Http\Requests\AtualizarDadosRequest;
 use Modules\Estabelecimento\Http\Requests\AtualizarLogotipoRequest;
 use Modules\Estabelecimento\Services\GestaoEstabelecimentoService;
@@ -12,6 +13,7 @@ class EstabelecimentoController extends Controller
 {
     public function __construct(
         private GestaoEstabelecimentoService $service,
+        private ProvinciaMunicipioService $provinciaMunicipio,
     ) {}
 
     public function dados()
@@ -21,6 +23,9 @@ class EstabelecimentoController extends Controller
         return Inertia::render('Estabelecimento/DadosDaEscola', [
             'estabelecimento' => $this->service->obterAtual(),
             'etapasEnsino' => $this->service->etapasEnsinoConfiguradas(),
+            'fusosHorarios' => $this->service->fusosHorarios(),
+            'provincias' => $this->provinciaMunicipio->provincias(),
+            'municipiosPorProvincia' => $this->provinciaMunicipio->municipiosPorProvincia(),
         ]);
     }
 
