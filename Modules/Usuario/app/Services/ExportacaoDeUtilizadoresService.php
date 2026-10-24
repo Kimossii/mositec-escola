@@ -42,6 +42,7 @@ class ExportacaoDeUtilizadoresService
             linhas: $this->consulta->paraExportacao(self::PERFIS[$perfil] ?? null, $filtros, Exportador::MAXIMO_LINHAS + 1, $incluirAdministradores),
             subtitulo: 'Filtro: '.$estado.($pesquisa !== '' ? ', pesquisa «'.$pesquisa.'»' : ''),
             entidade: Estabelecimento::current()?->nome,
+            assinaturas: ['Elaborado por', 'Aprovado por'],
         );
     }
 }

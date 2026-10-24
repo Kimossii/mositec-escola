@@ -18,6 +18,10 @@ use Modules\Financeiro\Http\Controllers\ProdutoController;
 use Modules\Financeiro\Http\Controllers\PropinaController;
 use Modules\Financeiro\Http\Controllers\RegraCobrancaController;
 use Modules\Financeiro\Http\Controllers\ServicoController;
+use Modules\Financeiro\Http\Controllers\VerificacaoDeReciboController;
+
+// Pública (sem login): é o destino do QR dos recibos. Limitada por IP contra tentativas em massa; a escola vem do domínio.
+Route::get('/verificar-recibo/{token}', [VerificacaoDeReciboController::class, 'show'])->middleware('throttle:60,1')->name('recibo.verificar');
 
 Route::middleware(['auth'])->prefix('financeiro/configuracao')->name('financeiro.configuracao.')->group(function () {
     Route::get('/regras-cobranca', [RegraCobrancaController::class, 'show'])->middleware('can:regra-cobranca.ver')->name('regras-cobranca.show');

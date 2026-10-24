@@ -60,6 +60,7 @@ class DividaController extends Controller
             linhas: $linhas->all(),
             subtitulo: 'Da maior dívida para a menor',
             entidade: Estabelecimento::current()?->nome,
+            assinaturas: ['Elaborado por', 'Verificado por', 'O Director'],
         );
 
         return $exportador->responder($tabela, $request->query('formato'), 'dividas');

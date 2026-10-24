@@ -23,7 +23,9 @@ use Modules\Financeiro\Services\ComprovativoService;
 use Modules\Financeiro\Services\DistribuicaoDePagamentoService;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Services\PagamentoConsultaService;
+use Modules\Core\Support\GeradorDeQr;
 use Modules\Financeiro\Support\Moeda;
+use Modules\Financeiro\Support\VerificacaoDeRecibo;
 use Modules\Matricula\Models\Matricula;
 
 class PagamentoController extends Controller
@@ -37,6 +39,7 @@ class PagamentoController extends Controller
         private ComprovativoService $comprovativo,
         private MoedaDoTenant $moedaDoTenant,
         private RelogioDoTenant $relogio,
+        private VerificacaoDeRecibo $verificacao,
     ) {
     }
 
@@ -189,6 +192,8 @@ class PagamentoController extends Controller
             'numero' => $numero,
             'rotulo' => $rotulo,
             'propinaId' => $propinaId,
+            // QR do recibo → página pública de verificação (`/verificar-recibo/…`), com o endereço em texto como alternativa.
+            'verificacao' => ['url' => $this->verificacao->url($pagamento), 'qr' => GeradorDeQr::svg($this->verificacao->url($pagamento), 220)],
         ]);
     }
 

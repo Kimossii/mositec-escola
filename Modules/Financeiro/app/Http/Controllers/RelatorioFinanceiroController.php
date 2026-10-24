@@ -47,6 +47,7 @@ class RelatorioFinanceiroController extends Controller
             linhas: $linhas,
             subtitulo: "Período {$de} a {$ate} · só pagamentos confirmados",
             entidade: Estabelecimento::current()?->nome,
+            assinaturas: ['Elaborado por', 'Verificado por', 'O Director'],
         );
 
         return $exportador->responder($tabela, $request->query('formato'), "recebimentos-{$de}-{$ate}");

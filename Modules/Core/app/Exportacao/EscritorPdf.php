@@ -42,6 +42,15 @@ class EscritorPdf
             $corpo .= '</tr>';
         }
 
+        $assinaturas = '';
+        if ($tabela->assinaturas !== []) {
+            $assinaturas = '<table class="assinaturas"><tr>';
+            foreach ($tabela->assinaturas as $rotulo) {
+                $assinaturas .= '<td><div class="assinaturas__linha">'.$e($rotulo).'</div></td>';
+            }
+            $assinaturas .= '</tr></table><div class="assinaturas__data">Data: ____ / ____ / ________</div>';
+        }
+
         $meta = $e(implode(' · ', array_filter([$tabela->subtitulo, 'Gerado em '.date('d/m/Y H:i')])));
 
         return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
@@ -56,9 +65,13 @@ class EscritorPdf
             td { padding: 4px 6px; border-bottom: 1px solid #e2e8f0; word-wrap: break-word; }
             tr:nth-child(even) td { background: #f8fafc; }
             thead { display: table-header-group; }
+            .assinaturas { margin-top: 46px; page-break-inside: avoid; }
+            .assinaturas td { width: auto; border: 0; padding: 0 22px; background: #fff !important; }
+            .assinaturas__linha { border-top: 1px solid #1e293b; padding-top: 4px; text-align: center; font-size: 8px; color: #475569; }
+            .assinaturas__data { margin-top: 14px; font-size: 8px; color: #475569; page-break-inside: avoid; }
         </style></head><body>
             <div class="topo"><div class="entidade">'.$e($tabela->entidade).'</div><h1>'.$e($tabela->titulo).'</h1><div class="meta">'.$meta.'</div></div>
-            <table><thead><tr>'.$cabecalho.'</tr></thead><tbody>'.$corpo.'</tbody></table>
+            <table><thead><tr>'.$cabecalho.'</tr></thead><tbody>'.$corpo.'</tbody></table>'.$assinaturas.'
             <script type="text/php">if (isset($pdf)) { $pdf->page_text($pdf->get_width() - 80, $pdf->get_height() - 24, "Página {PAGE_NUM} de {PAGE_COUNT}", null, 8, [0.4, 0.45, 0.55]); }</script>
         </body></html>';
     }

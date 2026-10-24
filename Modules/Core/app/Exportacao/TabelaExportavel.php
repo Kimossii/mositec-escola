@@ -11,6 +11,7 @@ final class TabelaExportavel
     /**
      * @param  array<string, string>  $colunas  chave => rótulo
      * @param  iterable<array<string, scalar|null>>  $linhas
+     * @param  list<string>  $assinaturas  espaços de assinatura no fim do PDF (rótulo por baixo de cada linha); `[]` para nenhum
      */
     public function __construct(
         public readonly string $titulo,
@@ -18,6 +19,7 @@ final class TabelaExportavel
         public readonly iterable $linhas,
         public readonly ?string $subtitulo = null,
         public readonly ?string $entidade = null,
+        public readonly array $assinaturas = ['Elaborado por', 'Responsável'],
     ) {
     }
 

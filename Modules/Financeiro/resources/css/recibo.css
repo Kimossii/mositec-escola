@@ -33,12 +33,29 @@
 .recibo-anulado { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(-18deg); font-size: 54px; font-weight: 800; color: rgba(200, 0, 0, 0.25); border: 4px solid rgba(200, 0, 0, 0.25); padding: 0 16px; pointer-events: none; z-index: 2; }
 
 /* Muitas linhas no recibo geral: reduz-se a letra (e o espaçamento) em vez de cortar o conteúdo fora da folha. */
+.recibo-qr { flex: 0 0 22mm; text-align: center; }
+.recibo-qr__codigo { width: 22mm; height: 22mm; margin: 0 auto; line-height: 0; }
+.recibo-qr__codigo svg { width: 100%; height: 100%; display: block; }
+.recibo-qr__texto { font-size: 7px; text-transform: uppercase; letter-spacing: 0.5px; color: #444; margin-top: 1px; }
+.carimbo { flex-basis: 38mm; }
+
 .recibo-folha--densa { font-size: 9px; }
 .recibo-folha--densa .recibo-tabela th, .recibo-folha--densa .recibo-tabela td { padding: 1px 4px; }
 .recibo-folha--densa .recibo-dados th, .recibo-folha--densa .recibo-dados td { padding: 1px 4px; }
 .recibo-folha--compacta { font-size: 7px; }
+.recibo-folha--compacta .recibo-logo img { max-height: 9mm; }
+.recibo-folha--compacta .carimbo { height: 15mm; }
+.recibo-folha--compacta .recibo-qr, .recibo-folha--compacta .recibo-qr__codigo { flex-basis: 18mm; width: 18mm; }
+.recibo-folha--compacta .recibo-qr__codigo { height: 18mm; }
 .recibo-folha--compacta .recibo-tabela th, .recibo-folha--compacta .recibo-tabela td { padding: 1px 3px; }
 .recibo-folha--compacta .recibo-dados th, .recibo-folha--compacta .recibo-dados td { padding: 1px 3px; }
+
+.recibo-folha--minima { font-size: 6px; }
+.recibo-folha--minima .recibo-tabela th, .recibo-folha--minima .recibo-tabela td, .recibo-folha--minima .recibo-dados th, .recibo-folha--minima .recibo-dados td { padding: 0 3px; }
+.recibo-folha--minima .recibo-logo { display: none; }
+.recibo-folha--minima .carimbo { height: 12mm; }
+.recibo-folha--minima .recibo-qr, .recibo-folha--minima .recibo-qr__codigo { flex-basis: 16mm; width: 16mm; }
+.recibo-folha--minima .recibo-qr__codigo { height: 16mm; }
 
 @media print {
     @page { size: A4; margin: 0; }

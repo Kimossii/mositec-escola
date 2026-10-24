@@ -28,7 +28,7 @@ class Exportador
         throw_if(count($linhas) > self::MAXIMO_LINHAS, new HttpException(422, 'Há registos a mais para exportar ('.count($linhas).'). Restrinja os filtros.'));
         throw_if($formato === FormatoExportacao::PDF && count($linhas) > self::MAXIMO_LINHAS_PDF, new HttpException(422, 'Há registos a mais para um PDF. Use Excel ou CSV, ou restrinja os filtros.'));
 
-        $tabela = new TabelaExportavel($tabela->titulo, $tabela->colunas, $linhas, $tabela->subtitulo, $tabela->entidade);
+        $tabela = new TabelaExportavel($tabela->titulo, $tabela->colunas, $linhas, $tabela->subtitulo, $tabela->entidade, $tabela->assinaturas);
         $nome = Str::slug($nomeBase).'-'.date('Y-m-d').'.'.$formato->extensao();
         $caminho = $this->gerar($tabela, $formato, Str::slug($nomeBase).'-'.date('Y-m-d'), count($linhas));
 

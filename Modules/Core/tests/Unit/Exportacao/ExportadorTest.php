@@ -88,4 +88,15 @@ class ExportadorTest extends TestCase
         $this->expectException(HttpException::class);
         app(Exportador::class)->responder($this->tabela(Exportador::MAXIMO_LINHAS_PDF + 1), 'pdf', 'x');
     }
+
+    public function test_todo_o_pdf_leva_espacos_de_assinatura_por_defeito_e_podem_ser_personalizados(): void
+    {
+        $this->assertSame(['Elaborado por', 'Responsável'], $this->tabela()->assinaturas);
+
+        $propria = new TabelaExportavel('X', ['a' => 'A'], [['a' => 1]], null, null, ['Elaborado por', 'Verificado por', 'O Director']);
+        $resposta = app(Exportador::class)->responder($propria, 'pdf', 'x');
+
+        $this->assertStringStartsWith('%PDF', file_get_contents($resposta->getFile()->getPathname()));
+        $this->assertSame([], (new TabelaExportavel('X', ['a' => 'A'], [], assinaturas: []))->assinaturas);
+    }
 }
