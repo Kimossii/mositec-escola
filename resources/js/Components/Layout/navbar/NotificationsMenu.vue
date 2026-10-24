@@ -15,7 +15,7 @@ const carregado = computed(() => Array.isArray(alertas.value))
         >
             <h3 class="text-white fw-semibold px-9 mt-10 mb-6">
                 Notificações
-                <span v-if="carregado && alertas.length" class="fs-8 opacity-75 ps-3">{{ alertas.length }} a precisar de atenção</span>
+                <span v-if="carregado && alertas.length" class="fs-8 ps-3"><span class="mosi-pisca fw-bold fs-6">{{ alertas.length }}</span> <span class="opacity-75">a precisar de atenção</span></span>
             </h3>
         </div>
 

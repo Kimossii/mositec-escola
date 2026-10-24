@@ -17,7 +17,7 @@
                 <i class="ki-duotone ki-notification-status fs-2 fs-lg-1">
                     <span v-for="n in 4" :key="n" :class="`path${n}`"></span>
                 </i>
-                <span v-if="alertas.length" class="badge badge-circle badge-danger position-absolute top-0 start-100 translate-middle fs-9 w-15px h-15px">{{ alertas.length }}</span>
+                <span v-if="alertas.length" class="mosi-pisca badge badge-circle badge-danger position-absolute top-0 start-100 translate-middle fs-9 w-15px h-15px">{{ alertas.length }}</span>
             </div>
             <NotificationsMenu />
         </div>
