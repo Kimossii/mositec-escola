@@ -1,7 +1,8 @@
 <script setup>
 import { computed, reactive, watch } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, Deferred } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import FiltrosRecolhiveis from '../../Components/Shared/FiltrosRecolhiveis.vue';
 import { can } from '@/Composables/usePermissoes';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
@@ -12,7 +13,7 @@ const BASE = '/financeiro/dividas';
 
 const props = defineProps({
     dividas: { type: Object, required: true },
-    totais: { type: Object, required: true },
+    totais: { type: Object, default: null }, // diferido: chega depois da lista
     filtros: { type: Object, default: () => ({}) },
     anosLectivos: { type: Array, required: true },
     turmas: { type: Array, required: true },
@@ -41,6 +42,9 @@ const opcoesTipo = [
     { value: 'cobrancas', label: 'Com produtos/serviços por pagar' },
 ];
 
+const filtrosAtivos = computed(() => [filtros.ano_lectivo_id !== '', filtros.turma_id !== '', filtros.tipo !== ''].filter(Boolean).length);
+const limparFiltros = () => Object.assign(filtros, { ano_lectivo_id: '', turma_id: '', tipo: '' });
+
 let debounceId = null;
 watch(filtros, (valor) => {
     clearTimeout(debounceId);
@@ -61,26 +65,21 @@ const exportarHref = computed(() => `${BASE}/exportar?${new URLSearchParams(Obje
             <a v-if="can('pagamento.exportar')" :href="exportarHref" class="btn btn-light-primary">Exportar CSV</a>
         </div>
 
+        <Deferred data="totais">
+            <template #fallback><div class="row g-4 mb-6"><div class="col-6 col-md-3"><div class="card h-100"><div class="card-body py-5 placeholder-glow"><span class="placeholder col-5 mb-3"></span><span class="placeholder col-9 h-30px d-block mb-3 rounded"></span><span class="placeholder col-7"></span></div></div></div><div class="col-6 col-md-3"><div class="card h-100"><div class="card-body py-5 placeholder-glow"><span class="placeholder col-5 mb-3"></span><span class="placeholder col-9 h-30px d-block mb-3 rounded"></span><span class="placeholder col-7"></span></div></div></div><div class="col-6 col-md-3"><div class="card h-100"><div class="card-body py-5 placeholder-glow"><span class="placeholder col-5 mb-3"></span><span class="placeholder col-9 h-30px d-block mb-3 rounded"></span><span class="placeholder col-7"></span></div></div></div><div class="col-6 col-md-3"><div class="card h-100"><div class="card-body py-5 placeholder-glow"><span class="placeholder col-5 mb-3"></span><span class="placeholder col-9 h-30px d-block mb-3 rounded"></span><span class="placeholder col-7"></span></div></div></div></div></template>
         <div class="row g-4 mb-6">
             <div class="col-6 col-md-3"><div class="card"><div class="card-body py-4"><div class="text-muted fs-8 text-uppercase fw-bold">Total em dívida</div><div class="fs-3 fw-bold text-danger">{{ dinheiro(totais.total) }}</div></div></div></div>
             <div class="col-6 col-md-3"><div class="card"><div class="card-body py-4"><div class="text-muted fs-8 text-uppercase fw-bold">Propinas</div><div class="fs-4 fw-bold">{{ dinheiro(totais.propinas) }}</div></div></div></div>
             <div class="col-6 col-md-3"><div class="card"><div class="card-body py-4"><div class="text-muted fs-8 text-uppercase fw-bold">Multas</div><div class="fs-4 fw-bold">{{ dinheiro(totais.multas) }}</div></div></div></div>
             <div class="col-6 col-md-3"><div class="card"><div class="card-body py-4"><div class="text-muted fs-8 text-uppercase fw-bold">Produtos e serviços</div><div class="fs-4 fw-bold">{{ dinheiro(totais.cobrancas) }}</div></div></div></div>
         </div>
+        </Deferred>
 
-        <div class="card mb-6">
-            <div class="card-body">
-                <div class="row g-4">
-                    <div class="col-12 col-md-4">
-                        <label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label>
-                        <input v-model="filtros.pesquisa" type="text" class="form-control form-control-solid" placeholder="Aluno, nº do aluno ou da matrícula" />
-                    </div>
+        <FiltrosRecolhiveis v-model="filtros.pesquisa" placeholder="Pesquisar aluno, nº do aluno ou da matrícula" :ativos="filtrosAtivos" @limpar="limparFiltros">
                     <div class="col-6 col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">Ano lectivo</label><SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAno" /></div>
                     <div class="col-6 col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">Turma</label><SelectSolid v-model="filtros.turma_id" :options="opcoesTurma" /></div>
                     <div class="col-12 col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">Tipo</label><SelectSolid v-model="filtros.tipo" :options="opcoesTipo" /></div>
-                </div>
-            </div>
-        </div>
+        </FiltrosRecolhiveis>
 
         <div class="card">
             <div class="card-body p-0">

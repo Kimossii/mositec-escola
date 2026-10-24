@@ -4,10 +4,12 @@ namespace Modules\Financeiro\Services;
 
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Modules\Aluno\Models\Aluno;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
+use Modules\Financeiro\Enums\EstadoCredito;
 use Modules\Financeiro\Enums\EstadoPagamento;
 use Modules\Financeiro\Enums\EstadoUtilizacaoCredito;
 use Modules\Financeiro\Models\Credito;
@@ -26,6 +28,7 @@ use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Support\AnulacaoDePagamentos;
+use Modules\Financeiro\Support\CacheDeTotais;
 use Modules\Financeiro\Support\Multa;
 use Modules\Financeiro\Support\ProgressoDoAcordo;
 use Modules\Financeiro\Support\RegrasDoPagamento;
@@ -46,19 +49,19 @@ class PagamentoConsultaService
         private DistribuicaoDePagamentoService $distribuicao,
         private AnulacaoDePagamentos $anulacao,
         private MoedaDoTenant $moeda,
+        private CacheDeTotais $totais,
     ) {
     }
 
-    public function listar(array $filtros = []): LengthAwarePaginator
+    /** Pagamentos que cumprem os filtros (sem estado quando `$comEstado` é falso: os indicadores mostram todos). */
+    private function base(array $filtros, bool $comEstado): Builder
     {
         $estado = is_numeric($filtros['estado'] ?? null) ? EstadoPagamento::tryFrom((int) $filtros['estado']) : null;
         $pesquisa = is_string($filtros['pesquisa'] ?? null) ? trim($filtros['pesquisa']) : '';
         $referencia = is_string($filtros['referencia'] ?? null) ? trim($filtros['referencia']) : '';
 
         return Pagamento::query()
-            ->with(['matricula.aluno.dadosPessoa', 'metodo', 'credito'])
-            ->withSum('distribuicoes as total_distribuido', 'valor')
-            ->when($estado !== null, fn ($q) => $q->where('estado', $estado->value))
+            ->when($comEstado && $estado !== null, fn ($q) => $q->where('estado', $estado->value))
             ->when(is_numeric($filtros['metodo_pagamento_id'] ?? null), fn ($q) => $q->where('metodo_pagamento_id', (int) $filtros['metodo_pagamento_id']))
             ->when(is_numeric($filtros['aluno_id'] ?? null), fn ($q) => $q->where('aluno_id', (int) $filtros['aluno_id']))
             ->when(is_numeric($filtros['matricula_id'] ?? null), fn ($q) => $q->where('matricula_id', (int) $filtros['matricula_id']))
@@ -71,7 +74,43 @@ class PagamentoConsultaService
                     ->whereContem('numero_registo_matricula', $pesquisa)
                     ->orWhereHas('aluno', fn ($aluno) => $aluno->where(fn ($a) => $a
                         ->whereContem('numero_matricula', $pesquisa)
-                        ->orWhereHas('dadosPessoa', fn ($pessoa) => $pessoa->whereContem('nome_completo', $pesquisa))))))))
+                        ->orWhereHas('dadosPessoa', fn ($pessoa) => $pessoa->whereContem('nome_completo', $pesquisa))))))));
+    }
+
+    /**
+     * Números para os cartões do topo (pagamentos e recibos), para os filtros escolhidos: recebido, anulados, crédito
+     * gerado e o último recibo. Unidades menores.
+     *
+     * @return array<string, mixed>
+     */
+    public function indicadores(array $filtros = []): array
+    {
+        return $this->totais->lembrar('pagamentos', $filtros, function () use ($filtros) {
+            $agregado = fn (EstadoPagamento $e) => $this->base($filtros, false)->where('estado', $e->value)
+                ->selectRaw('COUNT(*) as n, COALESCE(SUM(valor), 0) as soma')->first();
+            $confirmados = $agregado(EstadoPagamento::CONFIRMADO);
+            $anulados = $agregado(EstadoPagamento::ANULADO);
+            $ultimo = $this->base($filtros, false)->where('estado', EstadoPagamento::CONFIRMADO->value)->orderByDesc('data_pagamento')->orderByDesc('id')->first(['numero', 'data_pagamento']);
+
+            return [
+                'recebido' => (int) $confirmados->soma,
+                'pagamentos' => (int) $confirmados->n,
+                'media' => $confirmados->n > 0 ? intdiv((int) $confirmados->soma, (int) $confirmados->n) : 0,
+                'anulados' => (int) $anulados->n,
+                'anulados_valor' => (int) $anulados->soma,
+                'credito_gerado' => (int) Credito::query()->where('estado', '!=', EstadoCredito::ANULADO->value)
+                    ->whereIn('origem_pagamento_id', $this->base($filtros, false)->where('estado', EstadoPagamento::CONFIRMADO->value)->select('id'))->sum('valor'),
+                'ultimo_numero' => $ultimo?->numero,
+                'ultima_data' => $ultimo?->data_pagamento?->toDateString(),
+            ];
+        });
+    }
+
+    public function listar(array $filtros = []): LengthAwarePaginator
+    {
+        return $this->base($filtros, true)
+            ->with(['matricula.aluno.dadosPessoa', 'metodo', 'credito'])
+            ->withSum('distribuicoes as total_distribuido', 'valor')
             ->orderByDesc('data_pagamento')
             ->orderByDesc('id')
             ->paginate(self::POR_PAGINA)

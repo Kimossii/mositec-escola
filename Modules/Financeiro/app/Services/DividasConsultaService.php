@@ -12,6 +12,7 @@ use Modules\Financeiro\Models\Acordo;
 use Modules\Financeiro\Models\Cobranca;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaMulta;
+use Modules\Financeiro\Support\CacheDeTotais;
 use Modules\Financeiro\Support\ProgressoDoAcordo;
 use Modules\Matricula\Models\Matricula;
 
@@ -21,36 +22,53 @@ use Modules\Matricula\Models\Matricula;
  */
 class DividasConsultaService
 {
-    public function __construct(private RelogioDoTenant $relogio, private ProgressoDoAcordo $progresso)
+    public function __construct(private RelogioDoTenant $relogio, private ProgressoDoAcordo $progresso, private CacheDeTotais $cache)
     {
     }
 
     /** @param array<string, mixed> $filtros pesquisa, ano_lectivo_id, turma_id, tipo (propinas|multas|cobrancas) */
-    public function listar(array $filtros = [], int $porPagina = 15): array
+    public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         $linhas = $this->linhas($filtros);
         $pagina = LengthAwarePaginator::resolveCurrentPage();
 
+        return (new LengthAwarePaginator(
+            $linhas->forPage($pagina, $porPagina)->values(),
+            $linhas->count(),
+            $porPagina,
+            $pagina,
+            ['path' => LengthAwarePaginator::resolveCurrentPath()],
+        ))->withQueryString();
+    }
+
+    /**
+     * Totais para os cartões (carregados em diferido, à parte da lista).
+     *
+     * @param  array<string, mixed>  $filtros
+     * @return array<string, int>
+     */
+    public function totais(array $filtros = []): array
+    {
+        $linhas = $this->linhas($filtros);
+
         return [
-            'dividas' => (new LengthAwarePaginator(
-                $linhas->forPage($pagina, $porPagina)->values(),
-                $linhas->count(),
-                $porPagina,
-                $pagina,
-                ['path' => LengthAwarePaginator::resolveCurrentPath()],
-            ))->withQueryString(),
-            'totais' => [
-                'matriculas' => $linhas->count(),
-                'propinas' => (int) $linhas->sum('propinas'),
-                'multas' => (int) $linhas->sum('multas'),
-                'cobrancas' => (int) $linhas->sum('cobrancas'),
-                'total' => (int) $linhas->sum('total'),
-            ],
+            'matriculas' => $linhas->count(),
+            'propinas' => (int) $linhas->sum('propinas'),
+            'multas' => (int) $linhas->sum('multas'),
+            'cobrancas' => (int) $linhas->sum('cobrancas'),
+            'total' => (int) $linhas->sum('total'),
         ];
     }
 
     /** @return Collection<int, array<string, mixed>> todas as linhas filtradas, da maior dívida para a menor */
     public function linhas(array $filtros = []): Collection
+    {
+        // Cache curto partilhado pela lista, pelos totais e pelos relatórios (invalidado por qualquer escrita financeira).
+        return $this->cache->lembrar('dividas', $filtros, fn () => $this->calcularLinhas($filtros));
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    private function calcularLinhas(array $filtros): Collection
     {
         $hoje = $this->relogio->hoje()->toDateString();
 

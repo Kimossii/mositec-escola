@@ -38,6 +38,7 @@ class AcordoController extends Controller
 
         return Inertia::render('Financeiro/Acordos/Index', [
             'acordos' => $this->consulta->listar($filtros),
+            'indicadores' => Inertia::defer(fn () => $this->consulta->indicadores()),
             'filtros' => $filtros,
             'moeda' => $this->moeda->atual()->paraFrontend(),
         ]);

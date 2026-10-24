@@ -54,6 +54,8 @@ class PropinaController extends Controller
 
         return Inertia::render('Financeiro/Propinas/Index', [
             'propinas' => $this->consulta->listar($filtros),
+            // Diferido: a página abre já com a lista e os cartões preenchem-se a seguir (somas pesadas fora do caminho crítico).
+            'indicadores' => Inertia::defer(fn () => $this->consulta->indicadores($filtros)),
             'filtros' => $filtros,
             'anosLectivos' => $this->planos->anosLectivos(),
             'anoLectivoActualId' => $this->planos->anoLectivoActualId(),

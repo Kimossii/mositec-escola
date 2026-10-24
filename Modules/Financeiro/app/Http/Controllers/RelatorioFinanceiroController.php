@@ -23,7 +23,9 @@ class RelatorioFinanceiroController extends Controller
         [$de, $ate] = $this->periodo($request);
 
         return Inertia::render('Financeiro/Relatorios/Index', [
-            'relatorio' => $this->relatorio->gerar($de, $ate),
+            // Diferido: o relatório faz agregações pesadas; a página abre logo e os números chegam a seguir.
+            'relatorio' => Inertia::defer(fn () => $this->relatorio->gerar($de, $ate)),
+            'periodo' => ['de' => $de, 'ate' => $ate],
             'moeda' => $this->moeda->atual()->paraFrontend(),
         ]);
     }

@@ -4,9 +4,12 @@ import axios from 'axios';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import FiltrosRecolhiveis from '../../Components/Shared/FiltrosRecolhiveis.vue';
+import IndicadoresDiferidos from '../../Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
+import { formatarDinheiro } from '../../Support/dinheiro';
 import { dataCurta } from '../../Support/periodos';
 
 const BASE = '/financeiro/bolsas';
@@ -16,6 +19,8 @@ const props = defineProps({
     filtros: { type: Object, default: () => ({}) },
     estados: { type: Array, required: true },
     anosLectivos: { type: Array, required: true },
+    moeda: { type: Object, required: true },
+    indicadores: { type: Object, default: null }, // diferido: chega depois da lista
 });
 defineOptions({ layout: AppLayout });
 
@@ -27,6 +32,16 @@ const filtros = reactive({
 });
 const opcoesEstado = computed(() => [{ value: '', label: 'Todos os estados' }, ...props.estados]);
 const opcoesAno = computed(() => [{ value: '', label: 'Todos os anos lectivos' }, ...props.anosLectivos.map((a) => ({ value: a.id, label: a.nome }))]);
+const dinheiro = (v) => formatarDinheiro(v, props.moeda);
+const montarIndicadores = (i) => [
+    { rotulo: 'Bolsas activas', valor: String(i.activas), nota: `${i.terminadas} terminada(s)`, cor: 'success' },
+    { rotulo: 'Alunos abrangidos', valor: String(i.alunos), nota: 'com bolsa activa', cor: 'primary' },
+    { rotulo: 'Cobertura média', valor: `${i.media_pct}%`, nota: 'das propinas, por bolsa activa', cor: 'info', progresso: i.media_pct },
+    { rotulo: 'Abatido nas propinas', valor: dinheiro(i.abatido), nota: `${i.propinas} propina(s) com bolsa`, cor: 'warning' },
+];
+const filtrosAtivos = computed(() => [filtros.estado !== '', filtros.ano_lectivo_id !== ''].filter(Boolean).length);
+const limparFiltros = () => Object.assign(filtros, { estado: '', ano_lectivo_id: '' });
+
 let debounceId = null;
 watch(filtros, (valor) => {
     clearTimeout(debounceId);
@@ -117,15 +132,12 @@ function aplicar() {
             <button v-if="can('bolsa.criar')" type="button" class="btn btn-primary" @click="abrirCriar">Nova bolsa</button>
         </div>
 
-        <div class="card mb-6">
-            <div class="card-body">
-                <div class="row g-4">
-                    <div class="col-12 col-md-5"><label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label><input v-model="filtros.pesquisa" type="text" class="form-control form-control-solid" placeholder="Aluno, nº do aluno ou nome da bolsa" /></div>
+        <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" />
+
+        <FiltrosRecolhiveis v-model="filtros.pesquisa" placeholder="Pesquisar aluno, nº do aluno ou nome da bolsa" :ativos="filtrosAtivos" @limpar="limparFiltros">
                     <div class="col-6 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">Ano lectivo</label><SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAno" /></div>
                     <div class="col-6 col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">Estado</label><SelectSolid v-model="filtros.estado" :options="opcoesEstado" /></div>
-                </div>
-            </div>
-        </div>
+        </FiltrosRecolhiveis>
 
         <div class="card">
             <div class="card-body p-0">

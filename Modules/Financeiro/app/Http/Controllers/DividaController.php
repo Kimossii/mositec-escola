@@ -23,7 +23,10 @@ class DividaController extends Controller
 
         $filtros = $request->only(['pesquisa', 'ano_lectivo_id', 'turma_id', 'tipo']);
 
-        return Inertia::render('Financeiro/Dividas/Index', $this->consulta->listar($filtros) + [
+        return Inertia::render('Financeiro/Dividas/Index', [
+            'dividas' => $this->consulta->listar($filtros),
+            // Diferido: os totais agregam todas as dívidas e preenchem-se depois de a lista abrir.
+            'totais' => Inertia::defer(fn () => $this->consulta->totais($filtros)),
             'filtros' => $filtros,
             'anosLectivos' => AnoLectivo::query()->orderByDesc('data_inicio')->get(['id', 'nome']),
             'turmas' => Turma::query()->orderBy('nome')->get(['id', 'nome', 'ano_lectivo_id']),

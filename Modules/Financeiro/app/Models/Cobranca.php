@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Models;
 
+use Modules\Financeiro\Support\InvalidaTotaisFinanceiros;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,6 +21,7 @@ use Modules\Matricula\Models\Matricula;
 class Cobranca extends Model
 {
     use PertenceAoTenant;
+    use InvalidaTotaisFinanceiros;
     use RegistaAutoria;
 
     protected $table = 'cobrancas';

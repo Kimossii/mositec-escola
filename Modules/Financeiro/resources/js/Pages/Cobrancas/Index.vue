@@ -2,6 +2,8 @@
 import { computed, reactive, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import FiltrosRecolhiveis from '../../Components/Shared/FiltrosRecolhiveis.vue';
+import IndicadoresDiferidos from '../../Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
@@ -17,6 +19,7 @@ const props = defineProps({
     filtros: { type: Object, default: () => ({}) },
     estados: { type: Array, required: true },
     moeda: { type: Object, required: true },
+    indicadores: { type: Object, default: null }, // diferido: chega depois da lista
 });
 defineOptions({ layout: AppLayout });
 
@@ -33,6 +36,16 @@ const opcoesOrigem = [
     { value: 1, label: 'Manual' },
     { value: 2, label: 'Obrigatório' },
 ];
+
+const dinheiro = (v) => formatarDinheiro(v, props.moeda);
+const montarIndicadores = (i) => [
+    { rotulo: 'Por pagar', valor: dinheiro(i.abertas_valor), nota: `${i.abertas_n} cobrança(s) em aberto`, cor: 'danger' },
+    { rotulo: 'Pagas', valor: dinheiro(i.pagas_valor), nota: `${i.pagas_n} cobrança(s)`, cor: 'success' },
+    { rotulo: 'Obrigatórias por pagar', valor: dinheiro(i.obrigatorias_valor), nota: `${i.obrigatorias_n} em aberto`, cor: 'warning' },
+    { rotulo: 'Canceladas', valor: String(i.canceladas_n), nota: `${dinheiro(i.canceladas_valor)} cancelados`, cor: 'info' },
+];
+const filtrosAtivos = computed(() => [filtros.estado !== '', filtros.origem !== ''].filter(Boolean).length);
+const limparFiltros = () => Object.assign(filtros, { estado: '', origem: '' });
 
 let debounceId = null;
 watch(filtros, (valor) => {
@@ -53,13 +66,9 @@ watch(filtros, (valor) => {
             <Link v-if="can('cobranca.criar')" href="/financeiro/cobrancas/nova" class="btn btn-primary">Nova cobrança</Link>
         </div>
 
-        <div class="card mb-6">
-            <div class="card-body">
-                <div class="row g-4">
-                    <div class="col-12 col-md-6">
-                        <label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label>
-                        <input v-model="filtros.pesquisa" type="text" class="form-control form-control-solid" placeholder="Aluno, nº do aluno ou da matrícula" />
-                    </div>
+        <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" />
+
+        <FiltrosRecolhiveis v-model="filtros.pesquisa" placeholder="Pesquisar aluno, nº do aluno ou da matrícula" :ativos="filtrosAtivos" @limpar="limparFiltros">
                     <div class="col-6 col-md-3">
                         <label class="fw-semibold fs-7 text-muted mb-1">Estado</label>
                         <SelectSolid v-model="filtros.estado" :options="opcoesEstado" />
@@ -68,9 +77,7 @@ watch(filtros, (valor) => {
                         <label class="fw-semibold fs-7 text-muted mb-1">Origem</label>
                         <SelectSolid v-model="filtros.origem" :options="opcoesOrigem" />
                     </div>
-                </div>
-            </div>
-        </div>
+        </FiltrosRecolhiveis>
 
         <div class="card">
             <div class="card-body p-0">

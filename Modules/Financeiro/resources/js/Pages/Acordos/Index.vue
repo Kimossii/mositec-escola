@@ -1,7 +1,9 @@
 <script setup>
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import FiltrosRecolhiveis from '../../Components/Shared/FiltrosRecolhiveis.vue';
+import IndicadoresDiferidos from '../../Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
@@ -12,12 +14,22 @@ const props = defineProps({
     acordos: { type: Object, required: true },
     filtros: { type: Object, default: () => ({}) },
     moeda: { type: Object, required: true },
+    indicadores: { type: Object, default: null }, // diferido: chega depois da lista
 });
 defineOptions({ layout: AppLayout });
 
 const dinheiro = (v) => formatarDinheiro(v, props.moeda);
 const filtros = reactive({ pesquisa: props.filtros.pesquisa ?? '', estado: props.filtros.estado === undefined || props.filtros.estado === '' ? '' : Number(props.filtros.estado) });
 const opcoesEstado = [{ value: '', label: 'Todos os estados' }, { value: 1, label: 'Activos' }, { value: 2, label: 'Cancelados' }, { value: 3, label: 'Quebrados' }];
+const montarIndicadores = (i) => [
+    { rotulo: 'Acordos activos', valor: String(i.activos), nota: `${i.cancelados} cancelado(s) ou quebrado(s)`, cor: 'primary' },
+    { rotulo: 'Em atraso', valor: String(i.em_atraso), nota: 'com prestação vencida', cor: 'danger' },
+    { rotulo: 'Cumpridos', valor: String(i.cumpridos), nota: 'dívida totalmente paga', cor: 'success' },
+    { rotulo: 'Em falta', valor: dinheiro(i.em_falta), nota: `${dinheiro(i.pago)} já recuperados`, cor: 'warning' },
+];
+const filtrosAtivos = computed(() => [filtros.estado !== ''].filter(Boolean).length);
+const limparFiltros = () => Object.assign(filtros, { estado: '' });
+
 let debounceId = null;
 watch(filtros, (valor) => {
     clearTimeout(debounceId);
@@ -38,14 +50,11 @@ const badge = (a) => ({ Cumprido: 'badge-light-success', 'Em atraso': 'badge-lig
             <Link v-if="can('acordo.criar')" href="/financeiro/acordos/novo" class="btn btn-primary">Novo acordo</Link>
         </div>
 
-        <div class="card mb-6">
-            <div class="card-body">
-                <div class="row g-4">
-                    <div class="col-12 col-md-8"><label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label><input v-model="filtros.pesquisa" type="text" class="form-control form-control-solid" placeholder="Aluno, nº do aluno ou da matrícula" /></div>
+        <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" />
+
+        <FiltrosRecolhiveis v-model="filtros.pesquisa" placeholder="Pesquisar aluno, nº do aluno ou da matrícula" :ativos="filtrosAtivos" @limpar="limparFiltros">
                     <div class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">Estado</label><SelectSolid v-model="filtros.estado" :options="opcoesEstado" /></div>
-                </div>
-            </div>
-        </div>
+        </FiltrosRecolhiveis>
 
         <div class="card">
             <div class="card-body p-0">

@@ -2,33 +2,71 @@
 
 namespace Modules\Financeiro\Services;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Core\Enums\Estado;
 use Modules\Financeiro\Enums\EstadoCobranca;
+use Modules\Financeiro\Enums\OrigemCobranca;
 use Modules\Financeiro\Models\Cobranca;
 use Modules\Financeiro\Models\Produto;
 use Modules\Financeiro\Models\Servico;
+use Modules\Financeiro\Support\CacheDeTotais;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
 
 /** Leituras das cobranças de produtos e serviços (lista, detalhe, pesquisa de matrículas e catálogo para venda). */
 class CobrancaConsultaService
 {
-    public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
+    public function __construct(private CacheDeTotais $totais)
+    {
+    }
+
+    /** Cobranças que cumprem os filtros (sem estado quando `$comEstado` é falso: os indicadores mostram todos). */
+    private function base(array $filtros, bool $comEstado): Builder
     {
         $estado = $filtros['estado'] ?? '';
         $pesquisa = is_string($filtros['pesquisa'] ?? null) ? trim($filtros['pesquisa']) : '';
 
         return Cobranca::query()
-            ->with(['aluno.dadosPessoa', 'matricula:id,numero_registo_matricula'])
-            ->withCount('itens')
-            ->when($estado !== '' && $estado !== null, fn ($q) => $q->where('estado', (int) $estado))
+            ->when($comEstado && $estado !== '' && $estado !== null, fn ($q) => $q->where('estado', (int) $estado))
             ->when(($filtros['origem'] ?? '') !== '', fn ($q) => $q->where('origem', (int) $filtros['origem']))
             ->when($pesquisa !== '', fn ($q) => $q->where(fn ($g) => $g
                 ->whereHas('matricula', fn ($m) => $m->whereContem('numero_registo_matricula', $pesquisa))
                 ->orWhereHas('aluno', fn ($a) => $a->where(fn ($x) => $x
                     ->whereContem('numero_matricula', $pesquisa)
-                    ->orWhereHas('dadosPessoa', fn ($p) => $p->whereContem('nome_completo', $pesquisa))))))
+                    ->orWhereHas('dadosPessoa', fn ($p) => $p->whereContem('nome_completo', $pesquisa))))));
+    }
+
+    /**
+     * Números para os cartões do topo: por pagar, pagas, obrigatórias por pagar e canceladas. Unidades menores.
+     *
+     * @return array<string, int>
+     */
+    public function indicadores(array $filtros = []): array
+    {
+        return $this->totais->lembrar('cobrancas', $filtros, function () use ($filtros) {
+            $agregado = fn (array $estados, ?int $origem = null) => $this->base($filtros, false)->whereIn('estado', $estados)
+                ->when($origem !== null, fn ($q) => $q->where('origem', $origem))
+                ->selectRaw('COUNT(*) as n, COALESCE(SUM(total), 0) as emitido, COALESCE(SUM(total - valor_pago), 0) as saldo')->first();
+            $abertas = $agregado([EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value]);
+            $pagas = $agregado([EstadoCobranca::PAGA->value]);
+            $obrigatorias = $agregado([EstadoCobranca::EM_ABERTO->value, EstadoCobranca::PARCIALMENTE_PAGA->value], OrigemCobranca::OBRIGATORIO->value);
+            $canceladas = $agregado([EstadoCobranca::CANCELADA->value]);
+
+            return [
+                'abertas_n' => (int) $abertas->n, 'abertas_valor' => (int) $abertas->saldo,
+                'pagas_n' => (int) $pagas->n, 'pagas_valor' => (int) $pagas->emitido,
+                'obrigatorias_n' => (int) $obrigatorias->n, 'obrigatorias_valor' => (int) $obrigatorias->saldo,
+                'canceladas_n' => (int) $canceladas->n, 'canceladas_valor' => (int) $canceladas->emitido,
+            ];
+        });
+    }
+
+    public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
+    {
+        return $this->base($filtros, true)
+            ->with(['aluno.dadosPessoa', 'matricula:id,numero_registo_matricula'])
+            ->withCount('itens')
             ->orderByDesc('id')
             ->paginate($porPagina)
             ->withQueryString()

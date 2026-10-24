@@ -23,6 +23,7 @@ class ReciboController extends Controller
 
         return Inertia::render('Financeiro/Recibos/Index', [
             'recibos' => $this->consulta->listar($filtros),
+            'indicadores' => Inertia::defer(fn () => $this->consulta->indicadores($filtros)),
             'filtros' => $filtros,
             'metodos' => $this->consulta->metodos(),
             'estados' => $this->consulta->estados(),

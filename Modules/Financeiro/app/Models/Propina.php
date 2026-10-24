@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Models;
 
+use Modules\Financeiro\Support\InvalidaTotaisFinanceiros;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -33,6 +34,7 @@ use Modules\Usuario\Models\User;
 class Propina extends Model implements CobrancaResolvivel
 {
     use PertenceAoTenant;
+    use InvalidaTotaisFinanceiros;
     use RegistaAutoria;
 
     /** Estados persistidos de uma cobrança activa (índices únicos parciais e sobreposição). */

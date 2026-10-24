@@ -35,6 +35,7 @@ class CobrancaController extends Controller
 
         return Inertia::render('Financeiro/Cobrancas/Index', [
             'cobrancas' => $this->consulta->listar($filtros),
+            'indicadores' => Inertia::defer(fn () => $this->consulta->indicadores($filtros)),
             'filtros' => $filtros,
             'estados' => $this->consulta->estados(),
             'moeda' => $this->moeda->atual()->paraFrontend(),

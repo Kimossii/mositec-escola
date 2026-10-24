@@ -9,6 +9,7 @@ use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Financeiro\Enums\EstadoBolsa;
+use Modules\Financeiro\Support\InvalidaTotaisFinanceiros;
 
 /**
  * Bolsa de estudo: cobre uma percentagem (pontos-base, 10000 = 100%) das propinas de um aluno num ano lectivo,
@@ -17,6 +18,7 @@ use Modules\Financeiro\Enums\EstadoBolsa;
  */
 class Bolsa extends Model
 {
+    use InvalidaTotaisFinanceiros;
     use PertenceAoTenant;
     use RegistaAutoria;
 

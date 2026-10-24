@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Models;
 
+use Modules\Financeiro\Support\InvalidaTotaisFinanceiros;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,6 +22,7 @@ use Modules\Financeiro\Support\Dinheiro;
 class PropinaMulta extends Model
 {
     use PertenceAoTenant;
+    use InvalidaTotaisFinanceiros;
     use RegistaAutoria;
 
     /** Congelados na criação: a propina (1:1) e a base de capital (saldo_em(L₁)). */

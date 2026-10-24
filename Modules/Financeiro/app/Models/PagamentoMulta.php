@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Models;
 
+use Modules\Financeiro\Support\InvalidaTotaisFinanceiros;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
@@ -15,6 +16,7 @@ use Modules\Financeiro\Casts\DinheiroCast;
 class PagamentoMulta extends Model
 {
     use PertenceAoTenant;
+    use InvalidaTotaisFinanceiros;
 
     public const UPDATED_AT = null;
 

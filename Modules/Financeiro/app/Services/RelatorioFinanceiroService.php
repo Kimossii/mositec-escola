@@ -8,16 +8,23 @@ use Modules\Financeiro\Models\Pagamento;
 use Modules\Financeiro\Models\PagamentoCobranca;
 use Modules\Financeiro\Models\PagamentoMulta;
 use Modules\Financeiro\Models\PagamentoPropina;
+use Modules\Financeiro\Support\CacheDeTotais;
 
 /** Relatório financeiro de um período: o que entrou (por origem, método e mês) e a dívida actual (por turma). */
 class RelatorioFinanceiroService
 {
-    public function __construct(private DividasConsultaService $dividas)
+    public function __construct(private DividasConsultaService $dividas, private CacheDeTotais $cache)
     {
     }
 
     /** @return array<string, mixed> */
     public function gerar(string $de, string $ate): array
+    {
+        return $this->cache->lembrar('relatorio', ['de' => $de, 'ate' => $ate], fn () => $this->calcular($de, $ate));
+    }
+
+    /** @return array<string, mixed> */
+    private function calcular(string $de, string $ate): array
     {
         $confirmado = fn ($q) => $q->where('estado', EstadoPagamento::CONFIRMADO->value)->whereBetween('data_pagamento', [$de, $ate]);
 

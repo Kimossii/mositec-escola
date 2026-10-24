@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Models;
 
+use Modules\Financeiro\Support\InvalidaTotaisFinanceiros;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -26,6 +27,7 @@ use Modules\Usuario\Models\User;
 class Pagamento extends Model
 {
     use PertenceAoTenant;
+    use InvalidaTotaisFinanceiros;
     use RegistaAutoria;
 
     /** Dados financeiros e de identificação: nunca mudam depois de registados. */

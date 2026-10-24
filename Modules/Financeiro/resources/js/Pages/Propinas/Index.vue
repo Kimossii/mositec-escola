@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
-import { Link, router, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage, Deferred } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
@@ -35,10 +35,15 @@ const props = defineProps({
     estados: { type: Array, required: true },
     origens: { type: Array, required: true },
     moeda: { type: Object, required: true },
+    indicadores: { type: Object, default: null }, // diferido: chega depois da lista
 });
 defineOptions({ layout: AppLayout });
 
 const numeroOuVazio = (valor) => (valor !== undefined && valor !== null && valor !== '' && Number.isFinite(Number(valor)) ? Number(valor) : '');
+
+// Filtros avançados escondidos por omissão (a pesquisa fica sempre à vista); abrem sozinhos se algum estiver activo.
+const dinheiro = (v) => formatarDinheiro(v, props.moeda);
+const percentagemRecebida = computed(() => (props.indicadores?.emitido ? Math.min(100, Math.round((props.indicadores.recebido / props.indicadores.emitido) * 100)) : 0));
 
 const filtros = reactive({
     pesquisa: props.filtros.pesquisa ?? '',
@@ -62,6 +67,15 @@ const opcoesPlano = computed(() => [
 ]);
 
 let debounceId = null;
+const filtrosAtivos = computed(() => [
+    filtros.estado !== '', filtros.plano_propina_id !== '', filtros.origem_geracao !== '', filtros.vencimento_de !== '', filtros.vencimento_ate !== '',
+    filtros.ano_lectivo_id !== (props.anoLectivoActualId ?? filtros.ano_lectivo_id),
+].filter(Boolean).length);
+const mostrarFiltros = ref(filtrosAtivos.value > 0);
+function limparFiltros() {
+    Object.assign(filtros, { estado: '', plano_propina_id: '', origem_geracao: '', vencimento_de: '', vencimento_ate: '', ano_lectivo_id: props.anoLectivoActualId ?? TODOS });
+}
+
 watch(filtros, (valor) => {
     clearTimeout(debounceId);
     debounceId = setTimeout(() => {
@@ -121,13 +135,61 @@ function gerar(payload) {
         </div>
 
 
+        <!-- Indicadores -->
+        <Deferred data="indicadores">
+            <template #fallback>
+                <div class="row g-4 mb-6">
+                    <div class="col-12 col-sm-6 col-xl-3"><div class="card h-100"><div class="card-body py-5 placeholder-glow"><span class="placeholder col-5 mb-3"></span><span class="placeholder col-9 h-30px d-block mb-3 rounded"></span><span class="placeholder col-7"></span></div></div></div>
+                    <div class="col-12 col-sm-6 col-xl-3"><div class="card h-100"><div class="card-body py-5 placeholder-glow"><span class="placeholder col-5 mb-3"></span><span class="placeholder col-9 h-30px d-block mb-3 rounded"></span><span class="placeholder col-7"></span></div></div></div>
+                    <div class="col-12 col-sm-6 col-xl-3"><div class="card h-100"><div class="card-body py-5 placeholder-glow"><span class="placeholder col-5 mb-3"></span><span class="placeholder col-9 h-30px d-block mb-3 rounded"></span><span class="placeholder col-7"></span></div></div></div>
+                    <div class="col-12 col-sm-6 col-xl-3"><div class="card h-100"><div class="card-body py-5 placeholder-glow"><span class="placeholder col-5 mb-3"></span><span class="placeholder col-9 h-30px d-block mb-3 rounded"></span><span class="placeholder col-7"></span></div></div></div>
+                </div>
+            </template>
+        <div class="row g-4 mb-6">
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card h-100 border-start border-4 border-success"><div class="card-body py-5">
+                    <div class="text-muted fs-8 fw-bold text-uppercase mb-1">Recebido</div>
+                    <div class="fs-2 fw-bolder text-success lh-1">{{ dinheiro(indicadores.recebido) }}</div>
+                    <div class="progress h-6px mt-3 mb-1"><div class="progress-bar bg-success" :style="{ width: `${percentagemRecebida}%` }"></div></div>
+                    <div class="text-muted fs-7">{{ percentagemRecebida }}% de {{ dinheiro(indicadores.emitido) }} emitidos</div>
+                </div></div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card h-100 border-start border-4 border-danger"><div class="card-body py-5">
+                    <div class="text-muted fs-8 fw-bold text-uppercase mb-1">Em atraso</div>
+                    <div class="fs-2 fw-bolder text-danger lh-1">{{ dinheiro(indicadores.em_atraso_valor) }}</div>
+                    <div class="text-muted fs-7 mt-3">{{ indicadores.em_atraso_n }} propina(s) vencida(s)</div>
+                </div></div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card h-100 border-start border-4 border-primary"><div class="card-body py-5">
+                    <div class="text-muted fs-8 fw-bold text-uppercase mb-1">A vencer</div>
+                    <div class="fs-2 fw-bolder text-primary lh-1">{{ dinheiro(indicadores.a_vencer_valor) }}</div>
+                    <div class="text-muted fs-7 mt-3">{{ indicadores.a_vencer_n }} propina(s) ainda no prazo</div>
+                </div></div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card h-100 border-start border-4 border-warning"><div class="card-body py-5">
+                    <div class="text-muted fs-8 fw-bold text-uppercase mb-1">Multas por cobrar</div>
+                    <div class="fs-2 fw-bolder text-warning lh-1">{{ dinheiro(indicadores.multas_valor) }}</div>
+                    <div class="text-muted fs-7 mt-3">{{ indicadores.multas_n }} multa(s) em aberto</div>
+                </div></div>
+            </div>
+        </div>
+        </Deferred>
+
+        <!-- Pesquisa e filtros (os avançados recolhem) -->
         <div class="card mb-6">
-            <div class="card-body">
-                <div class="row g-4">
-                    <div class="col-12 col-md-4">
-                        <label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label>
-                        <input v-model="filtros.pesquisa" type="text" class="form-control form-control-solid" placeholder="Aluno, nº do aluno ou nº da matrícula" />
-                    </div>
+            <div class="card-body py-4">
+                <div class="d-flex flex-wrap gap-3 align-items-center">
+                    <input v-model="filtros.pesquisa" type="text" class="form-control form-control-solid flex-grow-1 mw-md-450px" placeholder="Pesquisar aluno, nº do aluno ou nº da matrícula" />
+                    <button type="button" class="btn btn-light" :aria-expanded="mostrarFiltros" @click="mostrarFiltros = !mostrarFiltros">
+                        Filtros<span v-if="filtrosAtivos" class="badge badge-circle badge-primary ms-2">{{ filtrosAtivos }}</span>
+                        <span class="ms-1">{{ mostrarFiltros ? '▴' : '▾' }}</span>
+                    </button>
+                    <button v-if="filtrosAtivos" type="button" class="btn btn-light-danger" @click="limparFiltros">Limpar filtros</button>
+                </div>
+                <div v-show="mostrarFiltros" class="row g-4 mt-1">
                     <div class="col-6 col-md-4">
                         <label class="fw-semibold fs-7 text-muted mb-1">Ano Lectivo</label>
                         <SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAno" />

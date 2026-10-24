@@ -2,6 +2,8 @@
 import { computed, reactive, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import FiltrosRecolhiveis from '../../Components/Shared/FiltrosRecolhiveis.vue';
+import IndicadoresDiferidos from '../../Components/Shared/IndicadoresDiferidos.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import { estadoPagamentoBadgeClass } from '../../Models/Pagamento';
@@ -16,6 +18,7 @@ const props = defineProps({
     metodos: { type: Array, required: true },
     estados: { type: Array, required: true },
     moeda: { type: Object, required: true },
+    indicadores: { type: Object, default: null }, // diferido: chega depois da lista
 });
 defineOptions({ layout: AppLayout });
 
@@ -29,6 +32,16 @@ const filtros = reactive({
 });
 const opcoesMetodo = computed(() => [{ value: '', label: 'Todos os métodos' }, ...props.metodos.map((m) => ({ value: m.id, label: m.nome }))]);
 const opcoesEstado = computed(() => [{ value: '', label: 'Todos os estados' }, ...props.estados]);
+
+const dinheiro = (v) => formatarDinheiro(v, props.moeda);
+const montarIndicadores = (i) => [
+    { rotulo: 'Recibos emitidos', valor: String(i.pagamentos), nota: `média ${dinheiro(i.media)} por recibo`, cor: 'primary' },
+    { rotulo: 'Valor total', valor: dinheiro(i.recebido), nota: 'em recibos válidos', cor: 'success' },
+    { rotulo: 'Último recibo', valor: i.ultimo_numero ? `nº ${i.ultimo_numero}` : '—', nota: i.ultima_data ? dataCurta(i.ultima_data) : 'ainda sem recibos', cor: 'info' },
+    { rotulo: 'Anulados', valor: String(i.anulados), nota: `${dinheiro(i.anulados_valor)} anulados`, cor: 'danger' },
+];
+const filtrosAtivos = computed(() => [filtros.metodo_pagamento_id !== '', filtros.estado !== '', filtros.data_de !== '', filtros.data_ate !== ''].filter(Boolean).length);
+const limparFiltros = () => Object.assign(filtros, { metodo_pagamento_id: '', estado: '', data_de: '', data_ate: '' });
 
 let debounceId = null;
 watch(filtros, (valor) => {
@@ -46,17 +59,14 @@ watch(filtros, (valor) => {
             </p>
         </div>
 
-        <div class="card mb-6">
-            <div class="card-body">
-                <div class="row g-4">
-                    <div class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label><input v-model="filtros.pesquisa" type="text" class="form-control form-control-solid" placeholder="Nº do recibo, aluno, nº do aluno ou da matrícula" /></div>
+        <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" />
+
+        <FiltrosRecolhiveis v-model="filtros.pesquisa" placeholder="Pesquisar nº do recibo, aluno, nº do aluno ou da matrícula" :ativos="filtrosAtivos" @limpar="limparFiltros">
                     <div class="col-6 col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">Método</label><SelectSolid v-model="filtros.metodo_pagamento_id" :options="opcoesMetodo" /></div>
                     <div class="col-6 col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">Estado</label><SelectSolid v-model="filtros.estado" :options="opcoesEstado" /></div>
                     <div class="col-6 col-md-1"><label class="fw-semibold fs-7 text-muted mb-1">De</label><input v-model="filtros.data_de" type="date" class="form-control form-control-solid px-2" /></div>
                     <div class="col-6 col-md-1"><label class="fw-semibold fs-7 text-muted mb-1">Até</label><input v-model="filtros.data_ate" type="date" class="form-control form-control-solid px-2" /></div>
-                </div>
-            </div>
-        </div>
+        </FiltrosRecolhiveis>
 
         <div class="card">
             <div class="card-body p-0">

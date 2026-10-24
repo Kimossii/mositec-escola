@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Models;
 
+use Modules\Financeiro\Support\InvalidaTotaisFinanceiros;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,7 @@ use Modules\Financeiro\Enums\EstadoAcordo;
 class AcordoPropina extends Model
 {
     use PertenceAoTenant;
+    use InvalidaTotaisFinanceiros;
 
     protected $table = 'acordo_propinas';
 

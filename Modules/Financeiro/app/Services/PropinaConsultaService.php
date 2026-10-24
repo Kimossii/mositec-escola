@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\EstadoPagamento;
@@ -15,11 +16,13 @@ use Modules\Financeiro\Models\PagamentoMulta;
 use Modules\Financeiro\Models\PagamentoPropina;
 use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Bolsa;
+use Modules\Financeiro\Enums\EstadoMulta;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaAjuste;
 use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Support\AnulacaoDePropinas;
 use Modules\Financeiro\Support\CancelamentoDePropinas;
+use Modules\Financeiro\Support\CacheDeTotais;
 use Modules\Financeiro\Support\Multa;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 
@@ -37,21 +40,21 @@ class PropinaConsultaService
         private AnulacaoDePropinas $anulacao,
         private PagamentoConsultaService $pagamentos,
         private MoedaDoTenant $moeda,
+        private CacheDeTotais $totais,
     ) {
     }
 
-    public function listar(array $filtros = []): LengthAwarePaginator
+    /** Propinas que cumprem os filtros (sem estado quando `$comEstado` é falso: os indicadores mostram todos os estados). */
+    private function base(array $filtros, bool $comEstado): Builder
     {
         $hoje = $this->relogio->hoje();
-        $fuso = $this->relogio->fuso();
         $estado = is_numeric($filtros['estado'] ?? null) ? EstadoCobranca::tryFrom((int) $filtros['estado']) : null;
         $origem = is_numeric($filtros['origem_geracao'] ?? null) ? OrigemGeracaoPropina::tryFrom((int) $filtros['origem_geracao']) : null;
         $pesquisa = is_string($filtros['pesquisa'] ?? null) ? trim($filtros['pesquisa']) : '';
 
-        $pagina = Propina::query()
-            ->with(['matricula.aluno.dadosPessoa', 'matricula.turma', 'plano', 'multa'])
+        return Propina::query()
             ->when(is_numeric($filtros['ano_lectivo_id'] ?? null), fn ($query) => $query->where('ano_lectivo_id', (int) $filtros['ano_lectivo_id']))
-            ->when($estado !== null, fn ($query) => $query->comEstadoResolvido($estado, $hoje))
+            ->when($comEstado && $estado !== null, fn ($query) => $query->comEstadoResolvido($estado, $hoje))
             ->when(is_numeric($filtros['plano_propina_id'] ?? null), fn ($query) => $query->where('plano_propina_id', (int) $filtros['plano_propina_id']))
             ->when(is_numeric($filtros['matricula_id'] ?? null), fn ($query) => $query->where('matricula_id', (int) $filtros['matricula_id']))
             ->when($origem !== null, fn ($query) => $query->where('origem_geracao', $origem->value))
@@ -61,7 +64,54 @@ class PropinaConsultaService
                 ->whereContem('numero_registo_matricula', $pesquisa)
                 ->orWhereHas('aluno', fn ($aluno) => $aluno->where(fn ($subgrupo) => $subgrupo
                     ->whereContem('numero_matricula', $pesquisa)
-                    ->orWhereHas('dadosPessoa', fn ($pessoa) => $pessoa->whereContem('nome_completo', $pesquisa)))))))
+                    ->orWhereHas('dadosPessoa', fn ($pessoa) => $pessoa->whereContem('nome_completo', $pesquisa)))))));
+    }
+
+    /**
+     * Números para os cartões do topo da lista: emitido, recebido, em atraso, a vencer e multas por cobrar, para os
+     * filtros escolhidos (todos os estados). Valores em unidades menores.
+     *
+     * @return array<string, int>
+     */
+    public function indicadores(array $filtros = []): array
+    {
+        return $this->totais->lembrar('propinas', $filtros, fn () => $this->calcularIndicadores($filtros));
+    }
+
+    /** @return array<string, int> */
+    private function calcularIndicadores(array $filtros): array
+    {
+        $hoje = $this->relogio->hoje();
+        $agregado = fn (Builder $q) => $q->selectRaw('COUNT(*) as n, COALESCE(SUM(valor), 0) as emitido, COALESCE(SUM(valor_pago), 0) as pago, COALESCE(SUM(valor - valor_pago), 0) as saldo')->first();
+        $total = $agregado($this->base($filtros, false)->whereIn('estado', Propina::ESTADOS_ACTIVOS));
+        $atraso = $agregado($this->base($filtros, false)->comEstadoResolvido(EstadoCobranca::EM_ATRASO, $hoje));
+        $pendentes = $agregado($this->base($filtros, false)->comEstadoResolvido(EstadoCobranca::PENDENTE, $hoje));
+        $emAberto = $agregado($this->base($filtros, false)->comEstadoResolvido(EstadoCobranca::EM_ABERTO, $hoje));
+        $multas = PropinaMulta::query()
+            ->whereIn('estado', [EstadoMulta::ACTIVA->value, EstadoMulta::REDUZIDA->value])
+            ->whereIn('propina_id', $this->base($filtros, false)->select('id'))
+            ->selectRaw('COUNT(*) as n, COALESCE(SUM(valor - valor_pago), 0) as pendente')->first();
+
+        return [
+            'propinas' => (int) $total->n,
+            'emitido' => (int) $total->emitido,
+            'recebido' => (int) $total->pago,
+            'em_atraso_n' => (int) $atraso->n,
+            'em_atraso_valor' => (int) $atraso->saldo,
+            'a_vencer_n' => (int) $pendentes->n + (int) $emAberto->n,
+            'a_vencer_valor' => (int) $pendentes->saldo + (int) $emAberto->saldo,
+            'multas_n' => (int) $multas->n,
+            'multas_valor' => (int) $multas->pendente,
+        ];
+    }
+
+    public function listar(array $filtros = []): LengthAwarePaginator
+    {
+        $hoje = $this->relogio->hoje();
+        $fuso = $this->relogio->fuso();
+
+        $pagina = $this->base($filtros, true)
+            ->with(['matricula.aluno.dadosPessoa', 'matricula.turma', 'plano', 'multa'])
             ->orderBy('data_vencimento')
             ->orderBy('id')
             ->paginate(self::POR_PAGINA)

@@ -14,6 +14,7 @@ use Modules\Financeiro\Http\Requests\GuardarBolsaRequest;
 use Modules\Financeiro\Models\Bolsa;
 use Modules\Financeiro\Services\BolsaConsultaService;
 use Modules\Financeiro\Services\CobrancaConsultaService;
+use Modules\Financeiro\Services\MoedaDoTenant;
 
 class BolsaController extends Controller
 {
@@ -23,6 +24,7 @@ class BolsaController extends Controller
         private GuardarBolsaAction $guardar,
         private TerminarBolsaAction $terminar,
         private AplicarBolsaAction $aplicar,
+        private MoedaDoTenant $moeda,
     ) {
     }
 
@@ -34,9 +36,11 @@ class BolsaController extends Controller
 
         return Inertia::render('Financeiro/Bolsas/Index', [
             'bolsas' => $this->consulta->listar($filtros),
+            'indicadores' => Inertia::defer(fn () => $this->consulta->indicadores($filtros)),
             'filtros' => $filtros,
             'estados' => $this->consulta->estados(),
             'anosLectivos' => AnoLectivo::query()->orderByDesc('data_inicio')->get(['id', 'nome', 'data_inicio', 'data_fim']),
+            'moeda' => $this->moeda->atual()->paraFrontend(),
         ]);
     }
 

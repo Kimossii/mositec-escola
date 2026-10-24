@@ -3,17 +3,41 @@
 namespace Modules\Financeiro\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Modules\Financeiro\Enums\EstadoAcordo;
 use Modules\Financeiro\Models\Acordo;
 use Modules\Financeiro\Models\AcordoPropina;
 use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Support\CacheDeTotais;
 use Modules\Financeiro\Support\ProgressoDoAcordo;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 use Modules\Matricula\Models\Matricula;
 
 class AcordoConsultaService
 {
-    public function __construct(private ProgressoDoAcordo $progresso)
+    public function __construct(private ProgressoDoAcordo $progresso, private CacheDeTotais $totais)
     {
+    }
+
+    /**
+     * Números para os cartões: activos, em atraso, cumpridos e quanto já se recuperou e falta. Unidades menores.
+     *
+     * @return array<string, int>
+     */
+    public function indicadores(): array
+    {
+        return $this->totais->lembrar('acordos', [], function () {
+            $r = ['activos' => 0, 'em_atraso' => 0, 'cumpridos' => 0, 'pago' => 0, 'em_falta' => 0, 'cancelados' => Acordo::query()->where('estado', '!=', EstadoAcordo::ACTIVO->value)->count()];
+
+            foreach (Acordo::query()->where('estado', EstadoAcordo::ACTIVO->value)->get() as $acordo) {
+                $p = $this->progresso->de($acordo);
+                $p['cumprido'] ? $r['cumpridos']++ : $r['activos']++;
+                $r['em_atraso'] += $p['em_atraso'] ? 1 : 0;
+                $r['pago'] += $p['pago'];
+                $r['em_falta'] += $p['em_falta'];
+            }
+
+            return $r;
+        });
     }
 
     public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
