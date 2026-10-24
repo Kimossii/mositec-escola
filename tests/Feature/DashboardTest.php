@@ -52,4 +52,12 @@ class DashboardTest extends TestCase
             ->has('graficos', 0)
             ->has('ultimosPagamentos', 0)));
     }
+
+    public function test_sino_do_cabecalho_recebe_os_alertas_como_prop_partilhada_diferida(): void
+    {
+        $response = $this->actingAs($this->utilizador(Perfil::ADMIN_ESCOLA))->get('/alunos');
+        $response->assertOk();
+
+        $response->assertInertia(fn (Assert $page) => $page->missing('alertas')->loadDeferredProps(fn (Assert $c) => $c->has('alertas')));
+    }
 }

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Inertia\Middleware;
+use App\Services\DashboardService;
 use Modules\Core\Support\HistoricoCifrado;
 use Modules\Permissao\Services\PermissionResolver;
 
@@ -81,6 +82,8 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user()?->only(['id', 'name', 'email']),
             ],
+            // Alertas do sino do cabeçalho (os mesmos do «Precisa de atenção»); diferidos para não atrasar a página.
+            'alertas' => Inertia::defer(fn () => $request->user() ? app(DashboardService::class)->atencao($request->user()) : []),
             'permissoes' => $request->user()
                 ? app(PermissionResolver::class)->conjuntoConcedido($request->user())
                 : [],
