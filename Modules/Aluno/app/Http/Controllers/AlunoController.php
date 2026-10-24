@@ -46,6 +46,8 @@ class AlunoController extends Controller
         $podeVerPropinas = $request->user()?->can('propina.ver') ?? false;
 
         return Inertia::render('Aluno/Index', [
+            // Diferido: os cartões chegam depois de a lista abrir.
+            'indicadores' => Inertia::defer(fn () => $this->consulta->indicadores($filtros)),
             'alunos' => $alunos,
             'filtros' => $filtros,
             'anosLectivosDisponiveis' => $this->consulta->anosLectivosDisponiveis(),

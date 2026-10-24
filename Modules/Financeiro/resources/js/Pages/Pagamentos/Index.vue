@@ -2,8 +2,8 @@
 import { computed, reactive, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import FiltrosRecolhiveis from '../../Components/Shared/FiltrosRecolhiveis.vue';
-import IndicadoresDiferidos from '../../Components/Shared/IndicadoresDiferidos.vue';
+import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
+import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';

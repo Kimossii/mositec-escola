@@ -10,6 +10,20 @@ use Modules\Turma\Models\NivelAcademico;
 
 class CursoConsultaService
 {
+    /**
+     * Números para os cartões da lista: total, activos e inactivos.
+     *
+     * @return array<string, int>
+     */
+    public function indicadores(): array
+    {
+        return [
+            'total' => Curso::query()->count(),
+            'activos' => Curso::query()->where('estado', 1)->count(),
+            'inactivos' => Curso::query()->where('estado', '!=', 1)->count(),
+        ];
+    }
+
     public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
     {
         return Curso::where('estabelecimento_id', Estabelecimento::current()?->id)

@@ -2,7 +2,7 @@
 import { computed, reactive, watch } from 'vue';
 import { Link, router, Deferred } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import FiltrosRecolhiveis from '../../Components/Shared/FiltrosRecolhiveis.vue';
+import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import { can } from '@/Composables/usePermissoes';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';

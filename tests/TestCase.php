@@ -2,7 +2,9 @@
 
 namespace Tests;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Testing\File;
 use Illuminate\Http\UploadedFile;
 use Tests\Concerns\ComTenantDeTeste;
@@ -16,6 +18,15 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         $this->prepararTenantDeTeste();
+    }
+
+    /** Um relógio congelado num teste nunca deve passar para o seguinte (os testes da fila dependem do tempo real). */
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        CarbonImmutable::setTestNow();
+
+        parent::tearDown();
     }
 
     /**

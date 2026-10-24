@@ -43,6 +43,7 @@ class MatriculaController extends Controller
         }
 
         return Inertia::render('Matricula/Index', [
+            'indicadores' => Inertia::defer(fn () => $this->consulta->indicadores($filtros)),
             'matriculas' => $this->consulta->listarTodas($filtros),
             'turmasDisponiveis' => $this->consulta->turmasDisponiveis(),
             'anosLectivosDisponiveis' => $this->consulta->anosLectivosDisponiveis(),

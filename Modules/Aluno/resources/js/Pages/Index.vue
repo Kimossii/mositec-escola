@@ -4,6 +4,8 @@ import { router } from '@inertiajs/vue3';
 import axios from 'axios';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
+import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
@@ -19,6 +21,7 @@ import { ESTADO } from '../Models/Estado';
 const props = defineProps({
     alunos: { type: Object, required: true }, // paginator: { data, links, ... }
     filtros: { type: Object, default: () => ({}) },
+    indicadores: { type: Object, default: null }, // diferido: chega depois da lista
     anosLectivosDisponiveis: { type: Array, default: () => [] },
     turmasDisponiveis: { type: Array, default: () => [] },
     cursosDisponiveis: { type: Array, default: () => [] },
@@ -109,6 +112,15 @@ const valorSegundoSelect = computed({
 watch(() => filtros.ano_lectivo_id, () => {
     filtros.turma_id = '';
 });
+
+const montarIndicadores = (i) => [
+    { rotulo: 'Alunos', valor: String(i.total), nota: 'registados na escola', cor: 'primary' },
+    { rotulo: 'Com matrícula activa', valor: String(i.com_matricula_activa), nota: 'no ano escolhido', cor: 'success' },
+    { rotulo: 'Sem matrícula', valor: String(i.sem_matricula), nota: 'no ano escolhido', cor: 'warning' },
+    { rotulo: 'Inactivos', valor: String(i.inactivos), nota: 'contas desactivadas', cor: 'danger' },
+];
+const filtrosAtivos = computed(() => criterio.value ? 1 : 0);
+const limparFiltros = () => { criterio.value = ''; };
 
 let debounceId = null;
 
@@ -249,31 +261,13 @@ async function alternarLinha(aluno) {
             <button v-if="can('aluno.criar')" class="btn btn-primary" @click="abrirCriacao">Novo Aluno</button>
         </div>
 
-        <div class="card mb-6">
-            <div class="card-body d-flex flex-wrap gap-4">
-                <div style="min-width: 280px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Pesquisar</label>
-                    <input
-                        v-model="filtros.pesquisa"
-                        type="text"
-                        class="form-control form-control-solid"
-                        placeholder="Nome, nº de matrícula ou nº de identificação"
-                    />
-                </div>
-                <div style="min-width: 220px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Ano Lectivo</label>
-                    <SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAnoLectivo" />
-                </div>
-                <div style="min-width: 180px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Filtrar por</label>
-                    <SelectSolid v-model="criterio" :options="opcoesCriterio" />
-                </div>
-                <div v-if="criterio" style="min-width: 260px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">{{ opcoesCriterio.find((o) => o.value === criterio)?.label }}</label>
-                    <SelectSolid v-model="valorSegundoSelect" :options="opcoesSegundoSelect" searchable />
-                </div>
-            </div>
-        </div>
+        <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" :quantidade="4" />
+
+        <FiltrosRecolhiveis v-model="filtros.pesquisa" placeholder="Pesquisar nome, nº de matrícula ou nº de identificação" :ativos="filtrosAtivos" @limpar="limparFiltros">
+            <div class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">Ano Lectivo</label><SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAnoLectivo" /></div>
+            <div class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">Filtrar por</label><SelectSolid v-model="criterio" :options="opcoesCriterio" /></div>
+            <div v-if="criterio" class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">{{ opcoesCriterio.find((o) => o.value === criterio)?.label }}</label><SelectSolid v-model="valorSegundoSelect" :options="opcoesSegundoSelect" searchable /></div>
+        </FiltrosRecolhiveis>
 
         <div class="card">
             <div class="card-body p-0">

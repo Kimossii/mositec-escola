@@ -7,6 +7,7 @@ use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Storage;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Aluno\Models\Aluno;
+use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use InvalidArgumentException;
 use Modules\Core\Enums\Estado;
 use Modules\Core\Tenancy\CaminhoTenant;
@@ -65,6 +66,24 @@ class AlunoConsultaService
 
     /** Valor especial do filtro de ano lectivo: alunos sem nenhuma matrícula. */
     public const SEM_MATRICULA = 'sem_matricula';
+
+    /**
+     * Números para os cartões da lista (ano lectivo escolhido): total, com matrícula activa, sem matrícula e inactivos.
+     *
+     * @return array<string, int>
+     */
+    public function indicadores(array $filtros = []): array
+    {
+        $ano = is_numeric($filtros['ano_lectivo_id'] ?? null) ? (int) $filtros['ano_lectivo_id'] : null;
+        $doAno = fn ($q) => $q->when($ano !== null, fn ($m) => $m->where('ano_lectivo_id', $ano));
+
+        return [
+            'total' => Aluno::query()->count(),
+            'com_matricula_activa' => Aluno::query()->whereHas('matriculas', fn ($q) => $doAno($q)->where('estado', EstadoMatriculaEnum::ACTIVA->value))->count(),
+            'sem_matricula' => Aluno::query()->whereDoesntHave('matriculas', fn ($q) => $doAno($q)->where('estado', '!=', EstadoMatriculaEnum::CANCELADA->value))->count(),
+            'inactivos' => Aluno::query()->where('estado', '!=', 1)->count(),
+        ];
+    }
 
     public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
     {

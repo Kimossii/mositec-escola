@@ -16,5 +16,11 @@ export const ACOES_LISTA = Object.freeze({
     ativar: { icone: 'ki-toggle-on-circle', paths: 2, cor: 'success', texto: 'Ativar' },
     desativar: { icone: 'ki-toggle-off-circle', paths: 2, cor: 'muted', texto: 'Desativar' },
     encerrar: { icone: 'ki-lock-2', paths: 5, cor: 'dark', texto: 'Encerrar' },
+    trancar: { icone: 'ki-lock', paths: 3, cor: 'warning', texto: 'Trancar' },
+    reactivar: { icone: 'ki-arrows-circle', paths: 2, cor: 'success', texto: 'Reactivar' },
+    renovar: { icone: 'ki-arrows-circle', paths: 2, cor: 'primary', texto: 'Renovar' },
+    disciplinas: { icone: 'ki-book', paths: 4, cor: 'info', texto: 'Disciplinas' },
+    concluir: { icone: 'ki-check-circle', paths: 2, cor: 'success', texto: 'Concluir' },
+    cancelar: { icone: 'ki-cross-circle', paths: 2, cor: 'danger', texto: 'Cancelar' },
     manutencao: { icone: 'ki-setting-3', paths: 5, cor: 'warning', texto: 'Colocar em Manutenção' },
 });

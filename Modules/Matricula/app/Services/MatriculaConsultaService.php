@@ -178,6 +178,28 @@ class MatriculaConsultaService
             ->get();
     }
 
+    /**
+     * Números para os cartões da lista (ano lectivo e turma escolhidos): matrículas por estado.
+     *
+     * @return array<string, int>
+     */
+    public function indicadores(array $filtros = []): array
+    {
+        $base = fn () => Matricula::query()
+            ->when(is_numeric($filtros['ano_lectivo_id'] ?? null), fn ($q) => $q->where('ano_lectivo_id', (int) $filtros['ano_lectivo_id']))
+            ->when(is_numeric($filtros['turma_id'] ?? null), fn ($q) => $q->where('turma_id', (int) $filtros['turma_id']));
+        $estado = fn (EstadoMatriculaEnum ...$estados) => $base()->whereIn('estado', array_map(fn ($e) => $e->value, $estados))->count();
+
+        return [
+            'total' => $base()->count(),
+            'activas' => $estado(EstadoMatriculaEnum::ACTIVA),
+            'pendentes' => $estado(EstadoMatriculaEnum::PENDENTE),
+            'concluidas' => $estado(EstadoMatriculaEnum::CONCLUIDA),
+            'trancadas' => $estado(EstadoMatriculaEnum::TRANCADA),
+            'encerradas' => $estado(EstadoMatriculaEnum::CANCELADA, EstadoMatriculaEnum::TRANSFERIDA),
+        ];
+    }
+
     public function listarTodas(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
     {
         $estabelecimentoId = Estabelecimento::current()?->id;
