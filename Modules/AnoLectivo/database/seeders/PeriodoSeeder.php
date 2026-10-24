@@ -9,20 +9,18 @@ use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\AnoLectivo\Models\Periodo;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Estabelecimento\Models\Estabelecimento;
-use Modules\Tenant\Models\Tenant;
 
 class PeriodoSeeder extends Seeder
 {
     public function run(): void
     {
-        $tenantId = 1;
-        $estabelecimentoId = 1;
+        // O seed corre dentro do contexto de cada escola: usa o tenant e o estabelecimento correntes (nunca o id 1 fixo).
+        $tenantId = app(TenantContext::class)->id();
+        $estabelecimentoId = (int) Estabelecimento::query()->value('id');
         $anoLectivoNome = '2026/2027';
 
-        $tenant = Tenant::query()->findOrFail($tenantId);
-
         app(TenantContext::class)->executarComo(
-            $tenant->paraTenantAtual(),
+            app(TenantContext::class)->atual(),
             function () use (
                 $tenantId,
                 $estabelecimentoId,

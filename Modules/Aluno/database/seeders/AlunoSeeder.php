@@ -8,19 +8,17 @@ use Modules\Aluno\DTO\AlunoDTO;
 use Modules\Aluno\Models\Aluno;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Estabelecimento\Models\Estabelecimento;
-use Modules\Tenant\Models\Tenant;
 
 class AlunoSeeder extends Seeder
 {
     public function run(): void
     {
-        $tenantId = 1;
-        $estabelecimentoId = 1;
-
-        $tenant = Tenant::query()->findOrFail($tenantId);
+        // O seed corre dentro do contexto de cada escola: usa o tenant e o estabelecimento correntes (nunca o id 1 fixo).
+        $tenantId = app(TenantContext::class)->id();
+        $estabelecimentoId = (int) Estabelecimento::query()->value('id');
 
         app(TenantContext::class)->executarComo(
-            $tenant->paraTenantAtual(),
+            app(TenantContext::class)->atual(),
             function () use ($tenantId, $estabelecimentoId): void {
                 Estabelecimento::query()
                     ->where('id', $estabelecimentoId)

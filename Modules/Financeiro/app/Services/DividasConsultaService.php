@@ -5,11 +5,14 @@ namespace Modules\Financeiro\Services;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
+use Modules\Financeiro\Enums\EstadoAcordo;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\EstadoMulta;
+use Modules\Financeiro\Models\Acordo;
 use Modules\Financeiro\Models\Cobranca;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaMulta;
+use Modules\Financeiro\Support\ProgressoDoAcordo;
 use Modules\Matricula\Models\Matricula;
 
 /**
@@ -18,7 +21,7 @@ use Modules\Matricula\Models\Matricula;
  */
 class DividasConsultaService
 {
-    public function __construct(private RelogioDoTenant $relogio)
+    public function __construct(private RelogioDoTenant $relogio, private ProgressoDoAcordo $progresso)
     {
     }
 
@@ -68,6 +71,12 @@ class DividasConsultaService
             ->selectRaw('matricula_id, SUM(total - valor_pago) as soma')
             ->groupBy('matricula_id')->get()->keyBy('matricula_id');
 
+        $acordos = Acordo::query()->where('estado', EstadoAcordo::ACTIVO->value)->get()->keyBy('matricula_id')->map(function (Acordo $a) {
+            $p = $this->progresso->de($a);
+
+            return ['id' => $a->id, 'em_atraso' => $p['em_atraso'], 'proxima' => $p['proxima']];
+        });
+
         $tipo = $filtros['tipo'] ?? '';
         $ids = $propinas->keys()->merge($multas->keys())->merge($cobrancas->keys())->unique()->values();
         $pesquisa = is_string($filtros['pesquisa'] ?? null) ? trim($filtros['pesquisa']) : '';
@@ -84,7 +93,7 @@ class DividasConsultaService
                     ->orWhereHas('dadosPessoa', fn ($p) => $p->whereContem('nome_completo', $pesquisa))))))
             ->get();
 
-        return $matriculas->map(function (Matricula $m) use ($propinas, $multas, $cobrancas, $tipo) {
+        return $matriculas->map(function (Matricula $m) use ($propinas, $multas, $cobrancas, $tipo, $acordos) {
             $p = (int) ($propinas[$m->id]->soma ?? 0);
             $mu = (int) ($multas[$m->id]->soma ?? 0);
             $co = (int) ($cobrancas[$m->id]->soma ?? 0);
@@ -103,6 +112,7 @@ class DividasConsultaService
                 'cobrancas' => $co,
                 'total' => $p + $mu + $co,
                 'meses' => (int) ($propinas[$m->id]->meses ?? 0),
+                'acordo' => $acordos[$m->id] ?? null,
                 'desde' => isset($propinas[$m->id]) ? substr((string) $propinas[$m->id]->desde, 0, 10) : null,
             ];
         })

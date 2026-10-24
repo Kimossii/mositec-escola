@@ -28,7 +28,7 @@ class AplicarMultasDiariasService
 
         // Caminho comum (já feito hoje): uma leitura de cache. O `add` atómico garante uma só execução por dia
         // mesmo com vários primeiros acessos em simultâneo.
-        if ($this->cache->get($chave) !== null || ! $this->cache->add($chave, true, now()->addDay())) {
+        if ($this->cache->get($chave) !== null || ! $this->cache->add($chave, true, $this->relogio->agora()->addDay())) {
             return;
         }
 

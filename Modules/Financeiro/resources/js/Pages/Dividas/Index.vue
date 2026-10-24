@@ -104,6 +104,9 @@ const exportarHref = computed(() => `${BASE}/exportar?${new URLSearchParams(Obje
                                 <td class="text-gray-800">
                                     <span class="text-uppercase">{{ d.aluno_nome ?? '—' }}</span>
                                     <div class="text-muted fs-7">nº {{ d.aluno_numero ?? '—' }} · matrícula {{ d.matricula_numero }} · {{ d.matricula_estado }}</div>
+                                    <a v-if="d.acordo" :href="`/financeiro/acordos/${d.acordo.id}`" class="badge fs-8 mt-1" :class="d.acordo.em_atraso ? 'badge-light-danger' : 'badge-light-primary'">
+                                        Em acordo{{ d.acordo.em_atraso ? ' · em atraso' : '' }}<span v-if="d.acordo.proxima"> · próxima {{ dataCurta(d.acordo.proxima.data_vencimento) }}</span>
+                                    </a>
                                 </td>
                                 <td>{{ d.turma_nome ?? '—' }}<div class="text-muted fs-7">{{ d.ano_lectivo_nome ?? '—' }}</div></td>
                                 <td class="text-end">{{ d.propinas ? dinheiro(d.propinas) : '—' }}<div v-if="d.meses" class="text-muted fs-8">{{ d.meses }} mês(es)</div></td>

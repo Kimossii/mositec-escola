@@ -95,7 +95,7 @@ class AlunoHttpTest extends TestCase
             'nome_completo' => 'Ana Silva',
             'numero_identificacao' => 'BI0001',
             'data_nascimento' => '2010-05-01',
-            'foto' => UploadedFile::fake()->image('foto.jpg'),
+            'foto' => $this->imagemFalsa('foto.jpg'),
         ])->assertSessionHasNoErrors()->assertRedirect();
 
         $aluno = Aluno::firstWhere('dados_pessoa_id', DadosPessoa::firstWhere('numero_identificacao', 'BI0001')?->id);

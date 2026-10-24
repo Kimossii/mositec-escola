@@ -803,7 +803,7 @@ class MatrizIsolamentoTest extends TestCase
         $aluno = app(CriarAlunoAction::class)->executar(new AlunoDTO(
             dadosPessoaId: null, nomeCompleto: 'Ana Silva', email: null, telefone: null,
             dataNascimento: '2010-05-01', sexo: 0, numeroIdentificacao: 'BI0001',
-        ), UploadedFile::fake()->image('foto.jpg'));
+        ), $this->imagemFalsa('foto.jpg'));
         $url = $this->urlDoTenant($this->tenant, "/alunos/{$aluno->id}/foto");
 
         $this->actingAs($admin)->get($url)->assertOk();

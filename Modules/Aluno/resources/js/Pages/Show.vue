@@ -686,6 +686,14 @@ function confirmarEliminacao() {
                 </div>
             </div>
             <div class="card-body pt-4">
+                <div v-if="situacaoPropinas?.acordo" class="alert d-flex flex-wrap justify-content-between align-items-center mb-0 mt-4" :class="situacaoPropinas.acordo.em_atraso ? 'alert-danger' : 'alert-primary'">
+                    <div>
+                        <strong>Em acordo de pagamento{{ situacaoPropinas.acordo.em_atraso ? ' (prestação em atraso)' : '' }}.</strong>
+                        Em falta: {{ formatarDinheiro(situacaoPropinas.acordo.em_falta, moeda) }}.
+                        <span v-if="situacaoPropinas.acordo.proxima">Próxima prestação: {{ situacaoPropinas.acordo.proxima.ordem }}.ª, {{ formatarData(situacaoPropinas.acordo.proxima.data_vencimento) }}.</span>
+                    </div>
+                    <a :href="`/financeiro/acordos/${situacaoPropinas.acordo.id}`" class="btn btn-sm btn-light">Ver acordo</a>
+                </div>
                 <div v-if="!podeVerPropinas" class="text-muted fs-7">Sem permissão para ver a situação de propinas.</div>
                 <div v-else-if="!situacaoPropinas?.tem_matricula_activa" class="text-muted fs-7">Sem matrícula activa.</div>
                 <template v-else>

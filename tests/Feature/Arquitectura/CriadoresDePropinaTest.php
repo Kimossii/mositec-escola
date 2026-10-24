@@ -17,7 +17,8 @@ use RecursiveIteratorIterator;
  */
 class CriadoresDePropinaTest extends TestCase
 {
-    private const CRIADORES_PERMITIDOS = ['Modules/Financeiro/app/Services/GerarPropinasService.php'];
+    // PropinaVirtual: objecto em memória para estimar multas na pré-visualização; nunca se grava.
+    private const CRIADORES_PERMITIDOS = ['Modules/Financeiro/app/Services/GerarPropinasService.php', 'Modules/Financeiro/app/Support/PropinaVirtual.php'];
 
     private const PADROES = [
         '/\bPropina::(?:query\(\)\s*->\s*)?(?:create\w*|forceCreate\w*|firstOrCreate|updateOrCreate|firstOrNew|make\w*|insert\w*|upsert)\s*\(/',

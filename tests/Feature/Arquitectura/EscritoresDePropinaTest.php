@@ -33,6 +33,10 @@ class EscritoresDePropinaTest extends TestCase
         'Modules/Financeiro/app/Services/RecalcularPropina.php',
         // F5: o `valor_pago` da MULTA é cache do RecalcularMulta (tabela propina_multas, não propinas).
         'Modules/Financeiro/app/Services/RecalcularMulta.php',
+        // O `valor_pago` da COBRANÇA de produtos e serviços é cache do RecalcularCobranca (tabela cobrancas).
+        'Modules/Financeiro/app/Services/RecalcularCobranca.php',
+        // Propina em memória para estimar multas na pré-visualização: nunca se grava.
+        'Modules/Financeiro/app/Support/PropinaVirtual.php',
     ];
 
     private const CAMPOS_DE_CACHE = ['valor_pago', 'capital_liquidado_em'];
@@ -49,9 +53,12 @@ class EscritoresDePropinaTest extends TestCase
             // F5: o `valor` da MULTA (propina_multas) é escrito pelo comando (subida) e pela isenção/redução manual.
             'Modules/Financeiro/app/Services/AplicarMultasService.php',
             'Modules/Financeiro/app/Actions/IsentarReduzirMultaAction.php',
+            // Pré-visualizações em memória (nunca gravadas): propina e multa virtuais.
+            'Modules/Financeiro/app/Support/PropinaVirtual.php',
+            'Modules/Financeiro/app/Services/DistribuicaoDePagamentoService.php',
         ],
         'plano_propina_id' => ['Modules/Financeiro/app/Support/ReassociacaoDePropinas.php'],
-        'ordem' => ['Modules/Financeiro/app/Support/ReassociacaoDePropinas.php'],
+        'ordem' => ['Modules/Financeiro/app/Support/ReassociacaoDePropinas.php', 'Modules/Financeiro/app/Support/PropinaVirtual.php'],
     ];
 
     private const METODOS_DE_ACTUALIZACAO = [

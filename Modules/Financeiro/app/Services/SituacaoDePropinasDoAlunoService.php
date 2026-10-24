@@ -10,9 +10,12 @@ use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\EstadoMulta;
 use Modules\Financeiro\Enums\OrigemCobranca;
+use Modules\Financeiro\Enums\EstadoAcordo;
+use Modules\Financeiro\Models\Acordo;
 use Modules\Financeiro\Models\Cobranca;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Support\Multa;
+use Modules\Financeiro\Support\ProgressoDoAcordo;
 use Modules\Financeiro\Support\RotuloDePeriodo;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
@@ -27,6 +30,7 @@ class SituacaoDePropinasDoAlunoService implements SituacaoDePropinasDoAluno
     public function __construct(
         private RelogioDoTenant $relogio,
         private MoedaDoTenant $moedaDoTenant,
+        private ProgressoDoAcordo $progressoDoAcordo,
     ) {
     }
 
@@ -39,9 +43,10 @@ class SituacaoDePropinasDoAlunoService implements SituacaoDePropinasDoAluno
     {
         $matricula = $this->matriculaActiva($alunoId);
         $cobrancas = $this->cobrancasEmAberto($alunoId);
+        $acordo = $this->acordoActivo($alunoId);
 
         if ($matricula === null) {
-            return $this->vazio() + ['cobrancas' => $cobrancas];
+            return $this->vazio() + ['cobrancas' => $cobrancas, 'acordo' => $acordo];
         }
 
         $hoje = $this->relogio->hoje();
@@ -53,7 +58,26 @@ class SituacaoDePropinasDoAlunoService implements SituacaoDePropinasDoAluno
             ...$this->totais($propinas, $hoje),
             'periodos' => $propinas->map(fn (Propina $propina) => $this->periodo($propina, $hoje))->values()->all(),
             'cobrancas' => $cobrancas,
+            'acordo' => $acordo,
         ];
+    }
+
+    /**
+     * O acordo de pagamento activo do aluno (se houver), com o que falta e a próxima prestação, para a ficha.
+     *
+     * @return array{id: int, em_falta: int, em_atraso: bool, proxima: ?array{ordem: int, data_vencimento: string, em_falta: int}}|null
+     */
+    private function acordoActivo(int $alunoId): ?array
+    {
+        $acordo = Acordo::query()->where('aluno_id', $alunoId)->where('estado', EstadoAcordo::ACTIVO->value)->latest('id')->first();
+
+        if ($acordo === null) {
+            return null;
+        }
+
+        $p = $this->progressoDoAcordo->de($acordo);
+
+        return ['id' => $acordo->id, 'em_falta' => $p['em_falta'], 'em_atraso' => $p['em_atraso'], 'proxima' => $p['proxima']];
     }
 
     /**

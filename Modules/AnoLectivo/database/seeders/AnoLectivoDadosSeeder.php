@@ -8,22 +8,19 @@ use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Estabelecimento\Models\Estabelecimento;
-use Modules\Tenant\Models\Tenant;
 
 class AnoLectivoDadosSeeder extends Seeder
 {
     public function run(): void
     {
-        $tenantId = 1;
-        $estabelecimentoId = 1;
-
-        // Obter o tenant real e estabelecer o contexto da aplicação.
-        $tenant = Tenant::query()->findOrFail($tenantId);
+        // O seed corre dentro do contexto de cada escola: usa o tenant e o estabelecimento correntes (nunca o id 1 fixo).
+        $tenantId = app(TenantContext::class)->id();
+        $estabelecimentoId = (int) Estabelecimento::query()->value('id');
 
         $contexto = app(TenantContext::class);
 
         $contexto->executarComo(
-            $tenant->paraTenantAtual(),
+            app(TenantContext::class)->atual(),
             function () use ($tenantId, $estabelecimentoId): void {
                 // Confirmar que o estabelecimento pertence ao tenant.
                 Estabelecimento::query()
