@@ -79,6 +79,21 @@ html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar
     color: #BBF7D0;
 }
 
+/* Nível 1 (módulo principal) — activo, modo escuro: o mesmo verde do tema claro, para o menu do módulo também ficar marcado. */
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.here > .menu-link,
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.show > .menu-link {
+    background-color: #166534;
+}
+
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.here > .menu-link,
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.here > .menu-link .menu-title,
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.here > .menu-link .menu-icon i,
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.show > .menu-link,
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.show > .menu-link .menu-title,
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item.show > .menu-link .menu-icon i {
+    color: #BBF7D0;
+}
+
 /* Nível 2 (submenu) — activo: sem fundo, texto branco suave, barra lateral verde. */
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item > .menu-link.active,
 html[data-bs-theme='light'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu > .menu-item > .menu-sub > .menu-item.here > .menu-link,
