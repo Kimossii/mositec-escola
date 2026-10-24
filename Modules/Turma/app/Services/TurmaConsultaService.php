@@ -31,7 +31,7 @@ class TurmaConsultaService
         ];
     }
 
-    public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         return Turma::with(['nivelAcademico', 'curso', 'turno', 'anoLectivo'])
             ->when($filtros['ano_lectivo_id'] ?? null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))

@@ -63,7 +63,7 @@ class MoedaCambioConsultaService
     /**
      * Câmbios da escola na moeda actual, do mais recente para o mais antigo.
      */
-    public function historico(int $porPagina = 10): LengthAwarePaginator
+    public function historico(int $porPagina = 15): LengthAwarePaginator
     {
         return Cambio::query()
             ->where('moeda_cotada', $this->moedaDoTenant->atual()->codigo)

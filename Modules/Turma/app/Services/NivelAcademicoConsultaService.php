@@ -8,7 +8,7 @@ use Modules\Turma\Models\NivelAcademico;
 
 class NivelAcademicoConsultaService
 {
-    public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         return NivelAcademico::where('estabelecimento_id', Estabelecimento::current()?->id)
             ->when($filtros['etapa_ensino'] ?? null, fn ($query, $etapa) => $query->where('etapa_ensino', $etapa))

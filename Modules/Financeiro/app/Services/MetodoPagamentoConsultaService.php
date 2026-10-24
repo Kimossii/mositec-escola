@@ -7,7 +7,7 @@ use Modules\Financeiro\Models\MetodoPagamento;
 
 class MetodoPagamentoConsultaService
 {
-    public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         return MetodoPagamento::query()
             ->when(in_array($filtros['estado'] ?? null, ['0', '1', 0, 1], true), fn ($query) => $query->where('estado', $filtros['estado']))

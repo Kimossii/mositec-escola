@@ -85,7 +85,7 @@ class AlunoConsultaService
         ];
     }
 
-    public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         $semMatricula = ($filtros['ano_lectivo_id'] ?? null) === self::SEM_MATRICULA;
         if ($semMatricula) {

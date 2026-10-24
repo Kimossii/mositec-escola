@@ -23,7 +23,7 @@ class UsuarioConsultaService
      *
      * @param  array{pesquisa?: ?string, estado?: ?string}  $filtros
      */
-    public function listar(?Perfil $perfil = null, array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    public function listar(?Perfil $perfil = null, array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         return User::with('roles')
             ->when($perfil, fn ($query) => $query->whereHas('roles', fn ($query) => $query->where('nome', $perfil->value)))

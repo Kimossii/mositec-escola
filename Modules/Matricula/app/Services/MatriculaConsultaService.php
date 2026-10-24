@@ -23,7 +23,7 @@ class MatriculaConsultaService
     ) {
     }
 
-    public function listarPorAluno(Aluno $aluno, array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    public function listarPorAluno(Aluno $aluno, array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         return Matricula::with(['aluno.dadosPessoa', 'turma.curso', 'turma.nivelAcademico', 'turma.turno', 'turma.turmaSalas.sala', 'anoLectivo'])
             ->where('aluno_id', $aluno->id)
@@ -200,7 +200,7 @@ class MatriculaConsultaService
         ];
     }
 
-    public function listarTodas(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    public function listarTodas(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         $estabelecimentoId = Estabelecimento::current()?->id;
 

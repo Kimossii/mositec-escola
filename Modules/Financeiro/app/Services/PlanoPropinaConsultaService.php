@@ -19,7 +19,7 @@ use Modules\Turma\Models\Turno;
 
 class PlanoPropinaConsultaService
 {
-    public function listar(array $filtros = [], int $porPagina = 10): LengthAwarePaginator
+    public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         return PlanoPropina::query()
             ->with(['anoLectivo', 'alvos.nivelAcademico', 'alvos.curso', 'alvos.turno', 'alvos.turma'])
