@@ -67,7 +67,7 @@ class AtualizarAlunoActionTest extends TestCase
         Storage::fake('privado');
         $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Teste', 'tipo' => TipoEstabelecimentoEnum::PUBLICO->value]);
         $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
-        $fotoAntiga = UploadedFile::fake()->image('antiga.jpg')->store("tenants/{$this->tenant->id}/alunos/fotos", 'privado');
+        $fotoAntiga = $this->imagemFalsa('antiga.jpg')->store("tenants/{$this->tenant->id}/alunos/fotos", 'privado');
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001', 'foto_path' => $fotoAntiga]);
 
         $dto = new AlunoDTO(
@@ -79,7 +79,7 @@ class AtualizarAlunoActionTest extends TestCase
             sexo: 0,
             numeroIdentificacao: 'BI0001',
         );
-        $fotoNova = UploadedFile::fake()->image('nova.jpg');
+        $fotoNova = $this->imagemFalsa('nova.jpg');
 
         $actualizado = (new AtualizarAlunoAction())->executar($aluno, $dto, $fotoNova);
 

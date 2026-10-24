@@ -8,6 +8,7 @@ use Modules\Core\Database\Seeders\HorarioSeeder;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Curso\Database\Seeders\CursoSeeder;
 use Modules\Disciplina\Database\Seeders\DisciplinaSeeder;
+use Modules\Financeiro\Database\Seeders\CambioPlataformaSeeder;
 use Modules\Infraestrutura\Database\Seeders\SalaSeeder;
 use Modules\Permissao\Actions\SincronizarPerfisDeSistemaAction;
 use Modules\Permissao\Database\Seeders\AcaoSeeder;
@@ -15,8 +16,10 @@ use Modules\Permissao\Database\Seeders\ModuloSeeder;
 use Modules\Plataforma\Database\Seeders\PlataformaDesenvolvimentoSeeder;
 use Modules\Tenant\Database\Seeders\TenantDesenvolvimentoSeeder;
 use Modules\Tenant\Models\Tenant;
-use Modules\Turma\Database\Seeders\TurnoSeeder;
+use Modules\Turma\Database\Seeders\TurmaDatabaseSeeder;
 use Modules\Usuario\Actions\CriarTiposDocumentoPadraoAction;
+use Modules\AnoLectivo\Database\Seeders\AnoLectivoSeeder;
+use Modules\Aluno\Database\Seeders\AlunoSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -35,9 +38,10 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ModuloSeeder::class,
             AcaoSeeder::class,
+            CambioPlataformaSeeder::class,
         ]);
 
-        if (! app()->environment('local', 'testing')) {
+        if (!app()->environment('local', 'testing')) {
             return;
         }
 
@@ -68,8 +72,10 @@ class DatabaseSeeder extends Seeder
                     DisciplinaSeeder::class,
                     CursoSeeder::class,
                     HorarioSeeder::class,
-                    TurnoSeeder::class,
+                    AnoLectivoSeeder::class,
+                    TurmaDatabaseSeeder::class,
                     SalaSeeder::class,
+                    AlunoSeeder::class,
                 ]);
             });
         }

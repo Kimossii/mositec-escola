@@ -3,6 +3,7 @@
 namespace Modules\Permissao\Actions;
 
 use RuntimeException;
+use Modules\Permissao\Support\PermissaoCache;
 use Modules\Permissao\Enums\Modulo;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
@@ -40,7 +41,19 @@ class SincronizarPerfisDeSistemaAction
             Modulo::SENHA_UTILIZADOR->value => ['editar'],
             Modulo::DISCIPLINA->value => ['ver', 'criar', 'editar'],
             Modulo::ALUNO->value => ['ver', 'criar', 'editar'],
-            Modulo::MATRICULA->value => ['ver', 'criar', 'editar', 'eliminar'],
+            Modulo::MATRICULA->value => ['ver', 'criar', 'editar', 'eliminar', 'trancar'],
+            Modulo::REGRA_COBRANCA->value => ['ver', 'editar'],
+            Modulo::METODO_PAGAMENTO->value => ['ver', 'criar', 'editar', 'eliminar'],
+            Modulo::CATALOGO_FINANCEIRO->value => ['ver', 'criar', 'editar', 'eliminar'],
+            Modulo::PLANO_PROPINA->value => ['ver', 'criar', 'editar', 'eliminar'],
+            Modulo::MOEDA_CAMBIO->value => ['ver', 'criar', 'editar', 'eliminar'],
+            // Propinas: `ajustar` entrou em F2 (via P1) e é também o que autoriza a geração retroactiva; `anular` em Pagamentos-A; `isentar-multa` em F5.
+            Modulo::PROPINA->value => ['ver', 'listar', 'criar', 'cancelar', 'anular', 'exportar', 'ajustar', 'isentar-multa'],
+            Modulo::PAGAMENTO->value => ['ver', 'listar', 'criar', 'anular', 'exportar'],
+            Modulo::PAUSA_COBRANCA->value => ['ver', 'criar', 'editar', 'eliminar'],
+            Modulo::COBRANCA->value => ['ver', 'listar', 'criar', 'cancelar', 'exportar'],
+            Modulo::BOLSA->value => ['ver', 'listar', 'criar', 'editar'],
+            Modulo::ACORDO->value => ['ver', 'listar', 'criar', 'cancelar'],
         ],
         Perfil::FUNCIONARIO->value => [
             Modulo::USUARIO->value => ['ver', 'criar', 'editar'],
@@ -65,6 +78,8 @@ class SincronizarPerfisDeSistemaAction
 
     public function concederPermissoes(): void
     {
+        $concedeuNovas = false;
+
         foreach (self::PERMISSOES_POR_PERFIL as $roleNome => $mapa) {
             $role = Role::where('nome', $roleNome)->first()
                 ?? throw new RuntimeException('Perfil de sistema ' . Perfil::from($roleNome)->name . ' inexistente: crie os perfis antes de conceder permissões.');
@@ -77,13 +92,20 @@ class SincronizarPerfisDeSistemaAction
                     $acao = Acao::where('nome', $acaoNome)->first()
                         ?? throw new RuntimeException("Acção '{$acaoNome}' em falta no catálogo global: corra `php artisan db:seed --force` (ModuloSeeder/AcaoSeeder) antes de criar tenants.");
 
-                    RolePermissao::firstOrCreate([
+                    $permissao = RolePermissao::firstOrCreate([
                         'role_id' => $role->id,
                         'modulo_id' => $modulo->id,
                         'acao_id' => $acao->id,
                     ]);
+
+                    $concedeuNovas = $concedeuNovas || $permissao->wasRecentlyCreated;
                 }
             }
+        }
+
+        // Utilizadores que já iniciaram sessão têm o conjunto de permissões em cache.
+        if ($concedeuNovas) {
+            app(PermissaoCache::class)->invalidarTudo();
         }
     }
 }

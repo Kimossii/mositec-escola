@@ -62,7 +62,10 @@
             <!-- ── Section: Infraestrutura ─────────────────────────────── -->
             <SidebarAccordion :item="infraestrutura" heading="Infraestrutura" />
 
-            <!-- ── Sections por implementar: Frequência, Pessoal, Financeiro,
+            <!-- ── Section: Financeiro (operação; a configuração fica em Configurações → Financeiro) ── -->
+            <SidebarAccordion :item="financeiro" heading="Financeiro" />
+
+            <!-- ── Sections por implementar: Frequência, Pessoal,
                  Comunicação, Documentos, Biblioteca, Relatórios.
                  Descomentar uma a uma, sequencialmente, à medida que cada
                  módulo for implementado — cabeçalho e acordeão já vêm juntos
@@ -70,7 +73,6 @@
             <!--
             <SidebarAccordion :item="frequencia" heading="Frequência" />
             <SidebarAccordion :item="pessoal" heading="Pessoal" />
-            <SidebarAccordion :item="financeiro" heading="Financeiro" />
             <SidebarAccordion :item="comunicacao" heading="Comunicação" />
             <SidebarAccordion :item="documentos" heading="Documentos" />
             <SidebarAccordion :item="biblioteca" heading="Biblioteca" />
@@ -518,20 +520,27 @@ const pedagogico = {
 //     ],
 // }
 //
-// const financeiro = {
-//     title: 'Financeiro',
-//     icon: 'ki-dollar',
-//     paths: 2,
-//     items: [
-//         { href: '#', title: 'Propinas' },
-//         { href: '#', title: 'Pagamentos' },
-//         { href: '#', title: 'Dívidas' },
-//         { href: '#', title: 'Descontos / Bolsas' },
-//         { href: '#', title: 'Recibos' },
-//         { href: '#', title: 'Relatórios Financeiros' },
-//     ],
-// }
-//
+// ── Financeiro (operação) — os restantes itens entram com as respectivas fases ──
+const financeiro = {
+    title: 'Financeiro',
+    icon: 'ki-dollar',
+    paths: 3,
+    items: [
+        { href: '/financeiro/propinas', title: 'Propinas', permissao: 'propina.ver' },
+        { href: '/financeiro/pagamentos', title: 'Pagamentos', permissao: 'pagamento.ver' },
+        { href: '/financeiro/cobrancas', title: 'Cobranças', permissao: 'cobranca.ver' },
+        { href: '/financeiro/dividas', title: 'Dívidas', permissao: 'propina.ver' },
+        { href: '/financeiro/bolsas', title: 'Bolsas', permissao: 'bolsa.ver' },
+        { href: '/financeiro/acordos', title: 'Acordos de dívida', permissao: 'acordo.ver' },
+        { href: '/financeiro/recibos', title: 'Recibos', permissao: 'pagamento.ver' },
+        { href: '/financeiro/relatorios', title: 'Relatórios financeiros', permissao: 'pagamento.exportar' },
+        // { href: '#', title: 'Dívidas' },
+        // { href: '#', title: 'Descontos / Bolsas' },
+        // { href: '#', title: 'Recibos' },
+        // { href: '#', title: 'Relatórios Financeiros' },
+    ],
+}
+
 // const comunicacao = {
 //     title: 'Comunicação',
 //     icon: 'ki-message-text-2',
@@ -896,6 +905,16 @@ const configuracoesMenu = [
         title: 'Ano Lectivo',
         items: [
             { href: '/ano-lectivos', title: 'Anos Lectivos', permissao: 'ano-lectivo.ver' },
+        ],
+    },
+    {
+        title: 'Financeiro',
+        items: [
+            { href: '/financeiro/configuracao/moeda-cambio', title: 'Moeda e Câmbio', permissao: 'moeda-cambio.ver' },
+            { href: '/financeiro/configuracao/planos-propina', title: 'Planos de Propina', permissao: 'plano-propina.ver' },
+            { href: '/financeiro/configuracao/regras-cobranca', title: 'Regras de Cobrança', permissao: 'regra-cobranca.ver' },
+            { href: '/financeiro/configuracao/metodos-pagamento', title: 'Métodos de Pagamento', permissao: 'metodo-pagamento.ver' },
+            { href: '/financeiro/configuracao/produtos-servicos', title: 'Produtos / Serviços', permissao: 'catalogo-financeiro.ver' },
         ],
     },
     // Por implementar — descomentar quando o módulo Sistema existir:

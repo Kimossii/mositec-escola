@@ -69,6 +69,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
             ExigirTrocaDeSenha::class,
             ExigirConfiguracaoInicial::class,
+            \Modules\Financeiro\Http\Middleware\AplicarMultasDoDia::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

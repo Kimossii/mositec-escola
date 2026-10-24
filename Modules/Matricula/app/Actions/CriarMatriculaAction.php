@@ -4,8 +4,10 @@ namespace Modules\Matricula\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Modules\Aluno\Models\Aluno;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Matricula\Events\MatriculaEstadoAlterado;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\GeradorNumeroRegistoMatriculaService;
 use Modules\Matricula\Services\ValidadorMatriculaService;
@@ -18,6 +20,7 @@ class CriarMatriculaAction
         private ValidadorMatriculaService $validador,
         private RegistarHistoricoMatriculaAction $registarHistorico,
         private InscreverDisciplinasAutomaticamenteAction $inscreverDisciplinas,
+        private RelogioDoTenant $relogio,
     ) {
     }
 
@@ -34,6 +37,7 @@ class CriarMatriculaAction
             $this->validador->validarTurma($turma, $dto->anoLectivoId);
             $this->validador->garantirEnquadramentoAcademico($aluno, $turma, $utilizadorId);
             $this->validador->validarMatriculaNaoDuplicada($aluno, $turma);
+            $this->validador->validarSituacaoFinanceira($aluno, $turma);
             $this->inscreverDisciplinas->garantirPlanoCurricularConfirmado($turma);
 
             $anoLectivoId = $turma->ano_lectivo_id;
@@ -45,7 +49,7 @@ class CriarMatriculaAction
                 'turma_id' => $turma->id,
                 'ano_lectivo_id' => $anoLectivoId,
                 'numero_registo_matricula' => $numeroRegisto,
-                'data_matricula' => $dto->dataMatricula ?? now()->toDateString(),
+                'data_matricula' => $dto->dataMatricula ?? $this->relogio->hoje()->toDateString(),
                 'estado' => $dto->estado ?? EstadoMatriculaEnum::PENDENTE->value,
                 'observacoes' => $dto->observacoes,
                 'criado_por' => $utilizadorId,
@@ -54,6 +58,15 @@ class CriarMatriculaAction
             $this->registarHistorico->executar($matricula, null, $matricula->estado, $utilizadorId);
 
             $this->inscreverDisciplinas->executar($matricula, $utilizadorId);
+
+            // O mesmo facto que o histórico regista (estado anterior nulo), na mesma transacção.
+            MatriculaEstadoAlterado::dispatch(
+                (int) $matricula->id,
+                null,
+                $matricula->estado->value,
+                $matricula->data_matricula->toDateString(),
+                $utilizadorId,
+            );
 
             return $matricula;
         });

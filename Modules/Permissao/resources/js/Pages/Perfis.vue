@@ -7,6 +7,7 @@ import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import PerfilForm from '../Components/PerfilForm.vue';
+import PermissoesPorMenu from '../Components/PermissoesPorMenu.vue';
 
 defineProps({
     perfis: {
@@ -70,20 +71,6 @@ function confirmarEliminacao() {
     });
 }
 
-// Agrupa a lista plana [{ modulo, acao }] por módulo, pra render como matriz
-// Módulo × Ação (uma coluna por ação, igual à página de edição de permissões).
-function agruparPorModulo(permissoes) {
-    const grupos = new Map();
-    for (const { modulo, acao } of permissoes) {
-        if (!grupos.has(modulo)) grupos.set(modulo, []);
-        grupos.get(modulo).push(acao);
-    }
-    return Array.from(grupos, ([modulo, acoes]) => ({ modulo, acoes }));
-}
-
-function temAcao(grupo, acao) {
-    return grupo.acoes.includes(acao);
-}
 </script>
 
 <template>
@@ -166,39 +153,8 @@ function temAcao(grupo, acao) {
                                             class="bg-light rounded-3 mx-6 mb-6 overflow-hidden"
                                             style="border-left: 4px solid var(--bs-success);"
                                         >
-                                            <div v-if="!perfil.permissoes.length" class="p-6 text-muted fs-6">
-                                                Nenhuma permissão atribuída a este perfil.
-                                            </div>
-
-                                            <div v-else class="table-responsive">
-                                                <table class="table table-permissoes align-middle mb-0">
-                                                    <thead>
-                                                        <tr class="text-muted fw-bold fs-6 text-uppercase">
-                                                            <th class="ps-6 min-w-200px">Módulo</th>
-                                                            <th v-for="acao in acoes" :key="acao" class="text-center">
-                                                                {{ acao }}
-                                                            </th>
-                                                        </tr>
-                                                    </thead>
-
-                                                    <tbody class="text-gray-800 fw-semibold">
-                                                        <tr v-for="grupo in agruparPorModulo(perfil.permissoes)" :key="grupo.modulo">
-                                                            <td class="ps-6 fw-bold fs-6">{{ grupo.modulo }}</td>
-
-                                                            <td v-for="acao in acoes" :key="acao" class="text-center">
-                                                                <span v-if="temAcao(grupo, acao)" class="badge badge-circle badge-success">
-                                                                    <i class="ki-duotone ki-check fs-3 text-white"></i>
-                                                                </span>
-                                                                <span v-else class="badge badge-circle badge-danger">
-                                                                    <i class="ki-duotone ki-cross fs-3 text-white">
-                                                                        <span class="path1"></span>
-                                                                        <span class="path2"></span>
-                                                                    </i>
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
+                                            <div class="p-4">
+                                                <PermissoesPorMenu :permissoes="perfil.permissoes" :acoes="acoes" />
                                             </div>
                                         </div>
                                     </div>
@@ -229,33 +185,3 @@ function temAcao(grupo, acao) {
         />
     </div>
 </template>
-
-<style scoped>
-/* A borda padrão do Bootstrap (--bs-border-color: #F4F4F4) some em cima do
-   fundo bg-light (--bs-light: #F9F9F9) — praticamente a mesma cor. Aqui as
-   linhas (entre módulos) e a coluna (Módulo | Ações) precisam de contraste
-   de verdade pra ficar com cara de tabela mesmo, não só texto lado a lado.
-
-   O !important é necessário: o Bootstrap tem uma regra
-   ".table:not(.table-bordered) tbody tr:last-child th/td { border-bottom: 0
-   !important; }" pra tirar a borda da última linha visível de QUALQUER
-   tabela. Como é seletor descendente (não filho direto), ela "vaza" pra
-   dentro desta tabela aninhada sempre que o perfil expandido for o último
-   da lista — sem !important a borda do cabeçalho some nesse caso. E só
-   !important não bastava: a regra do Bootstrap também é mais específica
-   (3 classes/pseudo-classes) que ".table-permissoes[data-v] th" (2) — por
-   isso aqui usamos as 3 classes que o <table> já tem (table, table-permissoes,
-   align-middle) pra ganhar o empate de especificidade também. */
-.table.table-permissoes.align-middle > tbody > tr:not(:last-child) > td {
-    border-bottom: 1px dashed rgba(0, 0, 0, 0.14) !important;
-}
-
-.table.table-permissoes.align-middle > thead > tr > th {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.14) !important;
-}
-
-.table-permissoes > thead > tr > th:not(:first-child),
-.table-permissoes > tbody > tr > td:not(:first-child) {
-    border-left: 1px solid rgba(0, 0, 0, 0.14);
-}
-</style>

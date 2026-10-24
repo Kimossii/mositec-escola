@@ -4,6 +4,8 @@ import { router } from '@inertiajs/vue3';
 import axios from 'axios';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
+import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
@@ -13,17 +15,26 @@ import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import AlunoFormModal from '../Components/AlunoFormModal.vue';
 import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/Shared/EstadoBadge.vue';
 import { estadoMatriculaLabel } from '../../../../Matricula/resources/js/Models/Estado';
+import { formatarDinheiro } from '../../../../Financeiro/resources/js/Support/dinheiro.js';
 import { ESTADO } from '../Models/Estado';
 
 const props = defineProps({
     alunos: { type: Object, required: true }, // paginator: { data, links, ... }
     filtros: { type: Object, default: () => ({}) },
+    indicadores: { type: Object, default: null }, // diferido: chega depois da lista
     anosLectivosDisponiveis: { type: Array, default: () => [] },
     turmasDisponiveis: { type: Array, default: () => [] },
     cursosDisponiveis: { type: Array, default: () => [] },
     niveisAcademicosDisponiveis: { type: Array, default: () => [] },
+    provincias: { type: Array, default: () => [] },
+    municipiosPorProvincia: { type: Object, default: () => ({}) },
+    podeVerPropinas: { type: Boolean, default: false },
+    situacoesPropinas: { type: Object, default: () => ({}) },
+    moeda: { type: Object, default: null },
 });
 defineOptions({ layout: AppLayout });
+
+const situacaoPropina = (aluno) => props.situacoesPropinas?.[aluno.id] ?? {};
 
 // --- Filtros ---
 const CRITERIO_CAMPO = { curso: 'curso_id', turma: 'turma_id', nivel_academico: 'nivel_academico_id' };
@@ -46,6 +57,7 @@ const opcoesCriterio = [
 
 const opcoesAnoLectivo = computed(() => [
     { value: '', label: 'Todos os anos lectivos' },
+    { value: 'sem_matricula', label: 'Sem matrícula' },
     ...props.anosLectivosDisponiveis.map((ano) => ({ value: ano.id, label: ano.nome })),
 ]);
 
@@ -100,6 +112,15 @@ const valorSegundoSelect = computed({
 watch(() => filtros.ano_lectivo_id, () => {
     filtros.turma_id = '';
 });
+
+const montarIndicadores = (i) => [
+    { rotulo: 'Alunos', valor: String(i.total), nota: 'registados na escola', cor: 'primary' },
+    { rotulo: 'Com matrícula activa', valor: String(i.com_matricula_activa), nota: 'no ano escolhido', cor: 'success' },
+    { rotulo: 'Sem matrícula', valor: String(i.sem_matricula), nota: 'no ano escolhido', cor: 'warning' },
+    { rotulo: 'Inactivos', valor: String(i.inactivos), nota: 'contas desactivadas', cor: 'danger' },
+];
+const filtrosAtivos = computed(() => criterio.value ? 1 : 0);
+const limparFiltros = () => { criterio.value = ''; };
 
 let debounceId = null;
 
@@ -240,31 +261,13 @@ async function alternarLinha(aluno) {
             <button v-if="can('aluno.criar')" class="btn btn-primary" @click="abrirCriacao">Novo Aluno</button>
         </div>
 
-        <div class="card mb-6">
-            <div class="card-body d-flex flex-wrap gap-4">
-                <div style="min-width: 280px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Pesquisar</label>
-                    <input
-                        v-model="filtros.pesquisa"
-                        type="text"
-                        class="form-control form-control-solid"
-                        placeholder="Nome, nº de matrícula ou nº de identificação"
-                    />
-                </div>
-                <div style="min-width: 220px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Ano Lectivo</label>
-                    <SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAnoLectivo" />
-                </div>
-                <div style="min-width: 180px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Filtrar por</label>
-                    <SelectSolid v-model="criterio" :options="opcoesCriterio" />
-                </div>
-                <div v-if="criterio" style="min-width: 260px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">{{ opcoesCriterio.find((o) => o.value === criterio)?.label }}</label>
-                    <SelectSolid v-model="valorSegundoSelect" :options="opcoesSegundoSelect" searchable />
-                </div>
-            </div>
-        </div>
+        <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" :quantidade="4" />
+
+        <FiltrosRecolhiveis v-model="filtros.pesquisa" placeholder="Pesquisar nome, nº de matrícula ou nº de identificação" :ativos="filtrosAtivos" @limpar="limparFiltros">
+            <div class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">Ano Lectivo</label><SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAnoLectivo" /></div>
+            <div class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">Filtrar por</label><SelectSolid v-model="criterio" :options="opcoesCriterio" /></div>
+            <div v-if="criterio" class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">{{ opcoesCriterio.find((o) => o.value === criterio)?.label }}</label><SelectSolid v-model="valorSegundoSelect" :options="opcoesSegundoSelect" searchable /></div>
+        </FiltrosRecolhiveis>
 
         <div class="card">
             <div class="card-body p-0">
@@ -363,10 +366,27 @@ async function alternarLinha(aluno) {
                                                 <div class="fs-7"><span class="text-muted">Telefone Alternativo:</span> {{ aluno.dados_pessoa?.telefone_alternativo ?? '—' }}</div>
 
                                                 <div class="border border-dashed rounded p-3 mt-4">
-                                                    <div class="d-flex align-items-center gap-2 text-muted">
-                                                        <i class="ki-duotone ki-dollar fs-3"><span class="path1"></span><span class="path2"></span></i>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <i class="ki-duotone ki-dollar fs-3 text-muted"><span class="path1"></span><span class="path2"></span></i>
                                                         <span class="fs-7 fw-bold">Situação de Propinas</span>
-                                                        <span class="badge badge-light fs-9 ms-auto">Brevemente</span>
+                                                        <span
+                                                            v-if="podeVerPropinas && situacaoPropina(aluno).tem_matricula_activa"
+                                                            class="badge fw-bold ms-auto"
+                                                            :class="situacaoPropina(aluno).propinas_em_atraso ? 'badge-light-danger' : 'badge-light-success'"
+                                                        >
+                                                            {{ situacaoPropina(aluno).estado }}
+                                                        </span>
+                                                    </div>
+                                                    <div v-if="!podeVerPropinas" class="text-muted fs-7 mt-2">Sem permissão para ver a situação de propinas.</div>
+                                                    <div v-else-if="!situacaoPropina(aluno).tem_matricula_activa" class="text-muted fs-7 mt-2">Sem matrícula activa.</div>
+                                                    <div v-else class="d-flex align-items-center justify-content-between gap-2 mt-2">
+                                                        <div class="fs-7">
+                                                            <span class="text-muted">Total em dívida:</span>
+                                                            <span class="fw-bold">{{ formatarDinheiro(situacaoPropina(aluno).total_em_divida, moeda) }}</span>
+                                                        </div>
+                                                        <a :href="`/financeiro/propinas?matricula_id=${situacaoPropina(aluno).matricula_id}`" class="fs-7 fw-semibold">
+                                                            Ver propinas
+                                                        </a>
                                                     </div>
                                                 </div>
                                             </div>
@@ -413,6 +433,8 @@ async function alternarLinha(aluno) {
         <AlunoFormModal
             :show="modalAberto"
             :aluno="alunoEmEdicao"
+            :provincias="provincias"
+            :municipios-por-provincia="municipiosPorProvincia"
             :processing="processing"
             :errors="errors"
             @submit="guardar"

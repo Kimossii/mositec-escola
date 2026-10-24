@@ -13,6 +13,8 @@ class TurmaDatabaseSeeder extends Seeder
     {
          $this->call([
             TurnoSeeder::class,
+            NivelAcademicoSeeder::class,
+            TurmaDadoSeeder::class,
          ]);
     }
 }

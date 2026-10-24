@@ -5,6 +5,7 @@ namespace Modules\Permissao\Actions;
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Permissao\Models\UserPermissao;
+use Modules\Permissao\Support\AcoesAplicaveis;
 use Modules\Permissao\Support\PermissaoCache;
 use Modules\Permissao\Exceptions\PerfilDeAlunoFixo;
 use Modules\Usuario\Models\User;
@@ -13,6 +14,7 @@ class SincronizarPermissoesUtilizadorAction
 {
     public function __construct(
         private readonly PermissaoCache $cache,
+        private readonly AcoesAplicaveis $aplicaveis,
         private readonly GarantirAdministradorEfetivoAction $garantirAdministrador,
     ) {
     }
@@ -22,6 +24,9 @@ class SincronizarPermissoesUtilizadorAction
         if ($user->ePerfilAluno()) {
             throw PerfilDeAlunoFixo::semPermissoesPersonalizadas();
         }
+
+        $this->aplicaveis->validarCelulas($celulas, UserPermissao::where('users_id', $user->id)->get(['modulo_id', 'acao_id'])
+            ->map(fn ($p) => "{$p->modulo_id}-{$p->acao_id}")->all());
 
         DB::transaction(function () use ($user, $celulas) {
             UserPermissao::where('users_id', $user->id)->delete();

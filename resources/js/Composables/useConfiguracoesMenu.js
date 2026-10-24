@@ -37,6 +37,17 @@ const gruposConfiguracoes = [
             { href: '/ano-lectivos', label: 'Anos Lectivos', permissao: 'ano-lectivo.ver' },
         ],
     },
+    {
+        title: 'Financeiro',
+        links: [
+            { href: '/financeiro/configuracao/moeda-cambio', label: 'Moeda e Câmbio', permissao: 'moeda-cambio.ver' },
+            { href: '/financeiro/configuracao/planos-propina', label: 'Planos de Propina', permissao: 'plano-propina.ver' },
+            { href: '/financeiro/configuracao/pausas-cobranca', label: 'Pausas de Cobrança', permissao: 'pausa-cobranca.ver' },
+            { href: '/financeiro/configuracao/regras-cobranca', label: 'Regras de Cobrança', permissao: 'regra-cobranca.ver' },
+            { href: '/financeiro/configuracao/metodos-pagamento', label: 'Métodos de Pagamento', permissao: 'metodo-pagamento.ver' },
+            { href: '/financeiro/configuracao/produtos-servicos', label: 'Produtos / Serviços', permissao: 'catalogo-financeiro.ver' },
+        ],
+    },
     // Por implementar — descomentar quando o módulo Sistema existir:
     // {
     //     title: 'Sistema',

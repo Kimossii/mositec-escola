@@ -82,7 +82,7 @@ class CriarAlunoActionTest extends TestCase
             sexo: 0,
             numeroIdentificacao: 'BI0001',
         );
-        $foto = UploadedFile::fake()->image('foto.jpg');
+        $foto = $this->imagemFalsa('foto.jpg');
 
         $aluno = app(CriarAlunoAction::class)->executar($dto, $foto);
 

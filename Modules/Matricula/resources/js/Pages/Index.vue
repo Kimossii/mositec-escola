@@ -3,6 +3,9 @@ import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
+import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
+import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
@@ -10,6 +13,8 @@ import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import MatriculaFormModal from '../Components/MatriculaFormModal.vue';
 import InscricaoDisciplinaModal from '../Components/InscricaoDisciplinaModal.vue';
+import TrancamentoModal from '../Components/TrancamentoModal.vue';
+import FimDeMatriculaModal from '../Components/FimDeMatriculaModal.vue';
 import { ESTADO_MATRICULA, ESTADO_MATRICULA_LABEL, estadoMatriculaLabel, transicoesDisponiveis } from '../Models/Estado';
 
 const props = defineProps({
@@ -17,6 +22,7 @@ const props = defineProps({
     turmasDisponiveis: { type: Array, required: true },
     anosLectivosDisponiveis: { type: Array, required: true },
     filtros: { type: Object, default: () => ({}) },
+    indicadores: { type: Object, default: null }, // diferido: chega depois da lista
 });
 defineOptions({ layout: AppLayout });
 
@@ -51,6 +57,19 @@ const filtros = reactive({
     estado: props.filtros.estado ?? '',
     pesquisa: props.filtros.pesquisa ?? '',
 });
+
+const iconeTransicao = (estado) => ({
+    [ESTADO_MATRICULA.ACTIVA]: 'ativar',
+    [ESTADO_MATRICULA.CONCLUIDA]: 'concluir',
+}[estado] ?? 'cancelar');
+const montarIndicadores = (i) => [
+    { rotulo: 'Activas', valor: String(i.activas), nota: `${i.total} matrícula(s) no total`, cor: 'success' },
+    { rotulo: 'Pendentes', valor: String(i.pendentes), nota: 'por activar', cor: 'warning' },
+    { rotulo: 'Concluídas', valor: String(i.concluidas), nota: 'ano terminado', cor: 'primary' },
+    { rotulo: 'Trancadas e encerradas', valor: String(i.trancadas + i.encerradas), nota: `${i.trancadas} trancada(s) · ${i.encerradas} cancelada(s) ou transferida(s)`, cor: 'danger' },
+];
+const filtrosAtivos = computed(() => [filtros.turma_id, filtros.estado].filter((v) => v !== '').length);
+const limparFiltros = () => { filtros.turma_id = ''; filtros.estado = ''; };
 
 let debounceId = null;
 
@@ -171,6 +190,19 @@ const matriculaParaAlterarEstado = ref(null);
 const estadoAlvo = ref(null);
 const confirmandoEstado = ref(false);
 
+const trancamento = reactive({ aberto: false, matricula: null, modo: 'trancar' });
+
+function abrirTrancamento(matricula, modo) {
+    trancamento.matricula = matricula;
+    trancamento.modo = modo;
+    trancamento.aberto = true;
+}
+
+function concluirTrancamento() {
+    trancamento.aberto = false;
+    reinitMenu();
+}
+
 function pedirAlteracaoEstado(matricula, novoEstado) {
     matriculaParaAlterarEstado.value = matricula;
     estadoAlvo.value = novoEstado;
@@ -181,11 +213,12 @@ function cancelarAlteracaoEstado() {
     estadoAlvo.value = null;
 }
 
-function confirmarAlteracaoEstado() {
+function confirmarAlteracaoEstado(dataFim = null) {
     confirmandoEstado.value = true;
     const matricula = matriculaParaAlterarEstado.value;
     router.patch(`/alunos/${matricula.aluno_id}/matriculas/${matricula.id}/estado`, {
         estado: estadoAlvo.value,
+        ...(dataFim ? { data_fim: dataFim } : {}),
     }, {
         preserveScroll: true,
         onSuccess: () => {
@@ -335,31 +368,13 @@ function confirmarRenovacaoEmMassa() {
             <h1 class="fs-2 fw-bold">Matrículas</h1>
         </div>
 
-        <div class="card mb-6">
-            <div class="card-body d-flex flex-wrap gap-4">
-                <div style="min-width: 280px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Aluno</label>
-                    <input
-                        v-model="filtros.pesquisa"
-                        type="text"
-                        class="form-control form-control-solid"
-                        placeholder="Nº de matrícula, nome ou nº de identificação"
-                    />
-                </div>
-                <div style="min-width: 200px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Ano Lectivo</label>
-                    <SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAnoLectivo" />
-                </div>
-                <div style="min-width: 260px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Turma</label>
-                    <SelectSolid v-model="filtros.turma_id" :options="opcoesTurma" searchable />
-                </div>
-                <div style="min-width: 200px;">
-                    <label class="fw-semibold fs-7 text-muted mb-1">Estado</label>
-                    <SelectSolid v-model="filtros.estado" :options="opcoesEstado" />
-                </div>
-            </div>
-        </div>
+        <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" :quantidade="4" />
+
+        <FiltrosRecolhiveis v-model="filtros.pesquisa" placeholder="Pesquisar nº de matrícula, nome ou nº de identificação" :ativos="filtrosAtivos" @limpar="limparFiltros">
+            <div class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">Ano Lectivo</label><SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAnoLectivo" /></div>
+            <div class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">Turma</label><SelectSolid v-model="filtros.turma_id" :options="opcoesTurma" searchable /></div>
+            <div class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">Estado</label><SelectSolid v-model="filtros.estado" :options="opcoesEstado" /></div>
+        </FiltrosRecolhiveis>
 
         <div class="card">
             <div class="card-header" :class="{ 'd-none': !matriculasConcluidasDaPagina.length }">
@@ -380,7 +395,7 @@ function confirmarRenovacaoEmMassa() {
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                            <th class="w-25px"></th>
+                            <th class="w-40px"></th>
                             <th class="w-25px">
                                 <input
                                     v-if="matriculasConcluidasDaPagina.length"
@@ -396,7 +411,7 @@ function confirmarRenovacaoEmMassa() {
                             <th class="min-w-100px">Ano Lectivo</th>
                             <th class="min-w-100px">Data</th>
                             <th class="min-w-100px">Estado</th>
-                            <th class="text-end min-w-200px">Ações</th>
+                            <th class="text-end min-w-125px">Ações</th>
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
@@ -432,9 +447,6 @@ function confirmarRenovacaoEmMassa() {
                             <td>{{ formatarData(matricula.data_matricula) }}</td>
                             <td><EstadoBadge :estado="matricula.estado" /></td>
                             <td class="text-end">
-                                <a :href="`/alunos/${matricula.aluno_id}`" class="btn btn-light btn-active-light-primary btn-sm me-2">
-                                    Ver Aluno
-                                </a>
                                 <a
                                     href="#"
                                     class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm"
@@ -445,11 +457,18 @@ function confirmarRenovacaoEmMassa() {
                                     <i class="ki-duotone ki-down fs-5 ms-1"></i>
                                 </a>
                                 <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4" data-kt-menu="true">
+                                    <div class="menu-item px-3">
+                                        <a :href="`/alunos/${matricula.aluno_id}`" class="menu-link px-3">
+                                            <AcaoIcone acao="visualizar" class="me-2" />
+                                            Ver Aluno
+                                        </a>
+                                    </div>
                                     <div
                                         v-if="[ESTADO_MATRICULA.PENDENTE, ESTADO_MATRICULA.ACTIVA].includes(matricula.estado) && can('matricula.editar')"
                                         class="menu-item px-3"
                                     >
                                         <a href="#" class="menu-link px-3" @click.prevent="abrirEdicaoMatricula(matricula)">
+                                            <AcaoIcone acao="editar" class="me-2" />
                                             Editar
                                         </a>
                                     </div>
@@ -463,8 +482,21 @@ function confirmarRenovacaoEmMassa() {
                                             class="menu-link px-3"
                                             @click.prevent="pedirAlteracaoEstado(matricula, proximoEstado)"
                                         >
+                                            <AcaoIcone :acao="iconeTransicao(proximoEstado)" class="me-2" />
                                             Marcar como {{ estadoMatriculaLabel(proximoEstado) }}
                                         </a>
+                                    </div>
+                                    <div
+                                        v-if="matricula.estado === ESTADO_MATRICULA.ACTIVA && can('matricula.trancar')"
+                                        class="menu-item px-3"
+                                    >
+                                        <a href="#" class="menu-link px-3" @click.prevent="abrirTrancamento(matricula, 'trancar')"><AcaoIcone acao="trancar" class="me-2" />Trancar</a>
+                                    </div>
+                                    <div
+                                        v-if="matricula.estado === ESTADO_MATRICULA.TRANCADA && can('matricula.trancar')"
+                                        class="menu-item px-3"
+                                    >
+                                        <a href="#" class="menu-link px-3" @click.prevent="abrirTrancamento(matricula, 'reactivar')"><AcaoIcone acao="reactivar" class="me-2" />Reactivar</a>
                                     </div>
                                     <div
                                         v-if="matricula.estado === ESTADO_MATRICULA.CONCLUIDA && can('matricula.criar')"
@@ -475,6 +507,7 @@ function confirmarRenovacaoEmMassa() {
                                             class="menu-link px-3"
                                             @click.prevent="pedirRenovacao(matricula)"
                                         >
+                                            <AcaoIcone acao="renovar" class="me-2" />
                                             Renovar Matrícula
                                         </a>
                                     </div>
@@ -484,6 +517,7 @@ function confirmarRenovacaoEmMassa() {
                                             class="menu-link px-3"
                                             @click.prevent="abrirDisciplinas(matricula)"
                                         >
+                                            <AcaoIcone acao="disciplinas" class="me-2" />
                                             Disciplinas
                                         </a>
                                     </div>
@@ -496,6 +530,7 @@ function confirmarRenovacaoEmMassa() {
                                             class="menu-link px-3 text-danger"
                                             @click.prevent="pedirEliminacao(matricula)"
                                         >
+                                            <AcaoIcone acao="eliminar" class="me-2" />
                                             Eliminar
                                         </a>
                                     </div>
@@ -566,11 +601,10 @@ function confirmarRenovacaoEmMassa() {
             @cancelar="fecharMatriculaModal"
         />
 
-        <ConfirmModal
+        <FimDeMatriculaModal
             :show="!!matriculaParaAlterarEstado"
-            titulo="Alterar Estado da Matrícula"
-            :mensagem="`Alterar o estado da matrícula ${matriculaParaAlterarEstado?.numero_registo_matricula} para '${estadoMatriculaLabel(estadoAlvo)}'?`"
-            texto-confirmar="Confirmar"
+            :matricula="matriculaParaAlterarEstado"
+            :estado="estadoAlvo"
             :processando="confirmandoEstado"
             @confirmar="confirmarAlteracaoEstado"
             @cancelar="cancelarAlteracaoEstado"
@@ -584,6 +618,14 @@ function confirmarRenovacaoEmMassa() {
             :processando="confirmandoRenovacao"
             @confirmar="confirmarRenovacao"
             @cancelar="cancelarRenovacao"
+        />
+
+        <TrancamentoModal
+            :show="trancamento.aberto"
+            :matricula="trancamento.matricula"
+            :modo="trancamento.modo"
+            @fechar="trancamento.aberto = false"
+            @concluido="concluirTrancamento"
         />
 
         <InscricaoDisciplinaModal

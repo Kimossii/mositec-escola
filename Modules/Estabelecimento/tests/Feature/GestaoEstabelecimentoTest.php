@@ -321,7 +321,7 @@ class GestaoEstabelecimentoTest extends TestCase
         $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola Exemplo', 'tipo' => TipoEstabelecimentoEnum::PUBLICO, 'tipo_ensino' => TipoEnsinoEnum::GERAL]);
 
         $response = $this->post('/estabelecimento/logotipo', [
-            'logotipo' => UploadedFile::fake()->image('logo.png'),
+            'logotipo' => $this->imagemFalsa('logo.png'),
         ]);
 
         $response->assertRedirect();

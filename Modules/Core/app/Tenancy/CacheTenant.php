@@ -29,6 +29,12 @@ class CacheTenant
         return Cache::put($this->chave($chave), $valor, $ttl);
     }
 
+    /** Grava só se a chave ainda não existir (atómico): false = já existia. Serve para «uma vez por dia». */
+    public function add(string $chave, mixed $valor, DateTimeInterface|DateInterval|int|null $ttl = null): bool
+    {
+        return Cache::add($this->chave($chave), $valor, $ttl);
+    }
+
     public function forever(string $chave, mixed $valor): bool
     {
         return Cache::forever($this->chave($chave), $valor);

@@ -3,6 +3,8 @@ import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
+import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
@@ -15,6 +17,7 @@ import { ESTADO } from '../Models/Estado';
 const props = defineProps({
     cursos: { type: Object, required: true }, // paginator: { data, links, ... }
     filtros: { type: Object, default: () => ({}) },
+    indicadores: { type: Object, default: null }, // diferido: chega depois da lista
 });
 defineOptions({ layout: AppLayout });
 
@@ -28,6 +31,14 @@ const filtros = reactive({
     pesquisa: props.filtros.pesquisa ?? '',
     estado: props.filtros.estado ?? '',
 });
+
+const montarIndicadores = (i) => [
+    { rotulo: 'Cursos', valor: String(i.total), nota: 'no total', cor: 'primary' },
+    { rotulo: 'Activos', valor: String(i.activos), nota: 'abertos a turmas e matrículas', cor: 'success' },
+    { rotulo: 'Inactivos', valor: String(i.inactivos), nota: 'desactivados', cor: 'danger' },
+];
+const filtrosAtivos = computed(() => filtros.estado !== '' ? 1 : 0);
+const limparFiltros = () => { filtros.estado = ''; };
 
 let debounceId = null;
 
@@ -122,25 +133,14 @@ function confirmarAlteracaoEstado() {
             <button v-if="can('curso.criar')" class="btn btn-primary" @click="abrirCriacao">Novo Curso</button>
         </div>
 
-        <div class="card mb-6">
-            <div class="card-body">
-                <div class="row g-4">
-                    <div class="col-6 col-md-4">
-                        <label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label>
-                        <input
-                            v-model="filtros.pesquisa"
-                            type="text"
-                            class="form-control form-control-solid"
-                            placeholder="Código ou nome"
-                        />
-                    </div>
-                    <div class="col-6 col-md-4">
-                        <label class="fw-semibold fs-7 text-muted mb-1">Estado</label>
-                        <SelectSolid v-model="filtros.estado" :options="opcoesEstado" />
-                    </div>
-                </div>
+        <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" :quantidade="3" />
+
+        <FiltrosRecolhiveis v-model="filtros.pesquisa" placeholder="Pesquisar por código ou nome" :ativos="filtrosAtivos" @limpar="limparFiltros">
+            <div class="col-12 col-md-4">
+                <label class="fw-semibold fs-7 text-muted mb-1">Estado</label>
+                <SelectSolid v-model="filtros.estado" :options="opcoesEstado" />
             </div>
-        </div>
+        </FiltrosRecolhiveis>
 
         <div class="card">
             <div class="card-body p-0">

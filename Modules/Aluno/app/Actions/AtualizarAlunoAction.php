@@ -23,6 +23,8 @@ class AtualizarAlunoAction
                 'data_nascimento' => $dto->dataNascimento,
                 'sexo' => $dto->sexo,
                 'numero_identificacao' => $dto->numeroIdentificacao,
+                'provincia_nascimento' => $dto->provinciaNascimento,
+                'municipio_nascimento' => $dto->municipioNascimento,
             ])->save();
 
             if ($foto) {

@@ -9,6 +9,7 @@ use Modules\AnoLectivo\Actions\Concerns\GarantiaAnoLectivoAtivoUnico;
 use Modules\AnoLectivo\DTO\AnoLectivoDTO;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\AnoLectivo\Support\DependenciasRegistadasDoAnoLectivo;
 use Modules\Estabelecimento\Models\Estabelecimento;
 
 class AtualizarAnoLectivoAction
@@ -24,6 +25,7 @@ class AtualizarAnoLectivoAction
                 $this->garantirUnicoAtivo($estabelecimentoId, $anoLectivo->id);
             }
 
+            $this->garantirInicioCompativelComDependencias($anoLectivo, $dto);
             $this->garantirDependentesDentroDoNovoIntervalo($anoLectivo, $dto);
 
             $anoLectivo->update([
@@ -36,6 +38,24 @@ class AtualizarAnoLectivoAction
 
             return $anoLectivo->fresh();
         });
+    }
+
+    /**
+     * Mudar o mês (ou ano) de data_inicio desloca competências de módulos dependentes (ex.:
+     * planos de propina); mudar só o dia dentro do mesmo mês é livre.
+     */
+    private function garantirInicioCompativelComDependencias(AnoLectivo $anoLectivo, AnoLectivoDTO $dto): void
+    {
+        $actual = Carbon::parse($anoLectivo->data_inicio);
+        $novo = Carbon::parse($dto->dataInicio);
+
+        if ($actual->format('Y-m') === $novo->format('Y-m')) {
+            return;
+        }
+
+        if (($motivo = app(DependenciasRegistadasDoAnoLectivo::class)->bloqueiaAlteracaoDeInicio($anoLectivo)) !== null) {
+            throw ValidationException::withMessages(['data_inicio' => $motivo]);
+        }
     }
 
     private function garantirDependentesDentroDoNovoIntervalo(AnoLectivo $anoLectivo, AnoLectivoDTO $dto): void

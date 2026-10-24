@@ -4,9 +4,12 @@ namespace Modules\Aluno\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
+use Modules\Core\Http\Requests\Concerns\ValidaProvinciaMunicipio;
 
 class CriarAlunoRequest extends BaseRequest
 {
+    use ValidaProvinciaMunicipio;
+
     public function authorize(): bool
     {
         return $this->user()?->can('aluno.criar') ?? false;
@@ -14,7 +17,7 @@ class CriarAlunoRequest extends BaseRequest
 
     public function rules(): array
     {
-        return [
+        return array_merge([
             'dados_pessoa_id' => [
                 'nullable',
                 'integer',
@@ -34,12 +37,12 @@ class CriarAlunoRequest extends BaseRequest
                 Rule::unique('dados_pessoas', 'numero_identificacao'),
             ],
             'foto' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
-        ];
+        ], $this->regrasDeProvinciaMunicipio('provincia_nascimento', 'municipio_nascimento'));
     }
 
     public function messages(): array
     {
-        return [
+        return array_merge([
             'dados_pessoa_id.exists' => 'A pessoa seleccionada não existe.',
             'dados_pessoa_id.unique' => 'Esta pessoa já está associada a um aluno.',
             'nome_completo.required_without' => 'O nome completo é obrigatório.',
@@ -49,6 +52,6 @@ class CriarAlunoRequest extends BaseRequest
             'foto.image' => 'A foto deve ser uma imagem válida.',
             'foto.mimes' => 'A foto deve ser um ficheiro PNG, JPG, JPEG ou WEBP.',
             'foto.max' => 'A foto não pode exceder 2MB.',
-        ];
+        ], $this->mensagensDeProvinciaMunicipio('provincia_nascimento', 'municipio_nascimento'));
     }
 }

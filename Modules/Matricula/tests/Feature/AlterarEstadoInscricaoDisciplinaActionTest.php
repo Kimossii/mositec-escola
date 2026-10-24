@@ -23,6 +23,7 @@ use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
 use Modules\Usuario\Models\DadosPessoa;
 use Tests\TestCase;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 
 class AlterarEstadoInscricaoDisciplinaActionTest extends TestCase
 {
@@ -63,7 +64,7 @@ class AlterarEstadoInscricaoDisciplinaActionTest extends TestCase
         $actualizada = app(AlterarEstadoInscricaoDisciplinaAction::class)->executar($inscricao, EstadoInscricaoDisciplinaEnum::CONCLUIDA);
 
         $this->assertSame(EstadoInscricaoDisciplinaEnum::CONCLUIDA, $actualizada->estado);
-        $this->assertSame(now()->toDateString(), $actualizada->data_conclusao->toDateString());
+        $this->assertSame(app(RelogioDoTenant::class)->hoje()->toDateString(), $actualizada->data_conclusao->toDateString());
     }
 
     public function test_rejeita_transicao_de_estado_terminal(): void

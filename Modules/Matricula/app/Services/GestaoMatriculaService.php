@@ -3,7 +3,10 @@
 namespace Modules\Matricula\Services;
 
 use Modules\Aluno\Models\Aluno;
+use Modules\Core\Contracts\PrevisaoCancelamentoAoTerminarMatricula;
 use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
+use Modules\Matricula\Actions\ReactivarMatriculaAction;
+use Modules\Matricula\Actions\TrancarMatriculaAction;
 use Modules\Matricula\Actions\AtualizarMatriculaAction;
 use Modules\Matricula\Actions\CriarMatriculaAction;
 use Modules\Matricula\Actions\EliminarMatriculaAction;
@@ -21,6 +24,8 @@ class GestaoMatriculaService
         private CriarMatriculaAction $criarMatricula,
         private AtualizarMatriculaAction $atualizarMatricula,
         private AlterarEstadoMatriculaAction $alterarEstadoMatricula,
+        private TrancarMatriculaAction $trancarMatricula,
+        private ReactivarMatriculaAction $reactivarMatricula,
         private RenovarMatriculaAction $renovarMatricula,
         private EliminarMatriculaAction $eliminarMatricula,
         private RenovarMatriculasEmMassaAction $renovarMatriculasEmMassa,
@@ -43,6 +48,38 @@ class GestaoMatriculaService
             MatriculaDTO::fromAtualizarRequest($request),
             auth()->id(),
         );
+    }
+
+    public function trancar(Matricula $matricula, string $dataEfeito, string $motivo, bool $confirmarComDividas): Matricula
+    {
+        return $this->trancarMatricula->executar($matricula, $dataEfeito, $motivo, $confirmarComDividas, auth()->id());
+    }
+
+    public function reactivar(Matricula $matricula, string $dataEfeito, string $motivo): Matricula
+    {
+        return $this->reactivarMatricula->executar($matricula, $dataEfeito, $motivo, auth()->id());
+    }
+
+    /** @return array{bloqueios: list<array>, avisos: list<array>} */
+    public function verificarTrancamento(Matricula $matricula, string $dataEfeito): array
+    {
+        return $this->trancarMatricula->verificar($matricula, \Carbon\CarbonImmutable::parse($dataEfeito))->toArray();
+    }
+
+    /**
+     * O que o fim da matrícula nessa data cancelaria (via contratos do Core, sem importar outros módulos).
+     *
+     * @return list<array{descricao: string, vencida: bool}>
+     */
+    public function previsaoDeFim(Matricula $matricula, string $dataFim): array
+    {
+        $itens = [];
+
+        foreach (app()->tagged(PrevisaoCancelamentoAoTerminarMatricula::ETIQUETA) as $previsao) {
+            $itens = [...$itens, ...$previsao->prever((int) $matricula->id, $dataFim)];
+        }
+
+        return $itens;
     }
 
     public function alterarEstado(

@@ -1,0 +1,11 @@
+{
+    "name": "Financeiro",
+    "alias": "financeiro",
+    "description": "Configuração e operação financeira (propinas, cobrança, pagamentos)",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Financeiro\\Providers\\FinanceiroServiceProvider"
+    ],
+    "files": []
+}

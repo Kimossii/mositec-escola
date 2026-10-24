@@ -11,6 +11,8 @@ import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/Shared/EstadoBadge.vue';
+import EstadoCobrancaBadge from '../../../../Financeiro/resources/js/Components/Shared/EstadoCobrancaBadge.vue';
+import { formatarDinheiro } from '../../../../Financeiro/resources/js/Support/dinheiro.js';
 import MatriculaFormModal from '../../../../Matricula/resources/js/Components/MatriculaFormModal.vue';
 import InscricaoDisciplinaModal from '../../../../Matricula/resources/js/Components/InscricaoDisciplinaModal.vue';
 import DocumentoPessoaModal from '../../../../Usuario/resources/js/Components/DocumentoPessoaModal.vue';
@@ -26,6 +28,12 @@ const props = defineProps({
     turmasDisponiveis: { type: Array, default: () => [] },
     anosLectivosComMatricula: { type: Array, default: () => [] },
     filtrosMatricula: { type: Object, default: () => ({}) },
+    provincias: { type: Array, default: () => [] },
+    municipiosPorProvincia: { type: Object, default: () => ({}) },
+    podeVerPropinas: { type: Boolean, default: false },
+    situacaoPropinas: { type: Object, default: null },
+    podeRegistarPagamento: { type: Boolean, default: false },
+    moeda: { type: Object, default: null },
 });
 defineOptions({ layout: AppLayout });
 
@@ -194,6 +202,25 @@ function guardar(payload) {
 
 // O filtro por omissão (ano lectivo activo) já vem calculado do backend em
 // filtrosMatricula — aqui só reflectimos o que o servidor devolveu.
+// Períodos da situação de propinas: pesquisa, estado e paginação no cliente (uma matrícula tem poucas dezenas).
+const POR_PAGINA = 6;
+const filtroPeriodos = reactive({ pesquisa: '', estado: '', pagina: 1 });
+const opcoesEstadoPeriodo = computed(() => [
+    { value: '', label: 'Todos os estados' },
+    ...[...new Map((props.situacaoPropinas?.periodos ?? []).map((p) => [p.estado, p.estado_descricao])).entries()].map(([value, label]) => ({ value, label })),
+]);
+const periodosFiltrados = computed(() => {
+    const termo = filtroPeriodos.pesquisa.trim().toLowerCase();
+
+    return (props.situacaoPropinas?.periodos ?? []).filter((p) => (filtroPeriodos.estado === '' || p.estado === filtroPeriodos.estado)
+        && (termo === '' || p.periodo.toLowerCase().includes(termo)));
+});
+const totalPaginasPeriodos = computed(() => Math.max(1, Math.ceil(periodosFiltrados.value.length / POR_PAGINA)));
+const periodosDaPagina = computed(() => periodosFiltrados.value.slice((filtroPeriodos.pagina - 1) * POR_PAGINA, filtroPeriodos.pagina * POR_PAGINA));
+watch(() => [filtroPeriodos.pesquisa, filtroPeriodos.estado], () => { filtroPeriodos.pagina = 1; });
+
+const temHistorico = typeof window !== 'undefined' && window.history.length > 1;
+
 const filtros = reactive({
     ano_lectivo_id: props.filtrosMatricula.ano_lectivo_id ?? '',
     pesquisa: props.filtrosMatricula.pesquisa ?? '',
@@ -410,7 +437,8 @@ function confirmarEliminacao() {
 
 <template>
     <div class="app-container container-xxl py-6">
-        <BotaoVoltar href="/alunos" class="mb-4" />
+        <!-- Volta para onde o utilizador estava (Dívidas, lista de alunos, pagamento…); sem histórico, para a lista de alunos. -->
+        <BotaoVoltar :href="temHistorico ? null : '/alunos'" class="mb-4" />
 
         <div class="d-flex justify-content-between align-items-center mb-6">
             <div class="d-flex align-items-center gap-4">
@@ -599,6 +627,14 @@ function confirmarEliminacao() {
                             <div class="col-md-4 fw-bold text-muted">Nº de matrícula</div>
                             <div class="col-md-8">{{ aluno.numero_matricula }}</div>
                         </div>
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Província de nascimento</div>
+                            <div class="col-md-8">{{ aluno.dados_pessoa?.provincia_nascimento ?? '—' }}</div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-4 fw-bold text-muted">Município de nascimento</div>
+                            <div class="col-md-8">{{ aluno.dados_pessoa?.municipio_nascimento ?? '—' }}</div>
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <div class="row mb-4">
@@ -632,6 +668,154 @@ function confirmarEliminacao() {
                             <div class="col-md-8">{{ aluno.dados_pessoa?.telefone_alternativo ?? '—' }}</div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-6">
+            <div class="card-header">
+                <h3 class="card-title fw-bold">Situação de propinas</h3>
+                <div class="card-toolbar">
+                    <a
+                        v-if="podeVerPropinas && situacaoPropinas?.tem_matricula_activa && podeRegistarPagamento"
+                        :href="`/financeiro/pagamentos/novo?matricula=${situacaoPropinas.matricula_id}&voltar=${encodeURIComponent('/alunos/' + aluno.id)}`"
+                        class="btn btn-sm btn-primary"
+                    >
+                        Registar pagamento
+                    </a>
+                </div>
+            </div>
+            <div class="card-body pt-4">
+                <div v-if="situacaoPropinas?.acordo" class="alert d-flex flex-wrap justify-content-between align-items-center mb-0 mt-4" :class="situacaoPropinas.acordo.em_atraso ? 'alert-danger' : 'alert-primary'">
+                    <div>
+                        <strong>Em acordo de pagamento{{ situacaoPropinas.acordo.em_atraso ? ' (prestação em atraso)' : '' }}.</strong>
+                        Em falta: {{ formatarDinheiro(situacaoPropinas.acordo.em_falta, moeda) }}.
+                        <span v-if="situacaoPropinas.acordo.proxima">Próxima prestação: {{ situacaoPropinas.acordo.proxima.ordem }}.ª, {{ formatarData(situacaoPropinas.acordo.proxima.data_vencimento) }}.</span>
+                    </div>
+                    <a :href="`/financeiro/acordos/${situacaoPropinas.acordo.id}`" class="btn btn-sm btn-light">Ver acordo</a>
+                </div>
+                <div v-if="!podeVerPropinas" class="text-muted fs-7">Sem permissão para ver a situação de propinas.</div>
+                <div v-else-if="!situacaoPropinas?.tem_matricula_activa" class="text-muted fs-7">Sem matrícula activa.</div>
+                <template v-else>
+                    <div class="row g-4 mb-6">
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted fs-8 text-uppercase fw-bold">Capital em dívida</div>
+                            <div class="fs-4 fw-bold">{{ formatarDinheiro(situacaoPropinas.capital_em_divida, moeda) }}</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted fs-8 text-uppercase fw-bold">Multas pendentes</div>
+                            <div class="fs-4 fw-bold">{{ formatarDinheiro(situacaoPropinas.multas_pendentes, moeda) }}</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted fs-8 text-uppercase fw-bold">Total em dívida</div>
+                            <div class="fs-4 fw-bold">{{ formatarDinheiro(situacaoPropinas.total_em_divida, moeda) }}</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted fs-8 text-uppercase fw-bold">Em atraso</div>
+                            <div class="fs-4 fw-bold">{{ situacaoPropinas.propinas_em_atraso }} propina(s)</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted fs-8 text-uppercase fw-bold">Próximo vencimento</div>
+                            <div class="fs-4 fw-bold">{{ formatarData(situacaoPropinas.proximo_vencimento) }}</div>
+                        </div>
+                    </div>
+
+                    <div v-if="situacaoPropinas.periodos.length > POR_PAGINA" class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <input v-model="filtroPeriodos.pesquisa" type="search" class="form-control form-control-solid" placeholder="Pesquisar período (ex.: Mar/2026)" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <SelectSolid v-model="filtroPeriodos.estado" :options="opcoesEstadoPeriodo" />
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle table-row-dashed table-hover fs-7 gy-5 mb-0">
+                            <thead>
+                                <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0">
+                                    <th class="min-w-100px">Período</th>
+                                    <th class="text-end min-w-100px">Valor</th>
+                                    <th class="text-end min-w-100px">Pago</th>
+                                    <th class="text-end min-w-100px">Saldo</th>
+                                    <th class="text-end min-w-100px">Multa</th>
+                                    <th class="min-w-125px">Estado</th>
+                                    <th class="text-end min-w-100px">Acções</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 fw-semibold">
+                                <tr v-if="situacaoPropinas.periodos.length === 0">
+                                    <td colspan="7" class="text-center text-muted py-6">Sem propinas registadas.</td>
+                                </tr>
+                                <tr v-else-if="periodosFiltrados.length === 0">
+                                    <td colspan="7" class="text-center text-muted py-6">Nenhum período corresponde ao filtro.</td>
+                                </tr>
+                                <tr v-for="periodo in periodosDaPagina" :key="periodo.periodo">
+                                    <td class="text-gray-800">{{ periodo.periodo }}</td>
+                                    <td class="text-end">{{ formatarDinheiro(periodo.valor, moeda) }}</td>
+                                    <td class="text-end">{{ formatarDinheiro(periodo.pago, moeda) }}</td>
+                                    <td class="text-end">{{ formatarDinheiro(periodo.saldo, moeda) }}</td>
+                                    <td class="text-end">
+                                        <template v-if="periodo.multa_valor">
+                                            <span :class="periodo.multa_pendente ? 'text-danger' : 'text-success'">{{ formatarDinheiro(periodo.multa_valor, moeda) }}</span>
+                                            <div class="fs-8" :class="periodo.multa_pendente ? 'text-danger' : 'text-success'">
+                                                {{ periodo.multa_pendente ? (periodo.multa_paga ? `pendente ${formatarDinheiro(periodo.multa_pendente, moeda)}` : 'por pagar') : 'paga' }}
+                                            </div>
+                                            <div v-if="periodo.multa_regra" class="fs-8 text-muted">{{ periodo.multa_regra }}</div>
+                                        </template>
+                                        <span v-else>—</span>
+                                    </td>
+                                    <td><EstadoCobrancaBadge :estado="periodo.estado" :estado-descricao="periodo.estado_descricao" /></td>
+                                    <td class="text-end text-nowrap">
+                                        <a
+                                            v-if="(periodo.saldo > 0 || periodo.multa_pendente > 0) && podeRegistarPagamento"
+                                            :href="`/financeiro/pagamentos/novo?matricula=${situacaoPropinas.matricula_id}&voltar=${encodeURIComponent('/alunos/' + aluno.id)}`"
+                                            class="btn btn-sm btn-light-primary"
+                                        >Pagar</a>
+                                        <a v-else :href="`/financeiro/propinas/${periodo.propina_id}`" class="btn btn-sm btn-light">Ver</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div v-if="periodosFiltrados.length > POR_PAGINA" class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-muted fs-7">
+                            {{ (filtroPeriodos.pagina - 1) * POR_PAGINA + 1 }}–{{ Math.min(filtroPeriodos.pagina * POR_PAGINA, periodosFiltrados.length) }} de {{ periodosFiltrados.length }}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-light" :disabled="filtroPeriodos.pagina === 1" @click="filtroPeriodos.pagina--">Anterior</button>
+                            <button
+                                v-for="n in totalPaginasPeriodos" :key="n" type="button" class="btn btn-sm"
+                                :class="n === filtroPeriodos.pagina ? 'btn-primary' : 'btn-light'" @click="filtroPeriodos.pagina = n"
+                            >{{ n }}</button>
+                            <button type="button" class="btn btn-sm btn-light" :disabled="filtroPeriodos.pagina === totalPaginasPeriodos" @click="filtroPeriodos.pagina++">Seguinte</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div v-if="podeVerPropinas" class="card mt-6">
+            <div class="card-header">
+                <h3 class="card-title fw-bold">Produtos e serviços por pagar</h3>
+                <div class="card-toolbar">
+                    <a
+                        v-if="can('cobranca.criar')"
+                        :href="`/financeiro/cobrancas/nova?${situacaoPropinas?.matricula_id ? `matricula=${situacaoPropinas.matricula_id}&` : ''}voltar=${encodeURIComponent('/alunos/' + aluno.id)}`"
+                        class="btn btn-sm btn-primary"
+                    >
+                        Nova cobrança
+                    </a>
+                </div>
+            </div>
+            <div class="card-body pt-0">
+                <div v-if="!situacaoPropinas?.cobrancas?.length" class="text-muted fs-6 py-3">Nada por pagar em produtos e serviços.</div>
+                <div v-for="c in situacaoPropinas?.cobrancas ?? []" :key="c.id" class="d-flex justify-content-between align-items-center py-3 border-bottom border-dashed">
+                    <div>
+                        <a :href="`/financeiro/cobrancas/${c.id}`" class="fw-bold fs-6">{{ c.descricao }}</a>
+                        <span class="badge ms-2" :class="c.obrigatoria ? 'badge-light-warning' : 'badge-light'">{{ c.obrigatoria ? 'Obrigatório' : 'Opcional' }}</span>
+                        <div v-if="c.data_limite" class="text-muted fs-7">Até {{ formatarData(c.data_limite) }}</div>
+                    </div>
+                    <div class="fw-bold">{{ formatarDinheiro(c.saldo, moeda) }}</div>
                 </div>
             </div>
         </div>
@@ -762,6 +946,8 @@ function confirmarEliminacao() {
         <AlunoFormModal
             :show="modalAberto"
             :aluno="aluno"
+            :provincias="provincias"
+            :municipios-por-provincia="municipiosPorProvincia"
             :processing="processing"
             :errors="errors"
             @submit="guardar"

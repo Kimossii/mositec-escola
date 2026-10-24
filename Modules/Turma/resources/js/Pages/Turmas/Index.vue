@@ -3,6 +3,8 @@ import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
+import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
@@ -20,6 +22,7 @@ const props = defineProps({
     cursos: { type: Array, required: true },
     turnos: { type: Array, required: true },
     filtros: { type: Object, default: () => ({}) },
+    indicadores: { type: Object, default: null }, // diferido: chega depois da lista
 });
 defineOptions({ layout: AppLayout });
 
@@ -57,6 +60,15 @@ const filtros = reactive({
     turno_id: props.filtros.turno_id ?? '',
     estado: props.filtros.estado ?? '',
 });
+
+const montarIndicadores = (i) => [
+    { rotulo: 'Turmas', valor: String(i.total), nota: 'no ano lectivo escolhido', cor: 'primary' },
+    { rotulo: 'Activas', valor: String(i.activas), nota: 'a funcionar', cor: 'success' },
+    { rotulo: 'Inactivas', valor: String(i.inactivas), nota: 'desactivadas', cor: 'danger' },
+    { rotulo: 'Cursos com turmas', valor: String(i.cursos), nota: 'distintos', cor: 'info' },
+];
+const filtrosAtivos = computed(() => [filtros.curso_id, filtros.nivel_academico_id, filtros.turno_id, filtros.estado].filter((v) => v !== '').length);
+const limparFiltros = () => { filtros.curso_id = ''; filtros.nivel_academico_id = ''; filtros.turno_id = ''; filtros.estado = ''; };
 
 let debounceId = null;
 
@@ -177,41 +189,15 @@ function confirmarEliminacao() {
             <button v-if="can('turmas.criar')" class="btn btn-primary" @click="abrirCriacao">Nova Turma</button>
         </div>
 
-        <div class="card mb-6">
-            <div class="card-body">
-                <div class="row g-4">
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <label class="fw-semibold fs-7 text-muted mb-1">Pesquisa</label>
-                        <input
-                            v-model="filtros.pesquisa"
-                            type="text"
-                            class="form-control form-control-solid"
-                            placeholder="Código ou nome"
-                        />
-                    </div>
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <label class="fw-semibold fs-7 text-muted mb-1">Ano Lectivo</label>
-                        <SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAnoLectivo" />
-                    </div>
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <label class="fw-semibold fs-7 text-muted mb-1">Curso</label>
-                        <SelectSolid v-model="filtros.curso_id" :options="opcoesCurso" searchable />
-                    </div>
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <label class="fw-semibold fs-7 text-muted mb-1">Nível Académico</label>
-                        <SelectSolid v-model="filtros.nivel_academico_id" :options="opcoesNivelAcademico" searchable />
-                    </div>
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <label class="fw-semibold fs-7 text-muted mb-1">Turno</label>
-                        <SelectSolid v-model="filtros.turno_id" :options="opcoesTurno" />
-                    </div>
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <label class="fw-semibold fs-7 text-muted mb-1">Estado</label>
-                        <SelectSolid v-model="filtros.estado" :options="opcoesEstado" />
-                    </div>
-                </div>
-            </div>
-        </div>
+        <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" :quantidade="4" />
+
+        <FiltrosRecolhiveis v-model="filtros.pesquisa" placeholder="Pesquisar por código ou nome" :ativos="filtrosAtivos" @limpar="limparFiltros">
+            <div class="col-6 col-md-4 col-xl-3"><label class="fw-semibold fs-7 text-muted mb-1">Ano Lectivo</label><SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAnoLectivo" /></div>
+            <div class="col-6 col-md-4 col-xl-3"><label class="fw-semibold fs-7 text-muted mb-1">Curso</label><SelectSolid v-model="filtros.curso_id" :options="opcoesCurso" searchable /></div>
+            <div class="col-6 col-md-4 col-xl-3"><label class="fw-semibold fs-7 text-muted mb-1">Nível Académico</label><SelectSolid v-model="filtros.nivel_academico_id" :options="opcoesNivelAcademico" searchable /></div>
+            <div class="col-6 col-md-4 col-xl-3"><label class="fw-semibold fs-7 text-muted mb-1">Turno</label><SelectSolid v-model="filtros.turno_id" :options="opcoesTurno" /></div>
+            <div class="col-6 col-md-4 col-xl-3"><label class="fw-semibold fs-7 text-muted mb-1">Estado</label><SelectSolid v-model="filtros.estado" :options="opcoesEstado" /></div>
+        </FiltrosRecolhiveis>
 
         <div class="card">
             <div class="card-body p-0">

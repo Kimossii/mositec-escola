@@ -4,11 +4,14 @@ namespace Modules\Estabelecimento\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
+use Modules\Core\Http\Requests\Concerns\ValidaProvinciaMunicipio;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 
 class AtualizarDadosRequest extends BaseRequest
 {
+    use ValidaProvinciaMunicipio;
+
     public function authorize(): bool
     {
         return $this->user()?->can('estabelecimento.editar') ?? false;
@@ -16,7 +19,7 @@ class AtualizarDadosRequest extends BaseRequest
 
     public function rules(): array
     {
-        return [
+        return array_merge([
             'nome' => 'required|string|max:255',
             'nome_abreviado' => 'nullable|string|max:100',
             'tipo' => 'required|integer|in:1,2,3',
@@ -45,18 +48,17 @@ class AtualizarDadosRequest extends BaseRequest
             'website' => 'nullable|string|max:255',
             'endereco' => 'nullable|string|max:255',
             'caixa_postal' => 'nullable|string|max:50',
-            'municipio' => 'nullable|string|max:100',
-            'provincia' => 'nullable|string|max:100',
             'responsavel_nome' => 'nullable|string|max:255',
             'responsavel_cargo' => 'nullable|string|max:100',
             'ano_fundacao' => 'nullable|integer|min:1900|max:' . (int) date('Y'),
             'observacoes' => 'nullable|string',
-        ];
+            'fuso_horario' => ['sometimes', 'required', 'string', 'max:64', 'timezone:all'],
+        ], $this->regrasDeProvinciaMunicipio('provincia', 'municipio'));
     }
 
     public function messages(): array
     {
-        return [
+        return array_merge([
             'nome.required' => 'O nome do estabelecimento é obrigatório.',
             'tipo.required' => 'O tipo de estabelecimento é obrigatório.',
             'tipo.in' => 'O tipo de estabelecimento indicado é inválido.',
@@ -66,7 +68,9 @@ class AtualizarDadosRequest extends BaseRequest
             'etapas_ensino.min' => 'Selecione pelo menos uma etapa de ensino.',
             'etapas_ensino.*.in' => 'Uma das etapas de ensino indicadas é inválida.',
             'email.email' => 'Informe um email válido.',
+            'fuso_horario.required' => 'O fuso horário é obrigatório.',
+            'fuso_horario.timezone' => 'O fuso horário indicado é inválido.',
             'ano_fundacao.integer' => 'O ano de fundação deve ser um número válido.',
-        ];
+        ], $this->mensagensDeProvinciaMunicipio('provincia', 'municipio'));
     }
 }

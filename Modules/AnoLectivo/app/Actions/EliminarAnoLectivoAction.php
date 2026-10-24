@@ -4,6 +4,7 @@ namespace Modules\AnoLectivo\Actions;
 
 use Illuminate\Validation\ValidationException;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\AnoLectivo\Support\DependenciasRegistadasDoAnoLectivo;
 use Modules\Matricula\Models\Matricula;
 use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
 use Modules\Turma\Models\Turma;
@@ -34,6 +35,10 @@ class EliminarAnoLectivoAction
             throw ValidationException::withMessages([
                 'ano_lectivo' => 'Este Ano Lectivo tem planos curriculares associados e não pode ser eliminado.',
             ]);
+        }
+
+        if (($motivo = app(DependenciasRegistadasDoAnoLectivo::class)->bloqueiaEliminacao($anoLectivo)) !== null) {
+            throw ValidationException::withMessages(['ano_lectivo' => $motivo]);
         }
 
         $anoLectivo->delete();
