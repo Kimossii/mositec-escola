@@ -116,4 +116,27 @@ class DividasRecibosRelatoriosTest extends TestCase
             ->where('risco.alunos.0.meses', 2)
             ->has('resumo', 2)));
     }
+
+    public function test_pesquisa_global_encontra_aluno_matricula_e_pagamento_e_respeita_permissoes(): void
+    {
+        ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+        $set = $this->propina($matricula, $plano, 1);
+        $this->pagar($matricula, 2_500_000, [[$set, 2_500_000]]);
+        $admin = $this->adminEscola();
+        $nome = $matricula->aluno->dadosPessoa->nome_completo;
+
+        $this->actingAs($admin)->getJson('/pesquisa?q='.urlencode(mb_substr($nome, 0, 4)))->assertOk()
+            ->assertJsonPath('grupos.Alunos.0.link', "/alunos/{$matricula->aluno_id}");
+
+        $this->actingAs($admin)->getJson('/pesquisa?q='.urlencode($matricula->numero_registo_matricula))->assertOk()
+            ->assertJsonPath('grupos.Matrículas.0.link', "/alunos/{$matricula->aluno_id}");
+
+        $this->actingAs($admin)->getJson('/pesquisa?q=2026-')->assertOk()->assertJsonStructure(['grupos' => ['Pagamentos' => [['titulo', 'subtitulo', 'extra', 'link']]]]);
+        $this->actingAs($admin)->getJson('/pesquisa?q=a')->assertOk()->assertExactJson(['grupos' => []]);
+    }
+
+    public function test_pesquisa_global_exige_autenticacao(): void
+    {
+        $this->getJson('/pesquisa?q=abc')->assertUnauthorized();
+    }
 }

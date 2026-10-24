@@ -124,14 +124,14 @@ class PagamentoConsultaService
             ])->all();
     }
 
-    public function listar(array $filtros = []): LengthAwarePaginator
+    public function listar(array $filtros = [], int $porPagina = self::POR_PAGINA): LengthAwarePaginator
     {
         return $this->base($filtros, true)
             ->with(['matricula.aluno.dadosPessoa', 'metodo', 'credito'])
             ->withSum('distribuicoes as total_distribuido', 'valor')
             ->orderByDesc('data_pagamento')
             ->orderByDesc('id')
-            ->paginate(self::POR_PAGINA)
+            ->paginate($porPagina)
             ->withQueryString()
             ->through(fn (Pagamento $pagamento) => [
                 'id' => $pagamento->id,
