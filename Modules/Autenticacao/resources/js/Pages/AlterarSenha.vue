@@ -3,18 +3,14 @@ import { reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
+import CampoSenha from '../Components/CampoSenha.vue';
+import ForcaDaSenha from '../Components/ForcaDaSenha.vue';
 import PainelDeMarca from '../Components/PainelDeMarca.vue';
 
-const form = reactive({
-    current_password: '',
-    password: '',
-    password_confirmation: '',
-});
+// Troca OBRIGATÓRIA (senha temporária): a troca voluntária vive em Definições → Segurança.
+const form = reactive({ current_password: '', password: '', password_confirmation: '' });
 const processing = ref(false);
 const errors = ref({});
-const mostrarActual = ref(false);
-const mostrarNova = ref(false);
-const mostrarConfirmacao = ref(false);
 
 function submit() {
     processing.value = true;
@@ -23,7 +19,6 @@ function submit() {
     router.put('/alterar-senha', form, {
         onError: (erros) => {
             errors.value = erros;
-            processing.value = false;
             toast.error(Object.values(erros)[0]);
         },
         onFinish: () => {
@@ -43,109 +38,26 @@ function terminarSessao() {
             <div class="d-flex flex-center flex-column flex-lg-row-fluid">
                 <div class="w-lg-500px p-10">
                     <form class="form w-100" novalidate @submit.prevent="submit">
-                        <div class="text-center mb-11">
-                            <h1 class="text-dark fw-bolder mb-3">Alterar senha</h1>
+                        <div class="text-center mb-8">
+                            <span class="symbol symbol-65px mb-5">
+                                <span class="symbol-label bg-light-success">
+                                    <i class="ki-duotone ki-shield-tick fs-2x text-success"><span class="path1"></span><span class="path2"></span></i>
+                                </span>
+                            </span>
+                            <h1 class="text-dark fw-bolder mb-3">Defina a sua senha pessoal</h1>
                             <div class="text-gray-500 fw-semibold fs-6">
-                                Defina uma nova senha para continuar
+                                A senha atual é temporária. Escolha uma senha só sua para proteger a sua conta.
                             </div>
                         </div>
 
-                        <div class="fv-row mb-8">
-                            <label class="required fw-semibold fs-6 mb-2">Senha actual</label>
-                            <div class="position-relative">
-                                <input
-                                    v-model="form.current_password"
-                                    :type="mostrarActual ? 'text' : 'password'"
-                                    name="current_password"
-                                    autocomplete="current-password"
-                                    class="form-control form-control-solid"
-                                    style="padding-right: 3rem;"
-                                    placeholder="Senha actual"
-                                />
-                                <button
-                                    type="button"
-                                    class="btn btn-icon btn-sm position-absolute top-50 translate-middle-y end-0 me-2 text-gray-500"
-                                    tabindex="-1"
-                                    @click="mostrarActual = !mostrarActual"
-                                >
-                                    <svg v-if="mostrarActual" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                        <line x1="1" y1="1" x2="23" y2="23" />
-                                    </svg>
-                                    <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
-                                        <circle cx="12" cy="12" r="3" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div class="text-danger fs-7 mt-1" v-if="errors.current_password">{{ errors.current_password }}</div>
-                        </div>
-
-                        <div class="fv-row mb-8">
-                            <label class="required fw-semibold fs-6 mb-2">Nova senha</label>
-                            <div class="position-relative">
-                                <input
-                                    v-model="form.password"
-                                    :type="mostrarNova ? 'text' : 'password'"
-                                    name="password"
-                                    autocomplete="new-password"
-                                    class="form-control form-control-solid"
-                                    style="padding-right: 3rem;"
-                                    placeholder="Nova senha"
-                                />
-                                <button
-                                    type="button"
-                                    class="btn btn-icon btn-sm position-absolute top-50 translate-middle-y end-0 me-2 text-gray-500"
-                                    tabindex="-1"
-                                    @click="mostrarNova = !mostrarNova"
-                                >
-                                    <svg v-if="mostrarNova" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                        <line x1="1" y1="1" x2="23" y2="23" />
-                                    </svg>
-                                    <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
-                                        <circle cx="12" cy="12" r="3" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div class="text-danger fs-7 mt-1" v-if="errors.password">{{ errors.password }}</div>
-                        </div>
-
-                        <div class="fv-row mb-8">
-                            <label class="required fw-semibold fs-6 mb-2">Confirmar nova senha</label>
-                            <div class="position-relative">
-                                <input
-                                    v-model="form.password_confirmation"
-                                    :type="mostrarConfirmacao ? 'text' : 'password'"
-                                    name="password_confirmation"
-                                    autocomplete="new-password"
-                                    class="form-control form-control-solid"
-                                    style="padding-right: 3rem;"
-                                    placeholder="Confirmar nova senha"
-                                />
-                                <button
-                                    type="button"
-                                    class="btn btn-icon btn-sm position-absolute top-50 translate-middle-y end-0 me-2 text-gray-500"
-                                    tabindex="-1"
-                                    @click="mostrarConfirmacao = !mostrarConfirmacao"
-                                >
-                                    <svg v-if="mostrarConfirmacao" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                        <line x1="1" y1="1" x2="23" y2="23" />
-                                    </svg>
-                                    <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
-                                        <circle cx="12" cy="12" r="3" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div class="text-danger fs-7 mt-1" v-if="errors.password_confirmation">{{ errors.password_confirmation }}</div>
-                        </div>
+                        <CampoSenha v-model="form.current_password" rotulo="Senha temporária" placeholder="A senha que recebeu" autocomplete="current-password" :erro="errors.current_password" />
+                        <CampoSenha v-model="form.password" rotulo="Nova senha" placeholder="Escolha uma senha forte" autocomplete="new-password" :erro="errors.password" />
+                        <ForcaDaSenha :senha="form.password" :confirmacao="form.password_confirmation" />
+                        <CampoSenha v-model="form.password_confirmation" rotulo="Confirmar nova senha" placeholder="Repita a nova senha" autocomplete="new-password" :erro="errors.password_confirmation" />
 
                         <div class="d-grid mb-5">
                             <button type="submit" class="btn btn-primary" :disabled="processing">
-                                <span v-if="!processing">Guardar nova senha</span>
+                                <span v-if="!processing">Guardar e continuar</span>
                                 <span v-else>
                                     A guardar...
                                     <Loader size="0.3px" class="align-middle ms-2" />

@@ -222,11 +222,12 @@ class TrocaObrigatoriaDeSenhaTest extends TestCase
         $user = $this->utilizador('ana@example.com', false);
         $this->actingAs($user);
 
-        $this->get('/alterar-senha')->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component('Autenticacao/AlterarSenha'));
-        $this->get('/alterar-senha')->assertViewIs('layouts.guest');
+        // A troca voluntária vive nas Definições; a página de vista própria é só para a troca obrigatória.
+        $this->get('/alterar-senha')->assertRedirect(route('definicoes', ['aba' => 'seguranca']));
+        $this->get(route('definicoes', ['aba' => 'seguranca']))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('Autenticacao/Definicoes')->where('aba', 'seguranca')->has('sessoes'));
 
-        $this->put('/alterar-senha', $this->dadosValidos())->assertRedirect('/');
+        $this->from(route('definicoes'))->put('/alterar-senha', $this->dadosValidos())->assertRedirect(route('definicoes'));
         $this->assertTrue(Hash::check('nova-senha-segura-456', $user->fresh()->password));
     }
 

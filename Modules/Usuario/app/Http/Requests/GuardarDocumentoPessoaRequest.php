@@ -21,7 +21,7 @@ class GuardarDocumentoPessoaRequest extends BaseRequest
             'data_emissao' => ['nullable', 'date'],
             'data_validade' => ['nullable', 'date', 'after_or_equal:data_emissao'],
             'observacoes' => ['nullable', 'string', 'max:1000'],
-            'ficheiro' => ['required', 'file', 'max:2048', 'mimes:pdf,jpg,jpeg,png'],
+            'ficheiro' => ['required', 'file', 'max:5120', 'mimes:pdf,jpg,jpeg,png'],
         ];
     }
 
@@ -33,7 +33,8 @@ class GuardarDocumentoPessoaRequest extends BaseRequest
             'data_validade.after_or_equal' => 'A data de validade não pode ser anterior à data de emissão.',
             'ficheiro.required' => 'Selecione um ficheiro.',
             'ficheiro.file' => 'O ficheiro enviado é inválido.',
-            'ficheiro.max' => 'O ficheiro não pode exceder 2MB.',
+            'ficheiro.max' => 'O ficheiro não pode exceder 5MB.',
+            'ficheiro.uploaded' => 'O ficheiro não foi enviado: o máximo é 5MB.',
             'ficheiro.mimes' => 'O ficheiro deve ser PDF, JPG, JPEG ou PNG.',
         ];
     }

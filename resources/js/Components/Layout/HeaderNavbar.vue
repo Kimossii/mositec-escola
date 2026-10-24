@@ -30,12 +30,12 @@
         <!-- User Menu -->
         <div class="app-navbar-item ms-1 ms-md-3" id="kt_header_user_menu_toggle">
             <div
-                class="cursor-pointer symbol symbol-30px symbol-md-40px"
+                class="cursor-pointer"
                 data-kt-menu-trigger="{default: 'click', lg: 'hover'}"
                 data-kt-menu-attach="parent"
                 data-kt-menu-placement="bottom-end"
             >
-                <img src="/themes/metronic/assets/media/avatars/300-1.jpg" alt="user" />
+                <AvatarUtilizador :foto="foto" :iniciais="iniciais" tamanho="symbol-30px symbol-md-40px" circulo />
             </div>
             <UserMenu />
         </div>
@@ -59,7 +59,12 @@ import HeaderSearch from './navbar/HeaderSearch.vue'
 import NotificationsMenu from './navbar/NotificationsMenu.vue'
 import ThemeModeMenu from './navbar/ThemeModeMenu.vue'
 import UserMenu from './navbar/UserMenu.vue'
+import AvatarUtilizador from '@/Components/Shared/AvatarUtilizador.vue'
 
 // Alertas reais (propinas em atraso, acordos, matrículas...) — prop partilhada diferida.
 const alertas = computed(() => usePage().props.alertas ?? [])
+
+// Foto do utilizador autenticado; sem foto, as iniciais (como no menu e nas Definições).
+const foto = computed(() => usePage().props.auth.foto)
+const iniciais = computed(() => (usePage().props.auth.user?.name ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join(''))
 </script>

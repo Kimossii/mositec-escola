@@ -679,7 +679,7 @@ class AutenticacaoPlataformaTest extends TestCase
         // ... e nem com o mesmo id de sessão sob o nome do cookie do painel.
         $this->noPainel('GET', '/plataforma', $sessaoEscola)->assertRedirect($this->url('/plataforma/login'));
         // Controlo positivo: na escola esse cookie ainda autentica.
-        $this->naEscola('/alterar-senha', $sessaoEscola)->assertOk();
+        $this->naEscola('/definicoes', $sessaoEscola)->assertOk();
 
         // Mesmo dentro da MESMA sessão (Store partilhado, sem flush): o guard `web` não vale para `plataforma`.
         Auth::guard('web')->login($user);
@@ -695,7 +695,7 @@ class AutenticacaoPlataformaTest extends TestCase
         $this->noPainel('GET', '/plataforma/_auth/leitura', $sessao)->assertOk();
 
         // Sessão do painel enviada à escola, sob os dois nomes de cookie.
-        $this->naEscola('/alterar-senha', $sessao)->assertRedirect(self::ESCOLA . '/login');
+        $this->naEscola('/definicoes', $sessao)->assertRedirect(self::ESCOLA . '/login');
         $this->pedido('GET', self::ESCOLA . '/alterar-senha', [], [$this->nomeDoCookie() => $sessao])->assertRedirect(self::ESCOLA . '/login');
 
         // Mesma sessão (Store partilhado, sem flush) logo depois de um login real do Super Admin.
@@ -743,7 +743,7 @@ class AutenticacaoPlataformaTest extends TestCase
 
         $intacta = function () use ($sessaoEscola, $linhaEscola): void {
             $this->assertDatabaseHas('sessions', $linhaEscola);
-            $this->naEscola('/alterar-senha', $sessaoEscola)->assertOk();
+            $this->naEscola('/definicoes', $sessaoEscola)->assertOk();
         };
 
         // 1. Troca própria de senha do Super Admin.

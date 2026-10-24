@@ -60,4 +60,13 @@ class DashboardTest extends TestCase
 
         $response->assertInertia(fn (Assert $page) => $page->missing('alertas')->loadDeferredProps(fn (Assert $c) => $c->has('alertas')));
     }
+
+    public function test_menu_do_utilizador_recebe_perfil_e_escola_diferidos(): void
+    {
+        $response = $this->actingAs($this->utilizador(Perfil::ADMIN_ESCOLA))->get('/alunos');
+
+        $response->assertInertia(fn (Assert $page) => $page->missing('conta')->loadDeferredProps(fn (Assert $c) => $c
+            ->where('conta.perfil', 'Admin escola')
+            ->has('conta.escola')));
+    }
 }

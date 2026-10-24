@@ -102,7 +102,7 @@ function submeter() {
                                 accept="image/png,image/jpeg,image/webp"
                                 @change="onFileChange"
                             />
-                            <div class="text-muted fs-7 mt-1">PNG, JPG ou WEBP, até 2MB. Fundo transparente recomendado.</div>
+                            <div class="text-muted fs-7 mt-1">PNG, JPG ou WEBP, até 5MB. Fundo transparente recomendado.</div>
                             <div class="text-danger fs-7 mt-1" v-if="errors.logotipo">{{ errors.logotipo[0] }}</div>
 
                             <div class="d-flex justify-content-end gap-2 mt-6">

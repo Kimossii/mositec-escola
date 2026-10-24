@@ -99,7 +99,7 @@ function submeter() {
                                     accept="image/png,image/jpeg,image/webp"
                                     @change="onFotoChange"
                                 />
-                                <div class="text-muted fs-8 mt-1">PNG, JPG ou WEBP, até 2MB.</div>
+                                <div class="text-muted fs-8 mt-1">PNG, JPG ou WEBP, até 5MB.</div>
                                 <div class="text-danger fs-7 mt-1" v-if="errors.foto">{{ errors.foto }}</div>
                             </div>
                         </div>
