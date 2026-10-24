@@ -6,6 +6,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Core\Contracts\ProcuraFotosDeAlunos;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
+use Modules\Permissao\Enums\Modulo as ModuloEnum;
 use Modules\Permissao\Models\Modulo;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\RolePermissao;
@@ -75,7 +76,8 @@ class UsuarioConsultaService
 
         return [
             'perfis' => $perfis->values(),
-            'modulos' => Modulo::orderBy('nome')->get(['id', 'nome', 'descricao']),
+            // `slug` serve ao front para agrupar os módulos pelo menu do sistema a que pertencem.
+            'modulos' => Modulo::orderBy('nome')->get(['id', 'nome', 'descricao'])->each(fn (Modulo $m) => $m->setAttribute('slug', ModuloEnum::tryFrom((int) $m->nome)?->slug())),
             'acoes' => Acao::orderBy('numero')->get(['id', 'nome']),
             // O que cada perfil já concede por padrão — usado só para pintar
             // a grelha de overrides com o estado correcto ao abrir o wizard

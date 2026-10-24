@@ -14,6 +14,7 @@ use Modules\Financeiro\Models\CreditoUtilizacao;
 use Modules\Financeiro\Models\PagamentoMulta;
 use Modules\Financeiro\Models\PagamentoPropina;
 use Modules\Financeiro\Models\PlanoPropina;
+use Modules\Financeiro\Models\Bolsa;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaAjuste;
 use Modules\Financeiro\Models\PropinaMulta;
@@ -161,6 +162,8 @@ class PropinaConsultaService
             'periodo_inicio' => $inicio,
             'periodo_fim' => $fim,
             'valor_original' => $propina->valor_original->unidadesMenores(),
+            // Bolsa de estudo que abateu ao valor do plano (nome e quanto abateu); null sem bolsa.
+            'bolsa' => $propina->bolsa_id === null ? null : ['nome' => Bolsa::query()->whereKey($propina->bolsa_id)->value('nome'), 'valor_bolsa' => (int) $propina->valor_bolsa],
             'valor' => $propina->valor->unidadesMenores(),
             'valor_pago' => $propina->valor_pago->unidadesMenores(),
             'saldo' => $propina->saldo()->unidadesMenores(),

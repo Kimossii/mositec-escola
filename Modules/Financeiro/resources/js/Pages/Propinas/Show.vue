@@ -142,6 +142,10 @@ function isentar(novoValor, motivo) {
                         <div class="bg-body-secondary rounded p-4">
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Período</span><span>{{ propina.periodo }} (período {{ propina.ordem }})</span></div>
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Valor original</span><span>{{ formatarDinheiro(propina.valor_original, moeda) }}</span></div>
+                            <div v-if="propina.bolsa" class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Bolsa</span>
+                                <span class="text-success text-end fw-semibold">− {{ formatarDinheiro(propina.bolsa.valor_bolsa, moeda) }}<div class="fs-8 text-muted fw-normal">{{ propina.bolsa.nome }}</div></span>
+                            </div>
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Valor actual</span><span>{{ formatarDinheiro(propina.valor, moeda) }}</span></div>
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Pago</span><span>{{ formatarDinheiro(propina.valor_pago, moeda) }}</span></div>
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Saldo</span><span class="fw-bold">{{ formatarDinheiro(propina.saldo, moeda) }}</span></div>

@@ -23,6 +23,7 @@ use Modules\Financeiro\Models\PlanoPropina;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Services\PausasCobrancaService;
+use Modules\Financeiro\Support\BolsasDoAluno;
 use Modules\Financeiro\Support\ContextoDeGeracao;
 use Modules\Financeiro\Support\ElegibilidadeDePeriodos;
 use Modules\Financeiro\Support\ResolucaoDePlanosMemorizada;
@@ -69,6 +70,7 @@ class GerarPropinasService
     public function __construct(
         private ResolvePlanoAplicavel $resolver,
         private ElegibilidadeDePeriodos $elegibilidade,
+        private BolsasDoAluno $bolsas,
         private SnapshotMonetario $snapshot,
         private RelogioDoTenant $relogio,
         private TenantContext $tenant,
@@ -245,6 +247,8 @@ class GerarPropinasService
 
         foreach ($resultado->criadas() as $indice => $item) {
             $propina = Propina::create([
+                'bolsa_id' => $item['bolsa_id'] ?? null,
+                'valor_bolsa' => $item['valor_bolsa'] ?? 0,
                 'matricula_id' => $matricula->id,
                 'plano_propina_id' => $item['plano_propina_id'],
                 'ano_lectivo_id' => $matricula->ano_lectivo_id,
@@ -777,6 +781,17 @@ class GerarPropinasService
             return;
         }
 
+        // Bolsa de estudo activa que cobre este período: a propina nasce com o desconto (100% = nada a cobrar).
+        $bolsa = $this->bolsas->paraPeriodo((int) $matricula->aluno_id, (int) $matricula->ano_lectivo_id, $periodo['inicio']);
+        $valor = $plano->valor->unidadesMenores();
+        $valorBolsa = $bolsa?->descontoSobre($valor) ?? 0;
+
+        if ($bolsa !== null && $valorBolsa >= $valor) {
+            $resultado->ignorada("Coberto por bolsa de 100% («{$bolsa->nome}»): sem propina a cobrar.", $rotulo, $plano->nome);
+
+            return;
+        }
+
         $origem = $anterior ? OrigemGeracaoPropina::RETROACTIVA : $pedido->origem;
         // Spec §5: dia de vencimento das regras no mês de início do período (1–28, sempre válido).
         $vencimento = CarbonImmutable::createFromFormat('!Y-m-d', $periodo['inicio'])->setDay($contexto->dia_vencimento);
@@ -789,7 +804,10 @@ class GerarPropinasService
             'periodo_fim' => $periodo['fim'],
             'periodo' => $rotulo,
             'meses' => $periodo['meses'],
-            'valor' => $plano->valor->unidadesMenores(),
+            'valor' => $valor - $valorBolsa,
+            'bolsa_id' => $bolsa?->id,
+            'bolsa_nome' => $bolsa?->nome,
+            'valor_bolsa' => $valorBolsa,
             'data_vencimento' => $vencimento->toDateString(),
             'dias_tolerancia' => $contexto->dias_tolerancia,
             'data_limite' => $vencimento->addDays($contexto->dias_tolerancia)->toDateString(),

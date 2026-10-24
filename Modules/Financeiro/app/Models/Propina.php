@@ -47,6 +47,8 @@ class Propina extends Model implements CobrancaResolvivel
     protected $table = 'propinas';
 
     protected $fillable = [
+        'bolsa_id',
+        'valor_bolsa',
         'matricula_id',
         'plano_propina_id',
         'ano_lectivo_id',
@@ -76,6 +78,7 @@ class Propina extends Model implements CobrancaResolvivel
         'ordem' => 'integer',
         'periodo_inicio' => DataCast::class,
         'periodo_fim' => DataCast::class,
+        'valor_bolsa' => 'integer',
         'valor_original' => DinheiroCast::class,
         'valor' => DinheiroCast::class,
         'valor_pago' => DinheiroCast::class,

@@ -132,6 +132,8 @@ class CobrancaConsultaService
             'aluno_numero' => $m->aluno?->numero_matricula,
             'turma_nome' => $m->turma?->nome,
             'ano_lectivo_nome' => $m->anoLectivo?->nome,
+            'ano_inicio' => $m->anoLectivo?->data_inicio?->toDateString(),
+            'ano_fim' => $m->anoLectivo?->data_fim?->toDateString(),
         ];
     }
 

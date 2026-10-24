@@ -47,6 +47,7 @@ defineProps({
                             <span v-else-if="propina.tardia" class="badge badge-light-warning ms-1" title="Gerada depois da data de vencimento. Só passa a Em Atraso depois da data limite (vencimento mais tolerância).">Geração tardia</span>
                             <span v-if="propina.regenera_cancelada" class="badge badge-light-danger ms-1">Período cancelado</span>
                             <div v-if="propina.regenera_cancelada" class="text-danger fs-8">{{ propina.regenera_cancelada }}</div>
+                            <div v-if="propina.valor_bolsa > 0" class="text-success mt-1">bolsa «{{ propina.bolsa_nome }}»: − {{ formatarDinheiro(propina.valor_bolsa, moeda) }}</div>
                             <div v-if="propina.multa != null" class="text-danger mt-1">
                                 multa se pagar hoje: {{ formatarDinheiro(propina.multa, moeda) }}
                                 <span v-if="propina.multa_regra" class="text-muted fw-normal">({{ propina.multa_regra }})</span>

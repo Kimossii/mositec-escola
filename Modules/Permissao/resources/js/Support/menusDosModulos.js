@@ -18,6 +18,8 @@ export const MENU_DE = {
 
     propina: { menu: 'Financeiro', entrada: 'Propinas' },
     pagamento: { menu: 'Financeiro', entrada: 'Pagamentos' },
+    cobranca: { menu: 'Financeiro', entrada: 'Cobranças' },
+    bolsa: { menu: 'Financeiro', entrada: 'Bolsas' },
 
     usuario: { menu: 'Configurações', secao: 'Utilizadores', entrada: 'Todos os Utilizadores' },
     'senha-utilizador': { menu: 'Configurações', secao: 'Utilizadores', entrada: 'Redefinir senha' },

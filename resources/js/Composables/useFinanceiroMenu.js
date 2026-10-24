@@ -13,6 +13,7 @@ const seccoesFinanceiro = [
             { href: '/financeiro/pagamentos', label: 'Pagamentos', permissao: 'pagamento.ver' },
             { href: '/financeiro/cobrancas', label: 'Cobranças', permissao: 'cobranca.ver' },
             { href: '/financeiro/dividas', label: 'Dívidas', permissao: 'propina.ver' },
+            { href: '/financeiro/bolsas', label: 'Bolsas', permissao: 'bolsa.ver' },
             { href: '/financeiro/recibos', label: 'Recibos', permissao: 'pagamento.ver' },
             { href: '/financeiro/relatorios', label: 'Relatórios financeiros', permissao: 'pagamento.exportar' },
             // { href: '#', label: 'Dívidas' },

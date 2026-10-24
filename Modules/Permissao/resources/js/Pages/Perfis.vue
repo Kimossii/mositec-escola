@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref } from 'vue';
+import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -7,9 +7,9 @@ import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import PerfilForm from '../Components/PerfilForm.vue';
-import { agruparPorMenu } from '../Support/menusDosModulos';
+import PermissoesPorMenu from '../Components/PermissoesPorMenu.vue';
 
-const props = defineProps({
+defineProps({
     perfis: {
         type: Array,
         required: true,
@@ -71,30 +71,6 @@ function confirmarEliminacao() {
     });
 }
 
-// Permissões do perfil agrupadas pelo menu do sistema a que cada módulo pertence (só o que o perfil tem).
-function menusDoPerfil(permissoes) {
-    const porModulo = new Map();
-    for (const { modulo, slug, acao } of permissoes) {
-        if (!porModulo.has(modulo)) porModulo.set(modulo, { id: modulo, slug, descricao: modulo, acoesDoPerfil: [] });
-        porModulo.get(modulo).acoesDoPerfil.push(acao);
-    }
-
-    return agruparPorMenu([...porModulo.values()]).map((menu) => {
-        const modulos = menu.secoes.flatMap((secao) => secao.modulos);
-        const colunas = props.acoes.filter((acao) => modulos.some((m) => m.acoesDoPerfil.includes(acao)));
-
-        return { ...menu, modulos, colunas, total: modulos.reduce((t, m) => t + m.acoesDoPerfil.length, 0) };
-    });
-}
-
-// Menus recolhidos dentro do painel de cada perfil (chave "perfil|menu").
-const recolhidos = reactive(new Set());
-const estaRecolhido = (perfilId, menu) => recolhidos.has(`${perfilId}|${menu}`);
-function alternarRecolhido(perfilId, menu) {
-    const k = `${perfilId}|${menu}`;
-    if (recolhidos.has(k)) recolhidos.delete(k);
-    else recolhidos.add(k);
-}
 </script>
 
 <template>
@@ -177,55 +153,8 @@ function alternarRecolhido(perfilId, menu) {
                                             class="bg-light rounded-3 mx-6 mb-6 overflow-hidden"
                                             style="border-left: 4px solid var(--bs-success);"
                                         >
-                                            <div v-if="!perfil.permissoes.length" class="p-6 text-muted fs-6">
-                                                Nenhuma permissão atribuída a este perfil.
-                                            </div>
-
-                                            <div v-else class="p-4">
-                                                <div v-for="menu in menusDoPerfil(perfil.permissoes)" :key="menu.menu" class="perfil-menu mb-4">
-                                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                                        <div>
-                                                            <span class="text-muted fs-7 fw-semibold text-uppercase">Menu</span>
-                                                            <span class="fs-3 fw-bold text-gray-900 ms-2">{{ menu.menu }}</span>
-                                                            <span class="badge badge-light fs-7 ms-2">{{ menu.total }} permissões</span>
-                                                        </div>
-                                                        <button
-                                                            type="button" class="btn btn-sm btn-light-primary" :aria-expanded="!estaRecolhido(perfil.id, menu.menu)"
-                                                            @click="alternarRecolhido(perfil.id, menu.menu)"
-                                                        >
-                                                            {{ estaRecolhido(perfil.id, menu.menu) ? 'Mostrar' : 'Ocultar' }}
-                                                            <span class="seta" :class="{ 'seta--recolhida': estaRecolhido(perfil.id, menu.menu) }">&#9662;</span>
-                                                        </button>
-                                                    </div>
-
-                                                    <div v-show="!estaRecolhido(perfil.id, menu.menu)" class="table-responsive">
-                                                        <table class="table table-permissoes align-middle mb-0 fs-5">
-                                                            <thead>
-                                                                <tr class="text-muted fw-bold fs-7 text-uppercase">
-                                                                    <th class="min-w-250px">Módulo</th>
-                                                                    <th v-for="acao in menu.colunas" :key="acao" class="text-center text-capitalize">{{ acao }}</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody class="text-gray-800 fw-semibold">
-                                                                <template v-for="secao in menu.secoes" :key="secao.titulo ?? '-'">
-                                                                    <tr v-if="secao.titulo" class="perfil-secao"><td :colspan="menu.colunas.length + 1">{{ secao.titulo }}</td></tr>
-                                                                    <tr v-for="modulo in secao.modulos" :key="modulo.id">
-                                                                        <td :class="{ 'ps-4': secao.titulo }">
-                                                                            <div class="fw-bold fs-5 text-gray-900">{{ modulo.entrada }}</div>
-                                                                            <div class="text-muted fs-7 fw-semibold">{{ modulo.caminho }}</div>
-                                                                        </td>
-                                                                        <td v-for="acao in menu.colunas" :key="acao" class="text-center">
-                                                                            <span v-if="modulo.acoesDoPerfil.includes(acao)" class="badge badge-circle badge-success">
-                                                                                <i class="ki-duotone ki-check fs-3 text-white"></i>
-                                                                            </span>
-                                                                            <span v-else class="text-muted">&mdash;</span>
-                                                                        </td>
-                                                                    </tr>
-                                                                </template>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
+                                            <div class="p-4">
+                                                <PermissoesPorMenu :permissoes="perfil.permissoes" :acoes="acoes" />
                                             </div>
                                         </div>
                                     </div>
@@ -256,45 +185,3 @@ function alternarRecolhido(perfilId, menu) {
         />
     </div>
 </template>
-
-<style scoped>
-/* A borda padrão do Bootstrap (--bs-border-color: #F4F4F4) some em cima do
-   fundo bg-light (--bs-light: #F9F9F9) — praticamente a mesma cor. Aqui as
-   linhas (entre módulos) e a coluna (Módulo | Ações) precisam de contraste
-   de verdade pra ficar com cara de tabela mesmo, não só texto lado a lado.
-
-   O !important é necessário: o Bootstrap tem uma regra
-   ".table:not(.table-bordered) tbody tr:last-child th/td { border-bottom: 0
-   !important; }" pra tirar a borda da última linha visível de QUALQUER
-   tabela. Como é seletor descendente (não filho direto), ela "vaza" pra
-   dentro desta tabela aninhada sempre que o perfil expandido for o último
-   da lista — sem !important a borda do cabeçalho some nesse caso. E só
-   !important não bastava: a regra do Bootstrap também é mais específica
-   (3 classes/pseudo-classes) que ".table-permissoes[data-v] th" (2) — por
-   isso aqui usamos as 3 classes que o <table> já tem (table, table-permissoes,
-   align-middle) pra ganhar o empate de especificidade também. */
-.table.table-permissoes.align-middle > tbody > tr:not(:last-child) > td {
-    border-bottom: 1px dashed rgba(0, 0, 0, 0.14) !important;
-}
-
-.table.table-permissoes.align-middle > thead > tr > th {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.14) !important;
-}
-
-.table-permissoes > thead > tr > th:not(:first-child),
-.table-permissoes > tbody > tr > td:not(:first-child) {
-    border-left: 1px solid rgba(0, 0, 0, 0.14);
-}
-
-.seta { display: inline-block; margin-left: 0.35rem; transition: transform 0.15s ease; }
-.seta--recolhida { transform: rotate(-90deg); }
-.perfil-menu { border-left: 4px solid #166534; padding-left: 1rem; }
-.perfil-secao td {
-    background: rgba(100, 116, 139, 0.12);
-    font-size: 0.9rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 0.4rem 0.75rem;
-}
-</style>

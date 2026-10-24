@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Financeiro\Http\Controllers\CatalogoFinanceiroController;
+use Modules\Financeiro\Http\Controllers\BolsaController;
 use Modules\Financeiro\Http\Controllers\CobrancaController;
 use Modules\Financeiro\Http\Controllers\CreditoController;
 use Modules\Financeiro\Http\Controllers\DividaController;
@@ -116,6 +117,15 @@ Route::middleware(['auth'])->prefix('financeiro')->name('financeiro.')->group(fu
     Route::get('/recibos', [ReciboController::class, 'index'])->middleware('can:pagamento.ver')->name('recibos.index');
     Route::get('/relatorios', [RelatorioFinanceiroController::class, 'index'])->middleware('can:pagamento.exportar')->name('relatorios.index');
     Route::get('/relatorios/recebimentos.csv', [RelatorioFinanceiroController::class, 'exportarRecebimentos'])->middleware('can:pagamento.exportar')->name('relatorios.recebimentos');
+});
+
+Route::middleware(['auth'])->prefix('financeiro/bolsas')->name('financeiro.bolsas.')->group(function () {
+    Route::get('/', [BolsaController::class, 'index'])->middleware('can:bolsa.ver')->name('index');
+    Route::get('/matriculas', [BolsaController::class, 'pesquisarMatriculas'])->middleware('can:bolsa.criar')->name('matriculas.pesquisar');
+    Route::post('/', [BolsaController::class, 'store'])->middleware('can:bolsa.criar')->name('store');
+    Route::put('/{bolsa}', [BolsaController::class, 'update'])->whereNumber('bolsa')->middleware('can:bolsa.editar')->name('update');
+    Route::patch('/{bolsa}/terminar', [BolsaController::class, 'terminar'])->whereNumber('bolsa')->middleware('can:bolsa.editar')->name('terminar');
+    Route::post('/{bolsa}/aplicar', [BolsaController::class, 'aplicar'])->whereNumber('bolsa')->middleware('can:bolsa.editar')->name('aplicar');
 });
 
 Route::middleware(['auth'])->prefix('financeiro/creditos')->name('financeiro.creditos.')->group(function () {
