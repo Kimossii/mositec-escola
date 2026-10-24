@@ -12,6 +12,7 @@ const props = defineProps({
     required: { type: Boolean, default: false },
     icon: { type: String, default: null }, // ex: 'ki-sms'
     iconPaths: { type: Number, default: 2 },
+    link: { type: String, default: null }, // na vista, faz do valor uma ligação (mailto:, tel:, https://…)
 });
 
 defineEmits(['update:modelValue']);
@@ -98,7 +99,8 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
                     <span v-for="n in iconPaths" :key="n" :class="`path${n}`"></span>
                 </i>
             </span>
-            <span class="ficha-valor" :class="{ 'ficha-valor--vazio': !valorExibido && valorExibido !== 0 }">
+            <a v-if="link && valorExibido" :href="link" class="ficha-valor ficha-valor--link" :target="link.startsWith('http') ? '_blank' : null" rel="noopener">{{ valorExibido }}</a>
+            <span v-else class="ficha-valor" :class="{ 'ficha-valor--vazio': !valorExibido && valorExibido !== 0 }">
                 {{ (valorExibido || valorExibido === 0) ? valorExibido : 'Não definido' }}
             </span>
         </span>
@@ -109,20 +111,19 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
 .ficha-campo {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
-    padding-block: 0.65rem;
-    border-bottom: 1px solid var(--bs-gray-200);
+    gap: 0.35rem;
+    padding-block: 0.7rem;
 }
 
 .ficha-rotulo {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--bs-gray-900);
+    color: var(--bs-gray-600);
 }
 
 .ficha-valor-wrap {
@@ -138,18 +139,24 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
     flex: 0 0 auto;
     width: 2rem;
     height: 2rem;
-    border-radius: 0.55rem;
-    background-color: var(--bs-primary);
+    border-radius: 50%;
+    background-color: rgba(var(--bs-success-rgb), 0.12);
 }
 
 .ficha-valor__icone {
-    font-size: 1.15rem;
-    color: var(--bs-primary-inverse);
+    font-size: 1.05rem;
+    color: var(--bs-success);
 }
 
+.ficha-valor--link {
+    text-decoration: none;
+    color: var(--bs-success);
+}
+.ficha-valor--link:hover { text-decoration: underline; }
+
 .ficha-valor {
-    font-size: 1.1rem;
-    font-weight: 500;
+    font-size: 1rem;
+    font-weight: 600;
     color: var(--bs-gray-900);
     word-break: break-word;
 }

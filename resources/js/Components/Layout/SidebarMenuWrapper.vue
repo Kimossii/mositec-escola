@@ -898,7 +898,6 @@ const configuracoesMenu = [
         title: 'Estabelecimento',
         items: [
             { href: '/estabelecimento', title: 'Dados da Escola', exact: true, permissao: 'estabelecimento.ver' },
-            { href: '/estabelecimento/aparencia', title: 'Logótipo & Aparência', permissao: 'estabelecimento.ver' },
         ],
     },
     {
