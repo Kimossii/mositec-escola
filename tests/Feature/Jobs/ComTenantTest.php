@@ -55,7 +55,7 @@ class ComTenantTest extends TestCase
 
     private function processarFila(): void
     {
-        Artisan::call('queue:work', ['--stop-when-empty' => true, '--tries' => 1, '--sleep' => 0]);
+        Artisan::call('queue:work', ['--stop-when-empty' => true, '--tries' => 1, '--sleep' => 0, '--memory' => 4096]);
     }
 
     private function mudarEstado(Tenant $tenant, EstadoTenant $estado): void

@@ -123,14 +123,14 @@ class ListarUsuariosTest extends TestCase
         }
     }
 
-    public function test_listagem_e_paginada_de_10_em_10(): void
+    public function test_listagem_e_paginada_de_15_em_15(): void
     {
         $this->actingAsStaff();
-        $this->criarUtilizadores(12);
+        $this->criarUtilizadores(17);
 
         $this->get('/usuarios/alunos')->assertInertia(fn (Assert $page) => $page
-            ->has('usuarios.data', 10)
-            ->where('usuarios.total', 12)
+            ->has('usuarios.data', 15)
+            ->where('usuarios.total', 17)
             ->where('usuarios.last_page', 2)
         );
 
@@ -143,11 +143,11 @@ class ListarUsuariosTest extends TestCase
     public function test_index_tambem_e_paginada(): void
     {
         $this->actingAsStaff();
-        $this->criarUtilizadores(12);
+        $this->criarUtilizadores(17);
 
         $this->get('/usuarios')->assertInertia(fn (Assert $page) => $page
-            ->has('usuarios.data', 10)
-            ->where('usuarios.total', 13)
+            ->has('usuarios.data', 15)
+            ->where('usuarios.total', 18)
         );
     }
 
@@ -165,7 +165,7 @@ class ListarUsuariosTest extends TestCase
     public function test_pesquisa_por_nome(): void
     {
         $this->actingAsStaff();
-        $this->criarUtilizadores(12);
+        $this->criarUtilizadores(17);
 
         $this->get('/usuarios/alunos?pesquisa=Utilizador 07')->assertInertia(fn (Assert $page) => $page
             ->has('usuarios.data', 1)
@@ -192,7 +192,7 @@ class ListarUsuariosTest extends TestCase
     public function test_pesquisa_por_matricula(): void
     {
         $this->actingAsStaff();
-        $this->criarUtilizadores(12);
+        $this->criarUtilizadores(17);
 
         $this->get('/usuarios/alunos?pesquisa=2026-0011')->assertInertia(fn (Assert $page) => $page
             ->has('usuarios.data', 1)
@@ -239,7 +239,7 @@ class ListarUsuariosTest extends TestCase
     public function test_links_de_paginacao_preservam_a_pesquisa(): void
     {
         $this->actingAsStaff();
-        $this->criarUtilizadores(12);
+        $this->criarUtilizadores(17);
 
         $this->get('/usuarios/alunos?pesquisa=Utilizador')->assertInertia(fn (Assert $page) => $page
             ->where('usuarios.links.2.url', fn ($url) => str_contains($url, 'pesquisa=Utilizador') && str_contains($url, 'page=2'))
