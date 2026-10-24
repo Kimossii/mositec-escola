@@ -1,6 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { usePage } from '@inertiajs/vue3';
+import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
+import UsuarioPerfisTabs from './UsuarioPerfisTabs.vue';
 import UsuarioTable from './UsuarioTable.vue';
 import UsuarioToolbar from './UsuarioToolbar.vue';
 import UsuarioVisualizarDrawer from './UsuarioVisualizarDrawer.vue';
@@ -12,7 +15,7 @@ import UsuarioVisualizarDrawer from './UsuarioVisualizarDrawer.vue';
  * perfil filtrado — a estrutura (breadcrumb, card, toolbar, tabela,
  * footer) fica só aqui, pra evitar 6 cópias do mesmo HTML do Metronic.
  */
-defineProps({
+const props = defineProps({
     title: {
         type: String,
         required: true,
@@ -45,6 +48,15 @@ defineProps({
     /** ability exigida para "Registar utilizador" nesta lista — Administradores usa autorizacao.criar, as restantes usuario.criar */
     criarPermissao: { type: String, default: 'usuario.criar' },
 });
+
+// Cartões e contagens dos separadores: prop diferida da página (chega depois da lista).
+const indicadores = computed(() => usePage().props.indicadores ?? null);
+const montarIndicadores = (i) => [
+    { rotulo: props.title, valor: String(i.total), nota: 'registados', cor: 'primary' },
+    { rotulo: 'Ativos', valor: String(i.ativos), nota: `${i.total ? Math.round((i.ativos / i.total) * 100) : 0}% do total`, cor: 'success', progresso: i.total ? Math.round((i.ativos / i.total) * 100) : 0 },
+    { rotulo: 'Inativos', valor: String(i.inativos), nota: 'sem acesso à aplicação', cor: 'danger' },
+    { rotulo: 'Online agora', valor: String(i.online), nota: 'actividade nos últimos 5 min', cor: 'info' },
+];
 
 const utilizadorEmEdicao = ref(null);
 const utilizadorVisualizando = ref(null);
@@ -118,6 +130,9 @@ onMounted(() => {
             <div id="kt_app_content" class="app-content flex-column-fluid">
                 <!--begin::Content container-->
                 <div id="kt_app_content_container" class="app-container container-xxl">
+                    <UsuarioPerfisTabs :contagens="indicadores?.por_perfil ?? null" />
+                    <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" :quantidade="4" />
+
                     <!--begin::Card-->
                     <div class="card">
                         <!--begin::Card header-->

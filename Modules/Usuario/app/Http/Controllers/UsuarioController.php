@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Modules\Autenticacao\Service\FotoDoUtilizadorService;
 use Modules\Core\Exportacao\Exportador;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Usuario\Actions\RedefinirSenhaUsuarioAction;
@@ -79,6 +80,8 @@ class UsuarioController extends Controller
         return [
             'usuarios' => $this->consulta->listar($perfil, $filtros),
             'filtros' => $filtros,
+            // Diferido: cartões e contagens dos separadores chegam depois da lista.
+            'indicadores' => Inertia::defer(fn () => $this->consulta->indicadores($perfil, $request->user()->can('autorizacao.ver'))),
         ];
     }
 
@@ -174,5 +177,17 @@ class UsuarioController extends Controller
         $tabela = $exportacao->tabela($dados['perfil'] ?? null, $request->only(['pesquisa', 'estado']), $podeVerAdministradores);
 
         return $exportador->responder($tabela, $dados['formato'], 'utilizadores'.(isset($dados['perfil']) ? '-'.$dados['perfil'] : ''));
+    }
+
+    /** Foto de perfil de um utilizador, para as listas e a ficha. A de um administrador exige também `autorizacao.ver`. */
+    public function foto(User $user, FotoDoUtilizadorService $fotos)
+    {
+        $this->authorize('usuario.ver');
+
+        if ($user->roles()->where('nome', Perfil::ADMIN_ESCOLA->value)->exists()) {
+            $this->authorize('autorizacao.ver');
+        }
+
+        return $fotos->servir($user);
     }
 }

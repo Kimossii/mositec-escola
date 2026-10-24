@@ -16,6 +16,12 @@ class FotoDoUtilizadorService
         return $user->foto_path ? '/definicoes/foto?v='.substr(md5($user->foto_path), 0, 10) : null;
     }
 
+    /** Endereço (versionado) da foto de OUTRO utilizador, para as listas de gestão; `null` sem foto. A rota exige `usuario.ver`. */
+    public function urlParaGestao(User $user): ?string
+    {
+        return $user->foto_path ? "/usuarios/{$user->id}/foto?v=".substr(md5($user->foto_path), 0, 10) : null;
+    }
+
     public function servir(User $user): StreamedResponse
     {
         $disco = Storage::disk('privado');

@@ -5,7 +5,7 @@ import { toast } from 'vue-sonner';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
-import { ESTADO } from '../Models/Usuario';
+import { corDoPerfil, ESTADO, tempoRelativo } from '../Models/Usuario';
 import RedefinirSenhaModal from './Usuarios/RedefinirSenhaModal.vue';
 import UsuarioAvatar from './UsuarioAvatar.vue';
 import UsuarioStatusBadge from './UsuarioStatusBadge.vue';
@@ -143,8 +143,9 @@ function confirmarEliminacao() {
                     <UsuarioAvatar :usuario="usuario" />
                     <!--begin::User details-->
                     <div class="d-flex flex-column">
-                        <a href="#" class="text-gray-800 text-hover-primary mb-1">{{ usuario.name }}</a>
-                        <span>{{ usuario.email }}</span>
+                        <a href="#" class="text-gray-800 text-hover-primary fw-bold mb-1" @click.prevent="emit('visualizar', usuario)">{{ usuario.name }}</a>
+                        <span class="text-muted fs-7">{{ usuario.email }}</span>
+                        <span v-if="usuario.matricula" class="text-muted fs-8">Nº {{ usuario.matricula }}</span>
                     </div>
                     <!--begin::User details-->
                 </td>
@@ -153,13 +154,15 @@ function confirmarEliminacao() {
                     <span
                         v-for="perfilNome in usuario.perfis"
                         :key="perfilNome"
-                        class="badge badge-light-primary me-1"
+                        class="badge me-1" :class="`badge-light-${corDoPerfil(perfilNome)}`"
                     >
                         {{ perfilNome }}
                     </span>
                 </td>
                 <td>
-                    <div class="badge badge-light fw-bold">{{ usuario.ultimo_acesso }}</div>
+                    <span v-if="usuario.online" class="d-inline-flex align-items-center text-success fw-bold"><span class="mosi-pisca rounded-circle bg-success me-2 w-10px h-10px"></span>Online agora</span>
+                    <span v-else-if="usuario.ultimo_acesso" class="text-gray-700">{{ tempoRelativo(usuario.ultimo_acesso) }}</span>
+                    <span v-else class="text-muted fs-7">Sem sessão ativa</span>
                 </td>
                 <td>
                     <UsuarioStatusBadge :estado="usuario.estado" />
