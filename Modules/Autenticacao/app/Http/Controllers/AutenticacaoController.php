@@ -9,9 +9,12 @@ use Inertia\Inertia;
 use Modules\Autenticacao\Http\Requests\LoginRequest;
 use Modules\Autenticacao\Service\GestaoAutenticacao;
 use Modules\Core\Tenancy\TenantContext;
+use Modules\Core\Traits\LogService;
 
 class AutenticacaoController extends Controller
 {
+    use LogService;
+
     /**
      * Display a Login.
      */
@@ -46,6 +49,9 @@ class AutenticacaoController extends Controller
 
     public function logout(Request $request)
     {
+        // O registo é feito antes de fechar a sessão, para ainda levar o utilizador.
+        $this->logInfo('Sessão terminada pelo utilizador');
+
         Auth::logout();
 
         $request->session()->invalidate();

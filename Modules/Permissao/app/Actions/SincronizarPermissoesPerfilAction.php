@@ -8,9 +8,12 @@ use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\RolePermissao;
 use Modules\Permissao\Support\AcoesAplicaveis;
 use Modules\Permissao\Support\PermissaoCache;
+use Modules\Core\Traits\LogService;
 
 class SincronizarPermissoesPerfilAction
 {
+    use LogService;
+
     public function __construct(
         private readonly PermissaoCache $cache,
         private readonly AcoesAplicaveis $aplicaveis,
@@ -18,7 +21,13 @@ class SincronizarPermissoesPerfilAction
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Role $role, array $celulas): void
+    {
+        $this->comLog('Sincronizar permissões perfil', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($role, $celulas));
+    }
+
+    private function executarSemRegisto(Role $role, array $celulas): void
     {
         $this->aplicaveis->validarCelulas($celulas, RolePermissao::where('role_id', $role->id)->get(['modulo_id', 'acao_id'])
             ->map(fn ($p) => "{$p->modulo_id}-{$p->acao_id}")->all());

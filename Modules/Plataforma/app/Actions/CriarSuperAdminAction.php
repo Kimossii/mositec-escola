@@ -8,6 +8,7 @@ use Modules\Core\Tenancy\Provisioning\CredencialInicial;
 use Modules\Core\Tenancy\Provisioning\GeradorSenhaTemporaria;
 use Modules\Plataforma\Exceptions\DadosDeSuperAdminInvalidos;
 use Modules\Plataforma\Models\SuperAdmin;
+use Modules\Core\Traits\LogService;
 
 /**
  * Cria um super admin com senha temporária: só o hash fica na BD, a troca é obrigatória no
@@ -15,12 +16,20 @@ use Modules\Plataforma\Models\SuperAdmin;
  */
 class CriarSuperAdminAction
 {
+    use LogService;
+
     public function __construct(private readonly GeradorSenhaTemporaria $senhas) {}
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(string $nome, string $email): CredencialInicial
+    {
+        return $this->comLog('Criar super admin', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($nome, $email));
+    }
 
     /**
      * @throws DadosDeSuperAdminInvalidos
      */
-    public function executar(string $nome, string $email): CredencialInicial
+    private function executarSemRegisto(string $nome, string $email): CredencialInicial
     {
         $nome = trim($nome);
         $email = mb_strtolower(trim($email));

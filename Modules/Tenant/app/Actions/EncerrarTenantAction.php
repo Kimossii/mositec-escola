@@ -7,6 +7,7 @@ use Modules\Core\Tenancy\Enums\EstadoTenant;
 use Modules\Tenant\Exceptions\DadosDeTenantInvalidos;
 use Modules\Tenant\Exceptions\TransicaoDeEstadoInvalida;
 use Modules\Tenant\Models\Tenant;
+use Modules\Core\Traits\LogService;
 
 /**
  * Activo | Suspenso -> Encerrado (terminal, spec §6). Regista a data e, se vier, o motivo (opcional:
@@ -15,13 +16,21 @@ use Modules\Tenant\Models\Tenant;
  */
 class EncerrarTenantAction
 {
+    use LogService;
+
     private const MOTIVO_MAX = 255;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(Tenant $tenant, ?string $motivo = null): Tenant
+    {
+        return $this->comLog('Encerrar escola', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($tenant, $motivo));
+    }
 
     /**
      * @throws DadosDeTenantInvalidos
      * @throws TransicaoDeEstadoInvalida
      */
-    public function executar(Tenant $tenant, ?string $motivo = null): Tenant
+    private function executarSemRegisto(Tenant $tenant, ?string $motivo = null): Tenant
     {
         $motivo = trim((string) $motivo);
         $motivo = $motivo !== '' ? $motivo : null;

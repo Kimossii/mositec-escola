@@ -11,17 +11,26 @@ use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Events\MatriculaEstadoAlterado;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Models\MatriculaHistorico;
+use Modules\Core\Traits\LogService;
 
 /** Reactivar (TRANCADA → ACTIVA): ano lectivo activo, data entre o trancamento e hoje, motivo obrigatório. */
 class ReactivarMatriculaAction
 {
+    use LogService;
+
     public function __construct(
         private RegistarHistoricoMatriculaAction $registarHistorico,
         private RelogioDoTenant $relogio,
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Matricula $matricula, string $dataEfeito, string $motivo, ?int $utilizadorId = null): Matricula
+    {
+        return $this->comLog('Reactivar matrícula', $this->contextoDeArgumentos(func_get_args()), fn () => $this->executarSemRegisto($matricula, $dataEfeito, $motivo, $utilizadorId));
+    }
+
+    private function executarSemRegisto(Matricula $matricula, string $dataEfeito, string $motivo, ?int $utilizadorId = null): Matricula
     {
         return DB::transaction(function () use ($matricula, $dataEfeito, $motivo, $utilizadorId) {
             $bloqueada = Matricula::query()->whereKey($matricula->getKey())->lockForUpdate()->firstOrFail();

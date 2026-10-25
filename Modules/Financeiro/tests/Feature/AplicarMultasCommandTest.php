@@ -57,7 +57,7 @@ class AplicarMultasCommandTest extends TestCase
 
         $this->assertSame(1, PropinaMulta::count());
         Log::shouldHaveReceived('info')
-            ->withArgs(fn (string $mensagem, array $contexto = []) => $mensagem === 'financeiro.aplicar-multas'
+            ->withArgs(fn (string $mensagem, array $contexto = []) => str_ends_with($mensagem, 'financeiro.aplicar-multas')
                 && ($contexto['tenant'] ?? null) === $this->tenant->codigo
                 && ($contexto['criadas'] ?? null) === 1)
             ->once();

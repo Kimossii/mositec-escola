@@ -7,6 +7,7 @@ use Modules\Core\Tenancy\Enums\EstadoTenant;
 use Modules\Core\Tenancy\Support\NormalizadorHost;
 use Modules\Tenant\Exceptions\DominioNaoRemovivel;
 use Modules\Tenant\Models\Tenant;
+use Modules\Core\Traits\LogService;
 
 /**
  * Remove um domínio do tenant. Recusa o principal e o último: o tenant tem de continuar
@@ -15,10 +16,18 @@ use Modules\Tenant\Models\Tenant;
  */
 class RemoverDominioAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(Tenant $tenant, string $dominio): void
+    {
+        $this->comLog('Remover domínio', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($tenant, $dominio));
+    }
+
     /**
      * @throws DominioNaoRemovivel
      */
-    public function executar(Tenant $tenant, string $dominio): void
+    private function executarSemRegisto(Tenant $tenant, string $dominio): void
     {
         $host = NormalizadorHost::normalizar($dominio);
 

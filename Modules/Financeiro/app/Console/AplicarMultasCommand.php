@@ -3,10 +3,10 @@
 namespace Modules\Financeiro\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 use Modules\Core\Tenancy\Console\ParaTodosOsTenants;
 use Modules\Core\Tenancy\TenantAtual;
 use Modules\Financeiro\Services\AplicarMultasService;
+use Modules\Core\Traits\LogService;
 
 /**
  * Comando diário de multas por atraso, por tenant (spec Propinas §15.5): aplica os escalões atingidos às propinas
@@ -15,6 +15,8 @@ use Modules\Financeiro\Services\AplicarMultasService;
  */
 class AplicarMultasCommand extends Command
 {
+    use LogService;
+
     use ParaTodosOsTenants;
 
     protected $signature = 'financeiro:aplicar-multas';
@@ -26,7 +28,7 @@ class AplicarMultasCommand extends Command
         return $this->paraTenants(function (TenantAtual $tenant) use ($aplicacao): void {
             $resultado = $aplicacao->executar();
 
-            Log::info('financeiro.aplicar-multas', ['tenant' => $tenant->codigo] + $resultado);
+            $this->logInfo('financeiro.aplicar-multas', ['tenant' => $tenant->codigo] + $resultado);
             $this->line("[{$tenant->codigo}] {$resultado['criadas']} multa(s) criada(s), "
                 . "{$resultado['escaloes_subidos']} escalão(ões) subido(s), {$resultado['ignoradas']} propina(s) ignorada(s).");
         });

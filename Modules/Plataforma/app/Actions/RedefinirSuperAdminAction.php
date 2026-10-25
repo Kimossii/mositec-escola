@@ -8,6 +8,7 @@ use Modules\Core\Tenancy\Provisioning\CredencialInicial;
 use Modules\Core\Tenancy\Provisioning\GeradorSenhaTemporaria;
 use Modules\Plataforma\Exceptions\SuperAdminNaoRedefinivel;
 use Modules\Plataforma\Models\SuperAdmin;
+use Modules\Core\Traits\LogService;
 
 /**
  * Recupera o acesso de um super admin: nova senha temporária (só o hash fica gravado), troca
@@ -21,12 +22,20 @@ use Modules\Plataforma\Models\SuperAdmin;
  */
 class RedefinirSuperAdminAction
 {
+    use LogService;
+
     public function __construct(private readonly GeradorSenhaTemporaria $senhas) {}
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(string $email): CredencialInicial
+    {
+        return $this->comLog('Redefinir super admin', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($email));
+    }
 
     /**
      * @throws SuperAdminNaoRedefinivel
      */
-    public function executar(string $email): CredencialInicial
+    private function executarSemRegisto(string $email): CredencialInicial
     {
         $email = mb_strtolower(trim($email));
         $admin = $email === '' ? null : SuperAdmin::query()->where('email', $email)->first();

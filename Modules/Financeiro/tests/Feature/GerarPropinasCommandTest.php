@@ -68,7 +68,7 @@ class GerarPropinasCommandTest extends TestCase
         $this->assertTrue(Propina::query()->get()->every(fn (Propina $p) => $p->origem_geracao === OrigemGeracaoPropina::COMANDO));
         $this->assertTrue(Propina::query()->get()->every(fn (Propina $p) => $p->criado_por === null));
         Log::shouldHaveReceived('info')
-            ->withArgs(fn (string $mensagem, array $contexto = []) => $mensagem === 'financeiro.gerar-propinas'
+            ->withArgs(fn (string $mensagem, array $contexto = []) => str_ends_with($mensagem, 'financeiro.gerar-propinas')
                 && ($contexto['tenant'] ?? null) === $this->tenant->codigo
                 && ($contexto['criadas'] ?? null) === 10
                 && ($contexto['erros'] ?? null) === 0)

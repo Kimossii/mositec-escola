@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Modules\Plataforma\Models\SuperAdmin;
 use Modules\Plataforma\Support\ImpressaoDeCredencial;
 use SensitiveParameter;
+use Modules\Core\Traits\LogService;
 
 /**
  * Troca própria da senha: grava o hash, limpa `deve_alterar_senha` e roda o remember_token.
@@ -18,7 +19,15 @@ use SensitiveParameter;
  */
 class AlterarPropriaSenhaSuperAdminAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(SuperAdmin $admin, #[SensitiveParameter] string $nova, Session $sessaoActual): void
+    {
+        $this->comLog('Alterar própria senha super admin', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($admin, $nova, $sessaoActual));
+    }
+
+    private function executarSemRegisto(SuperAdmin $admin, #[SensitiveParameter] string $nova, Session $sessaoActual): void
     {
         $admin->forceFill([
             'password' => Hash::make($nova),

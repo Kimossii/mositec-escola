@@ -7,14 +7,23 @@ use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Usuario\Models\User;
+use Modules\Core\Traits\LogService;
 
 class AtualizarFotoDoUtilizadorAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(User $user, UploadedFile $foto): void
+    {
+        $this->comLog('Atualizar foto do utilizador', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($user, $foto));
+    }
+
     /**
      * Guarda a nova foto do utilizador e elimina a anterior, para não acumular ficheiros. A antiga só se apaga
      * depois de a nova estar gravada e referenciada; se a gravação falhar, a foto actual mantém-se.
      */
-    public function executar(User $user, UploadedFile $foto): void
+    private function executarSemRegisto(User $user, UploadedFile $foto): void
     {
         $anterior = $user->foto_path;
 

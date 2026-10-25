@@ -83,7 +83,7 @@ class AlterarPrecoPlanoIsolamentoAnoLectivoTest extends TestCase
         $this->assertRecusa('plano', 'outro ano lectivo', fn () => $this->previa($planoA, '2027-02', 3_000_000, self::APLICAR));
         $this->assertRecusa('plano', 'outro ano lectivo', fn () => $this->previa($planoA, '2027-02', 3_000_000, self::MANTER));
 
-        Log::shouldHaveReceived('error')->withArgs(fn (string $mensagem, array $contexto) => $mensagem === 'financeiro.alterar-preco.propinas-de-outro-ano'
+        Log::shouldHaveReceived('error')->withArgs(fn (string $mensagem, array $contexto) => str_ends_with($mensagem, 'financeiro.alterar-preco.propinas-de-outro-ano')
             && $contexto['propina_ids'] === [$intrusa->id] && $contexto['plano_propina_id'] === $planoA->id);
     }
 

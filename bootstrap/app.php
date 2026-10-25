@@ -73,6 +73,28 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Qualquer excepção não tratada (controller, middleware, serviço…) é registada com a escola, o utilizador e o pedido:
+        // assim, onde quer que o processo morra, o log diz de quem era e o que estava a pedir (sem query string nem corpo).
+        $exceptions->context(function (): array {
+            $contexto = [];
+            try {
+                if (app(\Modules\Core\Tenancy\TenantContext::class)->temTenant()) {
+                    $contexto['tenant_id'] = app(\Modules\Core\Tenancy\TenantContext::class)->id();
+                }
+                if (($utilizador = auth()->id()) !== null) {
+                    $contexto['user_id'] = $utilizador;
+                }
+                if ((! app()->runningInConsole() || app()->runningUnitTests()) && app()->bound('request')) {
+                    $pedido = request();
+                    $contexto += ['pedido' => $pedido->attributes->get('pedido_id'), 'metodo' => $pedido->method(), 'caminho' => '/'.ltrim($pedido->path(), '/')];
+                }
+            } catch (\Throwable) {
+                // o contexto nunca pode impedir o registo da própria excepção
+            }
+
+            return array_filter($contexto, fn ($v) => $v !== null);
+        });
+
         // Uma ação negada por Gate/Policy (403) não deve mostrar a página de
         // erro crua do Laravel — volta pra página anterior com a mensagem
         // (vinda do backend, ex: Response::deny('...') na Policy) no mesmo

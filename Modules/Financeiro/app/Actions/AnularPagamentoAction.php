@@ -19,6 +19,7 @@ use Modules\Financeiro\Services\RecalcularPropina;
 use Modules\Financeiro\Support\AnulacaoDePagamentos;
 use Modules\Financeiro\Support\BloqueioDePagamentos;
 use Modules\Financeiro\Support\BloqueioDePropinas;
+use Modules\Core\Traits\LogService;
 
 /**
  * Anula um pagamento (spec Pagamentos §5; D14): matrícula → pagamento → propinas → crédito gerado. Bloqueado se o
@@ -28,6 +29,8 @@ use Modules\Financeiro\Support\BloqueioDePropinas;
  */
 class AnularPagamentoAction
 {
+    use LogService;
+
     public function __construct(
         private BloqueioDePagamentos $bloqueio,
         private BloqueioDePropinas $bloqueioDePropinas,
@@ -39,7 +42,13 @@ class AnularPagamentoAction
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Pagamento $pagamento, MotivoDeAnulacaoDTO $dto, ?int $utilizadorId): Pagamento
+    {
+        return $this->comLog('Anular pagamento', $this->contextoDeArgumentos(func_get_args()), fn () => $this->executarSemRegisto($pagamento, $dto, $utilizadorId));
+    }
+
+    private function executarSemRegisto(Pagamento $pagamento, MotivoDeAnulacaoDTO $dto, ?int $utilizadorId): Pagamento
     {
         return DB::transaction(function () use ($pagamento, $dto, $utilizadorId) {
             // D13: matrícula (mesmo eliminada: um adiantamento numa Pendente apagada) → pagamento → propinas → crédito.

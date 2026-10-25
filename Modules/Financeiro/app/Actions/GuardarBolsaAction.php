@@ -8,6 +8,7 @@ use Modules\Financeiro\Enums\EstadoBolsa;
 use Modules\Financeiro\Models\Bolsa;
 use Modules\Financeiro\Support\Multa;
 use Modules\Matricula\Models\Matricula;
+use Modules\Core\Traits\LogService;
 
 /**
  * Cria ou edita uma bolsa. As datas ficam dentro do ano lectivo da bolsa e não pode haver duas bolsas activas do
@@ -15,8 +16,16 @@ use Modules\Matricula\Models\Matricula;
  */
 class GuardarBolsaAction
 {
-    /** @param array{matricula_id?: int, nome: string, percentagem: string, data_inicio: string, data_fim: string, motivo: string} $dados */
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(array $dados, ?Bolsa $bolsa = null): Bolsa
+    {
+        return $this->comLog('Guardar bolsa', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($dados, $bolsa));
+    }
+
+    /** @param array{matricula_id?: int, nome: string, percentagem: string, data_inicio: string, data_fim: string, motivo: string} $dados */
+    private function executarSemRegisto(array $dados, ?Bolsa $bolsa = null): Bolsa
     {
         return DB::transaction(function () use ($dados, $bolsa) {
             if ($bolsa === null) {

@@ -29,6 +29,18 @@ class LogServiceTest extends TestCase
                 return $this->logException(new RuntimeException('boom'), 'Falhou');
             }
 
+            public function operar(bool $falha, \Illuminate\Database\Eloquent\Model $modelo, string $senha, int $n = 3): string
+            {
+                return $this->comLog('Operar', $this->contextoDeArgumentos(func_get_args(), 'operar'), function () use ($falha) {
+                    return $falha ? throw new RuntimeException('falhou mesmo') : 'ok';
+                });
+            }
+
+            public function falhaJaRegistada(\Throwable $e): void
+            {
+                $this->logException($e, 'camada de cima');
+            }
+
             public function debug(): void
             {
                 $this->logDebug('detalhe');
@@ -98,5 +110,44 @@ class LogServiceTest extends TestCase
         $this->emissor()->registar('qualquer coisa');
 
         $this->assertTrue(true); // chegou aqui sem excepção
+    }
+
+    public function test_com_log_regista_conclusao_com_contexto_seguro_e_aponta_para_quem_chamou(): void
+    {
+        Log::spy();
+        $modelo = new \Modules\Usuario\Models\User;
+        $modelo->id = 9;
+
+        $this->assertSame('ok', $this->emissor()->operar(false, $modelo, 'segredo', 5));
+
+        Log::shouldHaveReceived('info')->once()->withArgs(fn (string $msg, array $ctx) => str_contains($msg, '::operar:') && str_contains($msg, 'Operar: concluída')
+            && $ctx['modelo_id'] === 9 && $ctx['n'] === 5 && $ctx['falha'] === false && ! array_key_exists('senha', $ctx));
+    }
+
+    public function test_com_log_regista_a_falha_e_relanca_a_mesma_excepcao_sem_duplicar(): void
+    {
+        Log::spy();
+        $emissor = $this->emissor();
+
+        try {
+            $emissor->operar(true, new \Modules\Usuario\Models\User, 'x');
+            $this->fail('devia relançar');
+        } catch (RuntimeException $e) {
+            $this->assertSame('falhou mesmo', $e->getMessage());
+            // Uma camada acima volta a registar a mesma excepção: não duplica.
+            $emissor->falhaJaRegistada($e);
+        }
+
+        Log::shouldHaveReceived('error')->once();
+    }
+
+    public function test_excepcoes_esperadas_entram_como_warning(): void
+    {
+        Log::spy();
+        $emissor = $this->emissor();
+        $emissor->falhaJaRegistada(\Illuminate\Validation\ValidationException::withMessages(['a' => 'x']));
+
+        Log::shouldHaveReceived('warning')->once();
+        Log::shouldNotHaveReceived('error');
     }
 }

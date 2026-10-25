@@ -9,6 +9,7 @@ use Modules\Tenant\Exceptions\DominioPrincipalInvalido;
 use Modules\Tenant\Exceptions\TransicaoDeEstadoInvalida;
 use Modules\Tenant\Models\Domain;
 use Modules\Tenant\Models\Tenant;
+use Modules\Core\Traits\LogService;
 
 /**
  * Passa o domínio principal da escola para outro domínio JÁ registado nela. O principal é a coluna
@@ -18,11 +19,19 @@ use Modules\Tenant\Models\Tenant;
  */
 class DefinirDominioPrincipalAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(Tenant $tenant, string $dominio): Domain
+    {
+        return $this->comLog('Definir domínio principal', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($tenant, $dominio));
+    }
+
     /**
      * @throws DominioPrincipalInvalido
      * @throws TransicaoDeEstadoInvalida
      */
-    public function executar(Tenant $tenant, string $dominio): Domain
+    private function executarSemRegisto(Tenant $tenant, string $dominio): Domain
     {
         $host = NormalizadorHost::normalizar($dominio);
 

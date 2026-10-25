@@ -16,6 +16,7 @@ use Modules\Financeiro\Support\AlvosDoPlano;
 use Modules\Financeiro\Support\CalendarioDePlano;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turno;
+use Modules\Core\Traits\LogService;
 
 /**
  * Copia os planos activos de um ano lectivo para outro. Os planos copiados ficam inactivos
@@ -23,11 +24,19 @@ use Modules\Turma\Models\Turno;
  */
 class CopiarPlanosPropinaAction
 {
+    use LogService;
+
     public function __construct(private PlanoPropinaConsultaService $consulta)
     {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(CopiarPlanosPropinaDTO $dto): ResumoCopiaPlanosDTO
+    {
+        return $this->comLog('Copiar planos propina', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($dto));
+    }
+
+    private function executarSemRegisto(CopiarPlanosPropinaDTO $dto): ResumoCopiaPlanosDTO
     {
         $origem = AnoLectivo::findOrFail($dto->ano_origem_id);
         $destino = AnoLectivo::findOrFail($dto->ano_destino_id);

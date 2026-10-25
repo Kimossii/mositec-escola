@@ -11,9 +11,12 @@ use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
+use Modules\Core\Traits\LogService;
 
 class AlterarEstadoAnoLectivoAction
 {
+    use LogService;
+
     use GarantiaAnoLectivoAtivoUnico;
 
     public function __construct(
@@ -21,7 +24,18 @@ class AlterarEstadoAnoLectivoAction
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `alterarSemRegisto()`. */
     public function alterar(
+        AnoLectivo $anoLectivo,
+        EstadoAnoLectivo $novoEstado,
+        bool $confirmarEncerramentoMatriculas = false,
+        ?int $utilizadorId = null,
+    ): AnoLectivo
+    {
+        return $this->comLog('Alterar estado ano lectivo', $this->contextoDeArgumentos(func_get_args(), 'alterar'), fn () => $this->alterarSemRegisto($anoLectivo, $novoEstado, $confirmarEncerramentoMatriculas, $utilizadorId));
+    }
+
+    private function alterarSemRegisto(
         AnoLectivo $anoLectivo,
         EstadoAnoLectivo $novoEstado,
         bool $confirmarEncerramentoMatriculas = false,

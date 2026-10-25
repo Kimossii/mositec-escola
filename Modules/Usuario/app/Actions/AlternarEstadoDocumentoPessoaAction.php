@@ -7,12 +7,21 @@ use Modules\Core\Enums\Estado;
 use Modules\Core\Traits\AlternaEstado;
 use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\DocumentoPessoa;
+use Modules\Core\Traits\LogService;
 
 class AlternarEstadoDocumentoPessoaAction
 {
+    use LogService;
+
     use AlternaEstado;
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(DocumentoPessoa $documento): DocumentoPessoa
+    {
+        return $this->comLog('Alternar estado documento pessoa', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($documento));
+    }
+
+    private function executarSemRegisto(DocumentoPessoa $documento): DocumentoPessoa
     {
         return DB::transaction(function () use ($documento) {
             DadosPessoa::whereKey($documento->dados_pessoa_id)->lockForUpdate()->first();

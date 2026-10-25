@@ -12,6 +12,7 @@ use Modules\Financeiro\Services\RecalcularPropina;
 use Modules\Financeiro\Support\BloqueioDePropinas;
 use Modules\Financeiro\Support\Dinheiro;
 use Modules\Matricula\Models\Matricula;
+use Modules\Core\Traits\LogService;
 
 /**
  * Aplica a bolsa às propinas JÁ geradas do aluno nesse ano: só Em Aberto, sem nenhum pagamento, sem bolsa e dentro das
@@ -20,12 +21,20 @@ use Modules\Matricula\Models\Matricula;
  */
 class AplicarBolsaAction
 {
+    use LogService;
+
     public function __construct(private BloqueioDePropinas $bloqueio, private RecalcularPropina $recalcular)
     {
     }
 
-    /** @return array{aplicadas: int, ignoradas: int} */
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Bolsa $bolsa): array
+    {
+        return $this->comLog('Aplicar bolsa', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($bolsa));
+    }
+
+    /** @return array{aplicadas: int, ignoradas: int} */
+    private function executarSemRegisto(Bolsa $bolsa): array
     {
         return DB::transaction(function () use ($bolsa) {
             $actual = Bolsa::query()->whereKey($bolsa->id)->lockForUpdate()->firstOrFail();

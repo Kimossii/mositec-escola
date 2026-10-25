@@ -7,6 +7,7 @@ use Modules\Autenticacao\Models\SessaoDeUtilizador;
 use Modules\Autenticacao\Models\TokenDeAcesso;
 use Modules\Core\Tenancy\Contracts\RevogaAcessosDoTenant;
 use Modules\Usuario\Models\User;
+use Modules\Core\Traits\LogService;
 
 /**
  * Apaga as sessões (tabela `sessions`, sem tenant_id: filtrada pelos utilizadores do tenant
@@ -14,7 +15,15 @@ use Modules\Usuario\Models\User;
  */
 class RevogarAcessosDoTenantAction implements RevogaAcessosDoTenant
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `revogarSemRegisto()`. */
     public function revogar(): array
+    {
+        return $this->comLog('Revogar acessos do escola', $this->contextoDeArgumentos(func_get_args(), 'revogar'), fn () => $this->revogarSemRegisto());
+    }
+
+    private function revogarSemRegisto(): array
     {
         $sessoes = 0;
 

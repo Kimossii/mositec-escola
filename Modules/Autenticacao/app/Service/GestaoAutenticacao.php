@@ -3,12 +3,14 @@
 namespace Modules\Autenticacao\Service;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use SensitiveParameter;
+use Modules\Core\Traits\LogService;
 
 class GestaoAutenticacao
 {
+    use LogService;
+
     public function __construct(private LimitadorLogin $limitador)
     {
     }
@@ -17,12 +19,12 @@ class GestaoAutenticacao
     {
         $limiterResponse = $this->checkLoginAttempts($request, $identificador, $password, $remember);
         if ($limiterResponse !== true) {
-            Log::warning('Falha no login', ['identificador' => $identificador, 'ip' => $request->ip(), 'motivo' => $limiterResponse['message']]);
+            $this->logWarning('Falha no login', ['identificador' => $identificador, 'ip' => $request->ip(), 'motivo' => $limiterResponse['message']]);
             return $limiterResponse;
         }
 
         $user = Auth::user();
-        Log::info('Login realizado com sucesso', ['user_id' => $user->id, 'identificador' => $identificador, 'ip' => $request->ip()]);
+        $this->logInfo('Login realizado com sucesso', ['user_id' => $user->id, 'identificador' => $identificador, 'ip' => $request->ip()]);
 
         $this->limitador->limparConta($request);
 
@@ -37,7 +39,7 @@ class GestaoAutenticacao
     {
         $segundos = $this->limitador->segundosDeBloqueio($request);
         if ($segundos !== null) {
-            Log::warning('Usuário bloqueado por muitas tentativas', [
+            $this->logWarning('Usuário bloqueado por muitas tentativas', [
                 'identificador' => $identificador,
                 'ip' => $request->ip(),
                 'tempo_restante' => $segundos
@@ -53,7 +55,7 @@ class GestaoAutenticacao
 
         if (!Auth::attempt([$campo => $identificador, 'password' => $password], $remember)) {
             $this->limitador->registarFalha($request);
-            Log::warning('Credenciais inválidas', [
+            $this->logWarning('Credenciais inválidas', [
                 'identificador' => $identificador,
                 'ip' => $request->ip()
             ]);

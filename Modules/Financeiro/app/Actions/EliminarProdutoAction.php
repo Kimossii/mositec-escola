@@ -7,14 +7,23 @@ use Modules\Financeiro\Models\CatalogoAlvo;
 use Modules\Financeiro\Models\Produto;
 use Modules\Financeiro\Support\ReferenciasFinanceiras;
 use Modules\Financeiro\Support\ViolacaoDeChave;
+use Modules\Core\Traits\LogService;
 
 class EliminarProdutoAction
 {
+    use LogService;
+
     public function __construct(private ReferenciasFinanceiras $referencias)
     {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Produto $produto): void
+    {
+        $this->comLog('Eliminar produto', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($produto));
+    }
+
+    private function executarSemRegisto(Produto $produto): void
     {
         if ($this->referencias->existeReferenciaA($produto)) {
             throw ValidationException::withMessages([

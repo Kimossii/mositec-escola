@@ -2,8 +2,16 @@
 
 namespace Modules\Core\Traits;
 
+use Closure;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use ReflectionMethod;
+use SensitiveParameter;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use WeakMap;
 use Modules\Core\Support\SanitizadorDeLogs;
 use Modules\Core\Tenancy\TenantContext;
 use Throwable;
@@ -53,12 +61,88 @@ trait LogService
         $this->escreverLog('critical', $message, $context);
     }
 
-    /** Regista uma excepção (classe, mensagem e local — sem a pilha inteira) e devolve-a, para `throw $this->logException($e)`. */
+    /**
+     * Regista uma excepção (classe, mensagem e local — sem a pilha inteira) e devolve-a, para `throw $this->logException($e)`.
+     * Excepções esperadas (validação, permissão, 4xx, regras de negócio) entram como `warning`, as inesperadas como `error`. Uma mesma excepção
+     * que atravessa várias camadas (action dentro de action) só é registada uma vez.
+     */
     protected function logException(Throwable $excecao, string $message = 'Excepção', array $context = []): Throwable
     {
-        $this->escreverLog('error', $message, [...$context, 'excecao' => $excecao]);
+        static $registadas = null;
+        $registadas ??= new WeakMap;
+
+        if (! isset($registadas[$excecao])) {
+            $registadas[$excecao] = true;
+            $esperada = $excecao instanceof ValidationException
+                || $excecao instanceof AuthorizationException
+                || ($excecao instanceof HttpExceptionInterface && $excecao->getStatusCode() < 500)
+                // Excepções de regra de negócio (Modules\X\Exceptions\…, DomainException): o sistema recusou, não avariou.
+                || $excecao instanceof \DomainException
+                || (str_starts_with($excecao::class, 'Modules\\') && str_contains($excecao::class, '\\Exceptions\\'));
+
+            $this->escreverLog($esperada ? 'warning' : 'error', $message, [...$context, 'excecao' => $excecao]);
+        }
 
         return $excecao;
+    }
+
+    /**
+     * Executa uma operação de negócio com registo: `info` quando conclui, `warning`/`error` (e a excepção volta a ser lançada,
+     * intacta) quando falha. É o «try/catch» certo para actions e serviços: nunca engole o erro, nunca o regista duas vezes e
+     * nunca depende de alguém se lembrar de o escrever.
+     *
+     * @template T
+     *
+     * @param  Closure(): T  $acao
+     * @return T
+     */
+    protected function comLog(string $operacao, array $contexto, Closure $acao): mixed
+    {
+        try {
+            $resultado = $acao();
+        } catch (Throwable $excecao) {
+            throw $this->logException($excecao, "{$operacao}: falhou", $contexto);
+        }
+
+        $this->logInfo("{$operacao}: concluída", $contexto);
+
+        return $resultado;
+    }
+
+    /**
+     * Contexto seguro a partir dos argumentos de um método: ids dos modelos, números e booleanos, e o tamanho das listas.
+     * Texto, DTOs e pedidos ficam de fora (podem trazer dados pessoais) e parâmetros sensíveis nunca entram.
+     *
+     * @param  array<int, mixed>  $argumentos  `func_get_args()`
+     * @return array<string, mixed>
+     */
+    protected function contextoDeArgumentos(array $argumentos, string $metodo = 'executar'): array
+    {
+        try {
+            $parametros = (new ReflectionMethod($this, $metodo))->getParameters();
+        } catch (Throwable) {
+            return [];
+        }
+
+        $contexto = [];
+        foreach ($argumentos as $i => $valor) {
+            $parametro = $parametros[$i] ?? null;
+            $nome = $parametro?->getName() ?? "arg{$i}";
+
+            if ($parametro?->getAttributes(SensitiveParameter::class) || preg_match('/pass|senha|secret|token/i', $nome) === 1) {
+                continue;
+            }
+
+            if ($valor instanceof Model) {
+                $contexto[$nome.'_id'] = $valor->getKey();
+            } elseif (is_int($valor) || is_float($valor) || is_bool($valor)) {
+                $contexto[$nome] = $valor;
+            } elseif (is_array($valor)) {
+                $contexto[$nome.'_total'] = count($valor);
+            }
+        }
+
+        return $contexto;
     }
 
     private function escreverLog(string $nivel, string $message, array $context): void
@@ -75,12 +159,18 @@ trait LogService
 
     private function construirMensagemDeLog(string $message): string
     {
-        // Frames: 0 = esta função, 1 = escreverLog, 2 = logInfo/logError…, 3 = o método que chamou o log.
-        $pilha = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 4);
+        // O «quem chamou» é o primeiro frame que não seja um auxiliar deste trait; a linha é a de onde esse auxiliar foi chamado.
+        $auxiliares = ['construirMensagemDeLog', 'escreverLog', 'logDebug', 'logInfo', 'logNotice', 'logWarning', 'logError', 'logCritical', 'logException', 'comLog'];
+        $pilha = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8);
 
-        $classe = $pilha[3]['class'] ?? static::class;
-        $metodo = $pilha[3]['function'] ?? 'desconhecido';
-        $linha = $pilha[2]['line'] ?? '?';
+        $indice = 1;
+        while (isset($pilha[$indice]) && in_array($pilha[$indice]['function'], $auxiliares, true)) {
+            $indice++;
+        }
+
+        $classe = $pilha[$indice]['class'] ?? static::class;
+        $metodo = $pilha[$indice]['function'] ?? 'desconhecido';
+        $linha = $pilha[$indice - 1]['line'] ?? '?';
 
         // Também a classe passa pelo filtro: o nome de uma classe anónima leva um byte NUL.
         return SanitizadorDeLogs::texto('['.$classe.'::'.$metodo.':'.$linha.'] '.$message, 1000);

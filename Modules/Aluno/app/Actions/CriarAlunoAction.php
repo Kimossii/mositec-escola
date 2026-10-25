@@ -10,15 +10,24 @@ use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Services\GeradorMatriculaService;
+use Modules\Core\Traits\LogService;
 
 class CriarAlunoAction
 {
+    use LogService;
+
     public function __construct(
         private GeradorMatriculaService $geradorMatricula,
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(AlunoDTO $dto, ?UploadedFile $foto = null): Aluno
+    {
+        return $this->comLog('Criar aluno', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($dto, $foto));
+    }
+
+    private function executarSemRegisto(AlunoDTO $dto, ?UploadedFile $foto = null): Aluno
     {
         return DB::transaction(function () use ($dto, $foto) {
             $dadosPessoa = $dto->dadosPessoaId

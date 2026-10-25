@@ -6,14 +6,23 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Financeiro\DTO\PlanoPropinaDTO;
 use Modules\Financeiro\Models\PlanoPropina;
+use Modules\Core\Traits\LogService;
 
 class AtualizarPlanoPropinaAction
 {
+    use LogService;
+
     public const MENSAGEM_VALOR = 'Este plano já tem propinas geradas: o valor só muda em «Alterar preço», onde escolhe como tratar as propinas já geradas.';
 
     public const MENSAGEM_CALENDARIO = 'Este plano já tem propinas geradas: a periodicidade e as datas de início e de fim não podem ser alteradas, porque definem os períodos das propinas existentes.';
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(PlanoPropina $plano, PlanoPropinaDTO $dto): PlanoPropina
+    {
+        return $this->comLog('Atualizar plano propina', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($plano, $dto));
+    }
+
+    private function executarSemRegisto(PlanoPropina $plano, PlanoPropinaDTO $dto): PlanoPropina
     {
         return DB::transaction(function () use ($plano, $dto) {
             // Bloqueia o plano: a geração de propinas (F2) e a alteração de preço (F4) também o bloqueiam.

@@ -3,7 +3,6 @@
 namespace Modules\Financeiro\Listeners;
 
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
@@ -13,6 +12,7 @@ use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Events\MatriculaEstadoAlterado;
 use Modules\Matricula\Models\Matricula;
 use Throwable;
+use Modules\Core\Traits\LogService;
 
 /**
  * Q7 (+ §8.2/3 "geração recuperável"): ao passar a Activa, gera as propinas da matrícula DEPOIS do commit
@@ -22,6 +22,8 @@ use Throwable;
  */
 class GerarPropinasAoActivarMatricula implements ShouldHandleEventsAfterCommit
 {
+    use LogService;
+
     public function __construct(
         private GerarPropinasService $geracao,
         private TenantContext $tenant,
@@ -42,7 +44,7 @@ class GerarPropinasAoActivarMatricula implements ShouldHandleEventsAfterCommit
                 report($e);
             }
 
-            Log::warning('financeiro.gerar-propinas.activacao-falhou', [
+            $this->logWarning('financeiro.gerar-propinas.activacao-falhou', [
                 'tenant_id' => $this->tenant->temTenant() ? $this->tenant->id() : null,
                 'matricula_id' => $evento->matriculaId,
                 'excepcao' => $e::class,
@@ -67,7 +69,7 @@ class GerarPropinasAoActivarMatricula implements ShouldHandleEventsAfterCommit
 
         $totais = $this->geracao->gerar(PedidoGeracaoPropinasDTO::daMatricula((int) $matricula->ano_lectivo_id, (string) $matricula->numero_registo_matricula))->totais();
 
-        Log::info('financeiro.gerar-propinas.activacao', [
+        $this->logInfo('financeiro.gerar-propinas.activacao', [
             'tenant_id' => $this->tenant->temTenant() ? $this->tenant->id() : null,
             'matricula_id' => $matricula->id,
         ] + $totais);

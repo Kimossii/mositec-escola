@@ -5,6 +5,7 @@ namespace Modules\Permissao\Actions;
 use Illuminate\Validation\ValidationException;
 use Modules\Permissao\Services\PermissionResolver;
 use Modules\Usuario\Models\User;
+use Modules\Core\Traits\LogService;
 
 /**
  * Invariante de segurança: nunca deixar o sistema sem NENHUM utilizador com
@@ -19,11 +20,19 @@ use Modules\Usuario\Models\User;
  */
 class GarantirAdministradorEfetivoAction
 {
+    use LogService;
+
     public function __construct(private readonly PermissionResolver $resolver)
     {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `verificarSemRegisto()`. */
     public function verificar(): void
+    {
+        $this->comLog('Garantir administrador efetivo', $this->contextoDeArgumentos(func_get_args(), 'verificar'), fn () => $this->verificarSemRegisto());
+    }
+
+    private function verificarSemRegisto(): void
     {
         $existe = User::all()->contains(
             fn (User $user) => $this->resolver->can($user, 'autorizacao.editar'),

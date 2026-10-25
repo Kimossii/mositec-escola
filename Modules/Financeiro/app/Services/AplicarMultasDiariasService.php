@@ -2,11 +2,11 @@
 
 namespace Modules\Financeiro\Services;
 
-use Illuminate\Support\Facades\Log;
 use Modules\Core\Tenancy\CacheTenant;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Models\RegraCobranca;
 use Throwable;
+use Modules\Core\Traits\LogService;
 
 /**
  * Multas por atraso sem depender do agendador: na primeira visita de cada dia a um tenant aplica as multas devidas
@@ -15,6 +15,8 @@ use Throwable;
  */
 class AplicarMultasDiariasService
 {
+    use LogService;
+
     public function __construct(
         private AplicarMultasService $multas,
         private CacheTenant $cache,
@@ -39,10 +41,10 @@ class AplicarMultasDiariasService
 
         try {
             $resultado = $this->multas->executar();
-            Log::info('financeiro.multas-do-dia', $resultado);
+            $this->logInfo('financeiro.multas-do-dia', $resultado);
         } catch (Throwable $e) {
             $this->cache->forget($chave); // tenta de novo na próxima visita; a página não deve falhar por isto
-            Log::error('financeiro.multas-do-dia: falhou', ['erro' => $e->getMessage()]);
+            $this->logError('financeiro.multas-do-dia: falhou', ['erro' => $e->getMessage()]);
         }
     }
 

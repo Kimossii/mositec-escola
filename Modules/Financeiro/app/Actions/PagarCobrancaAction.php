@@ -25,6 +25,7 @@ use Modules\Financeiro\Services\SnapshotMonetario;
 use Modules\Financeiro\Support\BloqueioDePagamentos;
 use Modules\Financeiro\Support\Dinheiro;
 use Modules\Financeiro\Support\ViolacaoDeUnicidade;
+use Modules\Core\Traits\LogService;
 
 /**
  * Paga uma cobrança de produtos e serviços pelo saldo todo: regista um Pagamento Confirmado (mesma numeração,
@@ -33,6 +34,8 @@ use Modules\Financeiro\Support\ViolacaoDeUnicidade;
  */
 class PagarCobrancaAction
 {
+    use LogService;
+
     public function __construct(
         private BloqueioDePagamentos $bloqueio,
         private DistribuicaoDePagamentoService $distribuicao,
@@ -43,7 +46,13 @@ class PagarCobrancaAction
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Cobranca $cobranca, RegistarPagamentoDTO $dto): Pagamento
+    {
+        return $this->comLog('Pagar cobrança', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($cobranca, $dto));
+    }
+
+    private function executarSemRegisto(Cobranca $cobranca, RegistarPagamentoDTO $dto): Pagamento
     {
         $caminho = $dto->comprovativo?->store(CaminhoTenant::para('financeiro/comprovativos'), 'privado');
 

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Financeiro\Enums\EstadoAcordo;
 use Modules\Financeiro\Models\Acordo;
+use Modules\Core\Traits\LogService;
 
 /**
  * Cancela (a escola desiste) ou quebra (o aluno falhou) um acordo activo. Em ambos o pagamento parcial e as multas
@@ -13,7 +14,15 @@ use Modules\Financeiro\Models\Acordo;
  */
 class EncerrarAcordoAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Acordo $acordo, EstadoAcordo $destino, string $motivo): Acordo
+    {
+        return $this->comLog('Encerrar acordo', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($acordo, $destino, $motivo));
+    }
+
+    private function executarSemRegisto(Acordo $acordo, EstadoAcordo $destino, string $motivo): Acordo
     {
         return DB::transaction(function () use ($acordo, $destino, $motivo) {
             if ($destino === EstadoAcordo::ACTIVO) {
