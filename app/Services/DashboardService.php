@@ -225,9 +225,9 @@ class DashboardService
     }
 
     /** @return array<string, mixed>|null */
-    public function calendario(User $user): ?array
+    public function calendario(User $user, ?string $mes = null): ?array
     {
-        return $user->can('propina.ver') ? $this->propinas->calendarioDoMes() : null;
+        return $user->can('propina.ver') ? $this->propinas->calendarioDoMes($mes) : null;
     }
 
     private function dinheiro(int $unidadesMenores): string

@@ -139,4 +139,20 @@ class DividasRecibosRelatoriosTest extends TestCase
     {
         $this->getJson('/pesquisa?q=abc')->assertUnauthorized();
     }
+
+    public function test_calendario_navega_por_mes_com_json_validado(): void
+    {
+        ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+        $this->propina($matricula, $plano, 1, ['data_vencimento' => '2026-10-10']);
+        $this->propina($matricula, $plano, 2, ['data_vencimento' => '2026-11-10']);
+        $admin = $this->adminEscola();
+
+        $this->actingAs($admin)->getJson('/calendario-vencimentos?mes=2026-11')->assertOk()
+            ->assertJsonPath('mes', '2026-11')->assertJsonCount(1, 'dias')->assertJsonPath('dias.0.dia', '2026-11-10');
+        $this->actingAs($admin)->getJson('/calendario-vencimentos?mes=2026-09')->assertOk()
+            ->assertJsonPath('mes', '2026-09')->assertJsonCount(0, 'dias');
+        $this->actingAs($admin)->getJson('/calendario-vencimentos?mes=2026-13')->assertStatus(422);
+        $this->actingAs($admin)->getJson('/calendario-vencimentos')->assertStatus(422);
+        $this->actingAs($admin)->getJson('/calendario-vencimentos?mes=2099-01')->assertStatus(422);
+    }
 }

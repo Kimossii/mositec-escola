@@ -157,23 +157,23 @@ class PropinaConsultaService
     }
 
     /**
-     * Vencimentos do mês corrente, dia a dia (propinas activas): quantas, quanto se emitiu, quanto já foi recebido
+     * Vencimentos de um mês (por omissão o corrente; `YYYY-MM`), dia a dia (propinas activas): quantas, quanto se emitiu, quanto já foi recebido
      * e quantas foram liquidadas depois do vencimento (e com quantos dias de atraso, no máximo). Unidades menores. Só dias com vencimentos.
      *
      * @return array{mes: string, dias: list<array{dia: string, quantidade: int, emitido: int, recebido: int, tardias: int, dias_de_atraso: int}>}
      */
-    public function calendarioDoMes(): array
+    public function calendarioDoMes(?string $mes = null): array
     {
-        return $this->totais->lembrar('calendario-do-mes', [], function () {
-            $hoje = $this->relogio->hoje();
+        $inicio = $mes === null ? $this->relogio->hoje()->startOfMonth() : CarbonImmutable::createFromFormat('!Y-m', $mes);
 
+        return $this->totais->lembrar('calendario-do-mes', ['mes' => $inicio->format('Y-m')], function () use ($inicio) {
             $dias = Propina::query()->whereIn('estado', Propina::ESTADOS_ACTIVOS)
-                ->whereBetween('data_vencimento', [$hoje->startOfMonth()->toDateString(), $hoje->endOfMonth()->toDateString()])
+                ->whereBetween('data_vencimento', [$inicio->toDateString(), $inicio->endOfMonth()->toDateString()])
                 ->selectRaw('data_vencimento as dia, COUNT(*) as n, SUM(valor) as emitido_dia, SUM(valor_pago) as recebido_dia, SUM(CASE WHEN capital_liquidado_em > data_vencimento THEN 1 ELSE 0 END) as tarde_n, MAX(CASE WHEN capital_liquidado_em > data_vencimento THEN capital_liquidado_em END) as ultima_tardia')
                 ->groupBy('data_vencimento')->orderBy('data_vencimento')->get();
 
             return [
-                'mes' => $hoje->format('Y-m'),
+                'mes' => $inicio->format('Y-m'),
                 'dias' => $dias->map(function ($linha) {
                     $dia = substr((string) $linha->getRawOriginal('dia'), 0, 10);
                     $tardia = $linha->getRawOriginal('ultima_tardia');
@@ -344,6 +344,7 @@ class PropinaConsultaService
             'plano' => $plano === null ? null : [
                 'id' => $plano->id,
                 'nome' => $plano->nome,
+                'data_inicio' => $plano->data_inicio?->toDateString(),
                 'periodicidade' => $plano->periodicidade?->label(),
                 'valor_actual' => $plano->valor->unidadesMenores(),
             ],
@@ -409,6 +410,7 @@ class PropinaConsultaService
             'turma_nome' => $propina->matricula?->turma?->nome,
             'plano_propina_id' => $propina->plano_propina_id,
             'plano_nome' => $propina->plano?->nome,
+            'plano_data_inicio' => $propina->plano?->data_inicio?->toDateString(),
             'ordem' => $propina->ordem,
             'periodo_inicio' => $inicio,
             'periodo_fim' => $fim,

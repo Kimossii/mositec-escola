@@ -11,7 +11,7 @@ import IsentarMultaModal from '../../Components/Propinas/IsentarMultaModal.vue';
 import AnularRegistoModal from '../../Components/Pagamentos/AnularRegistoModal.vue';
 import { ORIGEM_GERACAO } from '../../Models/Propina';
 import { formatarDinheiro } from '../../Support/dinheiro';
-import { dataCurta } from '../../Support/periodos';
+import { dataCurta, mesAno } from '../../Support/periodos';
 
 const props = defineProps({
     propina: { type: Object, required: true },
@@ -201,7 +201,7 @@ function isentar(novoValor, motivo) {
                     <div class="card-header"><h3 class="card-title fs-6 fw-bold text-uppercase text-gray-600">Plano de origem</h3></div>
                     <div class="card-body pt-0">
                         <div v-if="propina.plano" class="bg-body-secondary rounded p-4">
-                            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Plano</span><span>{{ propina.plano.nome }}</span></div>
+                            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Plano</span><span>{{ propina.plano.nome }}<span v-if="propina.plano.data_inicio" class="text-muted fs-8 ms-2">em vigor desde {{ mesAno(propina.plano.data_inicio) }}</span></span></div>
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Periodicidade</span><span>{{ propina.plano.periodicidade ?? '—' }}</span></div>
                             <div class="d-flex justify-content-between"><span class="text-muted">Valor actual do plano</span><span>{{ formatarDinheiro(propina.plano.valor_actual, moeda) }}</span></div>
                             <div class="text-muted fs-8 mt-2">A propina guarda o valor do momento em que foi gerada; mudar o plano não a altera.</div>

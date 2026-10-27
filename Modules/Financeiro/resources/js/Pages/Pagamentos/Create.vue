@@ -83,7 +83,7 @@ watch(tipoMetodo, () => {
     form.metodo_pagamento_id = metodosDoTipo.value.length === 1 ? metodosDoTipo.value[0].id : '';
 });
 
-const modo = ref(null); // nenhum modo pré-seleccionado: o utilizador escolhe;
+const modo = ref(MODO_DISTRIBUICAO.EXPLICITA); // «Escolher por propina» é o modo por defeito (decisão do dono)
 const manual = reactive({}); // propina_id → texto decimal
 
 const plano = ref(null);
@@ -261,6 +261,23 @@ watch(termo, (valor) => {
         resultados.value = data.matriculas;
     }, 300);
 });
+
+const marcada = (propina) => String(manual[propina.id] ?? '').trim() !== '';
+
+// Sem saltos: marcar um mês marca (com o saldo inteiro) todos os anteriores ainda em dívida; desmarcar um mês desmarca os seguintes.
+// `situacao.propinas` vem da mais antiga para a mais recente.
+function pagarAteAqui(propina, marcar) {
+    const propinas = situacao.value?.propinas ?? [];
+    const posicao = propinas.findIndex((p) => p.id === propina.id);
+
+    propinas.forEach((p, i) => {
+        if (marcar && i <= posicao && !bloqueadaPorAntecipado(p) && !marcada(p)) {
+            manual[p.id] = unidadesMenoresParaDecimal(p.total_em_divida, props.moeda);
+        } else if (!marcar && i >= posicao) {
+            manual[p.id] = '';
+        }
+    });
+}
 
 async function escolher(escolhida) {
     const { data } = await axios.get(`/financeiro/pagamentos/matriculas/${escolhida.id}/situacao`);
@@ -556,15 +573,17 @@ function continuar() {
             <div class="card-body">
                 <div class="d-flex gap-6 mb-5">
                     <label class="form-check form-check-custom form-check-solid">
-                        <input v-model="modo" class="form-check-input" type="radio" :value="MODO_DISTRIBUICAO.AUTOMATICA" />
-                        <span class="form-check-label">Automática (da mais antiga para a mais recente)</span>
-                    </label>
-                    <label class="form-check form-check-custom form-check-solid">
                         <input v-model="modo" class="form-check-input" type="radio" :value="MODO_DISTRIBUICAO.EXPLICITA" />
                         <span class="form-check-label">Escolher por propina</span>
                     </label>
+                    <label class="form-check form-check-custom form-check-solid">
+                        <input v-model="modo" class="form-check-input" type="radio" :value="MODO_DISTRIBUICAO.AUTOMATICA" />
+                        <span class="form-check-label">Automática (da mais antiga para a mais recente)</span>
+                    </label>
                 </div>
-                <div v-if="!modo" class="text-muted fs-7 mb-4">Escolha como distribuir o valor para ver o resumo.</div>
+                <div v-if="modo === MODO_DISTRIBUICAO.EXPLICITA && situacao?.propinas.length" class="text-muted fs-7 mb-4">
+                    Marque o último mês a pagar: os meses anteriores em dívida ficam marcados com o saldo inteiro (não se saltam meses). Pode ajustar os valores.
+                </div>
                 <div v-if="errors.distribuicao" class="alert alert-danger fs-7 py-3">{{ errors.distribuicao }}</div>
                 <div v-if="errosDeLinhasForaDaTabela.length" class="alert alert-danger fs-7 py-3">
                     <div v-for="(mensagem, indice) in errosDeLinhasForaDaTabela" :key="indice">{{ mensagem }}</div>
@@ -575,6 +594,7 @@ function continuar() {
                         <thead>
                             <tr class="text-muted fw-bold text-uppercase">
                                 <th>Período</th><th>Vencimento</th><th>Estado</th><th class="text-end">Capital</th><th class="text-end">Multa</th><th class="text-end">Total</th>
+                                <th v-if="modo === MODO_DISTRIBUICAO.EXPLICITA" class="w-30px"></th>
                                 <th v-if="modo === MODO_DISTRIBUICAO.EXPLICITA" class="text-end min-w-150px">Pagar ({{ moeda.simbolo }})</th>
                             </tr>
                         </thead>
@@ -589,6 +609,10 @@ function continuar() {
                                 <td class="text-end">{{ formatarDinheiro(propina.saldo, moeda) }}</td>
                                 <td class="text-end">{{ propina.multa_pendente ? formatarDinheiro(propina.multa_pendente, moeda) : '—' }}</td>
                                 <td class="text-end fw-semibold">{{ formatarDinheiro(propina.total_em_divida, moeda) }}</td>
+                                <td v-if="modo === MODO_DISTRIBUICAO.EXPLICITA">
+                                    <input type="checkbox" class="form-check-input" :checked="marcada(propina)" :disabled="bloqueadaPorAntecipado(propina)" :aria-label="`Pagar até ${propina.periodo}`"
+                                        @change="pagarAteAqui(propina, $event.target.checked)" />
+                                </td>
                                 <td v-if="modo === MODO_DISTRIBUICAO.EXPLICITA" class="text-end">
                                     <input v-model="manual[propina.id]" type="text" inputmode="decimal" class="form-control form-control-sm form-control-solid text-end"
                                         :disabled="bloqueadaPorAntecipado(propina)"

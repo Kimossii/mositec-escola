@@ -1,5 +1,6 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import axios from 'axios';
 import { Link } from '@inertiajs/vue3';
 
 /**
@@ -11,6 +12,34 @@ const props = defineProps({
     formatar: { type: Function, required: true }, // unidades menores → texto com moeda
 });
 
+// O mês mostrado navega-se sem recarregar a página: cada mês pedido vem de /calendario-vencimentos.
+const actual = ref(props.calendario);
+const mesInicial = actual.value.mes;
+const aCarregar = ref(false);
+const falhou = ref(false);
+
+function deslocar(mes, delta) {
+    const [ano, m] = mes.split('-').map(Number);
+    const d = new Date(ano, m - 1 + delta, 1);
+
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+async function irParaMes(mes) {
+    if (aCarregar.value) return;
+    aCarregar.value = true;
+    falhou.value = false;
+
+    try {
+        const { data } = await axios.get('/calendario-vencimentos', { params: { mes } });
+        actual.value = data;
+    } catch {
+        falhou.value = true;
+    } finally {
+        aCarregar.value = false;
+    }
+}
+
 const SEMANA = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const ROTULOS = { recebido: 'Pago', tardio: 'Pago c/ atraso', parcial: 'Parcial', atraso: 'Em atraso', avencer: 'A vencer' };
 const CORES = { recebido: '22, 163, 74', tardio: '13, 148, 136', parcial: '245, 158, 11', atraso: '239, 68, 68', avencer: '100, 116, 139' };
@@ -20,18 +49,18 @@ const hoje = computed(() => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 });
 
-const titulo = computed(() => new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric' }).format(new Date(`${props.calendario.mes}-01T00:00:00`)));
+const titulo = computed(() => new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric' }).format(new Date(`${actual.value.mes}-01T00:00:00`)));
 
 const celulas = computed(() => {
-    const [ano, mes] = props.calendario.mes.split('-').map(Number);
+    const [ano, mes] = actual.value.mes.split('-').map(Number);
     const total = new Date(ano, mes, 0).getDate();
     const inicio = (new Date(ano, mes - 1, 1).getDay() + 6) % 7; // segunda = 0
-    const porDia = new Map(props.calendario.dias.map((d) => [d.dia, d]));
-    const maior = Math.max(1, ...props.calendario.dias.map((d) => d.emitido));
+    const porDia = new Map(actual.value.dias.map((d) => [d.dia, d]));
+    const maior = Math.max(1, ...actual.value.dias.map((d) => d.emitido));
     const lista = Array.from({ length: inicio }, () => null);
 
     for (let n = 1; n <= total; n++) {
-        const dia = `${props.calendario.mes}-${String(n).padStart(2, '0')}`;
+        const dia = `${actual.value.mes}-${String(n).padStart(2, '0')}`;
         const dados = porDia.get(dia);
         let estado = null;
 
@@ -57,13 +86,42 @@ const celulas = computed(() => {
     return lista;
 });
 
+// Resumo do mês por estado (propinas e valor por receber/emitido): dá leitura rápida sem ter de passar o rato dia a dia.
+const resumo = computed(() => {
+    const porEstado = {};
+    let emitido = 0;
+    let recebido = 0;
+
+    for (const c of celulas.value) {
+        if (!c?.dados) continue;
+        const e = (porEstado[c.estado] ??= { quantidade: 0, valor: 0 });
+        e.quantidade += c.dados.quantidade;
+        e.valor += c.estado === 'recebido' || c.estado === 'tardio' ? c.dados.recebido : c.porReceber;
+        emitido += c.dados.emitido;
+        recebido += c.dados.recebido;
+    }
+
+    return { estados: Object.keys(ROTULOS).filter((k) => porEstado[k]).map((k) => ({ chave: k, ...porEstado[k] })), emitido, recebido };
+});
+
+const noMesInicial = computed(() => actual.value.mes === mesInicial);
 const link = (dia) => `/financeiro/propinas?vencimento_de=${dia}&vencimento_ate=${dia}`;
 </script>
 
 <template>
     <div>
         <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
-            <span class="fw-bold text-capitalize fs-6">{{ titulo }}</span>
+            <span class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-icon btn-sm btn-light" :disabled="aCarregar" aria-label="Mês anterior" @click="irParaMes(deslocar(actual.mes, -1))">
+                    <i class="ki-duotone ki-arrow-left fs-4"><span class="path1"></span><span class="path2"></span></i>
+                </button>
+                <span class="fw-bold fs-6 text-center titulo-mes" style="min-width: 130px">{{ titulo }}</span>
+                <button type="button" class="btn btn-icon btn-sm btn-light" :disabled="aCarregar" aria-label="Mês seguinte" @click="irParaMes(deslocar(actual.mes, 1))">
+                    <i class="ki-duotone ki-arrow-right fs-4"><span class="path1"></span><span class="path2"></span></i>
+                </button>
+                <button v-if="!noMesInicial" type="button" class="btn btn-sm btn-light" :disabled="aCarregar" @click="irParaMes(mesInicial)">Mês actual</button>
+                <span v-if="falhou" class="text-danger fs-8">Não foi possível carregar este mês.</span>
+            </span>
             <span class="d-flex flex-wrap gap-4 fs-8 text-muted">
                 <span v-for="(rotulo, chave) in ROTULOS" :key="chave" class="d-flex align-items-center gap-1">
                     <span class="d-inline-block rounded-1" style="width: 10px; height: 10px" :style="{ background: `rgb(${CORES[chave]})` }"></span>{{ rotulo }}
@@ -71,9 +129,19 @@ const link = (dia) => `/financeiro/propinas?vencimento_de=${dia}&vencimento_ate=
             </span>
         </div>
 
+        <div v-if="resumo.estados.length" class="d-flex flex-wrap gap-3 mb-3">
+            <span v-for="e in resumo.estados" :key="e.chave" class="d-inline-flex align-items-center gap-2 rounded-2 px-3 py-2 fs-8 bg-body-secondary">
+                <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px" :style="{ background: `rgb(${CORES[e.chave]})` }"></span>
+                <span class="fw-semibold text-gray-800">{{ ROTULOS[e.chave] }}</span>
+                <span class="text-muted">{{ e.quantidade }} {{ e.quantidade === 1 ? 'propina' : 'propinas' }} · {{ formatar(e.valor) }}</span>
+            </span>
+            <span class="d-inline-flex align-items-center gap-2 px-3 py-2 fs-8 text-muted">Emitido {{ formatar(resumo.emitido) }} · Recebido {{ formatar(resumo.recebido) }}</span>
+        </div>
+        <div v-else class="text-muted fs-8 mb-3">Sem vencimentos neste mês.</div>
+
         <div class="text-muted fs-8 mb-3">Por data de vencimento da propina, não da data do pagamento. Uma propina paga depois do vencimento continua no dia em que venceu.</div>
 
-        <div class="d-grid gap-1" style="grid-template-columns: repeat(7, minmax(0, 1fr))">
+        <div class="d-grid gap-1" :style="{ opacity: aCarregar ? 0.5 : 1 }" style="grid-template-columns: repeat(7, minmax(0, 1fr))">
             <div v-for="s in SEMANA" :key="s" class="text-center text-muted fs-8 fw-bold text-uppercase pb-1">{{ s }}</div>
             <template v-for="(c, i) in celulas" :key="i">
                 <div v-if="!c"></div>
@@ -90,7 +158,7 @@ const link = (dia) => `/financeiro/propinas?vencimento_de=${dia}&vencimento_ate=
                     </component>
 
                     <div class="cal-dica card shadow-lg p-4 fs-7 text-gray-800" :class="i % 7 < 4 ? 'cal-esquerda' : 'cal-direita'">
-                        <div class="fw-bold text-capitalize mb-1">{{ c.titulo }}</div>
+                        <div class="fw-bold mb-1 titulo-mes">{{ c.titulo }}</div>
                         <template v-if="c.dados">
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px" :style="{ background: `rgb(${CORES[c.estado]})` }"></span>
@@ -112,6 +180,7 @@ const link = (dia) => `/financeiro/propinas?vencimento_de=${dia}&vencimento_ate=
 </template>
 
 <style scoped>
+.titulo-mes::first-letter { text-transform: uppercase; }
 .cal-dica {
     display: none;
     position: absolute;
