@@ -100,6 +100,14 @@ class PagamentoConcorrenciaPgsqlTest extends PgsqlConcorrenciaTestCase
         }
     }
 
+    /** Não se saltam meses: para pagar um mês posterior, liquida-se primeiro (de verdade) tudo o que o antecede. */
+    private function liquidarAnteriores(Matricula $matricula, array $p, int $ordem): void
+    {
+        for ($i = 1; $i < $ordem; $i++) {
+            $this->pagar($matricula, 2_500_000, [[$p[$i], 2_500_000]]);
+        }
+    }
+
     private function assertCoerenteNaOutraLigacao(): void
     {
         $divergentes = $this->outraLigacao()->select(
@@ -152,18 +160,18 @@ class PagamentoConcorrenciaPgsqlTest extends PgsqlConcorrenciaTestCase
         [$matricula, , $p] = $this->cenario();
         $this->regras();
         // A linha da sequência só é visível (e bloqueável) por outra sessão depois do 1.º commit: um pagamento antes.
-        $this->pagar($matricula, 2_500_000, [[$p[2], 2_500_000]]);
+        $this->pagar($matricula, 2_500_000, [[$p[1], 2_500_000]]);
         $verificado = [];
         Pagamento::created(function () use ($matricula, $p, &$verificado) {
             $verificado = [
                 'matricula' => $this->sqlstateNaOutraLigacao('select id from matriculas where id = ? for update', [$matricula->id]),
-                'propina' => $this->sqlstateNaOutraLigacao('select id from propinas where id = ? for update', [$p[1]->id]),
+                'propina' => $this->sqlstateNaOutraLigacao('select id from propinas where id = ? for update', [$p[2]->id]),
                 'sequencia' => $this->sqlstateNaOutraLigacao('select id from pagamento_sequencias where tenant_id = ? for update', [$this->tenant->id]),
-                'plano' => $this->sqlstateNaOutraLigacao('select id from planos_propina where id = ? for update', [$p[1]->plano_propina_id]),
+                'plano' => $this->sqlstateNaOutraLigacao('select id from planos_propina where id = ? for update', [$p[2]->plano_propina_id]),
             ];
         });
 
-        $this->pagar($matricula, 2_500_000, [[$p[1], 2_500_000]]);
+        $this->pagar($matricula, 2_500_000, [[$p[2], 2_500_000]]);
 
         $this->assertSame(['matricula' => '55P03', 'propina' => '55P03', 'sequencia' => '55P03', 'plano' => null], $verificado, 'D13: matrícula, propinas e sequência presas; o plano nunca.');
         $this->assertNull($this->sqlstateNaOutraLigacao('select id from matriculas where id = ? for update', [$matricula->id]), 'Libertado no commit.');
@@ -173,6 +181,7 @@ class PagamentoConcorrenciaPgsqlTest extends PgsqlConcorrenciaTestCase
     {
         [$matricula, $plano, $p] = $this->cenario();
         $this->regras(parcial: true, antecipado: true);
+        $this->liquidarAnteriores($matricula, $p, 6);
         $impressao = $this->previa($plano, '2027-02', 3_000_000, ModoAlteracaoPreco::APLICAR_GERADAS)->impressaoDigital;
         $estado = ['filho' => null, 'ficouPreso' => null];
         $antes = $this->deadlocksDaBase();
@@ -196,6 +205,7 @@ class PagamentoConcorrenciaPgsqlTest extends PgsqlConcorrenciaTestCase
     {
         [$matricula, $plano, $p] = $this->cenario();
         $this->regras(parcial: true, antecipado: true);
+        $this->liquidarAnteriores($matricula, $p, 6);
         $impressao = $this->previa($plano, '2027-02', 3_000_000, ModoAlteracaoPreco::APLICAR_GERADAS)->impressaoDigital;
         $estado = ['filho' => null, 'ficouPreso' => null];
         Pagamento::created(function () use ($plano, $impressao, &$estado) {
@@ -286,16 +296,16 @@ class PagamentoConcorrenciaPgsqlTest extends PgsqlConcorrenciaTestCase
         [$matricula, , $p] = $this->cenario();
         $this->regras(parcial: true);
         // A anulação exige que a propina já tenha recebido pagamentos e que já não tenha nenhum activo.
-        $this->anularPagamento($this->pagar($matricula, 500_000, [[$p[2], 500_000]]));
+        $this->anularPagamento($this->pagar($matricula, 500_000, [[$p[1], 500_000]]));
         $antes = $this->deadlocksDaBase();
 
         $respostas = $this->emSimultaneo([
-            ['pagar', $this->dadosPagar($matricula, 2_000_000, [[$p[2]->id, 2_000_000]])],
-            ['anular-propina', ['propina' => $p[2]->id]],
+            ['pagar', $this->dadosPagar($matricula, 2_000_000, [[$p[1]->id, 2_000_000]])],
+            ['anular-propina', ['propina' => $p[1]->id]],
         ]);
 
         $this->assertSame(1, count(array_filter($respostas, fn ($r) => $r['ok'])), json_encode($respostas));
-        $linha = $this->outraLigacao()->selectOne('select estado from propinas where id = ?', [$p[2]->id]);
+        $linha = $this->outraLigacao()->selectOne('select estado from propinas where id = ?', [$p[1]->id]);
         $pagamentos = (int) $this->outraLigacao()->selectOne('select count(*) as n from pagamentos where estado = 1')->n;
         $this->assertContains([(int) $linha->estado, $pagamentos], [[5, 0], [2, 1]], 'Ou Anulada (só o pagamento já anulado antes), ou Parcialmente Paga com o novo pagamento: json ' . json_encode($respostas) . ' estado ' . $linha->estado);
         $this->assertSame($antes, $this->deadlocksDaBase());
@@ -309,10 +319,10 @@ class PagamentoConcorrenciaPgsqlTest extends PgsqlConcorrenciaTestCase
         $this->regras(parcial: true, antecipado: true);
         $antes = $this->deadlocksDaBase();
         $existentes = [];
-        $this->pagar($matricula, 3_000_000, [[$p[6], 2_500_000]]); // 500.000 de crédito para o aplicar-credito
+        $this->pagar($matricula, 3_000_000, [[$p[1], 2_000_000]]); // 1.000.000 de crédito para o aplicar-credito
 
         foreach ([4, 5] as $o) {
-            $existentes[$o] = $this->pagar($matricula, 500_000, [[$p[$o], 500_000]]);
+            $existentes[$o] = $this->pagar($matricula, 100_000, [[$p[1], 100_000]]);
         }
 
         $ok = 0;
@@ -321,8 +331,8 @@ class PagamentoConcorrenciaPgsqlTest extends PgsqlConcorrenciaTestCase
             $operacoes = [
                 ['pagar', $this->dadosPagar($matricula, 300_000, [[$p[1]->id, 300_000]])],
                 ['pagar', $this->dadosPagar($matricula, 300_000, [[$p[1]->id, 300_000]])],
-                ['pagar', $this->dadosPagar($matricula, 400_000, [[$p[2]->id, 200_000], [$p[3]->id, 200_000]])],
-                ['pagar', $this->dadosPagar($matricula, 400_000, [[$p[3]->id, 200_000], [$p[2]->id, 200_000]])],
+                ['pagar', $this->dadosPagar($matricula, 400_000, [[$p[1]->id, 100_000], [$p[2]->id, 150_000], [$p[3]->id, 150_000]])],
+                ['pagar', $this->dadosPagar($matricula, 400_000, [[$p[3]->id, 150_000], [$p[2]->id, 150_000], [$p[1]->id, 100_000]])],
                 ['pagar', $this->dadosPagar($matricula, 100_000, null)],
                 ['pagar', $this->dadosPagar($outra, 100_000, null)],
                 ['aplicar-credito', ['matricula' => $matricula->id, 'credito' => 100_000]],

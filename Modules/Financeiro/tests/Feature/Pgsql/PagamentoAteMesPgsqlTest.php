@@ -95,7 +95,7 @@ class PagamentoAteMesPgsqlTest extends PgsqlTestCase
     {
         Carbon::setTestNow(CarbonImmutable::parse('2026-10-16 10:00:00', 'UTC'));
         ['matricula' => $matricula] = $this->cenarioPropinas();
-        $this->regras();
+        $this->regras(antecipado: false);
 
         try {
             $this->pagar($matricula, 2_500_000, null, 0, '2026-10-16', null, 2027, 4);

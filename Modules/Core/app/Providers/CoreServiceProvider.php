@@ -2,6 +2,8 @@
 
 namespace Modules\Core\Providers;
 
+use Illuminate\Support\Facades\Session;
+use Modules\Core\Tenancy\Support\SessaoDatabaseSemTenantSegura;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Modules\Core\Providers\RouteServiceProvider;
 use Modules\Core\Support\PesquisaTexto;
@@ -38,5 +40,14 @@ class CoreServiceProvider extends ModuleServiceProvider
 
         PesquisaTexto::registar();
         CapturaTenantNoPayload::registar();
+
+        // Mesmo driver `database` do Laravel, com o handler que não falha sem tenant (ver a classe). O gestor monta a Store
+        // à volta do handler devolvido; a ligação à BD vem de um método protegido, daí o `Closure::call` no âmbito do gestor.
+        Session::extend('database', fn ($app) => new SessaoDatabaseSemTenantSegura(
+            (fn () => $this->getDatabaseConnection())->call($app['session']),
+            $app['config']['session.table'],
+            $app['config']['session.lifetime'],
+            $app,
+        ));
     }
 }

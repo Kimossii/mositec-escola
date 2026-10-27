@@ -952,4 +952,17 @@ class AutenticacaoPlataformaTest extends TestCase
         $this->assertSame([], array_filter(EspiaDeContexto::$observacoes), 'Algum pedido do painel viu um tenant em contexto.');
         // (o helper `pedido` já afirma temTenant() === false depois de cada pedido ao painel.)
     }
+
+    public function test_id_de_sessao_de_escola_sob_o_cookie_do_painel_com_driver_database_nao_da_500(): void
+    {
+        // Com o driver `database` (o de produção) o handler pergunta o utilizador ao guard `web`, que sem tenant lançava
+        // TenantNaoResolvido (500). Só se alcança com a APP_KEY (o cookie vai cifrado): falha fechada, mas sem 500.
+        config(['session.driver' => 'database']);
+        app('session')->forgetDrivers();
+        $sessaoEscola = $this->entrarNaEscola($this->utilizadorDeEscola());
+        $this->assertNotNull(DB::table('sessions')->where('id', $sessaoEscola)->value('user_id'));
+
+        $this->noPainel('GET', '/plataforma', $sessaoEscola)->assertRedirect($this->url('/plataforma/login'));
+        $this->noPainel('GET', '/plataforma/login', $sessaoEscola)->assertOk();
+    }
 }
