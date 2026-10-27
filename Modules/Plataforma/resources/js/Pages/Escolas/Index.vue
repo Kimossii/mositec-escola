@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
@@ -25,6 +25,13 @@ const filtros = reactive({
     estado: props.filtros.estado ?? '',
 });
 
+const temFiltros = computed(() => filtros.pesquisa !== '' || filtros.estado !== '');
+const limparFiltros = () => {
+    filtros.pesquisa = '';
+    filtros.estado = '';
+};
+const abrir = (escola) => router.visit(`/plataforma/escolas/${escola.codigo}`);
+
 let debounceId = null;
 
 watch(filtros, (valor) => {
@@ -42,7 +49,10 @@ watch(filtros, (valor) => {
 <template>
     <div>
         <div class="d-flex justify-content-between align-items-center mb-6">
-            <h1 class="fs-2 fw-bold">Escolas</h1>
+            <div>
+                <h1 class="fs-2 fw-bold mb-0">Escolas</h1>
+                <div class="text-muted fs-7">{{ escolas.total ?? escolas.data.length }} {{ (escolas.total ?? escolas.data.length) === 1 ? 'escola' : 'escolas' }}{{ temFiltros ? ' com estes filtros' : '' }}</div>
+            </div>
             <Link href="/plataforma/escolas/nova" class="btn btn-primary">Nova escola</Link>
         </div>
 
@@ -80,15 +90,18 @@ watch(filtros, (valor) => {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="escolas.data.length === 0">
-                            <td colspan="5" class="text-center text-muted py-6">Nenhuma escola encontrada.</td>
+                            <td colspan="5" class="text-center text-muted py-6">
+                                Nenhuma escola encontrada.
+                                <button v-if="temFiltros" type="button" class="btn btn-link btn-sm p-0 ms-2 align-baseline" @click="limparFiltros">Limpar filtros</button>
+                            </td>
                         </tr>
-                        <tr v-for="escola in escolas.data" :key="escola.codigo">
+                        <tr v-for="escola in escolas.data" :key="escola.codigo" role="button" @click="abrir(escola)">
                             <td>
-                                <Link :href="`/plataforma/escolas/${escola.codigo}`" class="text-gray-800 text-hover-primary fw-bold">
+                                <Link :href="`/plataforma/escolas/${escola.codigo}`" class="text-gray-800 text-hover-primary fw-bold" @click.stop>
                                     {{ escola.codigo }}
                                 </Link>
                             </td>
-                            <td>{{ escola.nome }}</td>
+                            <td class="text-gray-800">{{ escola.nome }}</td>
                             <td><EstadoBadge :estado="escola.estado" /></td>
                             <td>{{ escola.dominio_principal ?? '—' }}</td>
                             <td>{{ formatarData(escola.created_at) }}</td>
