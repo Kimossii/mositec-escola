@@ -18,6 +18,7 @@ use Modules\Financeiro\Support\BloqueioDePagamentos;
 use Modules\Financeiro\Support\Dinheiro;
 use Modules\Financeiro\Support\DividaDoAluno;
 use Modules\Matricula\Models\Matricula;
+use Modules\Core\Traits\LogService;
 
 /**
  * Cria uma cobrança de produtos e serviços para uma matrícula, numa transacção: valida o catálogo (itens activos),
@@ -26,6 +27,8 @@ use Modules\Matricula\Models\Matricula;
  */
 class CriarCobrancaAction
 {
+    use LogService;
+
     public const MAX_QUANTIDADE = 9999;
 
     public function __construct(
@@ -36,10 +39,16 @@ class CriarCobrancaAction
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(Matricula $matricula, array $itens, ?string $dataLimite = null, ?string $observacao = null, OrigemCobranca $origem = OrigemCobranca::MANUAL, ?int $utilizadorId = null): Cobranca
+    {
+        return $this->comLog('Criar cobrança', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $itens, $dataLimite, $observacao, $origem, $utilizadorId));
+    }
+
     /**
      * @param  list<array{tipo: string, id: int, quantidade: int, variante_id?: ?int}>  $itens
      */
-    public function executar(Matricula $matricula, array $itens, ?string $dataLimite = null, ?string $observacao = null, OrigemCobranca $origem = OrigemCobranca::MANUAL, ?int $utilizadorId = null): Cobranca
+    private function executarSemRegisto(Matricula $matricula, array $itens, ?string $dataLimite = null, ?string $observacao = null, OrigemCobranca $origem = OrigemCobranca::MANUAL, ?int $utilizadorId = null): Cobranca
     {
         return DB::transaction(function () use ($matricula, $itens, $dataLimite, $observacao, $origem, $utilizadorId) {
             $bloqueada = $this->bloqueio->matricula((int) $matricula->getKey())

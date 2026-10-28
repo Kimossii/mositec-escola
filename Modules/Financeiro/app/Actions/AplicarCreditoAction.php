@@ -21,6 +21,7 @@ use Modules\Financeiro\Support\BloqueioDePagamentos;
 use Modules\Financeiro\Support\BloqueioDePropinas;
 use Modules\Financeiro\Support\Dinheiro;
 use Modules\Matricula\Models\Matricula;
+use Modules\Core\Traits\LogService;
 
 /**
  * Usa crédito do aluno em propinas de uma matrícula dele, sem dinheiro novo (spec Pagamentos §4, §8; D12). Mesma
@@ -28,6 +29,8 @@ use Modules\Matricula\Models\Matricula;
  */
 class AplicarCreditoAction
 {
+    use LogService;
+
     public function __construct(
         private BloqueioDePagamentos $bloqueio,
         private BloqueioDePropinas $bloqueioDePropinas,
@@ -38,10 +41,16 @@ class AplicarCreditoAction
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(Matricula $matricula, AplicarCreditoDTO $dto): array
+    {
+        return $this->comLog('Aplicar crédito', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $dto));
+    }
+
     /**
      * @return list<CreditoUtilizacao>
      */
-    public function executar(Matricula $matricula, AplicarCreditoDTO $dto): array
+    private function executarSemRegisto(Matricula $matricula, AplicarCreditoDTO $dto): array
     {
         return DB::transaction(function () use ($matricula, $dto) {
             $bloqueada = $this->bloqueio->matricula((int) $matricula->getKey())

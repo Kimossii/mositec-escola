@@ -11,12 +11,21 @@ use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\AnoLectivo\Support\DependenciasRegistadasDoAnoLectivo;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Core\Traits\LogService;
 
 class AtualizarAnoLectivoAction
 {
+    use LogService;
+
     use GarantiaAnoLectivoAtivoUnico;
 
+    /** Regista a operação (conclusão ou falha) e delega em `atualizarSemRegisto()`. */
     public function atualizar(AnoLectivo $anoLectivo, AnoLectivoDTO $dto): AnoLectivo
+    {
+        return $this->comLog('Atualizar ano lectivo', $this->contextoDeArgumentos(func_get_args(), 'atualizar'), fn () => $this->atualizarSemRegisto($anoLectivo, $dto));
+    }
+
+    private function atualizarSemRegisto(AnoLectivo $anoLectivo, AnoLectivoDTO $dto): AnoLectivo
     {
         return DB::transaction(function () use ($anoLectivo, $dto) {
             $estabelecimentoId = Estabelecimento::current()->id;

@@ -11,6 +11,7 @@ use Modules\Tenant\Models\Domain;
 use Modules\Tenant\Models\Tenant;
 use Modules\Tenant\Services\ClassificadorDominio;
 use Modules\Tenant\Services\ValidadorDominio;
+use Modules\Core\Traits\LogService;
 
 /**
  * Acrescenta um domínio (não principal) a um tenant, por exemplo um domínio personalizado
@@ -18,16 +19,24 @@ use Modules\Tenant\Services\ValidadorDominio;
  */
 class AdicionarDominioAction
 {
+    use LogService;
+
     public function __construct(
         private readonly ValidadorDominio $validador,
         private readonly ClassificadorDominio $classificador,
     ) {}
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(Tenant $tenant, string $dominio): Domain
+    {
+        return $this->comLog('Adicionar domínio', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($tenant, $dominio));
+    }
+
     /**
      * @throws DadosDeTenantInvalidos
      * @throws TransicaoDeEstadoInvalida
      */
-    public function executar(Tenant $tenant, string $dominio): Domain
+    private function executarSemRegisto(Tenant $tenant, string $dominio): Domain
     {
         $host = $this->validador->validar($dominio);
 

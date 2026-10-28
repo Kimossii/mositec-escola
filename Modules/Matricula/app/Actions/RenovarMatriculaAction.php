@@ -13,14 +13,27 @@ use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
+use Modules\Core\Traits\LogService;
 
 class RenovarMatriculaAction
 {
+    use LogService;
+
     public function __construct(
         private AlterarEstadoMatriculaAction $alterarEstado,
         private CriarMatriculaAction $criarMatricula,
         private RelogioDoTenant $relogio,
     ) {
+    }
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(
+        Matricula $matriculaAnterior,
+        ?int $turmaId = null,
+        ?int $utilizadorId = null,
+    ): Matricula
+    {
+        return $this->comLog('Renovar matrícula', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matriculaAnterior, $turmaId, $utilizadorId));
     }
 
     /**
@@ -29,7 +42,7 @@ class RenovarMatriculaAction
      * ano lectivo seguinte. Sem `turmaId`, tenta sugerir automaticamente;
      * se não conseguir, pede para indicar a turma manualmente.
      */
-    public function executar(
+    private function executarSemRegisto(
         Matricula $matriculaAnterior,
         ?int $turmaId = null,
         ?int $utilizadorId = null,

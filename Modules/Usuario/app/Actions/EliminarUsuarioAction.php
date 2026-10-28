@@ -7,16 +7,25 @@ use Illuminate\Validation\ValidationException;
 use Modules\Permissao\Actions\GarantirAdministradorEfetivoAction;
 use Modules\Permissao\Support\PermissaoCache;
 use Modules\Usuario\Models\User;
+use Modules\Core\Traits\LogService;
 
 class EliminarUsuarioAction
 {
+    use LogService;
+
     public function __construct(
         private readonly PermissaoCache $cache,
         private readonly GarantirAdministradorEfetivoAction $garantirAdministrador,
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(User $user): void
+    {
+        $this->comLog('Eliminar utilizador', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($user));
+    }
+
+    private function executarSemRegisto(User $user): void
     {
         if ($user->educandos()->exists()) {
             throw ValidationException::withMessages([

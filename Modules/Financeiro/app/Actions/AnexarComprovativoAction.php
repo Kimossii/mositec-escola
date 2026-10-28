@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Financeiro\Models\Pagamento;
+use Modules\Core\Traits\LogService;
 
 /**
  * Anexa o comprovativo a um pagamento que ainda não tem nenhum (spec Comprovativo). O ficheiro fica no disco privado
@@ -15,7 +16,15 @@ use Modules\Financeiro\Models\Pagamento;
  */
 class AnexarComprovativoAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Pagamento $pagamento, UploadedFile $comprovativo): Pagamento
+    {
+        return $this->comLog('Anexar comprovativo', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($pagamento, $comprovativo));
+    }
+
+    private function executarSemRegisto(Pagamento $pagamento, UploadedFile $comprovativo): Pagamento
     {
         if ($pagamento->comprovativo_path !== null) {
             throw ValidationException::withMessages(['comprovativo' => 'Este pagamento já tem comprovativo.']);

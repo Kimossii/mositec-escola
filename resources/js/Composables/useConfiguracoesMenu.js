@@ -28,7 +28,6 @@ const gruposConfiguracoes = [
         title: 'Estabelecimento',
         links: [
             { href: '/estabelecimento', label: 'Dados da Escola', exact: true, permissao: 'estabelecimento.ver' },
-            { href: '/estabelecimento/aparencia', label: 'Logótipo & Aparência', permissao: 'estabelecimento.ver' },
         ],
     },
     {

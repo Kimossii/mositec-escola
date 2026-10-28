@@ -5,10 +5,19 @@ namespace Modules\Financeiro\Actions;
 use Illuminate\Support\Facades\DB;
 use Modules\Financeiro\DTO\PlanoPropinaDTO;
 use Modules\Financeiro\Models\PlanoPropina;
+use Modules\Core\Traits\LogService;
 
 class CriarPlanoPropinaAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(PlanoPropinaDTO $dto): PlanoPropina
+    {
+        return $this->comLog('Criar plano propina', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($dto));
+    }
+
+    private function executarSemRegisto(PlanoPropinaDTO $dto): PlanoPropina
     {
         return DB::transaction(function () use ($dto) {
             $plano = PlanoPropina::create([

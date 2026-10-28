@@ -9,9 +9,12 @@ use Modules\Permissao\Support\AcoesAplicaveis;
 use Modules\Permissao\Support\PermissaoCache;
 use Modules\Permissao\Exceptions\PerfilDeAlunoFixo;
 use Modules\Usuario\Models\User;
+use Modules\Core\Traits\LogService;
 
 class SincronizarPermissoesUtilizadorAction
 {
+    use LogService;
+
     public function __construct(
         private readonly PermissaoCache $cache,
         private readonly AcoesAplicaveis $aplicaveis,
@@ -19,7 +22,13 @@ class SincronizarPermissoesUtilizadorAction
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(User $user, array $celulas): void
+    {
+        $this->comLog('Sincronizar permissões utilizador', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($user, $celulas));
+    }
+
+    private function executarSemRegisto(User $user, array $celulas): void
     {
         if ($user->ePerfilAluno()) {
             throw PerfilDeAlunoFixo::semPermissoesPersonalizadas();

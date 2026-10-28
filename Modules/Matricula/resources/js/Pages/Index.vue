@@ -3,6 +3,7 @@ import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
@@ -376,6 +377,7 @@ function confirmarRenovacaoEmMassa() {
             <div class="col-12 col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">Estado</label><SelectSolid v-model="filtros.estado" :options="opcoesEstado" /></div>
         </FiltrosRecolhiveis>
 
+        <ListaComVistas chave="academico-matriculas" prefixo="/matriculas">
         <div class="card">
             <div class="card-header" :class="{ 'd-none': !matriculasConcluidasDaPagina.length }">
                 <h3 class="card-title fw-bold">
@@ -579,6 +581,7 @@ function confirmarRenovacaoEmMassa() {
                 <Pagination :links="matriculas.links" />
             </div>
         </div>
+        </ListaComVistas>
 
         <ConfirmModal
             :show="mostrarConfirmRenovacaoEmMassa"

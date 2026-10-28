@@ -18,6 +18,7 @@ use Modules\Financeiro\Support\BloqueioDePagamentos;
 use Modules\Financeiro\Support\BloqueioDePropinas;
 use Modules\Financeiro\Support\Dinheiro;
 use Modules\Matricula\Models\Matricula;
+use Modules\Core\Traits\LogService;
 
 /**
  * Cria um acordo de pagamento em prestações para as propinas em dívida escolhidas. Só com «permite negociação» ligado
@@ -27,6 +28,8 @@ use Modules\Matricula\Models\Matricula;
  */
 class CriarAcordoAction
 {
+    use LogService;
+
     public const MAX_PRESTACOES = 36;
 
     public function __construct(
@@ -38,8 +41,14 @@ class CriarAcordoAction
     ) {
     }
 
-    /** @param list<int> $propinaIds */
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Matricula $matricula, array $propinaIds, int $descontoMultaPct, int $prestacoes, string $primeiroVencimento, string $motivo, ?int $utilizadorId = null): Acordo
+    {
+        return $this->comLog('Criar acordo', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $propinaIds, $descontoMultaPct, $prestacoes, $primeiroVencimento, $motivo, $utilizadorId));
+    }
+
+    /** @param list<int> $propinaIds */
+    private function executarSemRegisto(Matricula $matricula, array $propinaIds, int $descontoMultaPct, int $prestacoes, string $primeiroVencimento, string $motivo, ?int $utilizadorId = null): Acordo
     {
         return DB::transaction(function () use ($matricula, $propinaIds, $descontoMultaPct, $prestacoes, $primeiroVencimento, $motivo, $utilizadorId) {
             $regras = RegraCobranca::query()->first();

@@ -6,9 +6,12 @@ use Illuminate\Validation\ValidationException;
 use Modules\Matricula\Models\Matricula;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\Turma\Models\Turma;
+use Modules\Core\Traits\LogService;
 
 class InscreverDisciplinasAutomaticamenteAction
 {
+    use LogService;
+
     public function __construct(
         private CriarInscricaoDisciplinaAction $criarInscricao,
     ) {
@@ -51,6 +54,12 @@ class InscreverDisciplinasAutomaticamenteAction
         }
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(Matricula $matricula, ?int $utilizadorId = null): int
+    {
+        return $this->comLog('Inscrever disciplinas automaticamente', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $utilizadorId));
+    }
+
     /**
      * Inscreve automaticamente só as disciplinas do plano marcadas
      * `inscricao_automatica = true` — a regra é transversal (o mesmo plano
@@ -61,7 +70,7 @@ class InscreverDisciplinasAutomaticamenteAction
      * a decisão de "o quê" automatizar vive inteiramente no Plano
      * Curricular, disciplina a disciplina, não no chamador.
      */
-    public function executar(Matricula $matricula, ?int $utilizadorId = null): int
+    private function executarSemRegisto(Matricula $matricula, ?int $utilizadorId = null): int
     {
         // Uma matrícula terminal nunca deveria chegar aqui — esta guard evita
         // que falhas na tentativa de inscrever caiam no catch de duplicatas abaixo,

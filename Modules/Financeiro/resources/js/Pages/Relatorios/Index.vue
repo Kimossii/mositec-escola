@@ -1,6 +1,7 @@
 <script setup>
 import { reactive } from 'vue';
 import { router, Deferred } from '@inertiajs/vue3';
+import MenuExportar from '@/Components/Shared/MenuExportar.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatarDinheiro } from '../../Support/dinheiro';
 
@@ -14,7 +15,6 @@ defineOptions({ layout: AppLayout });
 const dinheiro = (v) => formatarDinheiro(v, props.moeda);
 const intervalo = reactive({ de: props.periodo.de, ate: props.periodo.ate });
 const aplicar = () => router.get('/financeiro/relatorios', { ...intervalo }, { preserveScroll: true });
-const exportar = () => { window.location.href = `/financeiro/relatorios/recebimentos.csv?de=${intervalo.de}&ate=${intervalo.ate}`; };
 const mesPT = (ym) => { const [a, m] = ym.split('-'); return `${['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][Number(m) - 1]}/${a}`; };
 </script>
 
@@ -29,7 +29,7 @@ const mesPT = (ym) => { const [a, m] = ym.split('-'); return `${['Jan', 'Fev', '
                 <div><label class="fw-semibold fs-7 text-muted mb-1 d-block">De</label><input v-model="intervalo.de" type="date" class="form-control form-control-solid" /></div>
                 <div><label class="fw-semibold fs-7 text-muted mb-1 d-block">Até</label><input v-model="intervalo.ate" type="date" class="form-control form-control-solid" /></div>
                 <button type="button" class="btn btn-primary" @click="aplicar">Aplicar</button>
-                <button type="button" class="btn btn-light-primary" @click="exportar">Exportar recebimentos (CSV)</button>
+                <MenuExportar url="/financeiro/relatorios/recebimentos/exportar" :params="intervalo" rotulo="Exportar recebimentos" />
             </div>
         </div>
 

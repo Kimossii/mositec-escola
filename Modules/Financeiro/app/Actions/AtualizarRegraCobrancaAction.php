@@ -7,16 +7,25 @@ use Modules\Core\Actions\RegistarAuditoriaTenantAction;
 use Modules\Financeiro\DTO\RegraCobrancaDTO;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Services\AplicarMultasDiariasService;
+use Modules\Core\Traits\LogService;
 
 class AtualizarRegraCobrancaAction
 {
+    use LogService;
+
     public function __construct(
         private AplicarMultasDiariasService $multasDoDia,
         private RegistarAuditoriaTenantAction $auditoria,
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(RegraCobrancaDTO $dto): RegraCobranca
+    {
+        return $this->comLog('Atualizar regra cobrança', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($dto));
+    }
+
+    private function executarSemRegisto(RegraCobrancaDTO $dto): RegraCobranca
     {
         $regra = DB::transaction(function () use ($dto) {
             $regra = RegraCobranca::doTenant();

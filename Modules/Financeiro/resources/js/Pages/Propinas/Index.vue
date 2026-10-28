@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { Link, router, usePage, Deferred } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import { can } from '@/Composables/usePermissoes';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
@@ -11,7 +12,7 @@ import EstadoCobrancaBadge from '../../Components/Shared/EstadoCobrancaBadge.vue
 import GerarPropinasModal from '../../Components/Propinas/GerarPropinasModal.vue';
 import { ORIGEM_GERACAO } from '../../Models/Propina';
 import { formatarDinheiro } from '../../Support/dinheiro';
-import { dataCurta } from '../../Support/periodos';
+import { dataCurta, mesAno } from '../../Support/periodos';
 
 const BASE = '/financeiro/propinas';
 
@@ -218,6 +219,7 @@ function gerar(payload) {
             </div>
         </div>
 
+        <ListaComVistas chave="financeiro-propinas" prefixo="/financeiro/propinas">
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -294,7 +296,7 @@ function gerar(payload) {
                                     <div class="row g-4 fs-7">
                                         <div class="col-6 col-md-3"><div class="text-muted">Matrícula</div><div class="fw-bold text-gray-800">{{ propina.matricula_numero ?? '—' }}</div></div>
                                         <div class="col-6 col-md-3"><div class="text-muted">Turma</div><div class="fw-bold text-gray-800">{{ propina.turma_nome ?? '—' }}</div></div>
-                                        <div class="col-6 col-md-3"><div class="text-muted">Plano</div><div class="fw-bold text-gray-800">{{ propina.plano_nome ?? '—' }}</div></div>
+                                        <div class="col-6 col-md-3"><div class="text-muted">Plano</div><div class="fw-bold text-gray-800">{{ propina.plano_nome ?? '—' }}</div><div v-if="propina.plano_data_inicio" class="text-muted fs-8">em vigor desde {{ mesAno(propina.plano_data_inicio) }}</div></div>
                                         <div class="col-6 col-md-3"><div class="text-muted">Vencimento</div><div class="fw-bold text-gray-800">{{ dataCurta(propina.data_vencimento) }} <span class="text-muted fw-normal">· limite {{ dataCurta(propina.data_limite) }}</span></div></div>
                                     </div>
                                 </td>
@@ -308,6 +310,7 @@ function gerar(payload) {
                 <Pagination :links="propinas.links" />
             </div>
         </div>
+        </ListaComVistas>
 
         <GerarPropinasModal
             :show="geracaoAberta"

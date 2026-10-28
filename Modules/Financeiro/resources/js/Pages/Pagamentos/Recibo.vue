@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import { formatarDinheiro } from '../../Support/dinheiro';
 import { dataCurta } from '../../Support/periodos';
@@ -14,6 +14,7 @@ const props = defineProps({
     numero: { type: String, required: true },
     rotulo: { type: String, required: true },
     propinaId: { type: Number, default: null },
+    verificacao: { type: Object, required: true }, // { url, qr (SVG) } — o QR leva à página pública de verificação
 });
 
 // Duas vias do mesmo recibo na mesma folha A4: a de cima fica com quem pagou, a de baixo com a instituição.
@@ -83,18 +84,34 @@ const totais = computed(() => {
 
 // Com muito conteúdo, reduz-se a letra (e o espaçamento) em vez de cortar o fim da via, onde ficam as assinaturas.
 // Conta as linhas da tabela e as linhas extra do cabeçalho de dados (método, referência, contactos, logótipo).
-const classeFolha = computed(() => {
+const NIVEIS = ['', 'recibo-folha--densa', 'recibo-folha--compacta', 'recibo-folha--minima'];
+const nivelMinimo = computed(() => {
     const extras = dadosMetodo.value.length
         + (props.pagamento.referencia ? 1 : 0)
         + (props.aluno.telefone || props.aluno.email ? 1 : 0)
         + (props.escola.logotipo_url ? 2 : 0);
     const peso = linhas.value.length + extras;
 
-    if (peso <= 5) return '';
-    if (peso <= 9) return 'recibo-folha--densa';
-
-    return 'recibo-folha--compacta';
+    return peso <= 5 ? 0 : peso <= 9 ? 1 : 2;
 });
+const nivel = ref(0);
+const classeFolha = computed(() => NIVEIS[nivel.value]);
+
+// A estimativa por linhas não chega (logótipo, contactos, métodos): mede-se o que sobra de cada via e, se o fim — onde ficam
+// as assinaturas e o QR — estiver a ser cortado, desce-se de nível até caber.
+async function ajustar() {
+    for (let n = nivelMinimo.value; n < NIVEIS.length; n++) {
+        nivel.value = n;
+        await nextTick();
+        const cortada = [...document.querySelectorAll('.recibo-via')].some((via) => via.scrollHeight > via.clientHeight + 1);
+        if (!cortada) break;
+    }
+}
+onMounted(() => {
+    ajustar();
+    window.addEventListener('beforeprint', ajustar);
+});
+onBeforeUnmount(() => window.removeEventListener('beforeprint', ajustar));
 
 const anulado = computed(() => props.pagamento.anulacao !== null);
 const dinheiro = (valor) => formatarDinheiro(valor, props.moeda);
@@ -229,6 +246,10 @@ const dadosMetodo = computed(() => {
                     <div class="assinatura">
                         <div class="assinatura-nome">&nbsp;</div>
                         <div class="assinatura-linha">{{ pagamento.registado?.por ?? 'Atendente' }}</div>
+                    </div>
+                    <div class="recibo-qr">
+                        <div class="recibo-qr__codigo" v-html="verificacao.qr"></div>
+                        <div class="recibo-qr__texto">Verificar recibo</div>
                     </div>
                 </div>
             </section>

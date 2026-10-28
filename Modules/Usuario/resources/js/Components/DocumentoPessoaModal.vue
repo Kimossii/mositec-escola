@@ -296,7 +296,7 @@ function confirmarEliminacao() {
                                     accept="application/pdf,image/jpeg,image/png"
                                     @change="onFileChange"
                                 />
-                                <div class="text-muted fs-8 mt-1">PDF, JPG ou PNG, até 2MB.</div>
+                                <div class="text-muted fs-8 mt-1">PDF, JPG ou PNG, até 5MB.</div>
                             </div>
                         </div>
                         <div class="d-flex justify-content-end gap-2">

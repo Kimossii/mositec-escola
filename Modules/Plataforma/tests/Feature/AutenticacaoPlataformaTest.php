@@ -266,8 +266,11 @@ class AutenticacaoPlataformaTest extends TestCase
     {
         $sessao = $this->entrar($this->admin('outro@plataforma.test'));
 
-        // `/plataforma` redirecciona para a listagem de escolas (Task 4).
-        $this->noPainel('GET', '/plataforma', $sessao)->assertRedirect($this->url('/plataforma/escolas'));
+        // `/plataforma` é o Painel (escolas por estado e actividade recente).
+        $inicio = $this->noPainel('GET', '/plataforma', $sessao, cabecalhos: $this->inertia());
+        $inicio->assertOk();
+        $this->assertSame('Plataforma/Painel', $inicio->json('component'));
+        $this->assertSame([1, 2, 3], array_map('intval', array_keys($inicio->json('props.contagem'))));
         $resposta = $this->noPainel('GET', '/plataforma/escolas', $sessao, cabecalhos: $this->inertia());
 
         $resposta->assertOk();
@@ -679,7 +682,7 @@ class AutenticacaoPlataformaTest extends TestCase
         // ... e nem com o mesmo id de sessão sob o nome do cookie do painel.
         $this->noPainel('GET', '/plataforma', $sessaoEscola)->assertRedirect($this->url('/plataforma/login'));
         // Controlo positivo: na escola esse cookie ainda autentica.
-        $this->naEscola('/alterar-senha', $sessaoEscola)->assertOk();
+        $this->naEscola('/definicoes', $sessaoEscola)->assertOk();
 
         // Mesmo dentro da MESMA sessão (Store partilhado, sem flush): o guard `web` não vale para `plataforma`.
         Auth::guard('web')->login($user);
@@ -695,7 +698,7 @@ class AutenticacaoPlataformaTest extends TestCase
         $this->noPainel('GET', '/plataforma/_auth/leitura', $sessao)->assertOk();
 
         // Sessão do painel enviada à escola, sob os dois nomes de cookie.
-        $this->naEscola('/alterar-senha', $sessao)->assertRedirect(self::ESCOLA . '/login');
+        $this->naEscola('/definicoes', $sessao)->assertRedirect(self::ESCOLA . '/login');
         $this->pedido('GET', self::ESCOLA . '/alterar-senha', [], [$this->nomeDoCookie() => $sessao])->assertRedirect(self::ESCOLA . '/login');
 
         // Mesma sessão (Store partilhado, sem flush) logo depois de um login real do Super Admin.
@@ -743,7 +746,7 @@ class AutenticacaoPlataformaTest extends TestCase
 
         $intacta = function () use ($sessaoEscola, $linhaEscola): void {
             $this->assertDatabaseHas('sessions', $linhaEscola);
-            $this->naEscola('/alterar-senha', $sessaoEscola)->assertOk();
+            $this->naEscola('/definicoes', $sessaoEscola)->assertOk();
         };
 
         // 1. Troca própria de senha do Super Admin.
@@ -951,5 +954,18 @@ class AutenticacaoPlataformaTest extends TestCase
         $this->assertGreaterThanOrEqual(7, count(EspiaDeContexto::$observacoes));
         $this->assertSame([], array_filter(EspiaDeContexto::$observacoes), 'Algum pedido do painel viu um tenant em contexto.');
         // (o helper `pedido` já afirma temTenant() === false depois de cada pedido ao painel.)
+    }
+
+    public function test_id_de_sessao_de_escola_sob_o_cookie_do_painel_com_driver_database_nao_da_500(): void
+    {
+        // Com o driver `database` (o de produção) o handler pergunta o utilizador ao guard `web`, que sem tenant lançava
+        // TenantNaoResolvido (500). Só se alcança com a APP_KEY (o cookie vai cifrado): falha fechada, mas sem 500.
+        config(['session.driver' => 'database']);
+        app('session')->forgetDrivers();
+        $sessaoEscola = $this->entrarNaEscola($this->utilizadorDeEscola());
+        $this->assertNotNull(DB::table('sessions')->where('id', $sessaoEscola)->value('user_id'));
+
+        $this->noPainel('GET', '/plataforma', $sessaoEscola)->assertRedirect($this->url('/plataforma/login'));
+        $this->noPainel('GET', '/plataforma/login', $sessaoEscola)->assertOk();
     }
 }

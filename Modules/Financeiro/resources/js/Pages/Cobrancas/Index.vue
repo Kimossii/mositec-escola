@@ -2,6 +2,7 @@
 import { computed, reactive, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
@@ -79,6 +80,7 @@ watch(filtros, (valor) => {
                     </div>
         </FiltrosRecolhiveis>
 
+        <ListaComVistas chave="financeiro-cobrancas" prefixo="/financeiro/cobrancas">
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -126,5 +128,6 @@ watch(filtros, (valor) => {
                 <Pagination :links="cobrancas.links" />
             </div>
         </div>
+        </ListaComVistas>
     </div>
 </template>

@@ -9,6 +9,7 @@ use Modules\Financeiro\DTO\MotivoDeAnulacaoDTO;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Support\AnulacaoDePropinas;
 use Modules\Financeiro\Support\BloqueioDePropinas;
+use Modules\Core\Traits\LogService;
 
 /**
  * Anulação manual de uma propina (spec Propinas §8, `propina.anular`, motivo obrigatório). Bloqueia SÓ a propina
@@ -16,13 +17,21 @@ use Modules\Financeiro\Support\BloqueioDePropinas;
  */
 class AnularPropinaAction
 {
+    use LogService;
+
     public function __construct(
         private BloqueioDePropinas $bloqueio,
         private AnulacaoDePropinas $anulacao,
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Propina $propina, MotivoDeAnulacaoDTO $dto, ?int $utilizadorId): Propina
+    {
+        return $this->comLog('Anular propina', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($propina, $dto, $utilizadorId));
+    }
+
+    private function executarSemRegisto(Propina $propina, MotivoDeAnulacaoDTO $dto, ?int $utilizadorId): Propina
     {
         return DB::transaction(function () use ($propina, $dto, $utilizadorId) {
             $bloqueada = $this->bloqueio->bloquear([(int) $propina->getKey()])->first()

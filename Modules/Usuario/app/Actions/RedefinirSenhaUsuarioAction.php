@@ -7,9 +7,18 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Modules\Autenticacao\Models\SessaoDeUtilizador;
 use Modules\Usuario\Models\User;
+use Modules\Core\Traits\LogService;
 
 class RedefinirSenhaUsuarioAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(User $alvo, ?User $autor, ?string $senha = null): string
+    {
+        return $this->comLog('Redefinir senha utilizador', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($alvo, $autor, $senha));
+    }
+
     /**
      * Devolve a senha temporária em claro, e só isso: nunca é registada em logs,
      * eventos nem guardada em claro. O chamador mostra-a uma única vez.
@@ -18,7 +27,7 @@ class RedefinirSenhaUsuarioAction
      * `senha_redefinida_por` e `editado_por` ficam nulos. $senha permite ao chamador
      * fornecer a origem da senha (ex.: GeradorSenhaTemporaria).
      */
-    public function executar(User $alvo, ?User $autor, ?string $senha = null): string
+    private function executarSemRegisto(User $alvo, ?User $autor, ?string $senha = null): string
     {
         $senha ??= Str::password(14);
 

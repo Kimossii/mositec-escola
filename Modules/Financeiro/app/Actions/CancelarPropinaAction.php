@@ -9,6 +9,7 @@ use Modules\Financeiro\DTO\CancelarPropinaDTO;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Support\BloqueioDePropinas;
 use Modules\Financeiro\Support\CancelamentoDePropinas;
+use Modules\Core\Traits\LogService;
 
 /**
  * Cancelamento manual de uma propina (spec §8, permissão `propina.cancelar`, motivo obrigatório). Bloqueia
@@ -17,13 +18,21 @@ use Modules\Financeiro\Support\CancelamentoDePropinas;
  */
 class CancelarPropinaAction
 {
+    use LogService;
+
     public function __construct(
         private BloqueioDePropinas $bloqueio,
         private CancelamentoDePropinas $cancelamento,
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Propina $propina, CancelarPropinaDTO $dto, ?int $utilizadorId): Propina
+    {
+        return $this->comLog('Cancelar propina', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($propina, $dto, $utilizadorId));
+    }
+
+    private function executarSemRegisto(Propina $propina, CancelarPropinaDTO $dto, ?int $utilizadorId): Propina
     {
         return DB::transaction(function () use ($propina, $dto, $utilizadorId) {
             $bloqueada = $this->bloqueio->bloquear([(int) $propina->getKey()])->first()

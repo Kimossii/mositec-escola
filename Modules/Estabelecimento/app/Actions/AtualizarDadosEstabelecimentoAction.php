@@ -9,10 +9,19 @@ use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Estabelecimento\Models\EstabelecimentoEtapaEnsino;
 use Modules\Turma\Models\NivelAcademico;
+use Modules\Core\Traits\LogService;
 
 class AtualizarDadosEstabelecimentoAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(EstabelecimentoDTO $dto): Estabelecimento
+    {
+        return $this->comLog('Atualizar dados estabelecimento', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($dto));
+    }
+
+    private function executarSemRegisto(EstabelecimentoDTO $dto): Estabelecimento
     {
         return DB::transaction(function () use ($dto) {
             $estabelecimento = Estabelecimento::current();

@@ -25,6 +25,7 @@ class AnoLectivoController extends Controller
 
         return Inertia::render('AnoLectivo/Index', [
             'anoLectivos' => $this->consulta->listar(),
+            'contagens' => Inertia::defer(fn () => $this->consulta->contagens()),
         ]);
     }
 

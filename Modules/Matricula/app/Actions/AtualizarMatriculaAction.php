@@ -10,16 +10,29 @@ use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\ValidadorMatriculaService;
 use Modules\Matricula\Support\DependenciasRegistadasDaMatricula;
 use Modules\Turma\Models\Turma;
+use Modules\Core\Traits\LogService;
 
 class AtualizarMatriculaAction
 {
+    use LogService;
+
     public function __construct(
         private ValidadorMatriculaService $validador,
         private DependenciasRegistadasDaMatricula $dependencias,
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(
+        Matricula $matricula,
+        MatriculaDTO $dto,
+        ?int $utilizadorId = null,
+    ): Matricula
+    {
+        return $this->comLog('Atualizar matrícula', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $dto, $utilizadorId));
+    }
+
+    private function executarSemRegisto(
         Matricula $matricula,
         MatriculaDTO $dto,
         ?int $utilizadorId = null,

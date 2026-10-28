@@ -11,6 +11,7 @@
     data-kt-app-sidebar-push-toolbar="true"
     data-kt-app-sidebar-push-footer="true"
     data-kt-app-toolbar-enabled="true"
+    @if ($sidebarMinimizado ?? false) data-kt-app-sidebar-minimize="on" @endif
     class="app-default"
 >
 

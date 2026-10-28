@@ -7,7 +7,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Inertia\Middleware;
+use App\Services\DashboardService;
 use Modules\Core\Support\HistoricoCifrado;
+use Modules\Autenticacao\Service\FotoDoUtilizadorService;
+use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Services\PermissionResolver;
 
 class HandleInertiaRequests extends Middleware
@@ -80,7 +84,20 @@ class HandleInertiaRequests extends Middleware
             // que o utilizador pode ver/fazer é a `permissoes` abaixo.
             'auth' => [
                 'user' => $request->user()?->only(['id', 'name', 'email']),
+                // Endereço (versionado) da foto de perfil, ou null: o cabeçalho mostra-o logo, sem esperar pelo diferido.
+                'foto' => $request->user() ? app(FotoDoUtilizadorService::class)->url($request->user()) : null,
             ],
+            // Contexto do menu do utilizador (perfil e escola): só se vê ao abrir o menu, por isso diferido.
+            'conta' => Inertia::defer(function () use ($request) {
+                $perfil = $request->user()?->roles()->first(['roles.nome', 'roles.descricao']);
+
+                return [
+                    'perfil' => $perfil === null ? null : (Perfil::tryFrom((int) $perfil->nome)?->label() ?? $perfil->descricao),
+                    'escola' => Estabelecimento::current()?->nome,
+                ];
+            }),
+            // Alertas do sino do cabeçalho (os mesmos do «Precisa de atenção»); diferidos para não atrasar a página.
+            'alertas' => Inertia::defer(fn () => $request->user() ? app(DashboardService::class)->atencao($request->user()) : []),
             'permissoes' => $request->user()
                 ? app(PermissionResolver::class)->conjuntoConcedido($request->user())
                 : [],

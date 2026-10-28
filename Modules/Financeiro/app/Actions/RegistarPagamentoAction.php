@@ -42,6 +42,7 @@ use Modules\Financeiro\Support\Dinheiro;
 use Modules\Financeiro\Support\RegrasDoPagamento;
 use Modules\Financeiro\Support\ViolacaoDeUnicidade;
 use Modules\Matricula\Models\Matricula;
+use Modules\Core\Traits\LogService;
 
 /**
  * Regista um pagamento (spec Pagamentos §4). UMA transacção, sem try/catch lá dentro:
@@ -54,6 +55,8 @@ use Modules\Matricula\Models\Matricula;
  */
 class RegistarPagamentoAction
 {
+    use LogService;
+
     public const MENSAGEM_REFERENCIA = 'Já existe um pagamento confirmado com esta referência neste método de pagamento.';
 
     public function __construct(
@@ -70,7 +73,13 @@ class RegistarPagamentoAction
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Matricula $matricula, RegistarPagamentoDTO $dto): Pagamento
+    {
+        return $this->comLog('Registar pagamento', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $dto));
+    }
+
+    private function executarSemRegisto(Matricula $matricula, RegistarPagamentoDTO $dto): Pagamento
     {
         // O ficheiro grava-se no disco privado ANTES da transacção; se o registo falhar, apaga-se (sem órfãos).
         $caminho = $dto->comprovativo?->store(CaminhoTenant::para('financeiro/comprovativos'), 'privado');

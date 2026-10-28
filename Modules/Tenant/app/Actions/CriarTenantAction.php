@@ -18,6 +18,7 @@ use Modules\Tenant\Models\Tenant;
 use Modules\Tenant\Services\ClassificadorDominio;
 use Modules\Tenant\Services\GeradorCodigoTenant;
 use Modules\Tenant\Services\ValidadorDominio;
+use Modules\Core\Traits\LogService;
 
 /**
  * Cria uma escola de ponta a ponta numa única transacção (spec §16.4): Tenant Activo,
@@ -28,6 +29,8 @@ use Modules\Tenant\Services\ValidadorDominio;
  */
 class CriarTenantAction
 {
+    use LogService;
+
     public function __construct(
         private readonly Container $container,
         private readonly TenantContext $contexto,
@@ -37,11 +40,17 @@ class CriarTenantAction
         private readonly ClassificadorDominio $classificador,
     ) {}
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(CriarTenantDTO $dto): TenantCriado
+    {
+        return $this->comLog('Criar escola', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($dto));
+    }
+
     /**
      * @throws DadosDeTenantInvalidos
      * @throws OrdemDeProvisionamentoDuplicada
      */
-    public function executar(CriarTenantDTO $dto): TenantCriado
+    private function executarSemRegisto(CriarTenantDTO $dto): TenantCriado
     {
         [$dados, $dominio, $codigo] = $this->validar($dto);
         $provisionadores = $this->provisionadoresOrdenados();

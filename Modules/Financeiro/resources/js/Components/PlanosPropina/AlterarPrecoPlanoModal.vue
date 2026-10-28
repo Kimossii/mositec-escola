@@ -4,6 +4,7 @@ import axios from 'axios';
 import { toast } from 'vue-sonner';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import { formatarDinheiro } from '../../Support/dinheiro';
+import { mesAno } from '../../Support/periodos';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -112,7 +113,7 @@ function confirmar() {
             <div class="modal-content p-6">
                 <h3 class="mb-1">Alterar preço — {{ plano.nome }}</h3>
                 <p class="text-muted fs-7 mb-5">
-                    Ano lectivo {{ plano.ano_lectivo_nome }} · valor actual {{ dinheiro(plano.valor) }} por período.
+                    Ano lectivo {{ plano.ano_lectivo_nome }} · em vigor desde {{ mesAno(plano.data_inicio) }} · valor actual {{ dinheiro(plano.valor) }} por período.
                     Este plano já tem propinas geradas: escolha como as tratar.
                 </p>
 

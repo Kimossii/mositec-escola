@@ -14,6 +14,7 @@ use Modules\Financeiro\Models\PropinaMultaRevisao;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Support\BloqueioDePropinas;
 use Modules\Financeiro\Support\Dinheiro;
+use Modules\Core\Traits\LogService;
 
 /**
  * Isenção/redução manual de uma multa (spec Propinas §15.4, `propina.isentar-multa`). Bloqueia a propina e a multa
@@ -22,13 +23,21 @@ use Modules\Financeiro\Support\Dinheiro;
  */
 class IsentarReduzirMultaAction
 {
+    use LogService;
+
     public function __construct(
         private BloqueioDePropinas $bloqueio,
         private MoedaDoTenant $moedaDoTenant,
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Propina $propina, IsentarMultaDTO $dto, ?int $utilizadorId): PropinaMulta
+    {
+        return $this->comLog('Isentar reduzir multa', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($propina, $dto, $utilizadorId));
+    }
+
+    private function executarSemRegisto(Propina $propina, IsentarMultaDTO $dto, ?int $utilizadorId): PropinaMulta
     {
         return DB::transaction(function () use ($propina, $dto, $utilizadorId) {
             $bloqueada = $this->bloqueio->bloquear([(int) $propina->getKey()])->first()

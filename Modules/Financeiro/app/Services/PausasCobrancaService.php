@@ -7,6 +7,7 @@ use Modules\Financeiro\DTO\PausaCobrancaDTO;
 use Modules\Financeiro\Models\PausaCobranca;
 use Modules\Financeiro\Models\PausaCobrancaMes;
 use Modules\Financeiro\Support\MesesDePausa;
+use Modules\Core\Traits\LogService;
 
 /**
  * Gestão das pausas de cobrança de um ano lectivo. Criar/atualizar uma pausa «não cobra» resolve os meses
@@ -16,15 +17,23 @@ use Modules\Financeiro\Support\MesesDePausa;
  */
 class PausasCobrancaService
 {
+    use LogService;
+
     public function __construct(
         private CancelarPropinasDeMesesIsentos $cancelar,
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `criarSemRegisto()`. */
+    public function criar(PausaCobrancaDTO $dto, ?int $utilizadorId): array
+    {
+        return $this->comLog('Criar pausa de cobrança', $this->contextoDeArgumentos(func_get_args(), 'criar'), fn () => $this->criarSemRegisto($dto, $utilizadorId));
+    }
+
     /**
      * @return array{canceladas: int, mantidas: int}
      */
-    public function criar(PausaCobrancaDTO $dto, ?int $utilizadorId): array
+    private function criarSemRegisto(PausaCobrancaDTO $dto, ?int $utilizadorId): array
     {
         return DB::transaction(function () use ($dto, $utilizadorId) {
             $pausa = PausaCobranca::create([
@@ -41,10 +50,16 @@ class PausasCobrancaService
         });
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `atualizarSemRegisto()`. */
+    public function atualizar(PausaCobranca $pausa, PausaCobrancaDTO $dto, ?int $utilizadorId): array
+    {
+        return $this->comLog('Atualizar pausa de cobrança', $this->contextoDeArgumentos(func_get_args(), 'atualizar'), fn () => $this->atualizarSemRegisto($pausa, $dto, $utilizadorId));
+    }
+
     /**
      * @return array{canceladas: int, mantidas: int}
      */
-    public function atualizar(PausaCobranca $pausa, PausaCobrancaDTO $dto, ?int $utilizadorId): array
+    private function atualizarSemRegisto(PausaCobranca $pausa, PausaCobrancaDTO $dto, ?int $utilizadorId): array
     {
         return DB::transaction(function () use ($pausa, $dto, $utilizadorId) {
             $pausa->update([
@@ -60,7 +75,13 @@ class PausasCobrancaService
         });
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `eliminarSemRegisto()`. */
     public function eliminar(PausaCobranca $pausa): void
+    {
+        $this->comLog('Eliminar pausa de cobrança', $this->contextoDeArgumentos(func_get_args(), 'eliminar'), fn () => $this->eliminarSemRegisto($pausa));
+    }
+
+    private function eliminarSemRegisto(PausaCobranca $pausa): void
     {
         DB::transaction(function () use ($pausa) {
             $pausa->meses()->delete();

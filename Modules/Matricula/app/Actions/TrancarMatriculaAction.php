@@ -12,6 +12,7 @@ use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Events\MatriculaEstadoAlterado;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Models\MatriculaHistorico;
+use Modules\Core\Traits\LogService;
 
 /**
  * Tranca uma matrícula Activa. A verificação (ex.: regularização financeira) vem de implementações etiquetadas do
@@ -21,13 +22,21 @@ use Modules\Matricula\Models\MatriculaHistorico;
  */
 class TrancarMatriculaAction
 {
+    use LogService;
+
     public function __construct(
         private RegistarHistoricoMatriculaAction $registarHistorico,
         private RelogioDoTenant $relogio,
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Matricula $matricula, string $dataEfeito, string $motivo, bool $confirmarComDividas = false, ?int $utilizadorId = null): Matricula
+    {
+        return $this->comLog('Trancar matrícula', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $dataEfeito, $motivo, $confirmarComDividas, $utilizadorId));
+    }
+
+    private function executarSemRegisto(Matricula $matricula, string $dataEfeito, string $motivo, bool $confirmarComDividas = false, ?int $utilizadorId = null): Matricula
     {
         return DB::transaction(function () use ($matricula, $dataEfeito, $motivo, $confirmarComDividas, $utilizadorId) {
             $bloqueada = Matricula::query()->whereKey($matricula->getKey())->lockForUpdate()->firstOrFail();

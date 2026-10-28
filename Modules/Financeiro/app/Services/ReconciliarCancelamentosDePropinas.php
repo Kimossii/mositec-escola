@@ -3,13 +3,13 @@
 namespace Modules\Financeiro\Services;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Models\Propina;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
 use Throwable;
+use Modules\Core\Traits\LogService;
 
 /**
  * Rede de segurança diária (D12; Q5; trancamento D14): cancela as propinas futuras canceláveis das matrículas
@@ -18,6 +18,8 @@ use Throwable;
  */
 class ReconciliarCancelamentosDePropinas
 {
+    use LogService;
+
     public function __construct(
         private CancelarPropinasFuturasDaMatricula $cancelar,
         private TenantContext $tenant,
@@ -68,7 +70,7 @@ class ReconciliarCancelamentosDePropinas
             } catch (Throwable $e) {
                 // Já FORA da transacção desta matrícula, revertida por inteiro; as outras seguem.
                 report($e);
-                Log::warning('financeiro.reconciliar-cancelamentos.matricula-falhou', [
+                $this->logWarning('financeiro.reconciliar-cancelamentos.matricula-falhou', [
                     'tenant_id' => $this->tenant->id(),
                     'matricula_id' => $id,
                     'excepcao' => $e::class,

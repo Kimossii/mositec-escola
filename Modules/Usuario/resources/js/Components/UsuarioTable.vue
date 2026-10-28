@@ -1,13 +1,13 @@
 <script setup>
 import { onBeforeUnmount, ref } from 'vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
-import { can } from '@/Composables/usePermissoes';
-import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
-import { ESTADO } from '../Models/Usuario';
+import { corDoPerfil, ESTADO, tempoRelativo } from '../Models/Usuario';
 import RedefinirSenhaModal from './Usuarios/RedefinirSenhaModal.vue';
+import UsuarioAcoesMenu from './UsuarioAcoesMenu.vue';
 import UsuarioAvatar from './UsuarioAvatar.vue';
+import UsuarioCartao from './UsuarioCartao.vue';
 import UsuarioStatusBadge from './UsuarioStatusBadge.vue';
 
 defineProps({
@@ -15,27 +15,10 @@ defineProps({
         type: Array,
         required: true,
     },
+    vista: { type: String, default: 'lista' }, // 'lista' | 'cards'
+    carregando: { type: Boolean, default: false }, // pedido em curso: mostra esqueletos
 });
 const emit = defineEmits(['editar', 'visualizar']);
-const pagina = usePage();
-
-// Mexer num utilizador com perfil Admin Escola é sempre autorizacao.*, nunca
-// usuario.* sozinho — mesma fronteira usada no backend (UserPolicy).
-function podeEditar(usuario) {
-    return can(usuario.perfis.includes('Admin escola') ? 'autorizacao.editar' : 'usuario.editar');
-}
-function podeEliminar(usuario) {
-    return can(usuario.perfis.includes('Admin escola') ? 'autorizacao.eliminar' : 'usuario.eliminar');
-}
-
-// Redefinir a senha de outra conta: nunca a própria, e contas Admin escola só a
-// quem também gere administradores (autorizacao.editar). O backend (UserPolicy)
-// é a fonte de verdade e devolve 403 de qualquer forma.
-function podeRedefinirSenha(usuario) {
-    if (!can('senha-utilizador.editar')) return false;
-    if (usuario.id === pagina.props.auth.user?.id) return false;
-    return !usuario.perfis.includes('Admin escola') || can('autorizacao.editar');
-}
 
 async function editar(usuario) {
     const resposta = await fetch(`/usuarios/${usuario.id}/editar`, {
@@ -122,8 +105,40 @@ function confirmarEliminacao() {
 </script>
 
 <template>
+    <!-- Loader: esqueletos enquanto a lista (pesquisa, filtro ou página) está a carregar -->
+    <div v-if="carregando && vista === 'lista'" class="placeholder-glow" aria-busy="true">
+        <div v-for="n in 6" :key="n" class="d-flex align-items-center gap-4 py-4 border-bottom border-gray-200 border-dashed">
+            <span class="placeholder rounded-circle w-50px h-50px flex-shrink-0"></span>
+            <div class="flex-grow-1"><span class="placeholder col-3 d-block mb-2"></span><span class="placeholder col-5 d-block"></span></div>
+            <span class="placeholder col-1 d-none d-md-block"></span><span class="placeholder col-1 d-none d-md-block"></span>
+        </div>
+    </div>
+    <div v-else-if="carregando" class="row g-5 placeholder-glow" aria-busy="true">
+        <div v-for="n in 6" :key="n" class="col-12 col-md-6 col-xl-4">
+            <div class="card h-100"><div class="card-body">
+                <span class="placeholder rounded-circle w-70px h-70px d-block mb-4"></span>
+                <span class="placeholder col-6 d-block mb-2"></span><span class="placeholder col-8 d-block mb-4"></span><span class="placeholder col-4 d-block"></span>
+            </div></div>
+        </div>
+    </div>
+
+    <!-- Vista de cards -->
+    <div v-else-if="vista === 'cards'" class="row g-5">
+        <div v-if="usuarios.length === 0" class="col-12 text-center text-muted py-10">Nenhum utilizador encontrado.</div>
+        <div v-for="usuario in usuarios" :key="usuario.id" class="col-12 col-md-6 col-xl-4">
+            <UsuarioCartao
+                :usuario="usuario"
+                @visualizar="emit('visualizar', $event)"
+                @editar="editar"
+                @alternar-estado="alternarEstado"
+                @redefinir-senha="pedirRedefinicao"
+                @eliminar="pedirEliminacao"
+            />
+        </div>
+    </div>
+
     <!--begin::Table-->
-    <table class="table align-middle table-row-dashed table-hover fs-6 gy-5" id="kt_table_users">
+    <table v-else class="table align-middle table-row-dashed table-hover fs-6 gy-5" id="kt_table_users">
         <thead>
             <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                 <th class="min-w-125px">Utilizador</th>
@@ -143,8 +158,9 @@ function confirmarEliminacao() {
                     <UsuarioAvatar :usuario="usuario" />
                     <!--begin::User details-->
                     <div class="d-flex flex-column">
-                        <a href="#" class="text-gray-800 text-hover-primary mb-1">{{ usuario.name }}</a>
-                        <span>{{ usuario.email }}</span>
+                        <a href="#" class="text-gray-800 text-hover-primary fw-bold mb-1" @click.prevent="emit('visualizar', usuario)">{{ usuario.name }}</a>
+                        <span class="text-muted fs-7">{{ usuario.email }}</span>
+                        <span v-if="usuario.matricula" class="text-muted fs-8">Nº {{ usuario.matricula }}</span>
                     </div>
                     <!--begin::User details-->
                 </td>
@@ -153,13 +169,15 @@ function confirmarEliminacao() {
                     <span
                         v-for="perfilNome in usuario.perfis"
                         :key="perfilNome"
-                        class="badge badge-light-primary me-1"
+                        class="badge me-1" :class="`badge-light-${corDoPerfil(perfilNome)}`"
                     >
                         {{ perfilNome }}
                     </span>
                 </td>
                 <td>
-                    <div class="badge badge-light fw-bold">{{ usuario.ultimo_acesso }}</div>
+                    <span v-if="usuario.online" class="d-inline-flex align-items-center text-success fw-bold"><span class="mosi-pisca rounded-circle bg-success me-2 w-10px h-10px"></span>Online agora</span>
+                    <span v-else-if="usuario.ultimo_acesso" class="text-gray-700">{{ tempoRelativo(usuario.ultimo_acesso) }}</span>
+                    <span v-else class="text-muted fs-7">Sem sessão ativa</span>
                 </td>
                 <td>
                     <UsuarioStatusBadge :estado="usuario.estado" />
@@ -168,67 +186,14 @@ function confirmarEliminacao() {
                     {{ usuario.created_at }}
                 </td>
                 <td class="text-end">
-                    <a href="#" class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
-                        Ações
-                        <i class="ki-duotone ki-down fs-5 ms-1"></i>
-                    </a>
-                    <!--begin::Menu-->
-                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-175px py-4" data-kt-menu="true">
-                        <!--begin::Menu item-->
-                        <div class="menu-item px-3">
-                            <a href="#" class="menu-link px-3" @click.prevent="emit('visualizar', usuario)">
-                                <AcaoIcone acao="visualizar" class="me-2" />
-                                Visualizar
-                            </a>
-                        </div>
-                        <!--end::Menu item-->
-
-                        <!--begin::Menu item-->
-                        <div v-if="podeEditar(usuario)" class="menu-item px-3">
-                            <a href="#" class="menu-link px-3" @click.prevent="editar(usuario)">
-                                <AcaoIcone acao="editar" class="me-2" />
-                                Editar
-                            </a>
-                        </div>
-                        <!--end::Menu item-->
-
-                        <!--begin::Menu item-->
-                        <div v-if="can('autorizacao.ver') && !usuario.e_aluno" class="menu-item px-3">
-                            <a :href="`/permissoes/utilizadores/${usuario.id}/permissoes`" class="menu-link px-3">
-                                <AcaoIcone acao="permissoes" class="me-2" />
-                                Permissões
-                            </a>
-                        </div>
-                        <!--end::Menu item-->
-
-                        <!--begin::Menu item-->
-                        <div v-if="podeEditar(usuario)" class="menu-item px-3">
-                            <a href="#" class="menu-link px-3" @click.prevent="alternarEstado(usuario)">
-                                <AcaoIcone :acao="usuario.estado === ESTADO.ATIVO ? 'desativar' : 'ativar'" class="me-2" />
-                                {{ usuario.estado === ESTADO.ATIVO ? 'Desativar' : 'Ativar' }}
-                            </a>
-                        </div>
-                        <!--end::Menu item-->
-
-                        <!--begin::Menu item-->
-                        <div v-if="podeRedefinirSenha(usuario)" class="menu-item px-3">
-                            <a href="#" class="menu-link px-3" @click.prevent="pedirRedefinicao(usuario)">
-                                <AcaoIcone acao="redefinirSenha" class="me-2" />
-                                Redefinir senha
-                            </a>
-                        </div>
-                        <!--end::Menu item-->
-
-                        <!--begin::Menu item-->
-                        <div v-if="podeEliminar(usuario)" class="menu-item px-3">
-                            <a href="#" class="menu-link px-3 text-danger" @click.prevent="pedirEliminacao(usuario)">
-                                <AcaoIcone acao="eliminar" class="me-2" />
-                                Eliminar
-                            </a>
-                        </div>
-                        <!--end::Menu item-->
-                    </div>
-                    <!--end::Menu-->
+                    <UsuarioAcoesMenu
+                        :usuario="usuario"
+                        @visualizar="emit('visualizar', $event)"
+                        @editar="editar"
+                        @alternar-estado="alternarEstado"
+                        @redefinir-senha="pedirRedefinicao"
+                        @eliminar="pedirEliminacao"
+                    />
                 </td>
             </tr>
         </tbody>

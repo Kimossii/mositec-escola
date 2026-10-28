@@ -106,12 +106,25 @@ class PagamentosVueTest extends TestCase
         $this->assertStringNotContainsString('avisos.length', $create, 'Os avisos nunca desactivam a confirmação (O1).');
     }
 
-    public function test_nenhum_modo_nem_metodo_vem_preseleccionado(): void
+    public function test_escolher_por_propina_e_o_modo_por_defeito_e_o_primeiro_sem_saltos(): void
+    {
+        $create = $this->vue('Pages/Pagamentos/Create.vue');
+
+        $this->assertStringContainsString('const modo = ref(MODO_DISTRIBUICAO.EXPLICITA);', $create);
+        $this->assertLessThan(
+            strpos($create, 'type="radio" :value="MODO_DISTRIBUICAO.AUTOMATICA"'),
+            strpos($create, 'type="radio" :value="MODO_DISTRIBUICAO.EXPLICITA"'),
+            '«Escolher por propina» vem antes da automática.',
+        );
+        $this->assertStringContainsString('function pagarAteAqui(propina, marcar)', $create);
+        $this->assertStringContainsString('@change="pagarAteAqui(propina, $event.target.checked)"', $create);
+    }
+
+    public function test_nenhum_metodo_vem_preseleccionado(): void
     {
         $create = $this->vue('Pages/Pagamentos/Create.vue');
         $aplicar = $this->vue('Components/Pagamentos/AplicarCreditoModal.vue');
 
-        $this->assertStringContainsString('const modo = ref(null);', $create);
         $this->assertStringContainsString("metodo_pagamento_id: '',", $create);
         $this->assertStringNotContainsString('props.metodos[0]', $create);
         $this->assertStringContainsString(':disabled="aPrever || !modo"', $create);

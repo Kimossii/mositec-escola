@@ -4,6 +4,7 @@ import axios from 'axios';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
@@ -139,6 +140,7 @@ function aplicar() {
                     <div class="col-6 col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">Estado</label><SelectSolid v-model="filtros.estado" :options="opcoesEstado" /></div>
         </FiltrosRecolhiveis>
 
+        <ListaComVistas chave="financeiro-bolsas" prefixo="/financeiro/bolsas">
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -177,6 +179,7 @@ function aplicar() {
             </div>
             <div v-if="bolsas.data.length" class="card-footer d-flex justify-content-end"><Pagination :links="bolsas.links" /></div>
         </div>
+        </ListaComVistas>
 
         <!-- Criar / editar -->
         <div v-if="modal" class="modal d-block" style="background: rgba(0,0,0,0.5); overflow-y: auto;" @click.self="modal = false">

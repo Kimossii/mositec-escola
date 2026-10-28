@@ -5,7 +5,6 @@ namespace Modules\Financeiro\Services;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
@@ -23,6 +22,7 @@ use Modules\Financeiro\Support\RotuloDePeriodo;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
 use Modules\Turma\Models\Turma;
+use Modules\Core\Traits\LogService;
 
 /**
  * Pré-visualização da alteração de preço de um plano com propinas (spec Propinas §14). SÓ LÊ. É o mesmo cálculo
@@ -37,6 +37,8 @@ use Modules\Turma\Models\Turma;
  */
 class AlteracaoPrecoPlanoService
 {
+    use LogService;
+
     public const VERSAO_IMPRESSAO = 1;
 
     private const MOTIVO_JA_TEM_O_VALOR = 'Já tem este valor.';
@@ -269,7 +271,7 @@ class AlteracaoPrecoPlanoService
             return;
         }
 
-        Log::error('financeiro.alterar-preco.propinas-de-outro-ano', [
+        $this->logError('financeiro.alterar-preco.propinas-de-outro-ano', [
             'tenant_id' => $this->tenant->id(),
             'plano_propina_id' => (int) $plano->id,
             'ano_lectivo_id' => $anoId,

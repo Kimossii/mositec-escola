@@ -38,6 +38,15 @@ export function rotuloCompetencia(ano, mes) {
     return `${MESES_CURTOS[mes - 1]}/${ano}`;
 }
 
+/** "2026-09-10" → "09/2026" (mês e ano de uma data civil). */
+export function mesAno(ymd) {
+    if (!ymd) return '—';
+
+    const [ano, mes] = String(ymd).slice(0, 10).split('-');
+
+    return `${mes}/${ano}`;
+}
+
 /** "2026-09-10" → "10/09/2026". Sem `Date`: uma data civil não tem fuso e não pode recuar um dia. */
 export function dataCurta(ymd) {
     if (!ymd) return '—';

@@ -12,9 +12,12 @@ use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\GeradorNumeroRegistoMatriculaService;
 use Modules\Matricula\Services\ValidadorMatriculaService;
 use Modules\Turma\Models\Turma;
+use Modules\Core\Traits\LogService;
 
 class CriarMatriculaAction
 {
+    use LogService;
+
     public function __construct(
         private GeradorNumeroRegistoMatriculaService $geradorNumeroRegisto,
         private ValidadorMatriculaService $validador,
@@ -24,7 +27,17 @@ class CriarMatriculaAction
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(
+        Aluno $aluno,
+        MatriculaDTO $dto,
+        ?int $utilizadorId = null,
+    ): Matricula
+    {
+        return $this->comLog('Criar matrícula', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($aluno, $dto, $utilizadorId));
+    }
+
+    private function executarSemRegisto(
         Aluno $aluno,
         MatriculaDTO $dto,
         ?int $utilizadorId = null,

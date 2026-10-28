@@ -293,7 +293,7 @@ class GerarPropinasTest extends TestCase
         $this->assertStringContainsString('Erro inesperado', $linha['erros'][0]);
         $this->assertStringNotContainsString('ao mesmo tempo', $linha['erros'][0]);
         $handler->shouldHaveReceived('report')->atLeast()->once();
-        Log::shouldHaveReceived('warning')->withArgs(fn (string $m, array $c = []) => $m === 'financeiro.gerar-propinas.matricula-falhou'
+        Log::shouldHaveReceived('warning')->withArgs(fn (string $m, array $c = []) => str_ends_with($m, 'financeiro.gerar-propinas.matricula-falhou')
             && $c['concorrencia'] === false
             && str_contains($c['mensagem'], 'matriculas.numero_registo_matricula'))->atLeast()->once();
     }

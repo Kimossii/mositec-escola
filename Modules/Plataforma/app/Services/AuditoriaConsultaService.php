@@ -11,6 +11,21 @@ use Modules\Plataforma\Models\RegistoDeAuditoria;
 class AuditoriaConsultaService
 {
     /**
+     * As acções mais recentes de toda a Plataforma, da mais nova para a mais antiga, com o autor já carregado.
+     *
+     * @return Collection<int, RegistoDeAuditoria>
+     */
+    public function recentes(int $limite = 10): Collection
+    {
+        return RegistoDeAuditoria::query()
+            ->with('autor:id,name')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit($limite)
+            ->get();
+    }
+
+    /**
      * As acções mais recentes sobre uma escola, da mais nova para a mais antiga, com o autor já carregado.
      *
      * @return Collection<int, RegistoDeAuditoria>

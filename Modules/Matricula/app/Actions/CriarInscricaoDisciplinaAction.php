@@ -9,14 +9,27 @@ use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\InscricaoDisciplina;
 use Modules\Matricula\Models\Matricula;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
+use Modules\Core\Traits\LogService;
 
 class CriarInscricaoDisciplinaAction
 {
+    use LogService;
+
     public function __construct(private RelogioDoTenant $relogio)
     {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(
+        Matricula $matricula,
+        PlanoCurricularDisciplina $planoCurricularDisciplina,
+        ?int $utilizadorId = null,
+    ): InscricaoDisciplina
+    {
+        return $this->comLog('Criar inscrição disciplina', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $planoCurricularDisciplina, $utilizadorId));
+    }
+
+    private function executarSemRegisto(
         Matricula $matricula,
         PlanoCurricularDisciplina $planoCurricularDisciplina,
         ?int $utilizadorId = null,

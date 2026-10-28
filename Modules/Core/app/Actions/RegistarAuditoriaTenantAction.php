@@ -3,9 +3,18 @@
 namespace Modules\Core\Actions;
 
 use Modules\Core\Models\AuditoriaTenant;
+use Modules\Core\Traits\LogService;
 
 class RegistarAuditoriaTenantAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(string $accao, string $entidadeTipo, ?int $entidadeId, array $antes, array $depois, ?int $utilizadorId = null): ?AuditoriaTenant
+    {
+        return $this->comLog('Registar auditoria escola', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($accao, $entidadeTipo, $entidadeId, $antes, $depois, $utilizadorId));
+    }
+
     /**
      * Regista só os campos que mudaram: `$antes` e `$depois` são comparados e só as diferenças ficam no detalhe.
      * Sem diferenças não regista nada.
@@ -13,7 +22,7 @@ class RegistarAuditoriaTenantAction
      * @param  array<string, mixed>  $antes
      * @param  array<string, mixed>  $depois
      */
-    public function executar(string $accao, string $entidadeTipo, ?int $entidadeId, array $antes, array $depois, ?int $utilizadorId = null): ?AuditoriaTenant
+    private function executarSemRegisto(string $accao, string $entidadeTipo, ?int $entidadeId, array $antes, array $depois, ?int $utilizadorId = null): ?AuditoriaTenant
     {
         $alterados = array_keys(array_filter(
             $depois,

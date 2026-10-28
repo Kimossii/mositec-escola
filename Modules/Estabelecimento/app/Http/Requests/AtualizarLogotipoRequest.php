@@ -14,7 +14,7 @@ class AtualizarLogotipoRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'logotipo' => 'required|image|mimes:png,jpg,jpeg,webp|max:2048',
+            'logotipo' => 'required|image|mimes:png,jpg,jpeg,webp|max:5120',
         ];
     }
 
@@ -24,7 +24,8 @@ class AtualizarLogotipoRequest extends BaseRequest
             'logotipo.required' => 'Selecione um ficheiro de logótipo.',
             'logotipo.image' => 'O logótipo deve ser uma imagem válida.',
             'logotipo.mimes' => 'O logótipo deve ser um ficheiro PNG, JPG, JPEG ou WEBP.',
-            'logotipo.max' => 'O logótipo não pode exceder 2MB.',
+            'logotipo.max' => 'O logótipo não pode exceder 5MB.',
+            'logotipo.uploaded' => 'O logótipo não foi enviado: o máximo é 5MB.',
         ];
     }
 }
