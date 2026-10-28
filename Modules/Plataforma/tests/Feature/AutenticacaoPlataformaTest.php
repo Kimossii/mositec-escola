@@ -266,8 +266,11 @@ class AutenticacaoPlataformaTest extends TestCase
     {
         $sessao = $this->entrar($this->admin('outro@plataforma.test'));
 
-        // `/plataforma` redirecciona para a listagem de escolas (Task 4).
-        $this->noPainel('GET', '/plataforma', $sessao)->assertRedirect($this->url('/plataforma/escolas'));
+        // `/plataforma` é o Painel (escolas por estado e actividade recente).
+        $inicio = $this->noPainel('GET', '/plataforma', $sessao, cabecalhos: $this->inertia());
+        $inicio->assertOk();
+        $this->assertSame('Plataforma/Painel', $inicio->json('component'));
+        $this->assertSame([1, 2, 3], array_map('intval', array_keys($inicio->json('props.contagem'))));
         $resposta = $this->noPainel('GET', '/plataforma/escolas', $sessao, cabecalhos: $this->inertia());
 
         $resposta->assertOk();

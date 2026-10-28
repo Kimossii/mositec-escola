@@ -12,9 +12,12 @@ const page = usePage();
 const aTerminar = ref(false);
 
 // Navegação do painel: o item activo acompanha o caminho actual.
-const NAVEGACAO = [{ rotulo: 'Escolas', href: '/plataforma/escolas' }];
+const NAVEGACAO = [
+    { rotulo: 'Painel', href: '/plataforma', exacto: true },
+    { rotulo: 'Escolas', href: '/plataforma/escolas' },
+];
 const caminho = computed(() => String(page.url ?? '').split('?')[0]);
-const activo = (item) => caminho.value === item.href || caminho.value.startsWith(`${item.href}/`);
+const activo = (item) => caminho.value === item.href || (!item.exacto && caminho.value.startsWith(`${item.href}/`));
 
 // Mensagens de sucesso vêm do backend (flash); sem texto de reserva.
 watch(

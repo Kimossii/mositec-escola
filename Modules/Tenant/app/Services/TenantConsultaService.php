@@ -30,6 +30,18 @@ class TenantConsultaService
      *
      * @return LengthAwarePaginator<int, Tenant>
      */
+    /**
+     * Quantas escolas há em cada estado (chave = valor numérico de EstadoTenant; estados sem escolas vêm a 0).
+     *
+     * @return array<int, int>
+     */
+    public function contagemPorEstado(): array
+    {
+        $contagem = Tenant::query()->selectRaw('estado, COUNT(*) as total')->groupBy('estado')->pluck('total', 'estado');
+
+        return collect(EstadoTenant::cases())->mapWithKeys(fn (EstadoTenant $estado) => [$estado->value => (int) ($contagem[$estado->value] ?? 0)])->all();
+    }
+
     public function listar(?string $estado = null, ?string $pesquisa = null, int $porPagina = 15): LengthAwarePaginator
     {
         $estadoFiltro = is_numeric($estado) ? EstadoTenant::tryFrom((int) $estado) : null;

@@ -376,10 +376,14 @@ class EscolasTest extends TestCase
 
     // --- Início ------------------------------------------------------------------------------
 
-    public function test_o_inicio_redirecciona_para_a_listagem_de_escolas(): void
+    public function test_o_inicio_mostra_o_painel_com_contagem_por_estado_e_actividade(): void
     {
-        $this->noPainel('GET', '/plataforma', $this->sessao)
-            ->assertRedirect(route('plataforma.escolas.index'));
+        $resposta = $this->inertiaGet('/plataforma');
+
+        $resposta->assertOk();
+        $this->assertSame('Plataforma/Painel', $resposta->json('component'));
+        $this->assertSame(['1', '2', '3'], array_map('strval', array_keys($resposta->json('props.contagem'))));
+        $this->assertIsArray($resposta->json('props.actividade'));
         $this->assertSame('/plataforma/escolas', route('plataforma.escolas.index', absolute: false));
     }
 
