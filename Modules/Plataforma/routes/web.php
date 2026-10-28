@@ -7,6 +7,7 @@ use Modules\Plataforma\Http\Controllers\AdministradorEscolaController;
 use Modules\Plataforma\Http\Controllers\CicloDeVidaController;
 use Modules\Plataforma\Http\Controllers\DominioController;
 use Modules\Plataforma\Http\Controllers\EscolaController;
+use Modules\Plataforma\Http\Controllers\PainelController;
 use Modules\Plataforma\Http\Middleware\ExigirTrocaDeSenhaPlataforma;
 use Modules\Plataforma\Http\Middleware\SuperAdminActivo;
 
@@ -21,7 +22,7 @@ Route::post('/login', [LoginController::class, 'store'])->name('plataforma.login
 // credencial actual) e por fim a troca obrigatória de senha. As Tasks seguintes juntam-se a este grupo.
 Route::middleware(['auth:plataforma', SuperAdminActivo::class, ExigirTrocaDeSenhaPlataforma::class])->group(function () {
     // Destino pós-login: a listagem de escolas é a página inicial do painel.
-    Route::get('/', fn () => redirect()->route('plataforma.escolas.index'))->name('plataforma.inicio');
+    Route::get('/', [PainelController::class, 'index'])->name('plataforma.inicio');
 
     Route::get('/escolas', [EscolaController::class, 'index'])->name('plataforma.escolas.index');
     Route::post('/escolas', [EscolaController::class, 'store'])->name('plataforma.escolas.store');

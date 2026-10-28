@@ -13,6 +13,7 @@ use Modules\Core\Tenancy\TenantAtual;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Usuario\Models\User;
+use Modules\Core\Traits\LogService;
 
 /**
  * Implementa o contrato do Core para o painel da Plataforma. É AQUI que o contexto da escola se abre
@@ -23,6 +24,8 @@ use Modules\Usuario\Models\User;
  */
 class RecuperaAdministradorDoTenantAction implements RecuperaAdministradorDoTenant
 {
+    use LogService;
+
     public function __construct(
         private readonly TenantContext $contexto,
         private readonly CatalogoDeTenants $catalogo,
@@ -43,7 +46,13 @@ class RecuperaAdministradorDoTenantAction implements RecuperaAdministradorDoTena
             ->all());
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `recuperarSemRegisto()`. */
     public function recuperar(TenantAtual $tenant, ?string $email = null): CredencialInicial
+    {
+        return $this->comLog('Recupera administrador do escola', $this->contextoDeArgumentos(func_get_args(), 'recuperar'), fn () => $this->recuperarSemRegisto($tenant, $email));
+    }
+
+    private function recuperarSemRegisto(TenantAtual $tenant, ?string $email = null): CredencialInicial
     {
         $escola = $this->escolaActiva($tenant);
 

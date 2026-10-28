@@ -1,6 +1,6 @@
 <script setup>
-import { ref, watch } from 'vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
 import { useCsrfPlataforma } from '../Composables/useCsrfPlataforma';
@@ -10,6 +10,14 @@ useCsrfPlataforma();
 
 const page = usePage();
 const aTerminar = ref(false);
+
+// Navegação do painel: o item activo acompanha o caminho actual.
+const NAVEGACAO = [
+    { rotulo: 'Painel', href: '/plataforma', exacto: true },
+    { rotulo: 'Escolas', href: '/plataforma/escolas' },
+];
+const caminho = computed(() => String(page.url ?? '').split('?')[0]);
+const activo = (item) => caminho.value === item.href || (!item.exacto && caminho.value.startsWith(`${item.href}/`));
 
 // Mensagens de sucesso vêm do backend (flash); sem texto de reserva.
 watch(
@@ -43,6 +51,17 @@ function terminarSessao() {
                     class="h-30px"
                 />
                 <span class="text-white fw-bold fs-5">Plataforma</span>
+                <nav class="d-flex align-items-center gap-2 ms-4">
+                    <Link
+                        v-for="item in NAVEGACAO"
+                        :key="item.href"
+                        :href="item.href"
+                        class="btn btn-sm"
+                        :class="activo(item) ? 'btn-light text-gray-900' : 'btn-active-light text-white opacity-75'"
+                    >
+                        {{ item.rotulo }}
+                    </Link>
+                </nav>
             </div>
 
             <div class="d-flex align-items-center gap-5">

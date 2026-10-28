@@ -200,6 +200,24 @@ class MatriculaConsultaService
         ];
     }
 
+    /**
+     * Matrículas activas por curso (os maiores primeiro), para o gráfico do Dashboard.
+     *
+     * @return list<array{curso: string, total: int}>
+     */
+    public function activasPorCurso(array $filtros = [], int $limite = 8): array
+    {
+        return Matricula::query()
+            ->join('turmas', 'turmas.id', '=', 'matriculas.turma_id')
+            ->join('cursos', 'cursos.id', '=', 'turmas.curso_id')
+            ->where('matriculas.estado', EstadoMatriculaEnum::ACTIVA->value)
+            ->when(is_numeric($filtros['ano_lectivo_id'] ?? null), fn ($q) => $q->where('matriculas.ano_lectivo_id', (int) $filtros['ano_lectivo_id']))
+            ->selectRaw('cursos.nome as curso, COUNT(*) as quantidade')
+            ->groupBy('cursos.id', 'cursos.nome')
+            ->orderByDesc('quantidade')->limit($limite)->get()
+            ->map(fn ($linha) => ['curso' => $linha->curso, 'total' => (int) $linha->quantidade])->all();
+    }
+
     public function listarTodas(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         $estabelecimentoId = Estabelecimento::current()?->id;

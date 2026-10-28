@@ -3,6 +3,7 @@
 namespace Modules\Autenticacao\Actions;
 
 use Modules\Autenticacao\Models\TokenDeAcesso;
+use Modules\Core\Traits\LogService;
 
 /**
  * Apaga os tokens do tenant corrente expirados há mais de `$horas` horas, tal como
@@ -11,7 +12,15 @@ use Modules\Autenticacao\Models\TokenDeAcesso;
  */
 class PodarTokensExpiradosAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(int $horas = 24): int
+    {
+        return $this->comLog('Podar tokens expirados', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($horas));
+    }
+
+    private function executarSemRegisto(int $horas = 24): int
     {
         $apagados = TokenDeAcesso::where('expires_at', '<', now()->subHours($horas))->delete();
 

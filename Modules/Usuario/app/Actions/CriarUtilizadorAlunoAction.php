@@ -10,6 +10,7 @@ use Modules\Usuario\Enums\TipoLogin;
 use Modules\Usuario\Exceptions\ContaDeAlunoRecusada;
 use Modules\Usuario\Models\User;
 use Modules\Usuario\Services\AlunoParaContaConsultaService;
+use Modules\Core\Traits\LogService;
 
 /**
  * Cria a conta de um aluno a partir do REGISTO do aluno: o nome, os dados pessoais e o login
@@ -18,15 +19,23 @@ use Modules\Usuario\Services\AlunoParaContaConsultaService;
  */
 class CriarUtilizadorAlunoAction
 {
+    use LogService;
+
     public function __construct(
         private AlunoParaContaConsultaService $consulta,
         private UsuarioAction $criarUsuario,
     ) {}
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(string $numeroMatricula, string $password, Estado $estado = Estado::ATIVO): User
+    {
+        return $this->comLog('Criar utilizador aluno', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($numeroMatricula, $password, $estado));
+    }
+
     /**
      * @throws ContaDeAlunoRecusada
      */
-    public function executar(string $numeroMatricula, string $password, Estado $estado = Estado::ATIVO): User
+    private function executarSemRegisto(string $numeroMatricula, string $password, Estado $estado = Estado::ATIVO): User
     {
         $aluno = $this->consulta->procurar(trim($numeroMatricula)) ?? throw ContaDeAlunoRecusada::naoEncontrado();
 

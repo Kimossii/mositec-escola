@@ -18,6 +18,7 @@ use Modules\Financeiro\Support\DivisaoDePlanoPropina;
 use Modules\Financeiro\Support\ReassociacaoDePropinas;
 use Modules\Financeiro\Support\ViolacaoDeUnicidade;
 use Modules\Matricula\Models\Matricula;
+use Modules\Core\Traits\LogService;
 
 /**
  * ÚNICA porta de entrada para mudar o preço de um plano com propinas (spec Propinas §14). Uma transacção, tudo ou
@@ -34,6 +35,8 @@ use Modules\Matricula\Models\Matricula;
  */
 class AlterarPrecoPlanoAction
 {
+    use LogService;
+
     public const MENSAGEM_DESACTUALIZADA = 'Os dados mudaram desde a pré-visualização (pagamento, anulação, geração ou outra alteração deste plano). Reveja a pré-visualização e confirme de novo.';
 
     public const MENSAGEM_CONFIRMAR_VALORES = 'Confirme que compreende que alunos da mesma turma vão pagar valores diferentes.';
@@ -53,7 +56,13 @@ class AlterarPrecoPlanoAction
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(PlanoPropina $plano, AlterarPrecoPlanoDTO $dto): AlteracaoPrecoPlano
+    {
+        return $this->comLog('Alterar preço plano', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($plano, $dto));
+    }
+
+    private function executarSemRegisto(PlanoPropina $plano, AlterarPrecoPlanoDTO $dto): AlteracaoPrecoPlano
     {
         $tamanhoDoMotivo = mb_strlen(trim((string) $dto->motivo));
 

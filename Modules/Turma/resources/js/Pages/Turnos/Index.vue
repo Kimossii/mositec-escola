@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
@@ -201,6 +202,7 @@ function adicionarHorario(payload) {
             </div>
         </div>
 
+        <ListaComVistas chave="academico-turnos" prefixo="/turnos">
         <div class="card">
             <div class="card-body p-0">
                 <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
@@ -274,6 +276,7 @@ function adicionarHorario(payload) {
                 <Pagination :links="turnos.links" />
             </div>
         </div>
+        </ListaComVistas>
 
         <TurnoFormModal
             :show="modalAberto"

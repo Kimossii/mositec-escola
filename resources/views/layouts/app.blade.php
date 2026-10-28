@@ -1,3 +1,8 @@
+@php
+    // O tema grava o estado do sidebar no cookie `sidebar_minimize_state` (JS); lido directamente de $_COOKIE porque
+    // o middleware de cookies do Laravel descartaria este cookie (não é um cookie cifrado por ele).
+    $sidebarMinimizado = ($_COOKIE['sidebar_minimize_state'] ?? null) === 'on';
+@endphp
 <!DOCTYPE html>
 <html lang="pt">
 

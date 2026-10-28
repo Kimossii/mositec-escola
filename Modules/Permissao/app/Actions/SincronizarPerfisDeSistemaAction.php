@@ -31,7 +31,8 @@ class SincronizarPerfisDeSistemaAction
             Modulo::ANO_LECTIVO->value => ['ver', 'criar', 'editar', 'eliminar'],
             Modulo::ESTABELECIMENTO->value => ['ver', 'editar'],
             Modulo::HORARIO->value => ['ver', 'criar', 'editar', 'eliminar'],
-            Modulo::USUARIO->value => ['ver', 'criar', 'editar', 'eliminar'],
+            // `exportar` (Excel/PDF/CSV/ZIP da lista de utilizadores) só no Admin; os outros perfis recebem-na pela grelha de permissões.
+            Modulo::USUARIO->value => ['ver', 'criar', 'editar', 'eliminar', 'exportar'],
             Modulo::AUTORIZACAO->value => ['ver', 'criar', 'editar', 'eliminar'],
             Modulo::INFRAESTRUTURA->value => ['ver', 'criar', 'editar', 'eliminar'],
             Modulo::TURMAS->value => ['ver', 'criar', 'editar', 'eliminar'],

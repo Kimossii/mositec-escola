@@ -233,8 +233,8 @@ class PlataformaIsolamentoTest extends TestCase
         $this->assertDatabaseHas('sessions', ['id' => $sessaoDeA]);
         $this->assertDatabaseHas('sessions', ['id' => $sessaoDeB]);
         $this->assertDatabaseHas('sessions', ['id' => $this->sessao, 'user_id' => null]);
-        $this->naEscola('a.mositec.test', '/alterar-senha', $sessaoDeA)->assertOk();
-        $this->naEscola('b.mositec.test', '/alterar-senha', $sessaoDeB)->assertOk();
+        $this->naEscola('a.mositec.test', '/definicoes', $sessaoDeA)->assertOk();
+        $this->naEscola('b.mositec.test', '/definicoes', $sessaoDeB)->assertOk();
 
         $passo = function (string $nome, array $escolas, array $permitidos = []) {
             $this->assertFalse(app(TenantContext::class)->temTenant(), "Contexto aberto depois do passo: {$nome}");
@@ -261,8 +261,8 @@ class PlataformaIsolamentoTest extends TestCase
         $this->assertDatabaseHas('sessions', ['id' => $this->sessao, 'user_id' => null]);
         $this->assertSame(0, $this->noTenant($this->a, fn () => TokenDeAcesso::count()), 'Os tokens de A foram revogados.');
         $this->assertSame($retratoB0['tokens'], $this->noTenant($this->b, fn () => TokenDeAcesso::count()));
-        $this->naEscola('a.mositec.test', '/alterar-senha', $sessaoDeA)->assertForbidden();
-        $this->naEscola('b.mositec.test', '/alterar-senha', $sessaoDeB)->assertOk();
+        $this->naEscola('a.mositec.test', '/definicoes', $sessaoDeA)->assertForbidden();
+        $this->naEscola('b.mositec.test', '/definicoes', $sessaoDeB)->assertOk();
         $this->noPainel('GET', '/plataforma/escolas', $this->sessao)->assertOk();
 
         // 3. Reactivar A: a sessão revogada não ressuscita; B continua intacta.
@@ -270,8 +270,8 @@ class PlataformaIsolamentoTest extends TestCase
         $passo('reactivar A', [$this->a, $this->b, $c]);
         $this->assertSame(EstadoTenant::ACTIVO, $this->fresco($this->a)->estado);
         $this->assertSame($retratoB0, $this->retrato($this->b));
-        $this->naEscola('a.mositec.test', '/alterar-senha', $sessaoDeA)->assertRedirect($this->urlDaEscola('a.mositec.test', '/login'));
-        $this->naEscola('b.mositec.test', '/alterar-senha', $sessaoDeB)->assertOk();
+        $this->naEscola('a.mositec.test', '/definicoes', $sessaoDeA)->assertRedirect($this->urlDaEscola('a.mositec.test', '/login'));
+        $this->naEscola('b.mositec.test', '/definicoes', $sessaoDeB)->assertOk();
 
         // 4. Encerrar C.
         $this->noPainel('POST', "/plataforma/escolas/{$c->codigo}/encerrar", $this->sessao, ['confirmacao' => $c->codigo])->assertSessionHas('success');
@@ -312,7 +312,7 @@ class PlataformaIsolamentoTest extends TestCase
         $this->assertSame($hashDeA, $this->retrato($this->a)['admin_hash'], 'O administrador de A não foi tocado.');
         $this->assertSame(1, $this->auditoriaDe($this->b->codigo, 'administrador.recuperado'));
         $this->assertSame(0, $this->auditoriaDe($this->a->codigo, 'administrador.recuperado'));
-        $this->naEscola('b.mositec.test', '/alterar-senha', $sessaoDeB)->assertOk();
+        $this->naEscola('b.mositec.test', '/definicoes', $sessaoDeB)->assertOk();
         $this->assertDatabaseHas('sessions', ['id' => $this->sessao, 'user_id' => null]);
 
         // O espião esteve no caminho: as Actions legítimas (Tenant, Autenticacao) abriram contexto e passaram.
@@ -404,12 +404,12 @@ class PlataformaIsolamentoTest extends TestCase
         $sessaoDaEscola = $this->entrarNaEscola('b.mositec.test', 'userbbb@escola.test');
 
         for ($i = 0; $i < 2; $i++) {
-            $this->naEscola('b.mositec.test', '/alterar-senha', $sessaoDaEscola)->assertOk();
+            $this->naEscola('b.mositec.test', '/definicoes', $sessaoDaEscola)->assertOk();
             $this->noPainel('GET', '/plataforma/escolas', $this->sessao)->assertOk();
             $this->assertFalse(app(TenantContext::class)->temTenant());
         }
 
-        $this->naEscola('b.mositec.test', '/alterar-senha', $this->sessao)->assertRedirect($this->urlDaEscola('b.mositec.test', '/login'));
+        $this->naEscola('b.mositec.test', '/definicoes', $this->sessao)->assertRedirect($this->urlDaEscola('b.mositec.test', '/login'));
         // (Sessão de escola sob o cookie do painel: 302 ou 500 fail-closed; ver a nota em test_um_utilizador_de_escola_nunca_alcanca_o_painel.)
         $this->assertContains($this->noPainel('GET', '/plataforma/escolas', $sessaoDaEscola)->getStatusCode(), [302, 500]);
     }

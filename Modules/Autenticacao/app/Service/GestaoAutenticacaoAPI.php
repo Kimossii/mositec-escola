@@ -3,11 +3,13 @@
 namespace Modules\Autenticacao\Service;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Modules\Core\Traits\LogService;
 
 class GestaoAutenticacaoAPI
 {
+    use LogService;
+
     public function __construct(private LimitadorLogin $limitador)
     {
     }
@@ -17,12 +19,12 @@ class GestaoAutenticacaoAPI
         // Primeiro checa rate limiter e tentativa de login
         $limiterResponse = $this->checkLoginAttempts($request, $email, $password);
         if ($limiterResponse !== true) {
-             Log::warning('Falha no login', ['email' => $email,'ip' => $request->ip(),'motivo' => $limiterResponse['message'] ]);
+             $this->logWarning('Falha no login', ['email' => $email,'ip' => $request->ip(),'motivo' => $limiterResponse['message'] ]);
             return $limiterResponse;
         }
 
         $user = Auth::user();
-        Log::info('Login realizado com sucesso', ['user_id' => $user->id,'email' => $user->email,'ip' => $request->ip()]);
+        $this->logInfo('Login realizado com sucesso', ['user_id' => $user->id,'email' => $user->email,'ip' => $request->ip()]);
         $token = $user->createToken('api-token', ['*'], now()->addHours(2))->plainTextToken;
 
         // Reseta contagem de tentativas em caso de sucesso
@@ -40,7 +42,7 @@ class GestaoAutenticacaoAPI
     {
         $segundos = $this->limitador->segundosDeBloqueio($request);
         if ($segundos !== null) {
-             Log::warning('Usuário bloqueado por muitas tentativas', [
+             $this->logWarning('Usuário bloqueado por muitas tentativas', [
                 'email' => $email,
                 'ip' => $request->ip(),
                 'tempo_restante' => $segundos
@@ -54,7 +56,7 @@ class GestaoAutenticacaoAPI
 
         if (!Auth::attempt(['email' => $email, 'password' => $password])) {
             $this->limitador->registarFalha($request);
-            Log::warning('Credenciais inválidas', [
+            $this->logWarning('Credenciais inválidas', [
                 'email' => $email,
                 'ip' => $request->ip()
             ]);

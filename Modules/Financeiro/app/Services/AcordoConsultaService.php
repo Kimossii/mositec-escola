@@ -40,6 +40,31 @@ class AcordoConsultaService
         });
     }
 
+    /**
+     * Próximas prestações de acordos activos que vencem nos próximos `$dias` dias (hoje incluído). Unidades menores.
+     *
+     * @return array{quantidade: int, valor: int}
+     */
+    public function aVencer(string $hoje, int $dias = 7): array
+    {
+        return $this->totais->lembrar('acordos-a-vencer', ['dias' => $dias], function () use ($hoje, $dias) {
+            $limite = date('Y-m-d', strtotime("{$hoje} +{$dias} days"));
+            $quantidade = 0;
+            $emFalta = 0;
+
+            foreach (Acordo::query()->where('estado', EstadoAcordo::ACTIVO->value)->get() as $acordo) {
+                $proxima = $this->progresso->de($acordo)['proxima'];
+
+                if ($proxima !== null && $proxima['data_vencimento'] >= $hoje && $proxima['data_vencimento'] <= $limite) {
+                    $quantidade++;
+                    $emFalta += $proxima['em_falta'];
+                }
+            }
+
+            return ['quantidade' => $quantidade, 'valor' => $emFalta];
+        });
+    }
+
     public function listar(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
     {
         $pesquisa = is_string($filtros['pesquisa'] ?? null) ? trim($filtros['pesquisa']) : '';

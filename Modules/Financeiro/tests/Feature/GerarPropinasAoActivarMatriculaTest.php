@@ -135,7 +135,7 @@ class GerarPropinasAoActivarMatriculaTest extends TestCase
         $this->assertSame(EstadoMatriculaEnum::ACTIVA, $matricula->refresh()->estado);
         $this->assertSame(0, Propina::query()->count());
         Log::shouldHaveReceived('warning')
-            ->withArgs(fn (string $mensagem, array $contexto = []) => $mensagem === 'financeiro.gerar-propinas.activacao-falhou'
+            ->withArgs(fn (string $mensagem, array $contexto = []) => str_ends_with($mensagem, 'financeiro.gerar-propinas.activacao-falhou')
                 && ($contexto['matricula_id'] ?? null) === $matricula->id
                 && ($contexto['mensagem'] ?? null) === 'Falha simulada da geração.')
             ->once();

@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Core\Exportacao\Exportador;
+use Modules\Core\Exportacao\TabelaExportavel;
+use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Financeiro\Services\DividasConsultaService;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Turma\Models\Turma;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DividaController extends Controller
 {
@@ -34,20 +36,33 @@ class DividaController extends Controller
         ]);
     }
 
-    public function exportar(Request $request): StreamedResponse
+    public function exportar(Request $request, Exportador $exportador)
     {
         $this->authorize('pagamento.exportar');
 
-        $linhas = $this->consulta->linhas($request->only(['pesquisa', 'ano_lectivo_id', 'turma_id', 'tipo']));
+        $request->validate(['formato' => ['required', 'string']]);
+        $moeda = $this->moeda->atual();
+        $maior = fn (int $v): float => $v / $moeda->fator();
+        $linhas = $this->consulta->linhas($request->only(['pesquisa', 'ano_lectivo_id', 'turma_id', 'tipo']))
+            ->map(fn (array $l) => [
+                'aluno' => $l['aluno_nome'], 'numero' => $l['aluno_numero'], 'matricula' => $l['matricula_numero'], 'turma' => $l['turma_nome'], 'ano' => $l['ano_lectivo_nome'],
+                'propinas' => $maior($l['propinas']), 'multas' => $maior($l['multas']), 'cobrancas' => $maior($l['cobrancas']), 'total' => $maior($l['total']),
+                'meses' => $l['meses'], 'desde' => $l['desde'],
+            ]);
 
-        return response()->streamDownload(function () use ($linhas) {
-            $f = fopen('php://output', 'w');
-            fwrite($f, "\xEF\xBB\xBF");
-            fputcsv($f, ['Aluno', 'Nº aluno', 'Matrícula', 'Turma', 'Ano lectivo', 'Propinas', 'Multas', 'Produtos/serviços', 'Total', 'Meses em dívida', 'Em dívida desde'], ';');
-            foreach ($linhas as $l) {
-                fputcsv($f, [$l['aluno_nome'], $l['aluno_numero'], $l['matricula_numero'], $l['turma_nome'], $l['ano_lectivo_nome'], $l['propinas'], $l['multas'], $l['cobrancas'], $l['total'], $l['meses'], $l['desde']], ';');
-            }
-            fclose($f);
-        }, 'dividas.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        $tabela = new TabelaExportavel(
+            titulo: 'Dívidas',
+            colunas: [
+                'aluno' => 'Aluno', 'numero' => 'Nº aluno', 'matricula' => 'Matrícula', 'turma' => 'Turma', 'ano' => 'Ano lectivo',
+                'propinas' => "Propinas ({$moeda->simbolo})", 'multas' => "Multas ({$moeda->simbolo})", 'cobrancas' => "Produtos/serviços ({$moeda->simbolo})", 'total' => "Total ({$moeda->simbolo})",
+                'meses' => 'Meses em dívida', 'desde' => 'Em dívida desde',
+            ],
+            linhas: $linhas->all(),
+            subtitulo: 'Da maior dívida para a menor',
+            entidade: Estabelecimento::current()?->nome,
+            assinaturas: ['Elaborado por', 'Verificado por', 'O Director'],
+        );
+
+        return $exportador->responder($tabela, $request->query('formato'), 'dividas');
     }
 }

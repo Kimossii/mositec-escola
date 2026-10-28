@@ -6,7 +6,10 @@ use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Modules\Autenticacao\Service\FotoDoUtilizadorService;
+use Modules\Core\Exportacao\Exportador;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Usuario\Actions\RedefinirSenhaUsuarioAction;
 use Modules\Usuario\Http\Requests\AtualizarUsuarioRequest;
@@ -14,6 +17,7 @@ use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
 use Modules\Usuario\Http\Requests\ProcurarAlunoPorMatriculaRequest;
 use Modules\Usuario\Models\User;
 use Modules\Usuario\Services\AlunoParaContaConsultaService;
+use Modules\Usuario\Services\ExportacaoDeUtilizadoresService;
 use Modules\Usuario\Services\GestaoUsuarioService;
 use Modules\Usuario\Services\UsuarioConsultaService;
 
@@ -76,6 +80,8 @@ class UsuarioController extends Controller
         return [
             'usuarios' => $this->consulta->listar($perfil, $filtros),
             'filtros' => $filtros,
+            // Diferido: cartões e contagens dos separadores chegam depois da lista.
+            'indicadores' => Inertia::defer(fn () => $this->consulta->indicadores($perfil, $request->user()->can('autorizacao.ver'))),
         ];
     }
 
@@ -144,5 +150,44 @@ class UsuarioController extends Controller
             // Cifrada: o payload da sessão (driver database) nunca guarda a senha em claro.
             'senha' => Crypt::encryptString($senha),
         ]);
+    }
+
+    /**
+     * Exporta a lista (todos ou um perfil) com os filtros do ecrã: Excel, PDF, CSV ou ZIP. Os administradores só entram
+     * no ficheiro para quem tem `autorizacao.ver`.
+     */
+    public function exportar(Request $request, ExportacaoDeUtilizadoresService $exportacao, Exportador $exportador)
+    {
+        $this->authorize('usuario.exportar');
+
+        $dados = $request->validate([
+            'formato' => ['required', 'string'],
+            'perfil' => ['nullable', 'string', Rule::in(array_keys(ExportacaoDeUtilizadoresService::PERFIS))],
+            'pesquisa' => ['nullable', 'string', 'max:100'],
+            'estado' => ['nullable', 'in:0,1'],
+        ]);
+
+        $podeVerAdministradores = $request->user()->can('autorizacao.ver');
+
+        if (($dados['perfil'] ?? null) === 'administradores') {
+            $this->authorize('autorizacao.ver');
+        }
+
+        // Fecha por omissão: na lista geral, quem não pode ver administradores não os recebe no ficheiro.
+        $tabela = $exportacao->tabela($dados['perfil'] ?? null, $request->only(['pesquisa', 'estado']), $podeVerAdministradores);
+
+        return $exportador->responder($tabela, $dados['formato'], 'utilizadores'.(isset($dados['perfil']) ? '-'.$dados['perfil'] : ''));
+    }
+
+    /** Foto de perfil de um utilizador, para as listas e a ficha. A de um administrador exige também `autorizacao.ver`. */
+    public function foto(User $user, FotoDoUtilizadorService $fotos)
+    {
+        $this->authorize('usuario.ver');
+
+        if ($user->roles()->where('nome', Perfil::ADMIN_ESCOLA->value)->exists()) {
+            $this->authorize('autorizacao.ver');
+        }
+
+        return $fotos->servir($user);
     }
 }

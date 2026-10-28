@@ -8,9 +8,12 @@ use Log;
 use Modules\Usuario\Actions\UsuarioAction;
 use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
+use Modules\Core\Traits\LogService;
 
 class UsuarioController extends Controller
 {
+    use LogService;
+
     /**
      * Display a listing of the resource.
      */
@@ -27,7 +30,7 @@ class UsuarioController extends Controller
     {
         $dto = UsuarioDTO::fromArray($request->validated());
         $usuario = $action->criar($dto);
-        Log::info('Usuário criado: ' . $usuario->email, ['usuario' => $dto]);
+        $this->logInfo('Utilizador criado', ['usuario_id' => $usuario->id]);
         return response()->json([
             'message' => 'Usuário criado com sucesso',
             'data' => $usuario

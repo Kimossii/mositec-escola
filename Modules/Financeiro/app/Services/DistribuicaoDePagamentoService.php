@@ -470,6 +470,7 @@ class DistribuicaoDePagamentoService
         $porId = $pagaveis->keyBy('id');
         $posicao = $pagaveis->pluck('id')->flip();
         $alvos = [];
+        $linhaDaPropina = [];
 
         foreach (array_values($distribuicao) as $i => $linha) {
             $propina = $porId->get($linha->propinaId) ?? throw ValidationException::withMessages([
@@ -495,7 +496,10 @@ class DistribuicaoDePagamentoService
             $mult = $cap === $capital ? $valor - $cap : 0;
 
             $alvos[] = ['propina' => $propina, 'capital' => $cap, 'multa' => $mult, 'multa_id' => $mult > 0 ? $propina->multa?->id : null];
+            $linhaDaPropina[$propina->id] = $i;
         }
+
+        $this->recusarSaltosDeMes($pagaveis, $linhaDaPropina);
 
         if (array_sum(array_map(fn (array $alvo) => $alvo['capital'] + $alvo['multa'], $alvos)) > $total) {
             throw ValidationException::withMessages(['distribuicao' => 'A distribuição excede o valor do pagamento mais o crédito usado (' . $this->formatar($total) . ').']);
@@ -505,6 +509,32 @@ class DistribuicaoDePagamentoService
         usort($alvos, fn (array $a, array $b) => $posicao[$a['propina']->id] <=> $posicao[$b['propina']->id]);
 
         return $alvos;
+    }
+
+    /**
+     * Sem saltos: se uma propina recebe valor, todas as mais antigas ainda em dívida têm de receber também (a automática
+     * já o garante; na explícita é aqui que se recusa pagar «o mês X» deixando um mês anterior por tocar).
+     *
+     * @param  Collection<int, Propina>  $pagaveis  ordenadas da mais antiga para a mais recente
+     * @param  array<int, int>  $linhaDaPropina  propina_id → posição da linha no pedido
+     */
+    private function recusarSaltosDeMes(Collection $pagaveis, array $linhaDaPropina): void
+    {
+        $emFalta = null;
+
+        foreach ($pagaveis as $propina) {
+            if (isset($linhaDaPropina[$propina->id])) {
+                if ($emFalta !== null) {
+                    throw ValidationException::withMessages([
+                        "distribuicao.{$linhaDaPropina[$propina->id]}.propina_id" => 'Não pode saltar meses: pague primeiro ' . $emFalta->periodo_inicio->format('m/Y') . ' (o mês mais antigo em dívida).',
+                    ]);
+                }
+
+                continue;
+            }
+
+            $emFalta ??= $propina;
+        }
     }
 
     private function formatar(int $unidades): string

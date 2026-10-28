@@ -5,7 +5,6 @@ namespace Modules\Financeiro\Services;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
@@ -38,6 +37,7 @@ use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Models\MatriculaHistorico;
 use Modules\Turma\Models\Turma;
 use Throwable;
+use Modules\Core\Traits\LogService;
 
 /**
  * Ponto ÚNICO de criação de propinas (spec §7; CriadoresDePropinaTest). Serve a pré-visualização (só
@@ -58,6 +58,8 @@ use Throwable;
  */
 class GerarPropinasService
 {
+    use LogService;
+
     /** P5: máximo de matrículas por pedido de geração manual (pré-visualização ou confirmação). O comando não tem limite. */
     public const LIMITE_MATRICULAS_POR_PEDIDO = 500;
 
@@ -280,7 +282,7 @@ class GerarPropinasService
         }
 
         // Log estruturado (critério 3 de §8.2): o comando diário volta a tentar esta matrícula.
-        Log::warning('financeiro.gerar-propinas.matricula-falhou', [
+        $this->logWarning('financeiro.gerar-propinas.matricula-falhou', [
             'tenant_id' => $this->tenant->id(),
             'matricula_id' => $id,
             'origem' => $pedido->origem->name,

@@ -125,10 +125,36 @@ class DistribuicaoDePagamentoTest extends TestCase
         $this->assertRecusado('distribuicao.0.propina_id', fn () => $this->previa(2_500_000, [[$this->p['nov'], 2_500_000]]));
 
         $this->regras(antecipado: true);
-        $this->assertSame([$this->p['nov']->id => [0, 2_500_000]], $this->porPropina($this->previa(2_500_000, [[$this->p['nov'], 2_500_000]])));
+        $tres = [[$this->p['set'], 2_500_000], [$this->p['out'], 2_500_000], [$this->p['nov'], 2_500_000]];
+        $this->assertSame(
+            [$this->p['set']->id => [0, 2_500_000], $this->p['out']->id => [0, 2_500_000], $this->p['nov']->id => [0, 2_500_000]],
+            $this->porPropina($this->previa(7_500_000, $tres)),
+        );
 
         $this->regras(antecipado: false);
         $this->assertRecusado('distribuicao.0.propina_id', fn () => $this->previa(2_500_000, [[$this->p['out'], 2_500_000]], data: '2026-09-30'));
+    }
+
+    public function test_explicita_nao_salta_meses_em_divida(): void
+    {
+        $this->regras(parcial: true, antecipado: true);
+
+        // Novembro sem Setembro/Outubro: recusado na linha de Novembro, a apontar o mês mais antigo em falta.
+        try {
+            $this->previa(2_500_000, [[$this->p['nov'], 2_500_000]]);
+            $this->fail('Devia recusar o salto de meses.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('distribuicao.0.propina_id', $e->errors());
+            $this->assertStringContainsString('09/2026', $e->errors()['distribuicao.0.propina_id'][0]);
+        }
+
+        // Outubro sem Setembro: idem.
+        $this->assertRecusado('distribuicao.0.propina_id', fn () => $this->previa(2_500_000, [[$this->p['out'], 2_500_000]]));
+
+        // Pagar parte do mais antigo e o mês seguinte não é salto (cada mês recebe algo); pelo meio, o salto é recusado.
+        $plano = $this->previa(3_000_000, [[$this->p['set'], 1_000_000], [$this->p['out'], 2_000_000]]);
+        $this->assertSame([$this->p['set']->id => [0, 1_000_000], $this->p['out']->id => [0, 2_000_000]], $this->porPropina($plano));
+        $this->assertRecusado('distribuicao.1.propina_id', fn () => $this->previa(3_000_000, [[$this->p['set'], 1_000_000], [$this->p['nov'], 2_000_000]]));
     }
 
     public function test_propina_de_outra_matricula_paga_cancelada_ou_anulada_nao_e_pagavel(): void
@@ -389,17 +415,17 @@ class DistribuicaoDePagamentoTest extends TestCase
     public function test_previsualizar_credito_usa_a_data_de_hoje_da_escola_o7(): void
     {
         $this->regras(antecipado: false);
-        $this->creditoDirecto($this->pagamentoDirecto($this->matricula, 2_500_000), 2_500_000);
+        $this->creditoDirecto($this->pagamentoDirecto($this->matricula, 7_500_000), 7_500_000);
         $servico = app(DistribuicaoDePagamentoService::class);
-        $pedido = $this->pedidoCredito(2_500_000, [[$this->p['nov'], 2_500_000]]);
+        $pedido = $this->pedidoCredito(7_500_000, [[$this->p['set'], 2_500_000], [$this->p['out'], 2_500_000], [$this->p['nov'], 2_500_000]]);
 
         // Hoje = 16/10: Novembro ainda não começou (sem antecipado).
-        $this->assertRecusado('distribuicao.0.propina_id', fn () => $servico->preVisualizarCredito($this->matricula, $pedido));
+        $this->assertRecusado('distribuicao.2.propina_id', fn () => $servico->preVisualizarCredito($this->matricula, $pedido));
 
         // Avançar o relógio da escola para 02/11: já começou, a mesma linha passa.
         Carbon::setTestNow(CarbonImmutable::parse('2026-11-02 10:00:00', 'UTC'));
         $plano = $servico->preVisualizarCredito($this->matricula, $pedido);
-        $this->assertSame([$this->p['nov']->id => [2_500_000, 0]], $this->porPropina($plano));
+        $this->assertSame([$this->p['set']->id => [2_500_000, 0], $this->p['out']->id => [2_500_000, 0], $this->p['nov']->id => [2_500_000, 0]], $this->porPropina($plano));
     }
 
     /** @return array{plano: mixed, matricula: Matricula} outra matrícula (outro aluno) noutro plano do mesmo ano */

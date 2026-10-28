@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
@@ -14,7 +15,7 @@ import CopiarPlanosModal from '../../Components/PlanosPropina/CopiarPlanosModal.
 import PlanoPropinaFormModal from '../../Components/PlanosPropina/PlanoPropinaFormModal.vue';
 import { ESTADO } from '../../Models/Estado';
 import { formatarDinheiro } from '../../Support/dinheiro';
-import { dataCurta } from '../../Support/periodos';
+import { dataCurta, mesAno } from '../../Support/periodos';
 
 const BASE = '/financeiro/configuracao/planos-propina';
 
@@ -247,6 +248,7 @@ function confirmarEliminacao() {
             </div>
         </div>
 
+        <ListaComVistas chave="financeiro-planos-propina" prefixo="/financeiro/configuracao/planos-propina">
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -270,6 +272,7 @@ function confirmarEliminacao() {
                         <tr v-for="plano in planos.data" :key="plano.id">
                             <td class="text-gray-800">
                                 {{ plano.nome }}
+                                <div class="text-muted fs-8">em vigor desde {{ mesAno(plano.data_inicio) }}</div>
                                 <span v-if="plano.tem_propinas" class="badge badge-light-primary ms-1" title="Já tem propinas geradas: o calendário fica bloqueado e o valor muda em «Alterar preço».">Com propinas</span>
                             </td>
                             <td>{{ plano.ano_lectivo_nome ?? '—' }}</td>
@@ -326,6 +329,7 @@ function confirmarEliminacao() {
                 <Pagination :links="planos.links" />
             </div>
         </div>
+        </ListaComVistas>
 
         <PlanoPropinaFormModal
             :show="modalAberto"

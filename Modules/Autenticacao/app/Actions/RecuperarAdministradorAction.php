@@ -9,6 +9,7 @@ use Modules\Core\Tenancy\Provisioning\GeradorSenhaTemporaria;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Usuario\Actions\RedefinirSenhaUsuarioAction;
 use Modules\Usuario\Models\User;
+use Modules\Core\Traits\LogService;
 
 /**
  * Recupera o acesso de um administrador (ADMIN_ESCOLA) do tenant corrente quando a senha
@@ -21,15 +22,23 @@ use Modules\Usuario\Models\User;
  */
 class RecuperarAdministradorAction
 {
+    use LogService;
+
     public function __construct(
         private readonly RedefinirSenhaUsuarioAction $redefinir,
         private readonly GeradorSenhaTemporaria $senhas,
     ) {}
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(?string $email = null): CredencialInicial
+    {
+        return $this->comLog('Recuperar administrador', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($email));
+    }
+
     /**
      * @throws AdministradorNaoRecuperavel
      */
-    public function executar(?string $email = null): CredencialInicial
+    private function executarSemRegisto(?string $email = null): CredencialInicial
     {
         $email = $email === null ? '' : mb_strtolower(trim($email));
 

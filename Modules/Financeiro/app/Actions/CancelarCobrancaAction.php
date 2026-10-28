@@ -13,15 +13,24 @@ use Modules\Financeiro\Models\PagamentoCobranca;
 use Modules\Financeiro\Models\Produto;
 use Modules\Financeiro\Models\ProdutoVariante;
 use Modules\Financeiro\Support\BloqueioDePagamentos;
+use Modules\Core\Traits\LogService;
 
 /** Cancela uma cobrança sem pagamentos confirmados e repõe o stock que a venda abateu. */
 class CancelarCobrancaAction
 {
+    use LogService;
+
     public function __construct(private BloqueioDePagamentos $bloqueio, private RelogioDoTenant $relogio)
     {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Cobranca $cobranca, string $motivo, ?int $utilizadorId): Cobranca
+    {
+        return $this->comLog('Cancelar cobrança', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($cobranca, $motivo, $utilizadorId));
+    }
+
+    private function executarSemRegisto(Cobranca $cobranca, string $motivo, ?int $utilizadorId): Cobranca
     {
         return DB::transaction(function () use ($cobranca, $motivo, $utilizadorId) {
             $this->bloqueio->matricula((int) $cobranca->matricula_id, incluirEliminadas: true);

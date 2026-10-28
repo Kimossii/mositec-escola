@@ -7,10 +7,19 @@ use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Core\Traits\LogService;
 
 class AtualizarLogotipoEstabelecimentoAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Estabelecimento $estabelecimento, UploadedFile $logotipo): Estabelecimento
+    {
+        return $this->comLog('Atualizar logotipo estabelecimento', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($estabelecimento, $logotipo));
+    }
+
+    private function executarSemRegisto(Estabelecimento $estabelecimento, UploadedFile $logotipo): Estabelecimento
     {
         if ($estabelecimento->logotipo_path) {
             // Só apaga se o caminho guardado pertencer mesmo ao tenant corrente.

@@ -221,4 +221,16 @@ class AnoLectivoHttpTest extends TestCase
         $this->get('/ano-lectivos')->assertForbidden();
         $this->post('/ano-lectivos', [])->assertForbidden();
     }
+
+    public function test_lista_traz_as_contagens_por_ano_lectivo(): void
+    {
+        $this->actingAsStaff();
+        $this->post('/ano-lectivos', ['nome' => '2026/2027', 'data_inicio' => '2026-09-01', 'data_fim' => '2027-07-31', 'estado' => EstadoAnoLectivo::ATIVO->value]);
+
+        $this->get('/ano-lectivos')->assertOk()->assertInertia(fn ($page) => $page
+            ->component('AnoLectivo/Index')
+            ->has('anoLectivos', 1)
+            ->missing('contagens') // diferido: não vem no primeiro pedido
+            ->loadDeferredProps(fn ($c) => $c->has('contagens')));
+    }
 }

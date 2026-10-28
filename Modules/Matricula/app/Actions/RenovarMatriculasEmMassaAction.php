@@ -2,15 +2,23 @@
 
 namespace Modules\Matricula\Actions;
 
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Modules\Matricula\Models\Matricula;
+use Modules\Core\Traits\LogService;
 
 class RenovarMatriculasEmMassaAction
 {
+    use LogService;
+
     public function __construct(
         private RenovarMatriculaAction $renovarMatricula,
     ) {
+    }
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(array $matriculaIds, ?int $utilizadorId = null): array
+    {
+        return $this->comLog('Renovar matrículas em massa', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matriculaIds, $utilizadorId));
     }
 
     /**
@@ -26,7 +34,7 @@ class RenovarMatriculasEmMassaAction
      * @param  int[]  $matriculaIds
      * @return array{sucesso: int, falhas: array<int, string>}
      */
-    public function executar(array $matriculaIds, ?int $utilizadorId = null): array
+    private function executarSemRegisto(array $matriculaIds, ?int $utilizadorId = null): array
     {
         $sucesso = 0;
         $falhas = [];
@@ -50,7 +58,7 @@ class RenovarMatriculasEmMassaAction
             } catch (ValidationException $e) {
                 $falhas[$matriculaId] = collect($e->errors())->flatten()->first();
             } catch (\Throwable $e) {
-                Log::warning("Renovação em massa: falha inesperada na matrícula {$matriculaId}: {$e->getMessage()}");
+                $this->logError('Renovação em massa: falha inesperada na matrícula', ['matricula_id' => $matriculaId, 'excecao' => $e]);
                 $falhas[$matriculaId] = 'Erro inesperado ao renovar.';
             }
         }

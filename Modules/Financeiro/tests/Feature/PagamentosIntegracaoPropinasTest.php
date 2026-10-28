@@ -61,6 +61,14 @@ class PagamentosIntegracaoPropinasTest extends TestCase
         parent::tearDown();
     }
 
+    /** Não se saltam meses: para pagar um mês posterior, a fixture liquida primeiro (de verdade) os anteriores. */
+    private function liquidarMesesAnteriores(int $ordem): void
+    {
+        for ($i = 1; $i < $ordem; $i++) {
+            $this->pagar($this->matricula, 2_500_000, [[$this->p[$i], 2_500_000]]);
+        }
+    }
+
     public function test_divida_de_matricula_cancelada_e_pagavel_e_as_canceladas_nao(): void
     {
         $this->regras(antecipado: true);
@@ -87,6 +95,7 @@ class PagamentosIntegracaoPropinasTest extends TestCase
     public function test_propina_futura_com_historico_nao_e_cancelada_pelo_evento_e_anula_se_a_mao(): void
     {
         $this->regras(antecipado: true);
+        $this->liquidarMesesAnteriores(5);
         $this->anularPagamento($this->pagar($this->matricula, 2_500_000, [[$this->p[5], 2_500_000]])); // Janeiro: histórico
 
         app(AlterarEstadoMatriculaAction::class)->executar($this->matricula->fresh(), EstadoMatriculaEnum::CANCELADA, null, '2026-10-01');
@@ -101,6 +110,7 @@ class PagamentosIntegracaoPropinasTest extends TestCase
     public function test_pagamento_real_entre_previa_e_confirmacao_faz_recusar_a_alteracao(): void
     {
         $this->regras(parcial: true, antecipado: true);
+        $this->liquidarMesesAnteriores(6);
         $impressao = $this->previa($this->plano, '2027-02', 3_000_000, ModoAlteracaoPreco::APLICAR_GERADAS)->impressaoDigital;
         $this->pagar($this->matricula, 1_000_000, [[$this->p[6], 1_000_000]]);
 
@@ -114,6 +124,7 @@ class PagamentosIntegracaoPropinasTest extends TestCase
     public function test_aplicar_com_parcial_real_preserva_o_recebido(): void
     {
         $this->regras(parcial: true, antecipado: true);
+        $this->liquidarMesesAnteriores(6);
         $this->pagar($this->matricula, 1_000_000, [[$this->p[6], 1_000_000]]);
 
         $this->alterarPreco($this->plano, '2027-02', 3_000_000, ModoAlteracaoPreco::APLICAR_GERADAS);
@@ -126,6 +137,7 @@ class PagamentosIntegracaoPropinasTest extends TestCase
     public function test_anular_pagamento_depois_de_descida_abaixo_do_pago(): void
     {
         $this->regras(parcial: true, antecipado: true);
+        $this->liquidarMesesAnteriores(6);
         $pagamento = $this->pagar($this->matricula, 2_000_000, [[$this->p[6], 2_000_000]]);
         $this->alterarPreco($this->plano, '2027-02', 1_500_000, ModoAlteracaoPreco::APLICAR_GERADAS);
         $this->assertSame(EstadoCobranca::PAGA, $this->p[6]->fresh()->estado, 'valor = valor_pago (2.000.000), sem devolução.');

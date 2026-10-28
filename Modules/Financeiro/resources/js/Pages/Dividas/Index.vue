@@ -1,7 +1,9 @@
 <script setup>
 import { computed, reactive, watch } from 'vue';
 import { Link, router, Deferred } from '@inertiajs/vue3';
+import MenuExportar from '@/Components/Shared/MenuExportar.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import { can } from '@/Composables/usePermissoes';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
@@ -50,7 +52,6 @@ watch(filtros, (valor) => {
     clearTimeout(debounceId);
     debounceId = setTimeout(() => router.get(BASE, valor, { preserveState: true, preserveScroll: true, replace: true }), 300);
 });
-const exportarHref = computed(() => `${BASE}/exportar?${new URLSearchParams(Object.fromEntries(Object.entries(filtros).filter(([, v]) => v !== ''))).toString()}`);
 </script>
 
 <template>
@@ -62,7 +63,7 @@ const exportarHref = computed(() => `${BASE}/exportar?${new URLSearchParams(Obje
                     Matrículas com valores por pagar: propinas de períodos já iniciados, multas e produtos ou serviços. Da maior dívida para a menor.
                 </p>
             </div>
-            <a v-if="can('pagamento.exportar')" :href="exportarHref" class="btn btn-light-primary">Exportar CSV</a>
+            <MenuExportar v-if="can('pagamento.exportar')" :url="`${BASE}/exportar`" :params="filtros" />
         </div>
 
         <Deferred data="totais">
@@ -81,6 +82,7 @@ const exportarHref = computed(() => `${BASE}/exportar?${new URLSearchParams(Obje
                     <div class="col-12 col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">Tipo</label><SelectSolid v-model="filtros.tipo" :options="opcoesTipo" /></div>
         </FiltrosRecolhiveis>
 
+        <ListaComVistas chave="financeiro-dividas" prefixo="/financeiro/dividas">
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -124,5 +126,6 @@ const exportarHref = computed(() => `${BASE}/exportar?${new URLSearchParams(Obje
             </div>
             <div v-if="dividas.data.length" class="card-footer d-flex justify-content-end"><Pagination :links="dividas.links" /></div>
         </div>
+        </ListaComVistas>
     </div>
 </template>

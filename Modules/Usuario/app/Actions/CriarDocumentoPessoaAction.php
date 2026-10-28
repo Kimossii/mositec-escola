@@ -9,10 +9,19 @@ use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Usuario\DTO\DocumentoPessoaDTO;
 use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\DocumentoPessoa;
+use Modules\Core\Traits\LogService;
 
 class CriarDocumentoPessoaAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(DadosPessoa $pessoa, DocumentoPessoaDTO $dto, UploadedFile $ficheiro): DocumentoPessoa
+    {
+        return $this->comLog('Criar documento pessoa', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($pessoa, $dto, $ficheiro));
+    }
+
+    private function executarSemRegisto(DadosPessoa $pessoa, DocumentoPessoaDTO $dto, UploadedFile $ficheiro): DocumentoPessoa
     {
         return DB::transaction(function () use ($pessoa, $dto, $ficheiro) {
             DadosPessoa::whereKey($pessoa->id)->lockForUpdate()->first();

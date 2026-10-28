@@ -3,12 +3,12 @@
 namespace Modules\Financeiro\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 use Modules\Core\Tenancy\Console\ParaTodosOsTenants;
 use Modules\Core\Tenancy\TenantAtual;
 use Modules\Financeiro\Services\GerarPropinasService;
 use Modules\Financeiro\Services\ReconciliarCancelamentosDePropinas;
 use RuntimeException;
+use Modules\Core\Traits\LogService;
 
 /**
  * Comando diário de propinas, por tenant:
@@ -19,6 +19,8 @@ use RuntimeException;
  */
 class GerarPropinasCommand extends Command
 {
+    use LogService;
+
     use ParaTodosOsTenants;
 
     protected $signature = 'financeiro:gerar-propinas';
@@ -29,7 +31,7 @@ class GerarPropinasCommand extends Command
     {
         return $this->paraTenants(function (TenantAtual $tenant) use ($geracao, $reconciliacao): void {
             $reconciliados = $reconciliacao->executar();
-            Log::info('financeiro.reconciliar-cancelamentos', ['tenant' => $tenant->codigo] + $reconciliados);
+            $this->logInfo('financeiro.reconciliar-cancelamentos', ['tenant' => $tenant->codigo] + $reconciliados);
 
             if ($reconciliados['canceladas'] > 0 || $reconciliados['erros'] > 0) {
                 $this->line("[{$tenant->codigo}] reconciliação: {$reconciliados['canceladas']} propina(s) cancelada(s) em "
@@ -52,7 +54,7 @@ class GerarPropinasCommand extends Command
         $resultados = $geracao->gerarAutomaticamente();
 
         if ($resultados === null) {
-            Log::info('financeiro.gerar-propinas', ['tenant' => $tenant->codigo, 'activa' => false]);
+            $this->logInfo('financeiro.gerar-propinas', ['tenant' => $tenant->codigo, 'activa' => false]);
             $this->line("[{$tenant->codigo}] geração automática desligada nas Regras de Cobrança: nada a fazer.");
 
             return 0;
@@ -64,7 +66,7 @@ class GerarPropinasCommand extends Command
             $totais = $resultado->totais();
             $erros += $totais['erros'];
 
-            Log::info('financeiro.gerar-propinas', ['tenant' => $tenant->codigo, 'activa' => true, 'ano_lectivo_id' => $anoLectivoId] + $totais);
+            $this->logInfo('financeiro.gerar-propinas', ['tenant' => $tenant->codigo, 'activa' => true, 'ano_lectivo_id' => $anoLectivoId] + $totais);
             $this->line("[{$tenant->codigo}] ano lectivo {$anoLectivoId}: {$totais['matriculas']} matrícula(s), {$totais['criadas']} propina(s) criada(s), "
                 . "{$totais['ignoradas']} ignorada(s), {$totais['conflitos']} conflito(s), {$totais['erros']} erro(s).");
         }

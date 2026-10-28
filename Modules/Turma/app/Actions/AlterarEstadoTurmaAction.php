@@ -7,10 +7,19 @@ use Modules\Core\Enums\Estado;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
 use Modules\Turma\Models\Turma;
+use Modules\Core\Traits\LogService;
 
 class AlterarEstadoTurmaAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Turma $turma, Estado $novoEstado): Turma
+    {
+        return $this->comLog('Alterar estado turma', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($turma, $novoEstado));
+    }
+
+    private function executarSemRegisto(Turma $turma, Estado $novoEstado): Turma
     {
         if ($novoEstado === Estado::INATIVO && $this->temMatriculasOcupadas($turma)) {
             throw ValidationException::withMessages([

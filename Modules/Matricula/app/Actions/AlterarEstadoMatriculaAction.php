@@ -9,20 +9,34 @@ use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Events\MatriculaEstadoAlterado;
 use Modules\Matricula\Models\Matricula;
+use Modules\Core\Traits\LogService;
 
 class AlterarEstadoMatriculaAction
 {
+    use LogService;
+
     public function __construct(
         private RegistarHistoricoMatriculaAction $registarHistorico,
         private RelogioDoTenant $relogio,
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
+    public function executar(
+        Matricula $matricula,
+        EstadoMatriculaEnum $novoEstado,
+        ?int $utilizadorId = null,
+        ?string $dataFim = null,
+    ): Matricula
+    {
+        return $this->comLog('Alterar estado matrícula', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $novoEstado, $utilizadorId, $dataFim));
+    }
+
     /**
      * Estado, data de fim, histórico e reacções síncronas de outros módulos (ex.: cancelar propinas futuras)
      * numa só transacção: ou muda tudo ou nada (Q5 do plano de fases do Financeiro).
      */
-    public function executar(
+    private function executarSemRegisto(
         Matricula $matricula,
         EstadoMatriculaEnum $novoEstado,
         ?int $utilizadorId = null,

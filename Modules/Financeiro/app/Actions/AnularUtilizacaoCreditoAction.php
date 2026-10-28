@@ -14,6 +14,7 @@ use Modules\Financeiro\Services\RecalcularCredito;
 use Modules\Financeiro\Services\RecalcularPropina;
 use Modules\Financeiro\Support\BloqueioDePagamentos;
 use Modules\Financeiro\Support\BloqueioDePropinas;
+use Modules\Core\Traits\LogService;
 
 /**
  * Anula uma utilização de crédito (spec Pagamentos §6; D15): matrícula da propina → propina → crédito → utilização.
@@ -21,6 +22,8 @@ use Modules\Financeiro\Support\BloqueioDePropinas;
  */
 class AnularUtilizacaoCreditoAction
 {
+    use LogService;
+
     public function __construct(
         private BloqueioDePagamentos $bloqueio,
         private BloqueioDePropinas $bloqueioDePropinas,
@@ -30,7 +33,13 @@ class AnularUtilizacaoCreditoAction
     ) {
     }
 
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(CreditoUtilizacao $utilizacao, MotivoDeAnulacaoDTO $dto, ?int $utilizadorId): CreditoUtilizacao
+    {
+        return $this->comLog('Anular utilização crédito', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($utilizacao, $dto, $utilizadorId));
+    }
+
+    private function executarSemRegisto(CreditoUtilizacao $utilizacao, MotivoDeAnulacaoDTO $dto, ?int $utilizadorId): CreditoUtilizacao
     {
         return DB::transaction(function () use ($utilizacao, $dto, $utilizadorId) {
             // A utilização pode liquidar uma propina OU a multa dela: resolve a propina em ambos os casos

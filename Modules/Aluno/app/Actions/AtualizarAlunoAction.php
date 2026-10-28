@@ -9,10 +9,19 @@ use Illuminate\Support\Facades\Storage;
 use Modules\Aluno\DTO\AlunoDTO;
 use Modules\Aluno\Models\Aluno;
 use Modules\Core\Tenancy\CaminhoTenant;
+use Modules\Core\Traits\LogService;
 
 class AtualizarAlunoAction
 {
+    use LogService;
+
+    /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Aluno $aluno, AlunoDTO $dto, ?UploadedFile $foto = null): Aluno
+    {
+        return $this->comLog('Atualizar aluno', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($aluno, $dto, $foto));
+    }
+
+    private function executarSemRegisto(Aluno $aluno, AlunoDTO $dto, ?UploadedFile $foto = null): Aluno
     {
         return DB::transaction(function () use ($aluno, $dto, $foto) {
             $aluno->dadosPessoa->fill([
