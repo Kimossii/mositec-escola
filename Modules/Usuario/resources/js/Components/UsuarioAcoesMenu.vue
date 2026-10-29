@@ -30,7 +30,7 @@ function podeRedefinirSenha() {
                     <a v-if="compacto" href="#" class="btn btn-icon btn-sm border-0" style="background: rgba(255, 255, 255, 0.28); backdrop-filter: blur(2px)" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end" title="Ações" @click.prevent>
                         <i class="ki-duotone ki-dots-vertical fs-2 text-white"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                     </a>
-                    <a v-else href="#" class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
+                    <a v-else href="#" class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end" @click.prevent>
                         Ações
                         <i class="ki-duotone ki-down fs-5 ms-1"></i>
                     </a>
