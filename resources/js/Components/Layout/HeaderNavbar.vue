@@ -18,6 +18,7 @@
                     <span v-for="n in 4" :key="n" :class="`path${n}`"></span>
                 </i>
                 <span v-if="alertas.length" class="mosi-pisca badge badge-circle badge-danger position-absolute top-0 start-100 translate-middle fs-9 w-15px h-15px">{{ alertas.length }}</span>
+                <span v-if="ficheirosNovos" class="position-absolute bottom-0 end-0 bullet bullet-dot bg-success w-10px h-10px" title="Tem ficheiros novos"></span>
             </div>
             <NotificationsMenu />
         </div>
@@ -63,6 +64,7 @@ import AvatarUtilizador from '@/Components/Shared/AvatarUtilizador.vue'
 
 // Alertas reais (propinas em atraso, acordos, matrículas...) — prop partilhada diferida.
 const alertas = computed(() => usePage().props.alertas ?? [])
+const ficheirosNovos = computed(() => usePage().props.ficheiros_novos ?? 0)
 
 // Foto do utilizador autenticado; sem foto, as iniciais (como no menu e nas Definições).
 const foto = computed(() => usePage().props.auth.foto)

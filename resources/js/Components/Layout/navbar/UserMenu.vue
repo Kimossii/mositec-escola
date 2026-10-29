@@ -39,6 +39,13 @@ const iniciais = computed(() => (user.name ?? '')
         <div class="separator my-2"></div>
 
         <div class="menu-item px-5">
+            <Link href="/ficheiros" class="menu-link px-5">
+                <i class="ki-duotone ki-folder fs-4 me-3 text-primary"><span class="path1"></span><span class="path2"></span></i>
+                <span class="menu-title">Os meus ficheiros</span>
+            </Link>
+        </div>
+
+        <div class="menu-item px-5">
             <Link href="/definicoes" class="menu-link px-5">
                 <i class="ki-duotone ki-setting-2 fs-4 me-3 text-primary"><span class="path1"></span><span class="path2"></span></i>
                 <span class="menu-title">Definições</span>

@@ -6,7 +6,10 @@ use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
+use Modules\Financeiro\Jobs\AplicarMultasDoTenantJob;
+use Modules\Financeiro\Jobs\GerarPropinasDoTenantJob;
 use Modules\Financeiro\Enums\TipoMulta;
 use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaMulta;
@@ -119,5 +122,29 @@ class AplicarMultasCommandTest extends TestCase
         $this->assertStringContainsString('--todos', $eventos->first()->command);
         $this->assertSame('30 2 * * *', $eventos->first()->expression);
         $this->assertTrue($eventos->first()->withoutOverlapping);
+    }
+
+    public function test_com_fila_despacha_um_job_por_escola_em_vez_de_correr(): void
+    {
+        Bus::fake();
+        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]);
+        $this->umaPropina();
+
+        $this->artisan('financeiro:aplicar-multas', ['--tenant' => $this->tenant->codigo, '--fila' => true])->assertSuccessful();
+        $this->artisan('financeiro:gerar-propinas', ['--tenant' => $this->tenant->codigo, '--fila' => true])->assertSuccessful();
+
+        Bus::assertDispatched(AplicarMultasDoTenantJob::class);
+        Bus::assertDispatched(GerarPropinasDoTenantJob::class);
+        $this->assertSame(0, PropinaMulta::count());
+    }
+
+    public function test_o_job_de_multas_aplica_as_multas_no_tenant_que_o_despachou(): void
+    {
+        $this->multaActiva([[1, TipoMulta::PERCENTAGEM, 500]]);
+        $this->umaPropina();
+
+        $this->artisan('financeiro:aplicar-multas', ['--tenant' => $this->tenant->codigo, '--fila' => true])->assertSuccessful();
+
+        $this->assertSame(1, PropinaMulta::count());
     }
 }
