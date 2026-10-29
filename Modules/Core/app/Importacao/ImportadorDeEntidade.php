@@ -28,6 +28,40 @@ abstract class ImportadorDeEntidade
     /** Coluna que identifica o registo (ex.: «codigo»): se já existe na escola, a linha é ignorada. */
     abstract public function colunaChave(): string;
 
+    /** Chave natural da linha, para detectar duplicados. Por omissão é a coluna-chave; uma entidade com chave composta redefine-a. */
+    public function chaveDe(array $dados): ?string
+    {
+        $valor = $dados[$this->colunaChave()] ?? null;
+
+        return $valor === null ? null : (string) $valor;
+    }
+
+    /** Como se chama a chave nas mensagens de repetição. */
+    public function rotuloDaChave(): string
+    {
+        return $this->colunas()[$this->colunaChave()]['rotulo'] ?? $this->colunaChave();
+    }
+
+    /**
+     * Das linhas do bloco, as chaves que já existem na escola.
+     *
+     * @param  array<int, array<string, mixed>>  $bloco
+     * @return list<string>
+     */
+    public function chavesExistentes(array $bloco): array
+    {
+        $coluna = $this->colunaChave();
+        $valores = array_values(array_unique(array_filter(array_map(fn ($d) => isset($d[$coluna]) ? (string) $d[$coluna] : null, $bloco))));
+
+        return $this->existentes($coluna, $valores);
+    }
+
+    /** Validação extra depois das regras (ex.: referências a outras entidades). @return list<string> mensagens de erro */
+    public function validarLinha(array $dados): array
+    {
+        return [];
+    }
+
     /** @return class-string<\Illuminate\Database\Eloquent\Model> */
     abstract protected function modelo(): string;
 

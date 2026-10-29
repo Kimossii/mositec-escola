@@ -1,7 +1,7 @@
 <script setup>
 import { rotuloTurma } from '@/Support/turma';
 import { computed, reactive, ref, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -259,7 +259,10 @@ async function alternarLinha(aluno) {
     <div class="app-container container-xxl py-6">
         <div class="d-flex justify-content-between align-items-center mb-6">
             <h1 class="fs-2 fw-bold">Alunos</h1>
-            <button v-if="can('aluno.criar')" class="btn btn-primary" @click="abrirCriacao">Novo Aluno</button>
+            <div v-if="can('aluno.criar')" class="d-flex gap-2">
+                <Link href="/importacoes/alunos/nova" class="btn btn-light-primary">Importar</Link>
+                <button class="btn btn-primary" @click="abrirCriacao">Novo Aluno</button>
+            </div>
         </div>
 
         <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" :quantidade="4" />

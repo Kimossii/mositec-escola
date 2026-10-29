@@ -144,8 +144,7 @@ class ValidarImportacaoJob implements ShouldBeUnique, ShouldQueue
      */
     private function gravarBloco(Importacao $importacao, ImportadorDeEntidade $importador, array $bloco, array &$vistos, array &$contagem): void
     {
-        $colunaChave = $importador->colunaChave();
-        $existentes = [$colunaChave => array_flip($importador->existentes($colunaChave, $this->valores($bloco, $colunaChave)))];
+        $existentes = ['__chave__' => array_flip($importador->chavesExistentes($bloco))];
         foreach ($importador->colunasUnicas() as $coluna) {
             $existentes[$coluna] = array_flip($importador->existentes($coluna, $this->valores($bloco, $coluna)));
         }
@@ -155,29 +154,23 @@ class ValidarImportacaoJob implements ShouldBeUnique, ShouldQueue
             $erros = [];
             $validador = Validator::make($dados, $importador->regras(), $importador->mensagens(), array_map(fn ($c) => $c['rotulo'], $importador->colunas()));
 
-            if ($validador->fails()) {
-                $erros = $validador->errors()->all();
-            }
+            $erros = $validador->fails() ? $validador->errors()->all() : $importador->validarLinha($dados);
 
             $estado = ImportacaoLinha::VALIDA;
-            $valorChave = $dados[$colunaChave] ?? null;
+            $chave = $importador->chaveDe($dados);
 
-            if ($erros === [] && $valorChave !== null && isset($existentes[$colunaChave][(string) $valorChave])) {
+            if ($erros === [] && $chave !== null && isset($existentes['__chave__'][$chave])) {
                 $estado = ImportacaoLinha::IGNORADA;
                 $erros[] = 'Já existe: não foi importado.';
             }
 
             if ($estado === ImportacaoLinha::VALIDA && $erros === []) {
-                foreach ([$colunaChave, ...$importador->colunasUnicas()] as $coluna) {
-                    $valor = $dados[$coluna] ?? null;
-                    if ($valor === null) {
-                        continue;
-                    }
-                    $rotulo = $importador->colunas()[$coluna]['rotulo'] ?? $coluna;
+                foreach ($this->valoresUnicos($importador, $dados) as $coluna => $valor) {
+                    $rotulo = $coluna === '__chave__' ? $importador->rotuloDaChave() : ($importador->colunas()[$coluna]['rotulo'] ?? $coluna);
 
-                    if (isset($vistos[$coluna][(string) $valor])) {
-                        $erros[] = "{$rotulo} «{$valor}» repetido: já aparece na linha {$vistos[$coluna][(string) $valor]}.";
-                    } elseif ($coluna !== $colunaChave && isset($existentes[$coluna][(string) $valor])) {
+                    if (isset($vistos[$coluna][$valor])) {
+                        $erros[] = "{$rotulo} «{$valor}» repetido: já aparece na linha {$vistos[$coluna][$valor]}.";
+                    } elseif ($coluna !== '__chave__' && isset($existentes[$coluna][$valor])) {
                         $erros[] = "Já existe um registo com {$rotulo} «{$valor}».";
                     }
                 }
@@ -189,10 +182,8 @@ class ValidarImportacaoJob implements ShouldBeUnique, ShouldQueue
 
             // Só linhas que vão entrar reservam o valor (uma linha com erro não impede a seguinte, igual, de entrar).
             if ($estado === ImportacaoLinha::VALIDA) {
-                foreach ([$colunaChave, ...$importador->colunasUnicas()] as $coluna) {
-                    if (($dados[$coluna] ?? null) !== null) {
-                        $vistos[$coluna][(string) $dados[$coluna]] = $numero;
-                    }
+                foreach ($this->valoresUnicos($importador, $dados) as $coluna => $valor) {
+                    $vistos[$coluna][$valor] = $numero;
                 }
             }
 
@@ -213,6 +204,19 @@ class ValidarImportacaoJob implements ShouldBeUnique, ShouldQueue
 
         DB::table('importacao_linhas')->insert($registos);
         $importacao->update(['total' => $contagem['total']]);
+    }
+
+    /** A chave natural («__chave__») e as colunas únicas com valor nesta linha. @return array<string, string> */
+    private function valoresUnicos(ImportadorDeEntidade $importador, array $dados): array
+    {
+        $valores = array_filter(['__chave__' => $importador->chaveDe($dados)], fn ($v) => $v !== null);
+        foreach ($importador->colunasUnicas() as $coluna) {
+            if (($dados[$coluna] ?? null) !== null) {
+                $valores[$coluna] = (string) $dados[$coluna];
+            }
+        }
+
+        return $valores;
     }
 
     /** @return list<string> */
