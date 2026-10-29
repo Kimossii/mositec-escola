@@ -4,9 +4,9 @@ namespace Modules\Curso\Providers;
 
 use Modules\Core\Importacao\RegistoDeImportadores;
 use Modules\Curso\Importacao\CursoImportador;
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 
-class CursoServiceProvider extends ModuleServiceProvider
+class CursoServiceProvider extends BaseModuleServiceProvider
 {
     protected string $name = 'Curso';
 

@@ -7,7 +7,6 @@ use Modules\Core\Console\FilasEstadoCommand;
 use Modules\Core\Importacao\RegistoDeImportadores;
 use Modules\Core\Console\LimparExportacoesCommand;
 use Modules\Core\Tenancy\Support\SessaoDatabaseSemTenantSegura;
-use Nwidart\Modules\Support\ModuleServiceProvider;
 use Modules\Core\Providers\RouteServiceProvider;
 use Modules\Core\Support\PesquisaTexto;
 use Modules\Core\Tenancy\Jobs\CapturaTenantNoPayload;
@@ -15,7 +14,7 @@ use Modules\Core\Tenancy\Provisioning\ColectorDeCredenciais;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Core\Tenancy\Validation\VerificadorPresencaTenant;
 
-class CoreServiceProvider extends ModuleServiceProvider
+class CoreServiceProvider extends BaseModuleServiceProvider
 {
     protected string $name = 'Core';
 

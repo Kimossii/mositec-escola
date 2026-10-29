@@ -2,9 +2,9 @@
 
 namespace Modules\PlanoCurricular\Providers;
 
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 
-class PlanoCurricularServiceProvider extends ModuleServiceProvider
+class PlanoCurricularServiceProvider extends BaseModuleServiceProvider
 {
     protected string $name = 'PlanoCurricular';
 

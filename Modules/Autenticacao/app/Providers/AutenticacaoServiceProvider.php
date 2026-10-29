@@ -14,10 +14,10 @@ use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
 use Modules\Core\Tenancy\Contracts\RecuperaAdministradorDoTenant;
 use Modules\Core\Tenancy\Contracts\RevogaAcessosDoTenant;
 use Modules\Autenticacao\Provisioning\ProvisionarAdministradorInicial;
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 
-class AutenticacaoServiceProvider extends ModuleServiceProvider
+class AutenticacaoServiceProvider extends BaseModuleServiceProvider
 {
     /**
      * The name of the module.

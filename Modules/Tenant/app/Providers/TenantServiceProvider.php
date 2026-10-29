@@ -16,9 +16,9 @@ use Modules\Tenant\Console\SuspenderTenantCommand;
 use Modules\Tenant\Services\CatalogoDeTenantsEloquent;
 use Modules\Tenant\Services\ResolvedorTenantPorDominio;
 use Modules\Tenant\Services\ResolvedorTenantUnico;
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 
-class TenantServiceProvider extends ModuleServiceProvider
+class TenantServiceProvider extends BaseModuleServiceProvider
 {
     protected string $name = 'Tenant';
 

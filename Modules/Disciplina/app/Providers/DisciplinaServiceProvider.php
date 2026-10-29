@@ -4,9 +4,9 @@ namespace Modules\Disciplina\Providers;
 
 use Modules\Core\Importacao\RegistoDeImportadores;
 use Modules\Disciplina\Importacao\DisciplinaImportador;
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 
-class DisciplinaServiceProvider extends ModuleServiceProvider
+class DisciplinaServiceProvider extends BaseModuleServiceProvider
 {
     protected string $name = 'Disciplina';
 

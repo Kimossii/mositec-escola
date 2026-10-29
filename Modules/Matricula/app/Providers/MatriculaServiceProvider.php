@@ -4,10 +4,10 @@ namespace Modules\Matricula\Providers;
 
 use Modules\Core\Contracts\ProcuraSituacaoAcademicaDoAluno;
 use Modules\Matricula\Services\SituacaoAcademicaDoAlunoService;
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 
-class MatriculaServiceProvider extends ModuleServiceProvider
+class MatriculaServiceProvider extends BaseModuleServiceProvider
 {
     /**
      * The name of the module.
