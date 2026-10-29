@@ -8,9 +8,9 @@ use Modules\Core\Contracts\ProcuraAlunoParaConta;
 use Modules\Aluno\Importacao\AlunoImportador;
 use Modules\Core\Contracts\ProcuraFotosDeAlunos;
 use Modules\Core\Importacao\RegistoDeImportadores;
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 
-class AlunoServiceProvider extends ModuleServiceProvider
+class AlunoServiceProvider extends BaseModuleServiceProvider
 {
     protected string $name = 'Aluno';
 

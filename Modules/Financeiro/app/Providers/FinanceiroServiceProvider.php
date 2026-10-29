@@ -38,9 +38,9 @@ use Modules\Financeiro\Support\PropinasReferenciam;
 use Modules\Financeiro\Support\ReferenciasFinanceiras;
 use Modules\Matricula\Events\MatriculaEstadoAlterado;
 use Modules\Matricula\Support\DependenciasRegistadasDaMatricula;
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 
-class FinanceiroServiceProvider extends ModuleServiceProvider
+class FinanceiroServiceProvider extends BaseModuleServiceProvider
 {
     protected string $name = 'Financeiro';
 

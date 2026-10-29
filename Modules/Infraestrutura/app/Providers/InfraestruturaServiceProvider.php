@@ -2,9 +2,9 @@
 
 namespace Modules\Infraestrutura\Providers;
 
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 
-class InfraestruturaServiceProvider extends ModuleServiceProvider
+class InfraestruturaServiceProvider extends BaseModuleServiceProvider
 {
     protected string $name = 'Infraestrutura';
 

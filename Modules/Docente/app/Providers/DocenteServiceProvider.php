@@ -9,9 +9,9 @@ use Modules\Docente\Console\SincronizarDocentesCommand;
 use Modules\Docente\Services\ProcuraDocenteParaContaService;
 use Modules\Docente\Services\VerificaAtribuicaoDocenteService;
 use Modules\Docente\Support\DependenciasDeAtribuicoesDocentes;
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 
-class DocenteServiceProvider extends ModuleServiceProvider
+class DocenteServiceProvider extends BaseModuleServiceProvider
 {
     protected string $name = 'Docente';
 
