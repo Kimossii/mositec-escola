@@ -51,7 +51,7 @@ class ModuloSeederTest extends TestCase
         $this->seed(ModuloSeeder::class);
 
         $this->assertSame($contagemInicial, Modulo::count());
-        $this->assertSame(30, Modulo::count());
+        $this->assertSame(31, Modulo::count());
     }
 
     public function test_seeder_nao_apaga_role_permissoes_dependentes(): void

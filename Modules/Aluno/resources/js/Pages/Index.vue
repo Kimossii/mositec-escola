@@ -1,4 +1,5 @@
 <script setup>
+import { rotuloTurma } from '@/Support/turma';
 import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import axios from 'axios';
@@ -72,8 +73,7 @@ const opcoesSegundoSelect = computed(() => {
     if (criterio.value === 'turma') {
         return props.turmasDisponiveis.map((turma) => {
             const partes = [
-                `${turma.codigo} — ${turma.nome}`,
-                turma.ano_lectivo?.nome,
+                `${turma.codigo} — ${rotuloTurma(turma, { completo: true })}`,
                 turma.curso?.nome,
                 turma.nivel_academico?.nome,
             ].filter(Boolean);
@@ -353,7 +353,7 @@ async function alternarLinha(aluno) {
                                                     <div class="fs-7 mb-1"><span class="text-muted">Ano Lectivo:</span> {{ resumosAcademicos[aluno.id].matriculaActual.ano_lectivo?.nome ?? '—' }}</div>
                                                     <div class="fs-7 mb-1"><span class="text-muted">Curso:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma?.curso?.nome ?? '—' }}</div>
                                                     <div class="fs-7 mb-1"><span class="text-muted">Nível Académico:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma?.nivel_academico?.nome ?? '—' }}</div>
-                                                    <div class="fs-7 mb-1"><span class="text-muted">Turma:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma?.codigo ?? '—' }}</div>
+                                                    <div class="fs-7 mb-1"><span class="text-muted">Turma:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma ? rotuloTurma(resumosAcademicos[aluno.id].matriculaActual.turma) : '—' }}</div>
                                                     <div class="fs-7"><span class="text-muted">Turno:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma?.turno?.nome ?? '—' }}</div>
                                                 </template>
                                                 <div v-else class="text-muted fs-7">Sem matrícula no ano lectivo actual.</div>
@@ -409,7 +409,7 @@ async function alternarLinha(aluno) {
                                                 </thead>
                                                 <tbody>
                                                     <tr v-for="matricula in resumosAcademicos[aluno.id].ultimasMatriculas" :key="matricula.id">
-                                                        <td>{{ matricula.turma?.codigo ?? '—' }}</td>
+                                                        <td>{{ matricula.turma ? rotuloTurma(matricula.turma) : '—' }}</td>
                                                         <td>{{ matricula.turma?.curso?.nome ?? '—' }}</td>
                                                         <td>{{ matricula.turma?.nivel_academico?.nome ?? '—' }}</td>
                                                         <td>{{ matricula.ano_lectivo?.nome ?? '—' }}</td>

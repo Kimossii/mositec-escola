@@ -63,7 +63,7 @@ function cancelar() {
                 <div class="text-uppercase fs-5 fw-bold text-gray-800">
                     {{ cobranca.aluno_nome }} · <span class="fw-semibold">nº de estudante {{ cobranca.aluno_numero }}</span> · matrícula {{ cobranca.matricula_numero }}
                 </div>
-                <div class="text-muted fs-7">{{ cobranca.turma_nome ?? '—' }} · {{ cobranca.ano_lectivo_nome ?? '—' }} · matrícula {{ cobranca.matricula_estado }}</div>
+                <div class="text-muted fs-7">{{ cobranca.turma_rotulo ?? '—' }} · {{ cobranca.ano_lectivo_nome ?? '—' }} · matrícula {{ cobranca.matricula_estado }}</div>
             </div>
             <div class="text-end">
                 <EstadoCobrancaBadge :estado="cobranca.estado" :estado-descricao="cobranca.estado_descricao" class="fs-6 mb-1" />

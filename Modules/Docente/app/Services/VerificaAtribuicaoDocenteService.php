@@ -50,7 +50,7 @@ class VerificaAtribuicaoDocenteService implements VerificaAtribuicaoDocente
         return $this->emVigorEfectivo($this->relogio->hoje())
             ->where('docente_id', $docenteId)
             ->when($anoLectivoId !== null, fn (Builder $q) => $q->where('ano_lectivo_id', $anoLectivoId))
-            ->with(['turma:id,nome', 'disciplina:id,nome'])
+            ->with(['turma:id,nome,turno_id,ano_lectivo_id', 'turma.turno:id,nome', 'turma.anoLectivo:id,nome', 'disciplina:id,nome'])
             ->orderBy('data_inicio')
             ->orderBy('id')
             ->get()
@@ -58,6 +58,7 @@ class VerificaAtribuicaoDocenteService implements VerificaAtribuicaoDocente
                 'atribuicao_id' => $a->id,
                 'turma_id' => $a->turma_id,
                 'turma_nome' => (string) $a->turma?->nome,
+                'turma_rotulo' => (string) $a->turma?->rotulo(completo: true),
                 'disciplina_id' => $a->disciplina_id,
                 'disciplina_nome' => (string) $a->disciplina?->nome,
                 'papel' => $a->papel->value,

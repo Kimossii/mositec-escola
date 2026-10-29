@@ -63,6 +63,9 @@ class SincronizarPerfisDeSistemaAction
             Modulo::ATRIBUICAO_DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'encerrar'],
             Modulo::DOCENTE->value => ['ver', 'listar', 'criar', 'editar'],
         ],
+        Perfil::PROFESSOR->value => [
+            Modulo::AREA_PROFESSOR->value => ['ver'],
+        ],
     ];
 
     public function executar(): void

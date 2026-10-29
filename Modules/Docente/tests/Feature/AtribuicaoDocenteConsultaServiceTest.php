@@ -14,6 +14,8 @@ use Modules\Docente\Services\ExportacaoDeAtribuicoesService;
 use Modules\Docente\Tests\Support\CenarioDeDocencia;
 use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
+use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Turma\Models\Turno;
 use Tests\TestCase;
 
 class AtribuicaoDocenteConsultaServiceTest extends TestCase
@@ -293,5 +295,19 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
             [['id' => $c['outraDisciplina']->id, 'nome' => 'Português']],
             $this->servico()->opcoes($c['ano']->id)['disciplinas'],
         );
+    }
+
+    public function test_rotulo_de_turma_curto_na_lista_e_completo_nas_opcoes(): void
+    {
+        $c = $this->cenarioDeDocencia();
+        $turno = Turno::create(['estabelecimento_id' => Estabelecimento::current()->id, 'nome' => 'Manhã']);
+        $c['turma']->update(['turno_id' => $turno->id]);
+        $this->criar($c, $c['disciplina'], $this->criarDocente()->id, PapelDocente::TITULAR, '2026-03-01');
+
+        $linha = $this->servico()->lista(['ano_lectivo_id' => $c['ano']->id])->items()[0];
+        $opcao = $this->servico()->opcoes($c['ano']->id)['turmas'][0];
+
+        $this->assertSame('Turma 10A', $linha['turma_rotulo']);
+        $this->assertSame('Turma 10A · Manhã · 2026', $opcao['rotulo']);
     }
 }

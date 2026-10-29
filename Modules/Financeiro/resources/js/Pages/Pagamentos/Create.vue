@@ -433,7 +433,7 @@ function continuar() {
                 <div class="list-group">
                     <button v-for="m in resultados" :key="m.id" type="button" class="list-group-item list-group-item-action" @click="escolher(m)">
                         <strong>{{ m.aluno_nome ?? '—' }}</strong> <span class="text-muted">· nº {{ m.aluno_numero ?? '—' }}</span>
-                        <div class="fs-7 text-muted">Matrícula {{ m.numero }} · {{ m.turma_nome ?? '—' }} · {{ m.ano_lectivo_nome ?? '—' }} · {{ m.estado_descricao }}</div>
+                        <div class="fs-7 text-muted">Matrícula {{ m.numero }} · {{ m.turma_rotulo ?? '—' }} · {{ m.ano_lectivo_nome ?? '—' }} · {{ m.estado_descricao }}</div>
                     </button>
                 </div>
             </div>
@@ -443,7 +443,7 @@ function continuar() {
         <div v-if="passo > 1 && matricula" class="card bg-body-secondary mb-6">
             <div class="card-body py-4 d-flex justify-content-between align-items-center">
                 <div>
-                    <div class="text-uppercase fs-5 mb-1"><strong>{{ matricula.aluno_nome }}</strong> · nº de estudante {{ matricula.aluno_numero ?? '—' }} · matrícula {{ matricula.numero }} · {{ matricula.turma_nome ?? '—' }} · {{ matricula.ano_lectivo_nome ?? '—' }}</div>
+                    <div class="text-uppercase fs-5 mb-1"><strong>{{ matricula.aluno_nome }}</strong> · nº de estudante {{ matricula.aluno_numero ?? '—' }} · matrícula {{ matricula.numero }} · {{ matricula.turma_rotulo ?? '—' }} · {{ matricula.ano_lectivo_nome ?? '—' }}</div>
                     <div class="fs-7 text-muted">
                         Crédito disponível do aluno: {{ formatarDinheiro(situacao?.credito_disponivel ?? 0, moeda) }} ·
                         Pagamento parcial {{ situacao?.regras.permite_pagamento_parcial ? 'permitido' : 'não permitido' }} ·

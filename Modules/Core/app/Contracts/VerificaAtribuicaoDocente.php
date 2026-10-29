@@ -28,7 +28,7 @@ interface VerificaAtribuicaoDocente
      * `papel` é o valor inteiro do enum (0 = titular, 1 = substituto); as datas vêm como Y-m-d e
      * `data_fim` pode ser null (vale até ao fim do ano lectivo).
      *
-     * @return list<array{atribuicao_id: int, turma_id: int, turma_nome: string, disciplina_id: int, disciplina_nome: string, papel: int, data_inicio: string, data_fim: ?string}>
+     * @return list<array{atribuicao_id: int, turma_id: int, turma_nome: string, turma_rotulo: string, disciplina_id: int, disciplina_nome: string, papel: int, data_inicio: string, data_fim: ?string}>
      */
     public function atribuicoesEmVigorDoProfessor(int $professorId, ?int $anoLectivoId = null): array;
 }

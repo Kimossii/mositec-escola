@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Docente\Http\Controllers\AreaProfessorController;
 use Modules\Docente\Http\Controllers\AtribuicaoDocenteController;
 use Modules\Docente\Http\Controllers\DocenteController;
 
@@ -24,4 +25,10 @@ Route::middleware(['auth'])->prefix('docentes')->name('docentes.')->group(functi
     // docente.editar na rota; usuario.criar também, no CriarAcessoDocenteRequest.
     Route::post('/{docente}/acesso', [DocenteController::class, 'criarAcesso'])->whereNumber('docente')->middleware('can:docente.editar')->name('acesso');
     Route::delete('/{docente}', [DocenteController::class, 'destroy'])->whereNumber('docente')->middleware('can:docente.eliminar')->name('destroy');
+});
+
+// Área do Professor: consulta das turmas/disciplinas que o utilizador lecciona hoje e dos respectivos alunos.
+Route::middleware(['auth', 'can:area-professor.ver'])->prefix('professor/turmas')->name('area-professor.')->group(function () {
+    Route::get('/', [AreaProfessorController::class, 'index'])->name('index');
+    Route::get('/{turma}/disciplinas/{disciplina}/alunos', [AreaProfessorController::class, 'alunos'])->whereNumber(['turma', 'disciplina'])->name('alunos');
 });

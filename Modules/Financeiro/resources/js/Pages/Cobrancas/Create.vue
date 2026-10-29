@@ -112,7 +112,7 @@ const erroDoItem = computed(() => Object.entries(erros.value).filter(([k]) => k 
                 <div v-if="matricula" class="d-flex justify-content-between align-items-center">
                     <div>
                         <div class="text-uppercase fs-5"><strong>{{ matricula.aluno_nome }}</strong> · nº de estudante {{ matricula.aluno_numero }} · matrícula {{ matricula.numero }}</div>
-                        <div class="text-muted fs-7">{{ matricula.turma_nome ?? '—' }} · {{ matricula.ano_lectivo_nome ?? '—' }} · {{ matricula.estado_descricao }}</div>
+                        <div class="text-muted fs-7">{{ matricula.turma_rotulo ?? '—' }} · {{ matricula.ano_lectivo_nome ?? '—' }} · {{ matricula.estado_descricao }}</div>
                     </div>
                     <button type="button" class="btn btn-light btn-sm" @click="matricula = null">Trocar</button>
                 </div>
@@ -120,7 +120,7 @@ const erroDoItem = computed(() => Object.entries(erros.value).filter(([k]) => k 
                     <input v-model="termo" type="text" class="form-control form-control-solid" placeholder="Nome, nº de estudante ou nº da matrícula" @input="pesquisar" />
                     <div v-for="m in resultados" :key="m.id" class="py-3 border-bottom border-dashed" role="button" @click="escolher(m)">
                         <strong class="text-uppercase">{{ m.aluno_nome }}</strong> <span class="text-muted">· nº {{ m.aluno_numero }}</span>
-                        <div class="text-muted fs-7">Matrícula {{ m.numero }} · {{ m.turma_nome ?? '—' }} · {{ m.ano_lectivo_nome ?? '—' }} · {{ m.estado_descricao }}</div>
+                        <div class="text-muted fs-7">Matrícula {{ m.numero }} · {{ m.turma_rotulo ?? '—' }} · {{ m.ano_lectivo_nome ?? '—' }} · {{ m.estado_descricao }}</div>
                     </div>
                     <div class="text-danger fs-7 mt-1">{{ erros.matricula_id }}</div>
                 </div>

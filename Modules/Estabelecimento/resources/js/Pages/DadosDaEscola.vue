@@ -38,7 +38,7 @@ defineOptions({ layout: AppLayout });
 const tipos = [
     { value: 1, label: 'Público' },
     { value: 2, label: 'Privado' },
-    { value: 3, label: 'Cooperativo' },
+    { value: 3, label: 'Comparticipada' },
 ];
 
 const tiposEnsino = [

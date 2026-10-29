@@ -9,6 +9,7 @@ import MenuExportar from '@/Components/Shared/MenuExportar.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import { can } from '@/Composables/usePermissoes';
+import { rotuloTurma } from '@/Support/turma';
 import VistaPorTurma from '../../Components/Atribuicoes/VistaPorTurma.vue';
 import VistaLista from '../../Components/Atribuicoes/VistaLista.vue';
 import AtribuirDocenteModal from '../../Components/Atribuicoes/AtribuirDocenteModal.vue';
@@ -32,7 +33,7 @@ const URL_BASE = '/docentes/atribuicoes';
 const id = (v) => (v === undefined || v === null || v === '' ? '' : Number(v));
 
 const opcoesAno = computed(() => props.opcoes.anosLectivos.map((a) => ({ value: a.id, label: a.activo ? `${a.nome} (activo)` : a.nome })));
-const opcoesTurma = computed(() => props.opcoes.turmas.map((t) => ({ value: t.id, label: t.codigo ? `${t.nome} (${t.codigo})` : t.nome })));
+const opcoesTurma = computed(() => props.opcoes.turmas.map((t) => ({ value: t.id, label: t.codigo ? `${t.rotulo} (${t.codigo})` : t.rotulo })));
 const opcoesTurmaFiltro = computed(() => [{ value: '', label: 'Todas as turmas' }, ...opcoesTurma.value]);
 const opcoesDisciplinaFiltro = computed(() => [{ value: '', label: 'Todas as disciplinas' }, ...(props.opcoes.disciplinas ?? []).map((d) => ({ value: d.id, label: d.nome }))]);
 // Ids dos docentes activos ainda sem conta: as linhas assinalam-nos (não poderão lançar notas enquanto não tiverem acesso).
@@ -108,7 +109,7 @@ const errors = ref({});
 
 const contextoAlvo = computed(() => {
     const disciplina = linhaAlvo.value?.disciplina_nome ?? atribuicaoAlvo.value?.disciplina_nome;
-    const turma = atribuicaoAlvo.value?.turma_nome ?? turmaEscolhida.value?.nome;
+    const turma = atribuicaoAlvo.value?.turma_rotulo ?? (turmaEscolhida.value ? rotuloTurma(turmaEscolhida.value) : null);
     return [disciplina, turma].filter(Boolean).join(' · ');
 });
 

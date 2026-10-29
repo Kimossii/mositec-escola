@@ -53,6 +53,9 @@
                 </div>
             </div>
 
+            <!-- ── Section: Área do Professor (só quem tem a permissão) ── -->
+            <SidebarAccordion :item="areaProfessor" heading="Área do Professor" />
+
             <!-- ── Section: Académico (por implementar) ───────────────── -->
             <SidebarAccordion :item="academico" heading="Académico" />
 
@@ -510,6 +513,16 @@ const pedagogico = {
 //     ],
 // }
 //
+
+// ── Área do Professor — consulta das turmas e alunos de quem lecciona ──
+const areaProfessor = {
+    title: 'As minhas turmas',
+    icon: 'ki-book',
+    paths: 2,
+    items: [
+        { href: '/professor/turmas', title: 'As minhas turmas', permissao: 'area-professor.ver' },
+    ],
+}
 
 // ── Pessoal — os restantes itens entram à medida que forem construídos ──
 const pessoal = {

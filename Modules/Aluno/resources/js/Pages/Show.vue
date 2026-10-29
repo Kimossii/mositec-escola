@@ -1,4 +1,5 @@
 <script setup>
+import { rotuloTurma } from '@/Support/turma';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import axios from 'axios';
 import { router } from '@inertiajs/vue3';
@@ -532,8 +533,8 @@ function confirmarEliminacao() {
                                                 data-kt-menu-dismiss="true"
                                                 @click.prevent="selecionarMatricula(matricula)"
                                             >
-                                                <span class="fw-bold">{{ matricula.turma?.curso?.nome ?? matricula.turma?.codigo }}</span>
-                                                <span class="text-muted fs-8">{{ matricula.turma?.codigo }} — {{ matricula.turma?.nome }}</span>
+                                                <span class="fw-bold">{{ matricula.turma?.curso?.nome ?? rotuloTurma(matricula.turma) }}</span>
+                                                <span class="text-muted fs-8">{{ rotuloTurma(matricula.turma) }}</span>
                                             </a>
                                         </div>
                                     </div>
@@ -555,7 +556,7 @@ function confirmarEliminacao() {
                             </div>
                             <div v-if="matriculaExibida.turma" class="row mb-4">
                                 <div class="col-md-4 fw-bold text-muted">Turma</div>
-                                <div class="col-md-8">{{ matriculaExibida.turma.codigo }} — {{ matriculaExibida.turma.nome }}</div>
+                                <div class="col-md-8">{{ rotuloTurma(matriculaExibida.turma) }}</div>
                             </div>
                             <div v-if="matriculaExibida.turma?.turno" class="row mb-4">
                                 <div class="col-md-4 fw-bold text-muted">Turno</div>
@@ -858,7 +859,7 @@ function confirmarEliminacao() {
                         </tr>
                         <tr v-for="matricula in matriculas.data" :key="matricula.id">
                             <td>{{ matricula.numero_registo_matricula }}</td>
-                            <td>{{ matricula.turma?.codigo }} — {{ matricula.turma?.nome }}</td>
+                            <td>{{ rotuloTurma(matricula.turma) }}</td>
                             <td>{{ matricula.ano_lectivo?.nome ?? '—' }}</td>
                             <td>{{ formatarData(matricula.data_matricula) }}</td>
                             <td><MatriculaEstadoBadge :estado="matricula.estado" /></td>

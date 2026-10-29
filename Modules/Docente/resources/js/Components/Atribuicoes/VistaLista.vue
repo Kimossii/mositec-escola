@@ -47,7 +47,7 @@ const temAccoes = (a) => podeGerir(a) && (can('atribuicao-docente.editar') || ca
                             {{ a.docente_nome }}
                             <AcessoBadge v-if="docentesSemAcesso.includes(a.docente_id)" :tem-acesso="false" class="fs-8 ms-2" title="Ainda sem conta de utilizador: crie-lhe acesso em Pessoal → Docentes." />
                         </td>
-                        <td>{{ a.turma_nome }}</td>
+                        <td>{{ a.turma_rotulo }}</td>
                         <td>{{ a.disciplina_nome }}</td>
                         <td>{{ a.papel_descricao || papelLabel(a.papel) }}</td>
                         <td>

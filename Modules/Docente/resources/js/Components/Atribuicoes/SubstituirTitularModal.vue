@@ -1,4 +1,5 @@
 <script setup>
+import { rotuloTurma } from '@/Support/turma';
 import { computed, reactive, watch } from 'vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Loader from '@/Components/Shared/Loader.vue';
@@ -46,7 +47,7 @@ function submeter() {
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content p-6">
                 <h3 class="mb-1">Substituir titular</h3>
-                <div class="text-muted fs-7 mb-5">{{ linha?.disciplina_nome }} · {{ turma?.nome }}</div>
+                <div class="text-muted fs-7 mb-5">{{ linha?.disciplina_nome }} · {{ rotuloTurma(turma) }}</div>
                 <form @submit.prevent="submeter">
                     <ErrosGerais :errors="errors" :campos="CAMPOS" />
 

@@ -1,16 +1,17 @@
 /**
- * A que menu do sistema pertence cada módulo de permissões (espelha o menu superior/lateral: Académico, Pedagógico,
+ * A que menu do sistema pertence cada módulo de permissões (espelha o menu superior/lateral: Académico, Pessoal, Pedagógico,
  * Financeiro, Configurações). A chave é o `slug` do módulo (o `nome` na BD é o inteiro do enum). Módulo sem entrada aqui cai em «Outros».
  */
-export const ORDEM_DOS_MENUS = ['Académico', 'Pedagógico', 'Financeiro', 'Infraestrutura', 'Configurações', 'Sistema', 'Outros'];
+export const ORDEM_DOS_MENUS = ['Académico', 'Pessoal', 'Pedagógico', 'Financeiro', 'Infraestrutura', 'Configurações', 'Sistema', 'Outros'];
 
 export const MENU_DE = {
     aluno: { menu: 'Académico', entrada: 'Alunos' },
     curso: { menu: 'Académico', entrada: 'Cursos' },
     'plano-curricular': { menu: 'Académico', entrada: 'Planos curriculares' },
     turmas: { menu: 'Académico', entrada: 'Turmas' },
-    'atribuicao-docente': { menu: 'Académico', entrada: 'Atribuições docentes' },
-    docente: { menu: 'Académico', entrada: 'Docentes' },
+    'atribuicao-docente': { menu: 'Pessoal', entrada: 'Atribuições docentes' },
+    docente: { menu: 'Pessoal', entrada: 'Docentes' },
+    'area-professor': { menu: 'Pessoal', entrada: 'Área do Professor' },
     matricula: { menu: 'Académico', entrada: 'Matrículas' },
     professor: { menu: 'Académico', entrada: 'Professores' },
 

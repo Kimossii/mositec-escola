@@ -247,6 +247,7 @@ class VerificaAtribuicaoDocenteTest extends TestCase
             'atribuicao_id' => $titular->id,
             'turma_id' => $c['turma']->id,
             'turma_nome' => 'Turma 10A',
+            'turma_rotulo' => 'Turma 10A · 2026',
             'disciplina_id' => $c['disciplina']->id,
             'disciplina_nome' => 'Matemática',
             'papel' => PapelDocente::TITULAR->value,

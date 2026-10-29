@@ -18,6 +18,8 @@ use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\Usuario\Models\User;
+use Modules\Estabelecimento\Models\Estabelecimento;
+use Modules\Turma\Models\Turno;
 use Tests\TestCase;
 
 class AtribuicaoDocenteExportacaoTest extends TestCase
@@ -180,5 +182,16 @@ class AtribuicaoDocenteExportacaoTest extends TestCase
 
         $this->assertStringContainsString('Em curso', $csv);
         $this->assertStringNotContainsString('Terminada', $csv);
+    }
+
+    public function test_exportacao_usa_o_rotulo_completo_da_turma(): void
+    {
+        $c = $this->cenarioDeDocencia();
+        $turno = Turno::create(['estabelecimento_id' => Estabelecimento::current()->id, 'nome' => 'Manhã']);
+        $c['turma']->update(['turno_id' => $turno->id]);
+        $this->atribuir($c, $this->criarDocente('Ana Docente'), PapelDocente::TITULAR, '2026-02-01');
+        $this->como(Perfil::ADMIN_ESCOLA);
+
+        $this->assertStringContainsString('Turma 10A · Manhã · 2026', $this->csv(route('atribuicoes-docentes.exportar', ['formato' => 'csv'])));
     }
 }

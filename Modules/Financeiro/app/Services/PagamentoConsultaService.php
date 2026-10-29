@@ -550,6 +550,7 @@ class PagamentoConsultaService
                     'numero' => $m->numero_registo_matricula,
                     'ano_lectivo_nome' => $m->anoLectivo?->nome,
                     'turma_nome' => $m->turma?->nome,
+                    'turma_rotulo' => $m->turma?->rotulo(),
                     'estado_descricao' => $m->estado?->label(),
                 ])->values()->all(),
         ];
@@ -625,6 +626,7 @@ class PagamentoConsultaService
             'aluno_nome' => $m->aluno?->dadosPessoa?->nome_completo,
             'aluno_numero' => $m->aluno?->numero_matricula,
             'turma_nome' => $m->turma?->nome,
+            'turma_rotulo' => $m->turma?->rotulo(),
             'ano_lectivo_nome' => $m->anoLectivo?->nome,
         ];
     }

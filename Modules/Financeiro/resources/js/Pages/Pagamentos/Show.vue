@@ -184,7 +184,7 @@ function anularUtilizacao(motivo) {
                         <table class="table table-row-dashed fs-6 gy-3 mb-0">
                             <tbody>
                                 <tr><td class="text-muted">Aluno</td><td class="text-end">{{ pagamento.matricula?.aluno_nome ?? '—' }} (nº {{ pagamento.matricula?.aluno_numero ?? '—' }})</td></tr>
-                                <tr><td class="text-muted">Turma / Ano</td><td class="text-end">{{ pagamento.matricula?.turma_nome ?? '—' }} · {{ pagamento.matricula?.ano_lectivo_nome ?? '—' }}</td></tr>
+                                <tr><td class="text-muted">Turma / Ano</td><td class="text-end">{{ pagamento.matricula?.turma_rotulo ?? '—' }} · {{ pagamento.matricula?.ano_lectivo_nome ?? '—' }}</td></tr>
                                 <tr><td class="text-muted">Estado da matrícula</td><td class="text-end">{{ pagamento.matricula?.estado_descricao ?? '—' }}</td></tr>
                             </tbody>
                         </table>

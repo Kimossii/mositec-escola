@@ -151,7 +151,7 @@ class DashboardService
         }
 
         if ($user->can('propina.ver')) {
-            $porTurma = $this->dividas->linhas($ano)->groupBy('turma_nome')->map(fn ($l) => (int) $l->sum('total'))->sortDesc();
+            $porTurma = $this->dividas->linhas($ano)->groupBy('turma_rotulo_completo')->map(fn ($l) => (int) $l->sum('total'))->sortDesc();
             $total = (int) $porTurma->sum();
 
             if ($total > 0) {
@@ -209,7 +209,7 @@ class DashboardService
                 'matricula_id' => $l['matricula_id'],
                 'aluno_id' => $l['aluno_id'],
                 'aluno' => $l['aluno_nome'],
-                'turma' => $l['turma_nome'],
+                'turma' => $l['turma_rotulo'],
                 'meses' => $l['meses'],
                 'total' => $l['total'],
                 'motivo' => $l['acordo'] === null ? 'Sem acordo' : 'Acordo em atraso',

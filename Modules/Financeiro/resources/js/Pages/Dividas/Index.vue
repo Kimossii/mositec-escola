@@ -35,7 +35,7 @@ const filtros = reactive({
 const opcoesAno = computed(() => [{ value: '', label: 'Todos os anos lectivos' }, ...props.anosLectivos.map((a) => ({ value: a.id, label: a.nome }))]);
 const opcoesTurma = computed(() => [
     { value: '', label: 'Todas as turmas' },
-    ...props.turmas.filter((t) => filtros.ano_lectivo_id === '' || t.ano_lectivo_id === filtros.ano_lectivo_id).map((t) => ({ value: t.id, label: t.nome })),
+    ...props.turmas.filter((t) => filtros.ano_lectivo_id === '' || t.ano_lectivo_id === filtros.ano_lectivo_id).map((t) => ({ value: t.id, label: t.rotulo })),
 ]);
 const opcoesTipo = [
     { value: '', label: 'Todos os tipos' },
@@ -109,7 +109,7 @@ watch(filtros, (valor) => {
                                         Em acordo{{ d.acordo.em_atraso ? ' · em atraso' : '' }}<span v-if="d.acordo.proxima"> · próxima {{ dataCurta(d.acordo.proxima.data_vencimento) }}</span>
                                     </a>
                                 </td>
-                                <td>{{ d.turma_nome ?? '—' }}<div class="text-muted fs-7">{{ d.ano_lectivo_nome ?? '—' }}</div></td>
+                                <td>{{ d.turma_rotulo ?? '—' }}<div class="text-muted fs-7">{{ d.ano_lectivo_nome ?? '—' }}</div></td>
                                 <td class="text-end">{{ d.propinas ? dinheiro(d.propinas) : '—' }}<div v-if="d.meses" class="text-muted fs-8">{{ d.meses }} mês(es)</div></td>
                                 <td class="text-end">{{ d.multas ? dinheiro(d.multas) : '—' }}</td>
                                 <td class="text-end">{{ d.cobrancas ? dinheiro(d.cobrancas) : '—' }}</td>

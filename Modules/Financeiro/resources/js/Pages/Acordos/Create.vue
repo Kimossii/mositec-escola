@@ -86,7 +86,7 @@ function guardar() {
                 <div class="card-header min-h-auto py-4"><h3 class="card-title fs-5 fw-bold">1. Aluno</h3></div>
                 <div class="card-body">
                     <div v-if="matricula" class="d-flex justify-content-between align-items-center">
-                        <div><div class="text-uppercase fs-5"><strong>{{ matricula.aluno_nome }}</strong> · nº de estudante {{ matricula.aluno_numero }} · matrícula {{ matricula.numero }}</div><div class="text-muted fs-7">{{ matricula.turma_nome ?? '—' }} · {{ matricula.ano_lectivo_nome ?? '—' }} · {{ matricula.estado_descricao }}</div></div>
+                        <div><div class="text-uppercase fs-5"><strong>{{ matricula.aluno_nome }}</strong> · nº de estudante {{ matricula.aluno_numero }} · matrícula {{ matricula.numero }}</div><div class="text-muted fs-7">{{ matricula.turma_rotulo ?? '—' }} · {{ matricula.ano_lectivo_nome ?? '—' }} · {{ matricula.estado_descricao }}</div></div>
                         <button type="button" class="btn btn-light btn-sm" @click="matricula = null; propinas = []; escolhidas = []">Trocar</button>
                     </div>
                     <div v-else>

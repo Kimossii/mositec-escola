@@ -130,7 +130,7 @@ class AtribuicaoDocenteConsultaService
             ->get()
             ->map(fn (AtribuicaoDocente $a) => [
                 'docente' => (string) $a->docente?->dadosPessoa?->nome_completo,
-                'turma' => (string) $a->turma?->nome,
+                'turma' => (string) $a->turma?->rotulo(completo: true),
                 'disciplina' => (string) $a->disciplina?->nome,
                 'papel' => $a->papel->label(),
                 'inicio' => $a->data_inicio->toDateString(),
@@ -151,7 +151,7 @@ class AtribuicaoDocenteConsultaService
         $dia = $hoje->toDateString();
 
         return AtribuicaoDocente::query()
-            ->with(['turma:id,nome,codigo', 'disciplina:id,nome', 'docente.dadosPessoa:id,nome_completo'])
+            ->with(['turma:id,nome,codigo,turno_id,ano_lectivo_id', 'turma.turno:id,nome', 'turma.anoLectivo:id,nome', 'disciplina:id,nome', 'docente.dadosPessoa:id,nome_completo'])
             ->when($filtros['ano_lectivo_id'] ?? null, fn ($q, $v) => $q->where('ano_lectivo_id', (int) $v))
             ->when($filtros['turma_id'] ?? null, fn ($q, $v) => $q->where('turma_id', (int) $v))
             ->when($filtros['docente_id'] ?? null, fn ($q, $v) => $q->where('docente_id', (int) $v))
@@ -230,8 +230,8 @@ class AtribuicaoDocenteConsultaService
             'anosLectivos' => AnoLectivo::query()->orderByDesc('data_inicio')->get()
                 ->map(fn (AnoLectivo $a) => ['id' => $a->id, 'nome' => $a->nome, 'estado' => $a->estado->value, 'activo' => $a->estado->value === 1])
                 ->all(),
-            'turmas' => Turma::query()->where('ano_lectivo_id', $anoLectivoId)->where('estado', 1)->orderBy('nome')->get(['id', 'nome', 'codigo'])
-                ->map(fn (Turma $t) => ['id' => $t->id, 'nome' => $t->nome, 'codigo' => $t->codigo])
+            'turmas' => Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome'])->where('ano_lectivo_id', $anoLectivoId)->where('estado', 1)->orderBy('nome')->get(['id', 'nome', 'codigo', 'turno_id', 'ano_lectivo_id'])
+                ->map(fn (Turma $t) => ['id' => $t->id, 'nome' => $t->nome, 'codigo' => $t->codigo, 'rotulo' => $t->rotulo(completo: true)])
                 ->all(),
             'docentes' => $this->docentesActivos(),
             'disciplinas' => Disciplina::query()
@@ -310,6 +310,7 @@ class AtribuicaoDocenteConsultaService
         return $this->linhaDeAtribuicao($a, $estado) + [
             'turma_id' => $a->turma_id,
             'turma_nome' => $a->turma?->nome,
+            'turma_rotulo' => $a->turma?->rotulo(),
             'disciplina_id' => $a->disciplina_id,
             'disciplina_nome' => $a->disciplina?->nome,
             'motivo_encerramento' => $a->motivo_encerramento,
