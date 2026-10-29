@@ -24,7 +24,7 @@ class SituacaoAcademicaDoAlunoService implements ProcuraSituacaoAcademicaDoAluno
             return new SituacaoAcademicaDoAluno();
         }
 
-        $matricula = Matricula::with(['turma.curso', 'turma.anoLectivo'])
+        $matricula = Matricula::with(['turma.curso', 'turma.anoLectivo', 'turma.turno'])
             ->where('aluno_id', $aluno->id)
             ->where('estado', EstadoMatriculaEnum::ACTIVA->value)
             ->orderByDesc('data_matricula')
@@ -42,7 +42,7 @@ class SituacaoAcademicaDoAlunoService implements ProcuraSituacaoAcademicaDoAluno
 
         return new SituacaoAcademicaDoAluno(
             curso: $enquadramento?->curso?->nome ?? $turma?->curso?->nome,
-            turma: $turma === null ? null : trim(($turma->nome ?? $turma->codigo) . ($turma->anoLectivo ? " ({$turma->anoLectivo->nome})" : '')),
+            turma: $turma === null ? null : $turma->rotulo(completo: true),
         );
     }
 }

@@ -1,4 +1,5 @@
 <script setup>
+import { rotuloTurma } from '@/Support/turma';
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -130,11 +131,11 @@ function encerrarSala(turmaSala) {
         <div class="card mb-6">
             <div class="card-body d-flex justify-content-between align-items-start">
                 <div>
-                    <h1 class="fs-2 fw-bold mb-2">{{ turma.nome }}</h1>
+                    <h1 class="fs-2 fw-bold mb-2">{{ rotuloTurma(turma) }}</h1>
                     <div class="text-muted fs-6 mb-3">Código: {{ turma.codigo }}</div>
                     <EstadoBadge :estado="turma.estado" :estado-descricao="turma.estado_descricao" />
                 </div>
-                <button v-if="can('turmas.editar')" class="btn btn-light-primary" @click="abrirEdicao">Editar</button>
+                <button v-if="can('turmas.editar')" class="btn btn-light-primary" @click="abrirEdicao"><AcaoIcone acao="editar" herda-cor class="me-1" /> Editar</button>
             </div>
 
             <div class="card-body border-top pt-6">

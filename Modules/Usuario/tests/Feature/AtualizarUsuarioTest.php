@@ -92,6 +92,24 @@ class AtualizarUsuarioTest extends TestCase
         ]);
     }
 
+    public function test_editar_para_perfil_professor_garante_o_registo_de_docente(): void
+    {
+        $this->actingAsStaff();
+
+        $conta = User::create(['name' => 'Futuro Prof', 'email' => 'futuro@example.com', 'password' => Hash::make('x'), 'tipo_login' => TipoLogin::EMAIL]);
+        $conta->roles()->attach(Role::where('nome', Perfil::FUNCIONARIO->value)->first()->id);
+
+        $this->put("/usuarios/{$conta->id}", ['name' => 'Futuro Prof', 'email' => 'futuro@example.com', 'perfil' => 'professor'])->assertRedirect();
+
+        $conta->refresh();
+        $this->assertNotNull($conta->dados_pessoa_id);
+        $this->assertDatabaseHas('docentes', ['dados_pessoa_id' => $conta->dados_pessoa_id]);
+
+        // Idempotente: editar de novo não cria um segundo docente.
+        $this->put("/usuarios/{$conta->id}", ['name' => 'Futuro Prof', 'email' => 'futuro@example.com', 'perfil' => 'professor'])->assertRedirect();
+        $this->assertSame(1, \Modules\Docente\Models\Docente::query()->where('dados_pessoa_id', $conta->dados_pessoa_id)->count());
+    }
+
     public function test_celulas_enviadas_ao_editar_sao_ignoradas(): void
     {
         $funcionario = User::create(['name' => 'Funcionário', 'email' => 'funcionario@example.com', 'password' => Hash::make('x')]);

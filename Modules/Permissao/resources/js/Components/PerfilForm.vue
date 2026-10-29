@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -54,10 +55,7 @@ function submeter() {
 
         <div class="text-end">
             <button type="button" class="btn btn-light-danger me-2" @click="emit('fechar')">
-                <i class="ki-duotone ki-cross fs-4 me-1">
-                    <span class="path1"></span>
-                    <span class="path2"></span>
-                </i>
+                <AcaoIcone acao="fechar" herda-cor class="me-1" />
                 Cancelar
             </button>
             <button type="submit" class="btn btn-primary" :disabled="processing">Guardar</button>

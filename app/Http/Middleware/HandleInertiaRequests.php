@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Inertia\Middleware;
 use App\Services\DashboardService;
+use Modules\Core\Models\PartilhaExportacao;
+use Modules\Core\Models\PedidoExportacao;
 use Modules\Core\Support\HistoricoCifrado;
 use Modules\Autenticacao\Service\FotoDoUtilizadorService;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -89,15 +91,23 @@ class HandleInertiaRequests extends Middleware
             ],
             // Contexto do menu do utilizador (perfil e escola): só se vê ao abrir o menu, por isso diferido.
             'conta' => Inertia::defer(function () use ($request) {
-                $perfil = $request->user()?->roles()->first(['roles.nome', 'roles.descricao']);
+                $perfis = $request->user()?->roles()->get(['roles.nome', 'roles.descricao'])
+                    ->map(fn ($role) => Perfil::tryFrom((int) $role->nome)?->label() ?? $role->descricao)->values()->all() ?? [];
 
                 return [
-                    'perfil' => $perfil === null ? null : (Perfil::tryFrom((int) $perfil->nome)?->label() ?? $perfil->descricao),
+                    // `perfil` é o primeiro; `perfis` são todos (o menu mostra o primeiro e «+N»).
+                    'perfil' => $perfis[0] ?? null,
+                    'perfis' => $perfis,
                     'escola' => Estabelecimento::current()?->nome,
                 ];
             }),
             // Alertas do sino do cabeçalho (os mesmos do «Precisa de atenção»); diferidos para não atrasar a página.
             'alertas' => Inertia::defer(fn () => $request->user() ? app(DashboardService::class)->atencao($request->user()) : []),
+            // Ponto verde no sino: exportações em fila que o utilizador ainda não viu (prontas ou falhadas).
+            'ficheiros_novos' => Inertia::defer(fn () => $request->user()
+                ? PedidoExportacao::query()->where('user_id', $request->user()->id)->where('estado', '!=', PedidoExportacao::PENDENTE)->whereNull('visto_em')->count()
+                    + PartilhaExportacao::query()->where('destinatario_id', $request->user()->id)->whereNull('visto_em')->count()
+                : 0),
             'permissoes' => $request->user()
                 ? app(PermissionResolver::class)->conjuntoConcedido($request->user())
                 : [],

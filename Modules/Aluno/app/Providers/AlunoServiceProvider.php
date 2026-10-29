@@ -5,7 +5,9 @@ namespace Modules\Aluno\Providers;
 use Modules\Aluno\Services\ProcuraAlunoParaContaService;
 use Modules\Aluno\Services\ProcuraFotosDeAlunosService;
 use Modules\Core\Contracts\ProcuraAlunoParaConta;
+use Modules\Aluno\Importacao\AlunoImportador;
 use Modules\Core\Contracts\ProcuraFotosDeAlunos;
+use Modules\Core\Importacao\RegistoDeImportadores;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class AlunoServiceProvider extends ModuleServiceProvider
@@ -30,6 +32,7 @@ class AlunoServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+        $this->app->make(RegistoDeImportadores::class)->registar(AlunoImportador::class);
         $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
     }
 }

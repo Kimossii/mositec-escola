@@ -73,7 +73,7 @@ watch(() => form.ano_lectivo_id, (novo, antigo) => {
 const opcoesAno = computed(() => props.anosLectivos.map((a) => ({ value: a.id, label: a.nome })));
 const opcoesTurma = computed(() => props.turmas
     .filter((t) => t.ano_lectivo_id === form.ano_lectivo_id)
-    .map((t) => ({ value: t.id, label: t.nome })));
+    .map((t) => ({ value: t.id, label: t.rotulo })));
 const opcoesNivel = computed(() => props.niveis.map((n) => ({ value: n.id, label: n.nome })));
 const opcoesPlano = computed(() => [
     ...(form.ambito === 'plano' ? [] : [{ value: '', label: 'Qualquer plano aplicável' }]),

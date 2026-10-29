@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
+use Modules\Usuario\Events\PerfilAtribuidoAUtilizador;
 use Modules\Usuario\Models\User;
 use Modules\Core\Traits\LogService;
 
@@ -34,8 +35,11 @@ class AtualizarUsuarioAction
                 ...(!empty($dados['password']) ? ['password' => Hash::make($dados['password'])] : []),
             ]);
 
-            $role = Role::where('nome', Perfil::fromSlug($dados['perfil'])->value)->firstOrFail();
+            $perfil = Perfil::fromSlug($dados['perfil']);
+            $role = Role::where('nome', $perfil->value)->firstOrFail();
             $user->roles()->syncWithoutDetaching([$role->id]);
+
+            PerfilAtribuidoAUtilizador::dispatch($user, $perfil);
 
             return $user->fresh();
         });

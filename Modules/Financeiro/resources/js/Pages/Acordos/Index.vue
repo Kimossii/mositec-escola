@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -84,7 +85,7 @@ const badge = (a) => ({ Cumprido: 'badge-light-success', 'Em atraso': 'badge-lig
                                 <td class="text-end">{{ dinheiro(a.em_falta) }}</td>
                                 <td><template v-if="a.proxima">{{ dataCurta(a.proxima.data_vencimento) }}<div class="text-muted fs-7">{{ a.proxima.ordem }}.ª prestação</div></template><span v-else>—</span></td>
                                 <td><span class="badge" :class="badge(a)">{{ a.estado_efectivo }}</span></td>
-                                <td class="text-end"><Link :href="`/financeiro/acordos/${a.id}`" class="btn btn-sm btn-light btn-active-light-primary">Ver</Link></td>
+                                <td class="text-end"><Link :href="`/financeiro/acordos/${a.id}`" class="btn btn-sm btn-light btn-active-light-primary"><AcaoIcone acao="visualizar" class="me-1" /> Ver</Link></td>
                             </tr>
                         </tbody>
                     </table>

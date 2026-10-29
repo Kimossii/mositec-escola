@@ -32,6 +32,10 @@ Route::middleware(['auth'])->prefix('usuarios')->group(function () {
     Route::group(['prefix' => 'professores'], function () {
         Route::get('/', [UsuarioController::class, 'professores'])->middleware('can:usuario.ver')->name('usuario.professores');
         Route::post('/cadastrar', [UsuarioController::class, 'store'])->name('usuario.professores.store');
+        // Docentes activos sem conta, para criar a conta a partir do docente (decisão E6). Mesma permissão e throttle
+        // da procura do aluno.
+        Route::get('/procurar-docente', [UsuarioController::class, 'procurarDocente'])
+            ->middleware(['can:usuario.criar', 'can:docente.editar', 'throttle:30,1'])->name('usuario.professores.procurar-docente');
     });
     Route::group(['prefix' => 'funcionarios'], function () {
         Route::get('/', [UsuarioController::class, 'funcionarios'])->middleware('can:usuario.ver')->name('usuario.funcionarios');

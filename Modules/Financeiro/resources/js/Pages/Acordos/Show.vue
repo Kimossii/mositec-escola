@@ -43,7 +43,7 @@ function encerrar() {
             <div>
                 <h1 class="fs-2 fw-bold mb-1">Acordo #{{ acordo.id }}</h1>
                 <div class="text-uppercase fs-5 fw-bold text-gray-800">{{ acordo.aluno_nome }} · <span class="fw-semibold">nº de estudante {{ acordo.aluno_numero }}</span> · matrícula {{ acordo.matricula_numero }}</div>
-                <div class="text-muted fs-7">{{ acordo.turma_nome ?? '—' }}</div>
+                <div class="text-muted fs-7">{{ acordo.turma_rotulo ?? '—' }}</div>
             </div>
             <span class="badge fs-5" :class="acordo.estado_efectivo === 'Cumprido' ? 'badge-light-success' : acordo.em_atraso ? 'badge-light-danger' : acordo.estado === 1 ? 'badge-light-primary' : 'badge-light-dark'">{{ acordo.estado_efectivo }}</span>
         </div>

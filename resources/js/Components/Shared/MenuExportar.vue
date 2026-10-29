@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue';
+import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 
 /**
@@ -40,6 +41,13 @@ async function baixar(formato) {
         if (!resposta.ok) {
             const erro = await resposta.json().catch(() => ({}));
             toast.error(erro.message ?? Object.values(erro.errors ?? {})[0]?.[0] ?? 'Não foi possível exportar.');
+
+            return;
+        }
+
+        if (resposta.status === 202) {
+            const corpo = await resposta.json().catch(() => ({}));
+            toast.info(corpo.mensagem ?? 'A exportação está a ser preparada. Veja em «Os meus ficheiros».', { action: { label: 'Ver ficheiros', onClick: () => router.visit('/ficheiros') } });
 
             return;
         }

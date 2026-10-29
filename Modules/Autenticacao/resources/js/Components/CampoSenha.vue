@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { ref } from 'vue';
 
 defineProps({
@@ -34,8 +35,8 @@ const visivel = ref(false);
                 :title="visivel ? 'Ocultar' : 'Mostrar'"
                 @click="visivel = !visivel"
             >
-                <i v-if="visivel" class="ki-duotone ki-eye-slash fs-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i>
-                <i v-else class="ki-duotone ki-eye fs-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                <i v-if="visivel" class="ki-duotone ki-eye-slash fs-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i>
+                <i v-else class="ki-duotone ki-eye fs-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
             </button>
         </div>
         <div v-if="erro" class="text-danger fs-7 mt-1">{{ erro }}</div>

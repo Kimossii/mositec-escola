@@ -123,7 +123,7 @@ class GestaoEstabelecimentoTest extends TestCase
 
         $response = $this->put('/estabelecimento', [
             'nome' => 'Escola Renomeada',
-            'tipo' => TipoEstabelecimentoEnum::COOPERATIVO->value,
+            'tipo' => TipoEstabelecimentoEnum::COMPARTICIPADA->value,
             'tipo_ensino' => TipoEnsinoEnum::TECNICO->value,
             'etapas_ensino' => [EtapaEnsinoEnum::SECUNDARIO->value],
         ]);
@@ -132,7 +132,7 @@ class GestaoEstabelecimentoTest extends TestCase
         $this->assertSame(1, Estabelecimento::count());
         $this->assertDatabaseHas('estabelecimentos', [
             'nome' => 'Escola Renomeada',
-            'tipo' => TipoEstabelecimentoEnum::COOPERATIVO->value,
+            'tipo' => TipoEstabelecimentoEnum::COMPARTICIPADA->value,
         ]);
     }
 

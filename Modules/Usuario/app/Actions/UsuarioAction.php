@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Modules\Permissao\Models\Role;
 use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Enums\TipoLogin;
+use Modules\Usuario\Events\UtilizadorCriado;
 use Modules\Usuario\Models\User;
 use Modules\Usuario\Services\GeradorMatriculaService;
 
@@ -38,6 +39,8 @@ class UsuarioAction
                 $alunosIds = User::whereIn('numero_matricula', $dto->matriculasEducandos)->pluck('id');
                 $user->educandos()->attach($alunosIds);
             }
+
+            UtilizadorCriado::dispatch($user, $dto->perfil);
 
             return $user;
         });

@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -104,7 +105,7 @@ function guardarPlano(payload) {
                                 <EstadoBadge :estado="plano.estado" :estado-descricao="plano.estado_descricao" />
                             </td>
                             <td class="text-end">
-                                <a :href="`/planos-curriculares/${plano.id}`" class="btn btn-light btn-sm">Ver</a>
+                                <a :href="`/planos-curriculares/${plano.id}`" class="btn btn-light btn-sm"><AcaoIcone acao="visualizar" class="me-1" /> Ver</a>
                             </td>
                         </tr>
                     </tbody>

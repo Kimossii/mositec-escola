@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
@@ -41,16 +42,16 @@ const form = reactive({
 const opcoesAno = computed(() => props.anosLectivos.map((a) => ({ value: a.id, label: a.nome })));
 const opcoesNivel = computed(() => [{ value: '', label: 'Todos os níveis' }, ...props.niveis.map((n) => ({ value: n.id, label: n.nome }))]);
 const opcoesCurso = computed(() => [{ value: '', label: 'Todos os cursos' }, ...props.cursos.map((c) => ({ value: c.id, label: c.nome }))]);
-const opcoesTurno = computed(() => [{ value: '', label: 'Todos os turnos' }, ...props.turnos.map((t) => ({ value: t.id, label: t.nome }))]);
+const opcoesTurno = computed(() => [{ value: '', label: 'Todos os turnos' }, ...props.turnos.map((t) => ({ value: t.id, label: t.rotulo }))]);
 const opcoesTurma = computed(() => [
     { value: '', label: 'Nenhuma (usar nível/curso/turno)' },
-    ...props.turmas.filter((t) => t.ano_lectivo_id === form.ano_lectivo_id).map((t) => ({ value: t.id, label: t.nome })),
+    ...props.turmas.filter((t) => t.ano_lectivo_id === form.ano_lectivo_id).map((t) => ({ value: t.id, label: t.rotulo })),
 ]);
 
 const anoSelecionado = computed(() => props.anosLectivos.find((a) => a.id === form.ano_lectivo_id));
 
 function textoDoAlvo(a) {
-    if (a.turma_id) return `Turma ${a.turma_nome}`;
+    if (a.turma_id) return a.turma_rotulo;
 
     return [a.curso_nome, a.nivel_nome, a.turno_nome].filter(Boolean).join(' · ');
 }
@@ -275,7 +276,7 @@ function enviar(confirmado) {
                             <div class="col-md-2"><SelectSolid :model-value="alvo.turno_id" :options="opcoesTurno" @update:model-value="(v) => definirCampo(alvo, 'turno_id', v)" /></div>
                             <div class="col-md-3"><SelectSolid :model-value="alvo.turma_id" :options="opcoesTurma" searchable @update:model-value="(v) => definirCampo(alvo, 'turma_id', v)" /></div>
                             <div class="col-md-2 text-end">
-                                <button type="button" class="btn btn-sm btn-light-danger" @click="removerAlvo(indice)">Remover</button>
+                                <button type="button" class="btn btn-sm btn-light-danger" @click="removerAlvo(indice)"><AcaoIcone acao="remover" herda-cor class="me-1" /> Remover</button>
                             </div>
                           </template>
                         </div>

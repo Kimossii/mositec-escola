@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import axios from 'axios';
 import { router } from '@inertiajs/vue3';
@@ -168,7 +169,7 @@ function aplicar() {
                                 <td class="text-end text-nowrap">
                                     <template v-if="b.estado === 1 && can('bolsa.editar')">
                                         <button type="button" class="btn btn-sm btn-light-primary me-1" @click="paraAplicar = b">Aplicar às propinas em aberto</button>
-                                        <button type="button" class="btn btn-sm btn-light me-1" @click="abrirEditar(b)">Editar</button>
+                                        <button type="button" class="btn btn-sm btn-light me-1" @click="abrirEditar(b)"><AcaoIcone acao="editar" class="me-1" /> Editar</button>
                                         <button type="button" class="btn btn-sm btn-light-danger" @click="paraTerminar = b">Terminar</button>
                                     </template>
                                 </td>

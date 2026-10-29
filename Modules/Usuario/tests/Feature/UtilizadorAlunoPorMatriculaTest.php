@@ -264,7 +264,7 @@ class UtilizadorAlunoPorMatriculaTest extends TestCase
             'data_nascimento' => '2010-03-05',
             'numero_identificacao' => 'BI2026-0001',
             'curso' => 'Curso 10A',
-            'turma' => 'Turma 10A (2026)',
+            'turma' => 'Turma 10A · 2026',
         ]);
     }
 
@@ -290,7 +290,7 @@ class UtilizadorAlunoPorMatriculaTest extends TestCase
         $this->matricular($aluno, $inactiva['turma'], EstadoMatriculaEnum::PENDENTE->value, '2027-03-01');
 
         $this->getJson(self::URL_PROCURAR . '?matricula=2026-0001')->assertOk()
-            ->assertJsonPath('turma', 'Turma N (2026)');
+            ->assertJsonPath('turma', 'Turma N · 2026');
     }
 
     public function test_so_com_matriculas_inactivas_a_turma_e_nula(): void
@@ -428,8 +428,8 @@ class UtilizadorAlunoPorMatriculaTest extends TestCase
     {
         $this->actingAsStaff();
 
-        $this->post('/usuarios/professores/cadastrar', [
-            'perfil' => 'professor',
+        $this->post('/usuarios/cadastrarUsuario', [
+            'perfil' => 'funcionario',
             'tipo_login' => 'email',
             'password' => 'segredo123',
             'password_confirmation' => 'segredo123',

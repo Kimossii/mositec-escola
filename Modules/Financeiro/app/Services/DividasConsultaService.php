@@ -100,7 +100,7 @@ class DividasConsultaService
         $pesquisa = is_string($filtros['pesquisa'] ?? null) ? trim($filtros['pesquisa']) : '';
 
         $matriculas = Matricula::withTrashed()
-            ->with(['aluno.dadosPessoa', 'turma:id,nome', 'anoLectivo:id,nome'])
+            ->with(['aluno.dadosPessoa', 'turma:id,nome,turno_id,ano_lectivo_id', 'turma.turno:id,nome', 'turma.anoLectivo:id,nome', 'anoLectivo:id,nome'])
             ->whereIn('id', $ids)
             ->when(is_numeric($filtros['ano_lectivo_id'] ?? null), fn ($q) => $q->where('ano_lectivo_id', (int) $filtros['ano_lectivo_id']))
             ->when(is_numeric($filtros['turma_id'] ?? null), fn ($q) => $q->where('turma_id', (int) $filtros['turma_id']))
@@ -124,6 +124,8 @@ class DividasConsultaService
                 'matricula_numero' => $m->numero_registo_matricula,
                 'matricula_estado' => $m->estado?->label(),
                 'turma_nome' => $m->turma?->nome,
+                'turma_rotulo' => $m->turma?->rotulo(),
+                'turma_rotulo_completo' => $m->turma?->rotulo(completo: true),
                 'ano_lectivo_nome' => $m->anoLectivo?->nome,
                 'propinas' => $p,
                 'multas' => $mu,

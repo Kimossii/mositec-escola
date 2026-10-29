@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
@@ -131,7 +131,10 @@ function confirmarAlteracaoEstado() {
     <div class="app-container container-xxl py-6">
         <div class="d-flex justify-content-between align-items-center mb-6">
             <h1 class="fs-2 fw-bold">Cursos</h1>
-            <button v-if="can('curso.criar')" class="btn btn-primary" @click="abrirCriacao">Novo Curso</button>
+            <div v-if="can('curso.criar')" class="d-flex gap-2">
+                <Link href="/importacoes/cursos/nova" class="btn btn-light-primary">Importar</Link>
+                <button class="btn btn-primary" @click="abrirCriacao">Novo Curso</button>
+            </div>
         </div>
 
         <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" :quantidade="3" />

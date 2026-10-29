@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -38,7 +39,7 @@ defineOptions({ layout: AppLayout });
 const tipos = [
     { value: 1, label: 'Público' },
     { value: 2, label: 'Privado' },
-    { value: 3, label: 'Cooperativo' },
+    { value: 3, label: 'Comparticipada' },
 ];
 
 const tiposEnsino = [
@@ -189,7 +190,7 @@ function submeter() {
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
             <EstabelecimentoTabs atual="dados" class="mb-0" />
             <button v-if="!editando && can('estabelecimento.editar')" type="button" class="btn btn-sm btn-success mb-8" @click="editar">
-                <i class="ki-duotone ki-pencil fs-4 me-1"><span class="path1"></span><span class="path2"></span></i>
+                <AcaoIcone acao="editar" herda-cor class="me-1" />
                 Editar dados
             </button>
         </div>

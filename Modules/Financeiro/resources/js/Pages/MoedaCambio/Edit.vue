@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -197,7 +198,7 @@ function confirmarEliminacao() {
                             <td>{{ linha.data }}</td>
                             <td class="text-end">{{ linha.taxa_formatada }} {{ moeda.codigo }}</td>
                             <td class="text-end">
-                                <button v-if="can('moeda-cambio.eliminar')" type="button" class="btn btn-sm btn-light-danger" @click="paraEliminar = linha">Eliminar</button>
+                                <button v-if="can('moeda-cambio.eliminar')" type="button" class="btn btn-sm btn-light-danger" @click="paraEliminar = linha"><AcaoIcone acao="eliminar" herda-cor class="me-1" /> Eliminar</button>
                             </td>
                         </tr>
                     </tbody>

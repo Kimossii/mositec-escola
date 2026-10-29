@@ -1,4 +1,5 @@
 <script setup>
+import { rotuloTurma } from '@/Support/turma';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -36,9 +37,7 @@ const opcoesTurma = computed(() => [
     { value: '', label: 'Todas as turmas' },
     ...props.turmasDisponiveis.map((turma) => {
         const partes = [
-            `${turma.codigo} — ${turma.nome}`,
-            turma.ano_lectivo?.nome,
-            turma.turno?.nome,
+            `${turma.codigo} — ${rotuloTurma(turma, { completo: true })}`,
             turma.curso?.nome,
             turma.nivel_academico?.nome,
         ].filter(Boolean);
@@ -444,7 +443,7 @@ function confirmarRenovacaoEmMassa() {
                             </td>
                             <td>{{ matricula.numero_registo_matricula }}</td>
                             <td>{{ matricula.aluno?.dados_pessoa?.nome_completo ?? '—' }}</td>
-                            <td>{{ matricula.turma?.codigo }} — {{ matricula.turma?.nome }}</td>
+                            <td>{{ rotuloTurma(matricula.turma) }}</td>
                             <td>{{ matricula.ano_lectivo?.nome ?? '—' }}</td>
                             <td>{{ formatarData(matricula.data_matricula) }}</td>
                             <td><EstadoBadge :estado="matricula.estado" /></td>

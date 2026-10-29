@@ -357,6 +357,7 @@ class PropinaConsultaService
                 'aluno_nome' => $matricula->aluno?->dadosPessoa?->nome_completo,
                 'aluno_numero' => $matricula->aluno?->numero_matricula,
                 'turma_nome' => $matricula->turma?->nome,
+                'turma_rotulo' => $matricula->turma?->rotulo(),
                 'ano_lectivo_nome' => $matricula->anoLectivo?->nome,
             ],
             'cancelamento' => $propina->estado === EstadoCobranca::CANCELADA ? [
@@ -408,6 +409,7 @@ class PropinaConsultaService
             'aluno_nome' => $propina->matricula?->aluno?->dadosPessoa?->nome_completo,
             'aluno_numero' => $propina->matricula?->aluno?->numero_matricula,
             'turma_nome' => $propina->matricula?->turma?->nome,
+            'turma_rotulo' => $propina->matricula?->turma?->rotulo(),
             'plano_propina_id' => $propina->plano_propina_id,
             'plano_nome' => $propina->plano?->nome,
             'plano_data_inicio' => $propina->plano?->data_inicio?->toDateString(),

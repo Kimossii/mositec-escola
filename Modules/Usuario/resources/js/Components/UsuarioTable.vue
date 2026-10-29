@@ -3,11 +3,12 @@ import { onBeforeUnmount, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
-import { corDoPerfil, ESTADO, tempoRelativo } from '../Models/Usuario';
+import { ESTADO, tempoRelativo } from '../Models/Usuario';
 import RedefinirSenhaModal from './Usuarios/RedefinirSenhaModal.vue';
 import UsuarioAcoesMenu from './UsuarioAcoesMenu.vue';
 import UsuarioAvatar from './UsuarioAvatar.vue';
 import UsuarioCartao from './UsuarioCartao.vue';
+import UsuarioPerfis from '@/Components/Shared/PerfisDoUtilizador.vue';
 import UsuarioStatusBadge from './UsuarioStatusBadge.vue';
 
 defineProps({
@@ -165,14 +166,7 @@ function confirmarEliminacao() {
                     <!--begin::User details-->
                 </td>
                 <td>
-                    <span v-if="usuario.perfis.length === 0" class="text-muted">—</span>
-                    <span
-                        v-for="perfilNome in usuario.perfis"
-                        :key="perfilNome"
-                        class="badge me-1" :class="`badge-light-${corDoPerfil(perfilNome)}`"
-                    >
-                        {{ perfilNome }}
-                    </span>
+                    <UsuarioPerfis :nome="usuario.name" :perfis="usuario.perfis" />
                 </td>
                 <td>
                     <span v-if="usuario.online" class="d-inline-flex align-items-center text-success fw-bold"><span class="mosi-pisca rounded-circle bg-success me-2 w-10px h-10px"></span>Online agora</span>

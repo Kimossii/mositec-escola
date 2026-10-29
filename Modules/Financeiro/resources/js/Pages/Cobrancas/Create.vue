@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, ref } from 'vue';
 import axios from 'axios';
 import { router } from '@inertiajs/vue3';
@@ -112,7 +113,7 @@ const erroDoItem = computed(() => Object.entries(erros.value).filter(([k]) => k 
                 <div v-if="matricula" class="d-flex justify-content-between align-items-center">
                     <div>
                         <div class="text-uppercase fs-5"><strong>{{ matricula.aluno_nome }}</strong> · nº de estudante {{ matricula.aluno_numero }} · matrícula {{ matricula.numero }}</div>
-                        <div class="text-muted fs-7">{{ matricula.turma_nome ?? '—' }} · {{ matricula.ano_lectivo_nome ?? '—' }} · {{ matricula.estado_descricao }}</div>
+                        <div class="text-muted fs-7">{{ matricula.turma_rotulo ?? '—' }} · {{ matricula.ano_lectivo_nome ?? '—' }} · {{ matricula.estado_descricao }}</div>
                     </div>
                     <button type="button" class="btn btn-light btn-sm" @click="matricula = null">Trocar</button>
                 </div>
@@ -120,7 +121,7 @@ const erroDoItem = computed(() => Object.entries(erros.value).filter(([k]) => k 
                     <input v-model="termo" type="text" class="form-control form-control-solid" placeholder="Nome, nº de estudante ou nº da matrícula" @input="pesquisar" />
                     <div v-for="m in resultados" :key="m.id" class="py-3 border-bottom border-dashed" role="button" @click="escolher(m)">
                         <strong class="text-uppercase">{{ m.aluno_nome }}</strong> <span class="text-muted">· nº {{ m.aluno_numero }}</span>
-                        <div class="text-muted fs-7">Matrícula {{ m.numero }} · {{ m.turma_nome ?? '—' }} · {{ m.ano_lectivo_nome ?? '—' }} · {{ m.estado_descricao }}</div>
+                        <div class="text-muted fs-7">Matrícula {{ m.numero }} · {{ m.turma_rotulo ?? '—' }} · {{ m.ano_lectivo_nome ?? '—' }} · {{ m.estado_descricao }}</div>
                     </div>
                     <div class="text-danger fs-7 mt-1">{{ erros.matricula_id }}</div>
                 </div>
@@ -158,7 +159,7 @@ const erroDoItem = computed(() => Object.entries(erros.value).filter(([k]) => k 
                             <td class="text-end">{{ dinheiro(i.preco) }}</td>
                             <td class="text-center"><input v-model.number="i.quantidade" type="number" min="1" max="9999" class="form-control form-control-solid form-control-sm w-75px mx-auto" /></td>
                             <td class="text-end">{{ dinheiro(i.preco * i.quantidade) }}</td>
-                            <td class="text-end"><button type="button" class="btn btn-sm btn-light-danger" @click="remover(idx)">Remover</button></td>
+                            <td class="text-end"><button type="button" class="btn btn-sm btn-light-danger" @click="remover(idx)"><AcaoIcone acao="remover" herda-cor class="me-1" /> Remover</button></td>
                         </tr>
                     </tbody>
                     <tfoot><tr class="fw-bold fs-5"><td colspan="3" class="text-end">Total</td><td class="text-end">{{ dinheiro(total) }}</td><td></td></tr></tfoot>

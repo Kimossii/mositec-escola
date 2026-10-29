@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import { can } from '@/Composables/usePermissoes'
@@ -114,7 +115,7 @@ onBeforeUnmount(() => {
 
         <div class="menu menu-sub menu-sub-dropdown p-7 w-325px w-md-400px" data-kt-menu="true">
             <div class="position-relative mb-3">
-                <i class="ki-duotone ki-magnifier fs-2 text-gray-500 position-absolute top-50 translate-middle-y ms-0"><span class="path1"></span><span class="path2"></span></i>
+                <AcaoIcone acao="pesquisar" tamanho="fs-3" herda-cor class="text-gray-500 position-absolute top-50 translate-middle-y ms-0" />
                 <input
                     ref="campo"
                     v-model="termo"

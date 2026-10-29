@@ -10,7 +10,7 @@ import { formatarDinheiro, unidadesMenoresParaDecimal } from '../../Support/dinh
 
 const props = defineProps({
     show: { type: Boolean, default: false },
-    matriculas: { type: Array, required: true }, // [{id, numero, ano_lectivo_nome, turma_nome, estado_descricao}]
+    matriculas: { type: Array, required: true }, // [{id, numero, ano_lectivo_nome, turma_rotulo, estado_descricao}]
     saldoDisponivel: { type: Number, required: true },
     moeda: { type: Object, required: true },
 });
@@ -78,7 +78,7 @@ function aplicar() {
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-md-7">
                         <label class="form-label required fw-semibold">Matrícula</label>
-                        <SelectSolid v-model="matriculaId" @update:model-value="plano = null" :options="matriculas.map((m) => ({ value: m.id, label: `${m.numero} · ${m.ano_lectivo_nome ?? '—'} · ${m.turma_nome ?? '—'} (${m.estado_descricao})` }))" />
+                        <SelectSolid v-model="matriculaId" @update:model-value="plano = null" :options="matriculas.map((m) => ({ value: m.id, label: `${m.numero} · ${m.ano_lectivo_nome ?? '—'} · ${m.turma_rotulo ?? '—'} (${m.estado_descricao})` }))" />
                     </div>
                     <div class="col-12 col-md-5">
                         <label class="form-label required fw-semibold">Valor ({{ moeda.simbolo }})</label>

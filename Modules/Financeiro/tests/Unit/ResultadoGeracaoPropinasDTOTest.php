@@ -59,7 +59,7 @@ class ResultadoGeracaoPropinasDTOTest extends TestCase
         $this->assertSame(4, $array['totais']['matriculas']);
         $this->assertFalse($resultado->toArray()['detalhe_truncado']);
         $this->assertSame(
-            ['matricula_id', 'numero_registo', 'aluno_nome', 'aluno_numero', 'turma_nome', 'total_capital', 'total_multa', 'criadas', 'ignoradas', 'conflitos', 'sem_plano', 'erros'],
+            ['matricula_id', 'numero_registo', 'aluno_nome', 'aluno_numero', 'turma_nome', 'turma_rotulo', 'total_capital', 'total_multa', 'criadas', 'ignoradas', 'conflitos', 'sem_plano', 'erros'],
             array_keys($array['matriculas'][0]),
         );
     }

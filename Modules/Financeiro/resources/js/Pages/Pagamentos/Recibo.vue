@@ -188,7 +188,7 @@ const dadosMetodo = computed(() => {
                             <th>Matrícula</th>
                             <td>{{ pagamento.matricula?.numero ?? '—' }}</td>
                             <th>Turma</th>
-                            <td>{{ pagamento.matricula?.turma_nome ?? '—' }}</td>
+                            <td>{{ pagamento.matricula?.turma_rotulo ?? '—' }}</td>
                         </tr>
                         <tr>
                             <th>Ano lectivo</th>

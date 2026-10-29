@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -90,7 +91,7 @@ function guardarPlano(payload) {
                 <h1 class="fs-2 fw-bold mb-1">{{ curso.nome }}</h1>
                 <span class="text-muted">Código: {{ curso.codigo }}</span>
             </div>
-            <button v-if="can('curso.editar')" class="btn btn-primary" @click="abrirEdicao">Editar</button>
+            <button v-if="can('curso.editar')" class="btn btn-primary" @click="abrirEdicao"><AcaoIcone acao="editar" herda-cor class="me-1" /> Editar</button>
         </div>
 
         <div class="card mb-6">
@@ -136,7 +137,7 @@ function guardarPlano(payload) {
                                 <EstadoBadge :estado="plano.estado" :estado-descricao="plano.estado_descricao" />
                             </td>
                             <td class="text-end">
-                                <a :href="`/planos-curriculares/${plano.id}`" class="btn btn-light btn-sm">Ver</a>
+                                <a :href="`/planos-curriculares/${plano.id}`" class="btn btn-light btn-sm"><AcaoIcone acao="visualizar" class="me-1" /> Ver</a>
                             </td>
                         </tr>
                     </tbody>

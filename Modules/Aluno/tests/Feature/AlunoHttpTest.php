@@ -153,6 +153,35 @@ class AlunoHttpTest extends TestCase
         $this->assertSame('BI0001', $pessoa->fresh()->numero_identificacao);
     }
 
+    public function test_numero_identificacao_e_unico_independentemente_de_espacos_e_maiusculas(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        DadosPessoa::create(['nome_completo' => 'Bruno Costa', 'numero_identificacao' => 'bi 0002', 'tipo_pessoa' => DadosPessoa::TIPO_PROFESSOR]);
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
+
+        // Gravado normalizado, seja qual for a forma de entrada.
+        $this->assertSame('BI0002', DadosPessoa::firstWhere('nome_completo', 'Bruno Costa')->numero_identificacao);
+
+        $this->put(route('alunos.update', $aluno), [
+            'nome_completo' => 'Ana Silva',
+            'data_nascimento' => '2010-05-01',
+            'numero_identificacao' => ' b i0002 ',
+        ])->assertSessionHasErrors('numero_identificacao');
+
+        $this->assertSame('BI0001', $pessoa->fresh()->numero_identificacao);
+
+        // Sem colisão, o valor enviado com espaços grava-se normalizado.
+        $this->put(route('alunos.update', $aluno), [
+            'nome_completo' => 'Ana Silva',
+            'data_nascimento' => '2010-05-01',
+            'numero_identificacao' => ' bi 7777 ',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('BI7777', $pessoa->fresh()->numero_identificacao);
+    }
+
     public function test_actualiza_aluno_falha_sem_data_nascimento(): void
     {
         $this->actingAsStaff();

@@ -14,5 +14,6 @@
     "Matricula": true,
     "Tenant": true,
     "Plataforma": true,
-    "Financeiro": true
+    "Financeiro": true,
+    "Docente": true
 }

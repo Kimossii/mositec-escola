@@ -69,6 +69,23 @@ class DividasRecibosRelatoriosTest extends TestCase
         $this->actingAs($admin)->get('/financeiro/relatorios/recebimentos/exportar?formato=excel&de=2026-10-01&ate=2026-10-31')->assertOk();
     }
 
+    public function test_dividas_usam_o_rotulo_unico_da_turma(): void
+    {
+        ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();
+        $this->propina($matricula, $plano, 1);
+        $admin = $this->adminEscola();
+        $turma = $matricula->turma;
+        $esperadoCurto = $turma->rotulo();
+        $esperadoCompleto = $turma->load(['turno', 'anoLectivo'])->rotulo(completo: true);
+
+        $this->actingAs($admin)->get('/financeiro/dividas')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('dividas.data.0.turma_rotulo', $esperadoCurto)
+            ->where('turmas.0.rotulo', $esperadoCompleto));
+
+        $csv = file_get_contents($this->actingAs($admin)->get('/financeiro/dividas/exportar?formato=csv')->assertOk()->baseResponse->getFile()->getPathname());
+        $this->assertStringContainsString($esperadoCompleto, $csv);
+    }
+
     public function test_indicadores_diferidos_das_listas_do_financeiro(): void
     {
         ['plano' => $plano, 'matricula' => $matricula] = $this->cenarioPropinas();

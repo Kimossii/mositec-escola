@@ -3,6 +3,9 @@
 namespace Modules\Core\Providers;
 
 use Illuminate\Support\Facades\Session;
+use Modules\Core\Console\FilasEstadoCommand;
+use Modules\Core\Importacao\RegistoDeImportadores;
+use Modules\Core\Console\LimparExportacoesCommand;
 use Modules\Core\Tenancy\Support\SessaoDatabaseSemTenantSegura;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Modules\Core\Providers\RouteServiceProvider;
@@ -18,6 +21,14 @@ class CoreServiceProvider extends ModuleServiceProvider
 
     protected string $nameLower = 'core';
 
+    /**
+     * @var string[]
+     */
+    protected array $commands = [
+        FilasEstadoCommand::class,
+        LimparExportacoesCommand::class,
+    ];
+
     protected array $providers = [
         RouteServiceProvider::class,
     ];
@@ -27,6 +38,7 @@ class CoreServiceProvider extends ModuleServiceProvider
         parent::register();
 
         $this->app->scoped(TenantContext::class);
+        $this->app->singleton(RegistoDeImportadores::class);
         $this->app->scoped(ColectorDeCredenciais::class);
 
         // O TenantContext é resolvido dentro do verificador a cada consulta,

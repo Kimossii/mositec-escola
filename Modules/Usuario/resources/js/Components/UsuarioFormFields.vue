@@ -34,6 +34,11 @@ defineProps({
         type: String,
         default: '',
     },
+    // Professor a partir de um docente: o nome vem do docente, por isso não se pede.
+    ocultarNome: {
+        type: Boolean,
+        default: false,
+    },
 });
 </script>
 
@@ -42,7 +47,7 @@ defineProps({
     <slot v-if="tipoLogin === 'matricula' && !edicao" name="identidade" />
     <template v-else>
     <!--begin::Input group-->
-    <div class="fv-row mb-7">
+    <div class="fv-row mb-7" v-if="!ocultarNome">
         <!--begin::Label-->
         <label class="required fw-semibold fs-6 mb-2">Nome completo</label>
         <!--end::Label-->

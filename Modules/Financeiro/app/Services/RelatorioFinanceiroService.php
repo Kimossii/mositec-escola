@@ -63,7 +63,7 @@ class RelatorioFinanceiroService
                 'multas' => (int) $divida->sum('multas'),
                 'cobrancas' => (int) $divida->sum('cobrancas'),
                 'matriculas' => $divida->count(),
-                'por_turma' => $divida->groupBy(fn ($l) => ($l['ano_lectivo_nome'] ?? '—') . ' · ' . ($l['turma_nome'] ?? '—'))
+                'por_turma' => $divida->groupBy(fn ($l) => $l['turma_rotulo_completo'] ?? '—')
                     ->map(fn ($g, $turma) => ['turma' => $turma, 'matriculas' => $g->count(), 'total' => (int) $g->sum('total')])
                     ->sortByDesc('total')->values()->all(),
             ],
