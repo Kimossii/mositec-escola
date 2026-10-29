@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed } from 'vue';
 import { formatarTamanho, formatarData } from '../../Support/ficheiros';
 
@@ -50,13 +51,13 @@ const pronto = computed(() => props.ficheiro.estado === 1);
         <td>{{ formatarData(ficheiro.criado_em) }}</td>
         <td class="text-end text-nowrap">
             <a v-if="pronto" :href="`/ficheiros/${ficheiro.id}/descarregar`" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="Descarregar">
-                <i class="ki-duotone ki-cloud-download fs-4"><span class="path1"></span><span class="path2"></span></i>
+                <AcaoIcone acao="descarregar" />
             </a>
             <button v-if="ficheiro.partilhavel" type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary ms-2" title="Partilhar" @click="emit('partilhar', ficheiro)">
-                <i class="ki-duotone ki-share fs-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                <AcaoIcone acao="partilhar" />
             </button>
             <button v-if="!recebido && ficheiro.estado !== 0" type="button" class="btn btn-sm btn-icon btn-light btn-active-light-danger ms-2" title="Eliminar" @click="emit('eliminar', ficheiro.id)">
-                <i class="ki-duotone ki-trash fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
+                <AcaoIcone acao="eliminar" />
             </button>
         </td>
     </tr>

@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
@@ -275,7 +276,7 @@ function enviar(confirmado) {
                             <div class="col-md-2"><SelectSolid :model-value="alvo.turno_id" :options="opcoesTurno" @update:model-value="(v) => definirCampo(alvo, 'turno_id', v)" /></div>
                             <div class="col-md-3"><SelectSolid :model-value="alvo.turma_id" :options="opcoesTurma" searchable @update:model-value="(v) => definirCampo(alvo, 'turma_id', v)" /></div>
                             <div class="col-md-2 text-end">
-                                <button type="button" class="btn btn-sm btn-light-danger" @click="removerAlvo(indice)">Remover</button>
+                                <button type="button" class="btn btn-sm btn-light-danger" @click="removerAlvo(indice)"><AcaoIcone acao="remover" herda-cor class="me-1" /> Remover</button>
                             </div>
                           </template>
                         </div>

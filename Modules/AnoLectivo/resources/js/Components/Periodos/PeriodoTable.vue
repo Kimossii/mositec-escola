@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { tipoPeriodoLabel } from '../../Models/AnoLectivo';
 
 defineProps({
@@ -31,10 +32,10 @@ defineEmits(['editar-periodo', 'eliminar-periodo']);
                 <td>{{ periodo.data_inicio }} — {{ periodo.data_fim }}</td>
                 <td class="text-end">
                     <button v-if="podeEditar" class="btn btn-light-primary btn-sm me-2" @click="$emit('editar-periodo', periodo)">
-                        Editar
+                        <AcaoIcone acao="editar" herda-cor class="me-1" /> Editar
                     </button>
                     <button v-if="podeEliminar" class="btn btn-light-danger btn-sm" @click="$emit('eliminar-periodo', periodo)">
-                        Eliminar
+                        <AcaoIcone acao="eliminar" herda-cor class="me-1" /> Eliminar
                     </button>
                 </td>
             </tr>

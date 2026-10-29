@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -118,7 +119,7 @@ onBeforeUnmount(() => clearInterval(relogio));
             <div class="card-header pt-8">
                 <div class="card-title">
                     <div class="d-flex align-items-center position-relative my-1">
-                        <i class="ki-duotone ki-magnifier fs-1 position-absolute ms-6"><span class="path1"></span><span class="path2"></span></i>
+                        <AcaoIcone acao="pesquisar" tamanho="fs-3" herda-cor class="position-absolute ms-6" />
                         <input v-model="pesquisa" type="text" class="form-control form-control-solid w-250px ps-15" placeholder="Pesquisar ficheiros" />
                     </div>
                 </div>
@@ -209,13 +210,13 @@ onBeforeUnmount(() => clearInterval(relogio));
                                         <td class="text-end text-nowrap">
                                             <button type="button" class="btn btn-sm btn-light-primary me-2" @click="entrar(p.nome)">Abrir</button>
                                             <a v-if="p.ficheiros.some((f) => f.estado === 1)" :href="`/ficheiros/pasta/descarregar?titulo=${encodeURIComponent(p.nome)}`" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="Descarregar a pasta (ZIP)">
-                                                <i class="ki-duotone ki-cloud-download fs-4"><span class="path1"></span><span class="path2"></span></i>
+                                                <AcaoIcone acao="descarregar" />
                                             </a>
                                             <button v-if="p.ficheiros.some((f) => f.partilhavel)" type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary ms-2" title="Partilhar a pasta" @click="abrirPartilha(p.nome, p.ficheiros)">
-                                                <i class="ki-duotone ki-share fs-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                                                <AcaoIcone acao="partilhar" />
                                             </button>
                                             <button v-if="idsTerminados(p).length" type="button" class="btn btn-sm btn-icon btn-light btn-active-light-danger ms-2" title="Eliminar a pasta" @click="pedirEliminar(idsTerminados(p))">
-                                                <i class="ki-duotone ki-trash fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
+                                                <AcaoIcone acao="eliminar" />
                                             </button>
                                         </td>
                                     </tr>

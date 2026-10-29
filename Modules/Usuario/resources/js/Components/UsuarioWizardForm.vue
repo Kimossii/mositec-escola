@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import PermissoesPorMenu from '../../../../Permissao/resources/js/Components/PermissoesPorMenu.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
@@ -300,10 +301,7 @@ function guardar() {
 
             <div class="text-end pt-5">
                 <button type="button" class="btn btn-light-danger me-2" @click="fecharModal">
-                    <i class="ki-duotone ki-cross fs-4 me-1">
-                        <span class="path1"></span>
-                        <span class="path2"></span>
-                    </i>
+                    <AcaoIcone acao="fechar" herda-cor class="me-1" />
                     Cancelar
                 </button>
                 <button type="button" class="btn btn-primary" :disabled="!identidadePronta" @click="avancar">Seguinte</button>
@@ -334,10 +332,7 @@ function guardar() {
                 </button>
                 <div>
                     <button type="button" class="btn btn-light-danger me-2" :disabled="processing" @click="fecharModal">
-                        <i class="ki-duotone ki-cross fs-4 me-1">
-                            <span class="path1"></span>
-                            <span class="path2"></span>
-                        </i>
+                        <AcaoIcone acao="fechar" herda-cor class="me-1" />
                         Cancelar
                     </button>
                     <button type="button" class="btn btn-primary" :disabled="processing || !identidadePronta" @click="guardar">

@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -95,7 +96,7 @@ watch(filtros, (valor) => {
                                 <td class="text-end">{{ formatarDinheiro(r.valor, moeda) }}</td>
                                 <td><span class="badge" :class="estadoPagamentoBadgeClass(r.estado)">{{ r.estado_descricao }}</span></td>
                                 <td class="text-end text-nowrap">
-                                    <a :href="`/financeiro/pagamentos/${r.id}/recibo`" target="_blank" class="btn btn-sm btn-light-primary me-1">Ver recibo</a>
+                                    <a :href="`/financeiro/pagamentos/${r.id}/recibo`" target="_blank" class="btn btn-sm btn-light-primary me-1"><AcaoIcone acao="visualizar" herda-cor class="me-1" /> Ver recibo</a>
                                     <a :href="`/financeiro/pagamentos/${r.id}`" class="btn btn-sm btn-light">Pagamento</a>
                                 </td>
                             </tr>

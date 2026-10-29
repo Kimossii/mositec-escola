@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, ref } from 'vue';
 import axios from 'axios';
 import { router } from '@inertiajs/vue3';
@@ -158,7 +159,7 @@ const erroDoItem = computed(() => Object.entries(erros.value).filter(([k]) => k 
                             <td class="text-end">{{ dinheiro(i.preco) }}</td>
                             <td class="text-center"><input v-model.number="i.quantidade" type="number" min="1" max="9999" class="form-control form-control-solid form-control-sm w-75px mx-auto" /></td>
                             <td class="text-end">{{ dinheiro(i.preco * i.quantidade) }}</td>
-                            <td class="text-end"><button type="button" class="btn btn-sm btn-light-danger" @click="remover(idx)">Remover</button></td>
+                            <td class="text-end"><button type="button" class="btn btn-sm btn-light-danger" @click="remover(idx)"><AcaoIcone acao="remover" herda-cor class="me-1" /> Remover</button></td>
                         </tr>
                     </tbody>
                     <tfoot><tr class="fw-bold fs-5"><td colspan="3" class="text-end">Total</td><td class="text-end">{{ dinheiro(total) }}</td><td></td></tr></tfoot>

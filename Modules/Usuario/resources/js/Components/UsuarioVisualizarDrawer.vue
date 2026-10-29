@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 // Painel de detalhes (somente leitura) que desliza pela lateral direita —
 // widget KTDrawer do próprio Metronic (já iniciado globalmente em
 // AppLayout.vue), em vez de um modal como o de criar/editar.
@@ -20,10 +21,7 @@ defineProps({
                 <h3 class="card-title fw-bold text-dark">Detalhes do utilizador</h3>
                 <div class="card-toolbar">
                     <button type="button" class="btn btn-sm btn-icon btn-active-light-primary" id="kt_usuario_visualizar_close">
-                        <i class="ki-duotone ki-cross fs-1">
-                            <span class="path1"></span>
-                            <span class="path2"></span>
-                        </i>
+                        <AcaoIcone acao="fechar" tamanho="fs-1" herda-cor />
                     </button>
                 </div>
             </div>

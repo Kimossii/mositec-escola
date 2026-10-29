@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -185,7 +186,7 @@ function guardarEvento(payload) {
                     <div class="text-muted fs-6 mb-2">{{ anoLectivo.data_inicio }} — {{ anoLectivo.data_fim }}</div>
                     <AnoLectivoStatusBadge :estado="anoLectivo.estado" :estado-descricao="anoLectivo.estado_descricao" />
                 </div>
-                <button v-if="can('ano-lectivo.editar')" class="btn btn-light-primary" @click="abrirEdicaoAnoLectivo">Editar</button>
+                <button v-if="can('ano-lectivo.editar')" class="btn btn-light-primary" @click="abrirEdicaoAnoLectivo"><AcaoIcone acao="editar" herda-cor class="me-1" /> Editar</button>
             </div>
         </div>
 

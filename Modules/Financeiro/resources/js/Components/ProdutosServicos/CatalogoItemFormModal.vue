@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, watch } from 'vue';
 import { unidadesMenoresParaDecimal } from '../../Support/dinheiro';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
@@ -159,7 +160,7 @@ watch(() => props.show, (show) => {
                                 <div v-if="form.controla_stock" class="col-md-4">
                                     <input v-model.number="v.stock_quantidade" type="number" min="0" class="form-control form-control-solid" placeholder="Stock" />
                                 </div>
-                                <div class="col-md-2"><button type="button" class="btn btn-light-danger btn-sm" @click="removerVariante(i)">Remover</button></div>
+                                <div class="col-md-2"><button type="button" class="btn btn-light-danger btn-sm" @click="removerVariante(i)"><AcaoIcone acao="remover" herda-cor class="me-1" /> Remover</button></div>
                             </div>
                             <button type="button" class="btn btn-light-primary btn-sm" @click="adicionarVariante">Adicionar tamanho</button>
                             <div class="text-danger fs-7 mt-1" v-if="erroDe('variantes')">{{ erroDe('variantes') }}</div>

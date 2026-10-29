@@ -335,7 +335,7 @@ function formatarDataHora(valor) {
                     >
                         {{ planoCurricular.estado === ESTADO.ATIVO ? 'Desativar' : 'Ativar' }}
                     </button>
-                    <button class="btn btn-primary" @click="abrirEdicao">Editar</button>
+                    <button class="btn btn-primary" @click="abrirEdicao"><AcaoIcone acao="editar" herda-cor class="me-1" /> Editar</button>
                 </div>
             </div>
 

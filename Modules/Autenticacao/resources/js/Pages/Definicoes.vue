@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, ref } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -239,7 +240,7 @@ const totalPermissoes = computed(() => permissoes.value.length);
                                 </template>
                                 <template v-else>
                                     <button type="button" class="btn btn-light-success btn-sm" @click="entradaFoto.click()">{{ foto ? 'Trocar foto' : 'Escolher foto' }}</button>
-                                    <button v-if="foto" type="button" class="btn btn-light-danger btn-sm" @click="removerFoto">Remover foto</button>
+                                    <button v-if="foto" type="button" class="btn btn-light-danger btn-sm" @click="removerFoto"><AcaoIcone acao="remover" herda-cor class="me-1" /> Remover foto</button>
                                 </template>
                             </div>
                         </div>

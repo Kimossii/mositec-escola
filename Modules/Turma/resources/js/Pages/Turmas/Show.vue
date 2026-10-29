@@ -135,7 +135,7 @@ function encerrarSala(turmaSala) {
                     <div class="text-muted fs-6 mb-3">Código: {{ turma.codigo }}</div>
                     <EstadoBadge :estado="turma.estado" :estado-descricao="turma.estado_descricao" />
                 </div>
-                <button v-if="can('turmas.editar')" class="btn btn-light-primary" @click="abrirEdicao">Editar</button>
+                <button v-if="can('turmas.editar')" class="btn btn-light-primary" @click="abrirEdicao"><AcaoIcone acao="editar" herda-cor class="me-1" /> Editar</button>
             </div>
 
             <div class="card-body border-top pt-6">
