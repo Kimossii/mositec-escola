@@ -40,6 +40,12 @@ class LimparExportacoesCommand extends Command
             }
         }
 
+        // Importações: o ficheiro e as linhas intermédias duram 30 dias (as linhas saem em cascata).
+        foreach (DB::table('importacoes')->where('created_at', '<', now()->subDays(30))->pluck('caminho') as $caminho) {
+            $disco->delete($caminho);
+        }
+        DB::table('importacoes')->where('created_at', '<', now()->subDays(30))->delete();
+
         $apagados = DB::table('pedidos_exportacao')->where('created_at', '<', now()->subDays(self::DIAS_DE_VIDA))->delete();
 
         $this->info("{$presos} pedido(s) preso(s) marcado(s) como falhado(s), {$ficheiros} ficheiro(s) e {$apagados} pedido(s) antigo(s) apagado(s).");

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
@@ -119,7 +119,10 @@ function confirmarAlteracaoEstado() {
     <div class="app-container container-xxl py-6">
         <div class="d-flex justify-content-between align-items-center mb-6">
             <h1 class="fs-2 fw-bold">Disciplinas</h1>
-            <button v-if="can('disciplina.criar')" class="btn btn-primary" @click="abrirCriacao">Nova Disciplina</button>
+            <div v-if="can('disciplina.criar')" class="d-flex gap-2">
+                <Link href="/importacoes/disciplinas/nova" class="btn btn-light-primary">Importar</Link>
+                <button class="btn btn-primary" @click="abrirCriacao">Nova Disciplina</button>
+            </div>
         </div>
 
         <div class="card mb-6">
