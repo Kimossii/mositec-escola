@@ -31,7 +31,8 @@ class DividaController extends Controller
             'totais' => Inertia::defer(fn () => $this->consulta->totais($filtros)),
             'filtros' => $filtros,
             'anosLectivos' => AnoLectivo::query()->orderByDesc('data_inicio')->get(['id', 'nome']),
-            'turmas' => Turma::query()->orderBy('nome')->get(['id', 'nome', 'ano_lectivo_id']),
+            'turmas' => Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome'])->orderBy('nome')->get(['id', 'nome', 'ano_lectivo_id', 'turno_id'])
+                ->each(fn (Turma $turma) => $turma->setAttribute('rotulo', $turma->rotulo(completo: true))->makeHidden(['turno', 'ano_lectivo'])),
             'moeda' => $this->moeda->atual()->paraFrontend(),
         ]);
     }
@@ -45,7 +46,7 @@ class DividaController extends Controller
         $maior = fn (int $v): float => $v / $moeda->fator();
         $linhas = $this->consulta->linhas($request->only(['pesquisa', 'ano_lectivo_id', 'turma_id', 'tipo']))
             ->map(fn (array $l) => [
-                'aluno' => $l['aluno_nome'], 'numero' => $l['aluno_numero'], 'matricula' => $l['matricula_numero'], 'turma' => $l['turma_nome'], 'ano' => $l['ano_lectivo_nome'],
+                'aluno' => $l['aluno_nome'], 'numero' => $l['aluno_numero'], 'matricula' => $l['matricula_numero'], 'turma' => $l['turma_rotulo_completo'], 'ano' => $l['ano_lectivo_nome'],
                 'propinas' => $maior($l['propinas']), 'multas' => $maior($l['multas']), 'cobrancas' => $maior($l['cobrancas']), 'total' => $maior($l['total']),
                 'meses' => $l['meses'], 'desde' => $l['desde'],
             ]);
@@ -63,6 +64,6 @@ class DividaController extends Controller
             assinaturas: ['Elaborado por', 'Verificado por', 'O Director'],
         );
 
-        return $exportador->responder($tabela, $request->query('formato'), 'dividas');
+        return $exportador->responder($tabela, $request->query('formato'), 'dividas', 'pagamento.exportar');
     }
 }

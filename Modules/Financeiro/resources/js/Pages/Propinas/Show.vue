@@ -188,7 +188,7 @@ function isentar(novoValor, motivo) {
                         <div v-if="propina.matricula" class="bg-body-secondary rounded p-4">
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Aluno</span><span>{{ propina.matricula.aluno_nome ?? '—' }} (nº {{ propina.matricula.aluno_numero ?? '—' }})</span></div>
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Matrícula nº</span><span>{{ propina.matricula.numero }}</span></div>
-                            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Turma</span><span>{{ propina.matricula.turma_nome ?? '—' }}</span></div>
+                            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Turma</span><span>{{ propina.matricula.turma_rotulo ?? '—' }}</span></div>
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Ano lectivo</span><span>{{ propina.matricula.ano_lectivo_nome ?? '—' }}</span></div>
                             <div class="d-flex justify-content-between mb-2"><span class="text-muted">Estado</span><span>{{ propina.matricula.estado_descricao }}</span></div>
                             <div class="d-flex justify-content-between"><span class="text-muted">Datas</span><span>{{ dataCurta(propina.matricula.data_matricula) }} → {{ propina.matricula.data_fim ? dataCurta(propina.matricula.data_fim) : '…' }}</span></div>

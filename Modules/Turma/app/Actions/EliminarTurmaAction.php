@@ -3,6 +3,7 @@
 namespace Modules\Turma\Actions;
 
 use Illuminate\Validation\ValidationException;
+use Modules\Core\Contracts\VerificaAtribuicaoDocente;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
 use Modules\Turma\Models\Turma;
@@ -11,6 +12,10 @@ use Modules\Core\Traits\LogService;
 class EliminarTurmaAction
 {
     use LogService;
+
+    public function __construct(private VerificaAtribuicaoDocente $docencia)
+    {
+    }
 
     /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(Turma $turma): void
@@ -30,6 +35,12 @@ class EliminarTurmaAction
         if ($temMatriculas) {
             throw ValidationException::withMessages([
                 'turma' => 'Esta turma tem matrículas activas ou pendentes e não pode ser eliminada.',
+            ]);
+        }
+
+        if ($this->docencia->turmaTemAtribuicoes($turma->id)) {
+            throw ValidationException::withMessages([
+                'turma' => 'Esta turma tem docentes atribuídos e não pode ser eliminada.',
             ]);
         }
 

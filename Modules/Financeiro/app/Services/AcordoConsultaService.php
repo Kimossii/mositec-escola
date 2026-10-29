@@ -90,6 +90,7 @@ class AcordoConsultaService
 
         return $this->linha($acordo) + [
             'turma_nome' => $acordo->matricula?->turma?->nome,
+            'turma_rotulo' => $acordo->matricula?->turma?->rotulo(),
             'motivo' => $acordo->motivo,
             'motivo_encerramento' => $acordo->motivo_encerramento,
             'divida_inicial' => $acordo->divida_inicial->unidadesMenores(),

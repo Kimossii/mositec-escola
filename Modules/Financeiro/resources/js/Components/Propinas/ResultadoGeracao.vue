@@ -35,7 +35,7 @@ defineProps({
                     <div class="fw-bold text-gray-800">
                         {{ matricula.aluno_nome ?? `Matrícula #${matricula.matricula_id}` }}
                         <span class="text-muted fw-normal fs-7">
-                            · nº {{ matricula.aluno_numero ?? '—' }} · matrícula {{ matricula.numero_registo ?? '—' }} · {{ matricula.turma_nome ?? 'sem turma' }}
+                            · nº {{ matricula.aluno_numero ?? '—' }} · matrícula {{ matricula.numero_registo ?? '—' }} · {{ matricula.turma_rotulo ?? 'sem turma' }}
                         </span>
                     </div>
 

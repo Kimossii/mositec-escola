@@ -62,7 +62,17 @@ class AtualizarAnoLectivoAction
             return;
         }
 
-        if (($motivo = app(DependenciasRegistadasDoAnoLectivo::class)->bloqueiaAlteracaoDeInicio($anoLectivo)) !== null) {
+        // As dependências avaliam o NOVO início: atribui-se em memória (sem gravar) e repõe-se o valor original.
+        $inicioOriginal = $anoLectivo->getAttributes()['data_inicio'] ?? null;
+        $anoLectivo->setAttribute('data_inicio', $dto->dataInicio);
+
+        try {
+            $motivo = app(DependenciasRegistadasDoAnoLectivo::class)->bloqueiaAlteracaoDeInicio($anoLectivo);
+        } finally {
+            $anoLectivo->setRawAttributes(array_replace($anoLectivo->getAttributes(), ['data_inicio' => $inicioOriginal]), false);
+        }
+
+        if ($motivo !== null) {
             throw ValidationException::withMessages(['data_inicio' => $motivo]);
         }
     }

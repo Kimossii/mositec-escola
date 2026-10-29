@@ -1,4 +1,4 @@
-import { onBeforeUnmount, ref, watch } from 'vue';
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 
 /**
@@ -25,6 +25,9 @@ export function useVistaDeLista(chave, prefixo) {
             // a escolha vale só nesta página
         }
     });
+    // Trocar de vista recria os elementos da lista: os menus «Ações» novos ficam sem o clique ligado pelo KTMenu (e o
+    // clique cairia no `href="#"`, que leva ao topo) até serem reinicializados. Seguro repetir: ignora os já ligados.
+    watch(vista, () => nextTick(() => window.KTMenu?.init()), { flush: 'post' });
 
     const carregando = ref(false);
     let temporizador = null;

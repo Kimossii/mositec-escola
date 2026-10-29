@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { can } from '@/Composables/usePermissoes';
@@ -62,7 +63,7 @@ watch(consulta, (valor) => {
     <div class="card-title">
         <!--begin::Search-->
         <div class="d-flex align-items-center position-relative my-1">
-            <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-5"><span class="path1"></span><span class="path2"></span></i>
+            <AcaoIcone acao="pesquisar" tamanho="fs-3" herda-cor class="position-absolute ms-5" />
             <input v-model="consulta.pesquisa" type="text" class="form-control form-control-solid w-250px w-md-300px ps-13" placeholder="Nome, email ou matrícula" />
         </div>
         <!--end::Search-->
@@ -85,7 +86,7 @@ watch(consulta, (valor) => {
 
             <!--begin::Add user-->
             <button v-if="can(criarPermissao)" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_user">
-                <i class="ki-duotone ki-plus fs-2"></i>
+                <AcaoIcone acao="adicionar" tamanho="fs-2" herda-cor />
                 Registar utilizador
             </button>
             <!--end::Add user-->

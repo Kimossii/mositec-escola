@@ -81,6 +81,7 @@ class CobrancaConsultaService
         return $this->linha($cobranca) + [
             'matricula_estado' => $cobranca->matricula?->estado?->label(),
             'turma_nome' => $cobranca->matricula?->turma?->nome,
+            'turma_rotulo' => $cobranca->matricula?->turma?->rotulo(),
             'ano_lectivo_nome' => $cobranca->matricula?->anoLectivo?->nome,
             'observacao' => $cobranca->observacao,
             'motivo_cancelamento' => $cobranca->cancelamento_motivo,
@@ -171,6 +172,7 @@ class CobrancaConsultaService
             'aluno_nome' => $m->aluno?->dadosPessoa?->nome_completo,
             'aluno_numero' => $m->aluno?->numero_matricula,
             'turma_nome' => $m->turma?->nome,
+            'turma_rotulo' => $m->turma?->rotulo(),
             'ano_lectivo_nome' => $m->anoLectivo?->nome,
             'ano_inicio' => $m->anoLectivo?->data_inicio?->toDateString(),
             'ano_fim' => $m->anoLectivo?->data_fim?->toDateString(),

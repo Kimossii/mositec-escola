@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import UsuarioForm from '../Forms/UsuarioForm.vue';
 
 defineProps({
@@ -29,7 +30,7 @@ defineProps({
 
                     <!--begin::Close-->
                     <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
-                        <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                        <AcaoIcone acao="fechar" tamanho="fs-1" herda-cor />
                     </div>
                     <!--end::Close-->
                 </div>

@@ -49,6 +49,27 @@
                 </div>
             </div>
 
+            <!-- Pessoal -->
+            <div v-if="pessoalSeccoesVisiveis.length" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="bottom-start"
+                :class="['menu-item', 'menu-lg-down-accordion', 'me-0', 'me-lg-2', { here: pessoalActivo, show: pessoalActivo }]">
+                <span class="menu-link">
+                    <span class="menu-icon">
+                        <i class="ki-duotone ki-briefcase fs-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                    </span>
+
+                    <span class="menu-title">Pessoal</span>
+
+                    <span class="menu-arrow d-lg-none"></span>
+                </span>
+
+                <div class="menu-sub menu-sub-lg-down-accordion menu-sub-lg-dropdown p-0">
+                    <PessoalMenu />
+                </div>
+            </div>
+
             <!-- Pedagógico -->
             <div v-if="pedagogicoSeccoesVisiveis.length" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="bottom-start"
                 :class="['menu-item', 'menu-lg-down-accordion', 'me-0', 'me-lg-2', { here: pedagogicoActivo, show: pedagogicoActivo }]">
@@ -197,17 +218,20 @@
 <script setup>
 import { computed } from 'vue'
 import AcademicoMenu from './menus/AcademicoMenu.vue'
+import PessoalMenu from './menus/PessoalMenu.vue'
 import PagesMenu from './menus/PedagogicoMenu.vue'
 import ConfiguracoesMenu from './menus/ConfiguracoesMenu.vue'
 import FinanceiroMenu from './menus/FinanceiroMenu.vue'
 // import LayoutsMenu from './menus/LayoutsMenu.vue'
 import { useAcademicoMenu } from '@/Composables/useAcademicoMenu'
+import { usePessoalMenu } from '@/Composables/usePessoalMenu'
 import { usePedagogicoMenu } from '@/Composables/usePedagogicoMenu'
 import { useConfiguracoesMenu } from '@/Composables/useConfiguracoesMenu'
 import { useFinanceiroMenu } from '@/Composables/useFinanceiroMenu'
 import { useActiveMenu } from '@/composables/useActiveMenu'
 
 const { seccoesVisiveis: academicoSeccoesVisiveis } = useAcademicoMenu()
+const { seccoesVisiveis: pessoalSeccoesVisiveis } = usePessoalMenu()
 const { seccoesVisiveis: pedagogicoSeccoesVisiveis } = usePedagogicoMenu()
 const { gruposVisiveis: configuracoesGruposVisiveis } = useConfiguracoesMenu()
 const { seccoesVisiveis: financeiroSeccoesVisiveis } = useFinanceiroMenu()
@@ -217,6 +241,7 @@ const { isActive, isGroupActive } = useActiveMenu()
 // a lista plana de links que isGroupActive espera, para o item de topo do
 // Header ficar "aqui" sempre que a rota actual bater com algum link lá dentro.
 const academicoActivo = computed(() => isGroupActive(academicoSeccoesVisiveis.value.flatMap((s) => s.links)))
+const pessoalActivo = computed(() => isGroupActive(pessoalSeccoesVisiveis.value.flatMap((s) => s.links)))
 const pedagogicoActivo = computed(() => isGroupActive(pedagogicoSeccoesVisiveis.value.flatMap((s) => s.links)))
 const financeiroActivo = computed(() => isGroupActive(financeiroSeccoesVisiveis.value.flatMap((s) => s.links)))
 const configuracoesActivo = computed(() => isGroupActive(configuracoesGruposVisiveis.value.flatMap((g) => g.links)))

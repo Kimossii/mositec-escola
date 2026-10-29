@@ -246,10 +246,10 @@ class AlteracaoPrecoPlanoService
         return [
             'matriculas_valor_antigo' => $comValorAntigo->count(),
             'matriculas_valor_novo' => $semPropina->count(),
-            'turma_exemplo' => $exemplo?->nome,
+            'turma_exemplo' => $exemplo?->rotulo(),
             'mensagem' => "Com «Manter as já geradas», {$comValorAntigo->count()} matrícula(s) mantêm as propinas já geradas ao valor anterior e "
                 . "{$semPropina->count()} matrícula(s) activa(s) ainda sem propina em {$rotulo} pagarão o novo valor: no mesmo mês e turma haverá alunos a pagar valores diferentes."
-                . ($exemplo !== null ? " Exemplo: turma {$exemplo->nome}." : ''),
+                . ($exemplo !== null ? " Exemplo: {$exemplo->rotulo()}." : ''),
         ];
     }
 

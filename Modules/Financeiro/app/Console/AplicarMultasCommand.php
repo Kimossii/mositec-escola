@@ -5,6 +5,7 @@ namespace Modules\Financeiro\Console;
 use Illuminate\Console\Command;
 use Modules\Core\Tenancy\Console\ParaTodosOsTenants;
 use Modules\Core\Tenancy\TenantAtual;
+use Modules\Financeiro\Jobs\AplicarMultasDoTenantJob;
 use Modules\Financeiro\Services\AplicarMultasService;
 use Modules\Core\Traits\LogService;
 
@@ -19,13 +20,20 @@ class AplicarMultasCommand extends Command
 
     use ParaTodosOsTenants;
 
-    protected $signature = 'financeiro:aplicar-multas';
+    protected $signature = 'financeiro:aplicar-multas {--fila : Despacha um job por escola em vez de correr já}';
 
     protected $description = 'Aplica as multas por atraso às propinas em dívida das escolas com multas activas (--tenant=CODIGO ou --todos)';
 
     public function handle(AplicarMultasService $aplicacao): int
     {
         return $this->paraTenants(function (TenantAtual $tenant) use ($aplicacao): void {
+            if ($this->option('fila')) {
+                dispatch(new AplicarMultasDoTenantJob());
+                $this->line("[{$tenant->codigo}] job de multas despachado.");
+
+                return;
+            }
+
             $resultado = $aplicacao->executar();
 
             $this->logInfo('financeiro.aplicar-multas', ['tenant' => $tenant->codigo] + $resultado);

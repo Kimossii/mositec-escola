@@ -2,6 +2,7 @@
 import { corDoPerfil, ESTADO, tempoRelativo } from '../Models/Usuario';
 import UsuarioAcoesMenu from './UsuarioAcoesMenu.vue';
 import UsuarioAvatar from './UsuarioAvatar.vue';
+import UsuarioPerfis from '@/Components/Shared/PerfisDoUtilizador.vue';
 import UsuarioStatusBadge from './UsuarioStatusBadge.vue';
 
 /** Utilizador em formato de cartão: faixa de cor do perfil, avatar, dados, estado, actividade e acções. */
@@ -39,8 +40,7 @@ const cor = () => corDoPerfil(props.usuario.perfis[0]);
             </div>
 
             <div class="d-flex flex-wrap gap-1 mt-3">
-                <span v-for="nome in usuario.perfis" :key="nome" class="badge" :class="`badge-light-${corDoPerfil(nome)}`">{{ nome }}</span>
-                <span v-if="!usuario.perfis.length" class="text-muted fs-7">Sem perfil</span>
+                <UsuarioPerfis :nome="usuario.name" :perfis="usuario.perfis" />
             </div>
 
             <div class="separator separator-dashed my-4 mt-auto"></div>

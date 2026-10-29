@@ -7,7 +7,7 @@ const props = defineProps({
     completude: { type: Object, default: null }, // { percentual: 0-100, faltam: string[] } — só na ficha de dados
 });
 
-const tipos = { 1: 'Público', 2: 'Privado', 3: 'Cooperativo' };
+const tipos = { 1: 'Público', 2: 'Privado', 3: 'Comparticipada' };
 const tiposEnsino = { 1: 'Ensino Geral', 2: 'Ensino Técnico', 3: 'Ensino Universitário' };
 const nomesEtapas = { 1: 'Creche', 2: 'Pré-Escolar', 3: 'Ensino Primário', 4: 'Ensino Secundário', 5: 'Ensino Superior' };
 

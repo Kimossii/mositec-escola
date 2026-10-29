@@ -2,6 +2,8 @@
 
 namespace Modules\Turma\Providers;
 
+use Modules\Core\Importacao\RegistoDeImportadores;
+use Modules\Turma\Importacao\TurmaImportador;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 
@@ -36,6 +38,7 @@ class TurmaServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+        $this->app->make(RegistoDeImportadores::class)->registar(TurmaImportador::class);
         // Carrega as migrations do módulo
         $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
     }

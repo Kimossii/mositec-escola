@@ -64,7 +64,7 @@ function periodoTexto(plano) {
 }
 
 function alvoTexto(alvo) {
-    if (alvo.turma_id) return `Turma ${alvo.turma_nome}`;
+    if (alvo.turma_id) return alvo.turma_rotulo;
 
     return [alvo.curso_nome, alvo.nivel_nome, alvo.turno_nome].filter(Boolean).join(' · ');
 }

@@ -38,6 +38,7 @@ final class ResultadoGeracaoMatriculaDTO
         public readonly ?string $aluno_nome = null,
         public readonly ?string $aluno_numero = null,
         public readonly ?string $turma_nome = null,
+        public readonly ?string $turma_rotulo = null,
     ) {
     }
 
@@ -49,6 +50,7 @@ final class ResultadoGeracaoMatriculaDTO
             aluno_nome: $matricula->aluno?->dadosPessoa?->nome_completo,
             aluno_numero: $matricula->aluno?->numero_matricula,
             turma_nome: $matricula->turma?->nome,
+            turma_rotulo: $matricula->turma?->rotulo(),
         );
     }
 
@@ -154,6 +156,7 @@ final class ResultadoGeracaoMatriculaDTO
             'aluno_nome' => $this->aluno_nome,
             'aluno_numero' => $this->aluno_numero,
             'turma_nome' => $this->turma_nome,
+            'turma_rotulo' => $this->turma_rotulo,
             'total_capital' => $this->totalCapital(),
             'total_multa' => $this->totalMulta(),
             'criadas' => $this->criadas,

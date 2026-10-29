@@ -5,9 +5,12 @@ namespace Modules\Aluno\Http\Requests;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 use Modules\Core\Http\Requests\Concerns\ValidaProvinciaMunicipio;
+use Modules\Usuario\Http\Requests\Concerns\NormalizaNumeroIdentificacao;
 
 class CriarAlunoRequest extends BaseRequest
 {
+    use NormalizaNumeroIdentificacao;
+
     use ValidaProvinciaMunicipio;
 
     public function authorize(): bool

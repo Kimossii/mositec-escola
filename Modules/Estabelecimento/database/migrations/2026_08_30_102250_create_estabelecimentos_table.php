@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('nome_abreviado')->nullable();
             // Nulo no estabelecimento mínimo criado no provisioning; a obrigatoriedade
             // está na validação do formulário de configuração.
-            $table->unsignedTinyInteger('tipo')->nullable(); // 1: público | 2: privado | 3: cooperativo
+            $table->unsignedTinyInteger('tipo')->nullable(); // 1: público | 2: privado | 3: comparticipada
             $table->string('tipo_descricao')->nullable();
             $table->string('nif')->nullable();
             $table->string('codigo_mined')->nullable();

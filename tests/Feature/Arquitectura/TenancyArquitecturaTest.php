@@ -20,6 +20,7 @@ class TenancyArquitecturaTest extends TestCase
      */
     private const EXCEPCOES_DB_TABLE = [
         'Modules/Core/app/Services/GeradorSequencia.php',
+        'Modules/Core/app/Console/FilasEstadoCommand.php', // jobs e failed_jobs são tabelas de infra-estrutura, sem tenant
     ];
 
     /**
@@ -29,6 +30,7 @@ class TenancyArquitecturaTest extends TestCase
      *    (provado em PermissaoTenancyTest::test_sincronizar_permissoes_grava_tenant_id_nas_escritas_em_massa);
      *  - o gerador de sequências faz upsert com o tenant_id do contexto;
      *  - o AplicarMultasService usa insertOrIgnore com o tenant_id do contexto (spec Propinas §15.5, criação idempotente).
+     *  - o ValidarImportacaoJob insere as linhas em bloco com o tenant_id da importação (Importacao, do tenant corrente).
      * Qualquer outra ocorrência é violação.
      */
     private const EXCEPCOES_ELOQUENT = [
@@ -36,6 +38,7 @@ class TenancyArquitecturaTest extends TestCase
         'Modules/Permissao/app/Actions/SincronizarPermissoesUtilizadorAction.php',
         'Modules/Core/app/Services/GeradorSequencia.php',
         'Modules/Financeiro/app/Services/AplicarMultasService.php',
+        'Modules/Core/app/Importacao/Jobs/ValidarImportacaoJob.php',
     ];
 
     /**
@@ -420,6 +423,7 @@ class TenancyArquitecturaTest extends TestCase
         'Modules/Plataforma/app/Console/CriarSuperAdminCommand.php',
         'Modules/Plataforma/app/Console/RedefinirSuperAdminCommand.php',
         'Modules/Financeiro/app/Console/CambioPlataformaCommand.php',
+        'Modules/Core/app/Console/FilasEstadoCommand.php', // lê jobs/failed_jobs (infra-estrutura da fila, partilhada por todas as escolas)
     ];
 
     private function declaraClasse(string $conteudo, string $padraoHerancaOuInterface): bool

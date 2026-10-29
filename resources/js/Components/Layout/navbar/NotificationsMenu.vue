@@ -39,5 +39,9 @@ const carregado = computed(() => Array.isArray(alertas.value))
             </Link>
             </template>
         </div>
+
+        <div class="py-3 text-center border-top border-gray-200">
+            <Link href="/ficheiros" class="fw-semibold fs-7">Os meus ficheiros</Link>
+        </div>
     </div>
 </template>

@@ -1,0 +1,30 @@
+<?php
+
+namespace Modules\Docente\Http\Requests;
+
+use App\Http\Requests\BaseRequest;
+use Illuminate\Validation\Rules\Enum;
+use Modules\Core\Enums\Estado;
+
+class AlterarEstadoDocenteRequest extends BaseRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()?->can('docente.editar') ?? false;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'estado' => ['required', new Enum(Estado::class)],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'estado.required' => 'O novo estado é obrigatório.',
+            'estado.enum' => 'O estado indicado é inválido.',
+        ];
+    }
+}

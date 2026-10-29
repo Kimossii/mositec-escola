@@ -144,7 +144,7 @@ class AlunoConsultaService
     {
         $anoLectivoId = $filtros['ano_lectivo_id'] ?? null;
 
-        return Turma::with(['anoLectivo', 'curso', 'nivelAcademico'])
+        return Turma::with(['anoLectivo', 'curso', 'nivelAcademico', 'turno'])
             ->when($anoLectivoId !== self::SEM_MATRICULA ? $anoLectivoId : null, fn ($query, $anoLectivoId) => $query->where('ano_lectivo_id', $anoLectivoId))
             ->whereHas('anoLectivo', fn ($query) => $query->where('estabelecimento_id', Estabelecimento::current()?->id))
             ->orderByDesc('ano_lectivo_id')

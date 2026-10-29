@@ -1,4 +1,5 @@
 <script setup>
+import { rotuloTurma } from '@/Support/turma';
 import { computed, reactive, ref, watch } from 'vue';
 import axios from 'axios';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
@@ -19,9 +20,7 @@ const emit = defineEmits(['submit', 'cancelar']);
 // tanto pelo Curso como pelo Nível.
 const opcoesTurma = computed(() => props.turmasDisponiveis.map((turma) => {
     const partes = [
-        `${turma.codigo} — ${turma.nome}`,
-        turma.ano_lectivo?.nome,
-        turma.turno?.nome,
+        `${turma.codigo} — ${rotuloTurma(turma, { completo: true })}`,
         turma.curso?.nome,
         turma.nivel_academico?.nome,
     ].filter(Boolean);

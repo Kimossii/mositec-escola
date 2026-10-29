@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -271,7 +272,7 @@ function submeter() {
                                 </div>
                                 <div v-if="podeEditar" class="col-md-1 d-flex justify-content-md-end pt-md-9">
                                     <button type="button" class="btn btn-sm btn-icon btn-light-danger" title="Remover escalão" @click="removerEscalao(i)">
-                                        <i class="ki-duotone ki-trash fs-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
+                                        <AcaoIcone acao="remover" herda-cor />
                                     </button>
                                 </div>
                             </div>
@@ -284,7 +285,7 @@ function submeter() {
                             v-if="podeEditar && form.escaloes.length < maxEscaloes" type="button"
                             class="btn btn-sm btn-light-primary" @click="adicionarEscalao"
                         >
-                            <i class="ki-duotone ki-plus fs-4"></i> Adicionar escalão
+                            <AcaoIcone acao="adicionar" tamanho="fs-3" herda-cor /> Adicionar escalão
                         </button>
                         <div v-if="form.escaloes.length >= maxEscaloes" class="form-text">Máximo de {{ maxEscaloes }} escalões.</div>
                     </fieldset>

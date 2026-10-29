@@ -64,6 +64,7 @@ class PlanoPropinaConsultaService
                     'turno_nome' => $alvo->turno?->nome,
                     'turma_id' => $alvo->turma_id,
                     'turma_nome' => $alvo->turma?->nome,
+                    'turma_rotulo' => $alvo->turma?->rotulo(),
                     'eliminado' => $alvo->obsoleto(),
                     'precedencia' => Precedencia::descricao($alvo->only(['nivel_academico_id', 'curso_id', 'turno_id', 'turma_id'])),
                 ])->values()->all(),
@@ -168,7 +169,8 @@ class PlanoPropinaConsultaService
      */
     public function turmas(): Collection
     {
-        return Turma::query()->orderBy('nome')->get(['id', 'nome', 'ano_lectivo_id']);
+        return Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome'])->orderBy('nome')->get(['id', 'nome', 'ano_lectivo_id', 'turno_id'])
+            ->each(fn (Turma $turma) => $turma->setAttribute('rotulo', $turma->rotulo(completo: true))->makeHidden(['turno', 'ano_lectivo']));
     }
 
     private function precedenciaDoPlano(PlanoPropina $plano): string

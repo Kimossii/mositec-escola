@@ -46,6 +46,20 @@ class DadosPessoa extends Model
     const TIPO_FUNCIONARIO = 2;
     const TIPO_OUTRO = 3;
 
+    /**
+     * O BI é único por escola entre todos os tipos de pessoa (aluno, docente, ...); para o ser de facto, grava-se
+     * sem espaços e em maiúsculas ("005 678 901 la042" e "005678901LA042" são a mesma pessoa).
+     */
+    public static function normalizarNumeroIdentificacao(string $valor): string
+    {
+        return mb_strtoupper(preg_replace('/\s+/u', '', $valor));
+    }
+
+    public function setNumeroIdentificacaoAttribute(?string $valor): void
+    {
+        $this->attributes['numero_identificacao'] = $valor === null ? null : self::normalizarNumeroIdentificacao($valor);
+    }
+
     public function documentos(): HasMany
     {
         return $this->hasMany(DocumentoPessoa::class, 'dados_pessoa_id');

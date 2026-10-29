@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 
 const props = defineProps({
     label: { type: String, required: true },
@@ -71,14 +72,13 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
                     </i>
                 </span>
 
-                <select
+                <SelectSolid
                     v-if="type === 'select'"
-                    class="form-select form-select-solid ficha-input"
-                    :value="modelValue"
-                    @change="$emit('update:modelValue', Number($event.target.value))"
-                >
-                    <option v-for="opcao in options" :key="opcao.value" :value="opcao.value">{{ opcao.label }}</option>
-                </select>
+                    class="ficha-input"
+                    :model-value="modelValue"
+                    :options="options"
+                    @update:model-value="$emit('update:modelValue', Number($event))"
+                />
 
                 <input
                     v-else
@@ -176,7 +176,8 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
     max-width: 420px;
 }
 
-.ficha-input-wrap--icone .ficha-input {
+.ficha-input-wrap--icone .ficha-input,
+.ficha-input-wrap--icone :deep(.form-select) {
     padding-left: 3.5rem;
 }
 

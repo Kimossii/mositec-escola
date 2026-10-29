@@ -5,9 +5,8 @@ namespace Modules\Usuario\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Log;
-use Modules\Usuario\Actions\UsuarioAction;
-use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
+use Modules\Usuario\Services\GestaoUsuarioService;
 use Modules\Core\Traits\LogService;
 
 class UsuarioController extends Controller
@@ -26,10 +25,10 @@ class UsuarioController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(CriarUsuarioRequest $request, UsuarioAction $action)
+    public function store(CriarUsuarioRequest $request, GestaoUsuarioService $servico)
     {
-        $dto = UsuarioDTO::fromArray($request->validated());
-        $usuario = $action->criar($dto);
+        // Mesmo caminho da interface web: aluno por matrícula e professor a partir de um docente (docente_id) incluídos.
+        $usuario = $servico->criar($request);
         $this->logInfo('Utilizador criado', ['usuario_id' => $usuario->id]);
         return response()->json([
             'message' => 'Usuário criado com sucesso',

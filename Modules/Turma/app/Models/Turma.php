@@ -72,4 +72,34 @@ class Turma extends Model
     {
         return $this->belongsTo(User::class, 'editado_por');
     }
+
+    /**
+     * Rótulo único da turma. Curto: «Turma 10.ª A». Completo: «Turma 10.ª A · Manhã · 2026/2027».
+     *
+     * Só usa o turno e o ano lectivo se a relação já estiver carregada (nunca dispara queries),
+     * por isso quem pede o formato completo deve fazer eager load de `turno` e `anoLectivo`.
+     */
+    public function rotulo(bool $completo = false): string
+    {
+        $atributos = $this->getAttributes();
+        $nome = trim((string) ($atributos['nome'] ?? ''));
+
+        if ($nome === '') {
+            $nome = trim((string) ($atributos['codigo'] ?? ''));
+        }
+
+        $partes = [preg_match('/^turma\b/iu', $nome) === 1 ? $nome : trim("Turma {$nome}")];
+
+        if ($completo) {
+            foreach (['turno', 'anoLectivo'] as $relacao) {
+                $parte = $this->relationLoaded($relacao) ? trim((string) $this->getRelation($relacao)?->nome) : '';
+
+                if ($parte !== '') {
+                    $partes[] = $parte;
+                }
+            }
+        }
+
+        return implode(' · ', $partes);
+    }
 }

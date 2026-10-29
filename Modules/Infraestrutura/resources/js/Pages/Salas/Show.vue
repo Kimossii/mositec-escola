@@ -1,4 +1,5 @@
 <script setup>
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
@@ -58,7 +59,7 @@ function guardar(payload) {
                     <div class="text-muted fs-6 mb-3">Código: {{ sala.codigo }}</div>
                     <SalaStatusBadge :estado="sala.estado" :estado-descricao="sala.estado_descricao" />
                 </div>
-                <button v-if="can('infraestrutura.editar')" class="btn btn-light-primary" @click="abrirEdicao">Editar</button>
+                <button v-if="can('infraestrutura.editar')" class="btn btn-light-primary" @click="abrirEdicao"><AcaoIcone acao="editar" herda-cor class="me-1" /> Editar</button>
             </div>
 
             <div class="card-body border-top pt-6">
