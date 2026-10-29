@@ -3,6 +3,7 @@ import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 // Painel de detalhes (somente leitura) que desliza pela lateral direita —
 // widget KTDrawer do próprio Metronic (já iniciado globalmente em
 // AppLayout.vue), em vez de um modal como o de criar/editar.
+import PerfisDoUtilizador from '@/Components/Shared/PerfisDoUtilizador.vue';
 import UsuarioAvatar from './UsuarioAvatar.vue';
 import UsuarioStatusBadge from './UsuarioStatusBadge.vue';
 
@@ -45,10 +46,7 @@ defineProps({
                 <div class="mb-6">
                     <label class="fw-semibold text-muted fs-7 text-uppercase">Perfil</label>
                     <div class="mt-1">
-                        <span v-if="!utilizador.perfis?.length" class="text-muted">—</span>
-                        <span v-for="perfilNome in utilizador.perfis" :key="perfilNome" class="badge badge-light-primary me-1">
-                            {{ perfilNome }}
-                        </span>
+                        <PerfisDoUtilizador :nome="utilizador.name" :perfis="utilizador.perfis ?? []" />
                     </div>
                 </div>
 

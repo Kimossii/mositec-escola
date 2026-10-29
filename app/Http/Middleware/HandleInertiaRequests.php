@@ -91,10 +91,13 @@ class HandleInertiaRequests extends Middleware
             ],
             // Contexto do menu do utilizador (perfil e escola): só se vê ao abrir o menu, por isso diferido.
             'conta' => Inertia::defer(function () use ($request) {
-                $perfil = $request->user()?->roles()->first(['roles.nome', 'roles.descricao']);
+                $perfis = $request->user()?->roles()->get(['roles.nome', 'roles.descricao'])
+                    ->map(fn ($role) => Perfil::tryFrom((int) $role->nome)?->label() ?? $role->descricao)->values()->all() ?? [];
 
                 return [
-                    'perfil' => $perfil === null ? null : (Perfil::tryFrom((int) $perfil->nome)?->label() ?? $perfil->descricao),
+                    // `perfil` é o primeiro; `perfis` são todos (o menu mostra o primeiro e «+N»).
+                    'perfil' => $perfis[0] ?? null,
+                    'perfis' => $perfis,
                     'escola' => Estabelecimento::current()?->nome,
                 ];
             }),

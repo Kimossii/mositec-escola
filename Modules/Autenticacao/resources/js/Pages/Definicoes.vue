@@ -5,6 +5,7 @@ import { router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import AvatarUtilizador from '@/Components/Shared/AvatarUtilizador.vue';
+import PerfisDoUtilizador from '@/Components/Shared/PerfisDoUtilizador.vue';
 import Loader from '@/Components/Shared/Loader.vue';
 import { definirTema, temaActual } from '@/Composables/useTema';
 import { MENU_DE, ORDEM_DOS_MENUS } from '../../../../Permissao/resources/js/Support/menusDosModulos';
@@ -193,7 +194,7 @@ const totalPermissoes = computed(() => permissoes.value.length);
                         <h1 class="fs-2 fw-bold mb-1">{{ user.name }}</h1>
                         <div class="d-flex flex-wrap align-items-center gap-4 text-muted fs-7">
                             <span>{{ user.email }}</span>
-                            <span v-if="conta?.perfil" class="badge badge-light-success">{{ conta.perfil }}</span>
+                            <PerfisDoUtilizador v-if="conta?.perfis?.length" :nome="user.name" :perfis="conta.perfis" />
                             <span v-if="conta?.escola" class="d-flex align-items-center"><i class="ki-duotone ki-bank fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>{{ conta.escola }}</span>
                         </div>
                     </div>
@@ -250,9 +251,10 @@ const totalPermissoes = computed(() => permissoes.value.length);
                 <div v-if="abaActiva === 'perfil'" class="card">
                     <div class="card-header"><h3 class="card-title fw-bold fs-5">Os meus dados</h3></div>
                     <div class="card-body pt-2">
-                        <div v-for="[rotulo, valor] in [['Nome', user.name], ['Email de acesso', user.email], ['Perfil', conta?.perfil ?? '—'], ['Escola', conta?.escola ?? '—'], ['Membro desde', formatarData(membroDesde)]]" :key="rotulo" class="d-flex justify-content-between py-4 border-bottom border-gray-200">
+                        <div v-for="[rotulo, valor] in [['Nome', user.name], ['Email de acesso', user.email], ['Perfil', null], ['Escola', conta?.escola ?? '—'], ['Membro desde', formatarData(membroDesde)]]" :key="rotulo" class="d-flex justify-content-between py-4 border-bottom border-gray-200">
                             <span class="text-muted">{{ rotulo }}</span>
-                            <span class="fw-semibold text-end">{{ valor }}</span>
+                            <PerfisDoUtilizador v-if="rotulo === 'Perfil'" :nome="user.name" :perfis="conta?.perfis ?? []" />
+                            <span v-else class="fw-semibold text-end">{{ valor }}</span>
                         </div>
                         <div class="d-flex align-items-start bg-body-secondary rounded p-4 mt-6 text-gray-700 fs-7">
                             <i class="ki-duotone ki-information-5 fs-3 text-info me-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>

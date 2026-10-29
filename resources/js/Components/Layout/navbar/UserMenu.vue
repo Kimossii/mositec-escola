@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import AvatarUtilizador from '@/Components/Shared/AvatarUtilizador.vue'
+import PerfisDoUtilizador from '@/Components/Shared/PerfisDoUtilizador.vue'
 
 const user = usePage().props.auth.user
 const conta = computed(() => usePage().props.conta)
@@ -22,8 +23,8 @@ const iniciais = computed(() => (user.name ?? '')
                 <div class="d-flex flex-column min-w-0">
                     <div class="fw-bold fs-5 text-truncate">{{ user.name }}</div>
                     <div class="fw-semibold text-muted fs-7 text-truncate">{{ user.email }}</div>
-                    <div v-if="conta?.perfil" class="mt-1">
-                        <span class="badge badge-light-success fw-bold fs-8 px-2 py-1">{{ conta.perfil }}</span>
+                    <div v-if="conta?.perfis?.length" class="mt-1">
+                        <PerfisDoUtilizador :nome="user.name" :perfis="conta.perfis" classe="fw-bold fs-8 px-2 py-1" />
                     </div>
                 </div>
             </div>
