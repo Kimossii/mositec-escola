@@ -15,6 +15,10 @@ Route::middleware(['auth'])->prefix('horarios')->name('horarios.')->group(functi
 // «Os meus ficheiros»: exportações geradas em fila, só do próprio utilizador.
 Route::middleware(['auth'])->prefix('ficheiros')->name('ficheiros.')->group(function () {
     Route::get('/', [FicheiroController::class, 'index'])->name('index');
+    Route::delete('/', [FicheiroController::class, 'eliminar'])->name('eliminar');
+    Route::post('/partilhar', [FicheiroController::class, 'partilhar'])->name('partilhar');
+    Route::get('/{pedido}/destinatarios', [FicheiroController::class, 'destinatarios'])->whereNumber('pedido')->name('destinatarios');
+    Route::get('/pasta/descarregar', [FicheiroController::class, 'descarregarPasta'])->name('descarregar-pasta');
     Route::get('/{pedido}/descarregar', [FicheiroController::class, 'descarregar'])->whereNumber('pedido')->name('descarregar');
 });
 

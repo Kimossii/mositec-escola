@@ -31,7 +31,8 @@ class Exportador
     public const LINHAS_IMEDIATAS = ['csv' => 5000, 'excel' => 5000, 'pdf' => 300, 'zip' => 300];
 
     /** Descarga imediata; ou 202 com o pedido, se foi para a fila. */
-    public function responder(TabelaExportavel $tabela, ?string $formato, string $nomeBase): BinaryFileResponse|JsonResponse
+    /** `$permissao`: o que um colega precisa de ter (separado por vírgulas) para o ficheiro lhe poder ser partilhado; sem ela não se partilha. */
+    public function responder(TabelaExportavel $tabela, ?string $formato, string $nomeBase, ?string $permissao = null): BinaryFileResponse|JsonResponse
     {
         $formato = FormatoExportacao::tryFrom((string) $formato)
             ?? throw new HttpException(422, 'Formato de exportação inválido. Use excel, pdf, csv ou zip.');
@@ -44,7 +45,7 @@ class Exportador
         $nome = Str::slug($nomeBase).'-'.date('Y-m-d').'.'.$formato->extensao();
 
         if ($this->deveEnfileirar($formato, count($linhas))) {
-            return $this->enfileirar($tabela, $formato, $nome);
+            return $this->enfileirar($tabela, $formato, $nome, $permissao);
         }
 
         $contexto = ['exportacao' => $tabela->titulo, 'formato' => $formato->value, 'linhas' => count($linhas)];
@@ -80,7 +81,7 @@ class Exportador
     }
 
     /** A tabela vai para um ficheiro temporário (não para o payload do job) e o job gera o ficheiro final. */
-    private function enfileirar(TabelaExportavel $tabela, FormatoExportacao $formato, string $nome): JsonResponse
+    private function enfileirar(TabelaExportavel $tabela, FormatoExportacao $formato, string $nome, ?string $permissao): JsonResponse
     {
         $pendentes = PedidoExportacao::query()->where('user_id', auth()->id())->where('estado', PedidoExportacao::PENDENTE);
 
@@ -101,6 +102,7 @@ class Exportador
             'titulo' => $tabela->titulo,
             'formato' => $formato->value,
             'nome' => $nome,
+            'permissao' => $permissao,
             'linhas' => count($tabela->linhasComoLista()),
             'estado' => PedidoExportacao::PENDENTE,
         ]);

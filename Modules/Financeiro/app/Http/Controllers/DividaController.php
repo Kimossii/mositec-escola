@@ -64,6 +64,6 @@ class DividaController extends Controller
             assinaturas: ['Elaborado por', 'Verificado por', 'O Director'],
         );
 
-        return $exportador->responder($tabela, $request->query('formato'), 'dividas');
+        return $exportador->responder($tabela, $request->query('formato'), 'dividas', 'pagamento.exportar');
     }
 }

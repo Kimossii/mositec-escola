@@ -189,7 +189,7 @@ class UsuarioController extends Controller
         // Fecha por omissão: na lista geral, quem não pode ver administradores não os recebe no ficheiro.
         $tabela = $exportacao->tabela($dados['perfil'] ?? null, $request->only(['pesquisa', 'estado']), $podeVerAdministradores);
 
-        return $exportador->responder($tabela, $dados['formato'], 'utilizadores'.(isset($dados['perfil']) ? '-'.$dados['perfil'] : ''));
+        return $exportador->responder($tabela, $dados['formato'], 'utilizadores'.(isset($dados['perfil']) ? '-'.$dados['perfil'] : ''), $podeVerAdministradores ? 'usuario.exportar,autorizacao.ver' : 'usuario.exportar');
     }
 
     /** Foto de perfil de um utilizador, para as listas e a ficha. A de um administrador exige também `autorizacao.ver`. */

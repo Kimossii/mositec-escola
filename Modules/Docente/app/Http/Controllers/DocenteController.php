@@ -49,7 +49,7 @@ class DocenteController extends Controller
             'acesso' => ['nullable', 'in:com,sem'],
         ]);
 
-        return $exportador->responder($exportacao->tabela($dados), $dados['formato'], 'docentes');
+        return $exportador->responder($exportacao->tabela($dados), $dados['formato'], 'docentes', 'docente.exportar');
     }
 
     public function store(CriarDocenteRequest $request)

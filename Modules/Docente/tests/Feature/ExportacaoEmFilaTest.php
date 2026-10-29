@@ -102,4 +102,78 @@ class ExportacaoEmFilaTest extends TestCase
         $this->actingAs($this->como(Perfil::ADMIN_ESCOLA, 'dono@example.com'))->get('/docentes/exportar?formato=csv')->assertOk()->assertDownload();
         $this->assertSame(0, PedidoExportacao::count());
     }
+
+    public function test_eliminar_apaga_o_ficheiro_so_do_dono_e_nunca_os_a_preparar(): void
+    {
+        Storage::fake('local');
+        $this->seed(PermissaoDatabaseSeeder::class);
+        $this->cenarioDeDocencia();
+        $dono = $this->como(Perfil::ADMIN_ESCOLA, 'dono@example.com');
+        $outro = $this->como(Perfil::ADMIN_ESCOLA, 'outro@example.com');
+        $base = ['titulo' => 'Docentes', 'formato' => 'pdf', 'nome' => 'd.pdf', 'linhas' => 1];
+        $pronto = PedidoExportacao::create($base + ['user_id' => $dono->id, 'estado' => PedidoExportacao::PRONTO, 'caminho' => 'exportacoes/x/1.pdf']);
+        $preparar = PedidoExportacao::create($base + ['user_id' => $dono->id, 'estado' => PedidoExportacao::PENDENTE]);
+        Storage::disk('local')->put('exportacoes/x/1.pdf', 'x');
+
+        $this->actingAs($outro)->delete('/ficheiros', ['ids' => [$pronto->id]]);
+        $this->assertNotNull(PedidoExportacao::find($pronto->id));
+
+        $this->actingAs($dono)->delete('/ficheiros', ['ids' => [$pronto->id, $preparar->id]])->assertRedirect();
+        $this->assertNull(PedidoExportacao::find($pronto->id));
+        Storage::disk('local')->assertMissing('exportacoes/x/1.pdf');
+        $this->assertNotNull(PedidoExportacao::find($preparar->id));
+    }
+
+    public function test_descarregar_pasta_devolve_um_zip_so_com_os_ficheiros_prontos_do_dono(): void
+    {
+        Storage::fake('local');
+        $this->seed(PermissaoDatabaseSeeder::class);
+        $this->cenarioDeDocencia();
+        $dono = $this->como(Perfil::ADMIN_ESCOLA, 'dono@example.com');
+        $base = ['titulo' => 'Docentes', 'formato' => 'pdf', 'linhas' => 1, 'user_id' => $dono->id, 'estado' => PedidoExportacao::PRONTO];
+        PedidoExportacao::create($base + ['nome' => 'a.pdf', 'caminho' => 'exportacoes/x/1.pdf']);
+        PedidoExportacao::create($base + ['nome' => 'a.pdf', 'caminho' => 'exportacoes/x/2.pdf']);
+        Storage::disk('local')->put('exportacoes/x/1.pdf', 'um');
+        Storage::disk('local')->put('exportacoes/x/2.pdf', 'dois');
+
+        $resposta = $this->actingAs($dono)->get('/ficheiros/pasta/descarregar?titulo=Docentes')->assertOk();
+        $zip = new \ZipArchive;
+        $zip->open($resposta->baseResponse->getFile()->getPathname());
+        $this->assertSame(2, $zip->numFiles);
+
+        $outro = $this->como(Perfil::ADMIN_ESCOLA, 'outro@example.com');
+        $this->actingAs($outro)->get('/ficheiros/pasta/descarregar?titulo=Docentes')->assertNotFound();
+    }
+
+    public function test_partilha_so_com_quem_tem_a_permissao_e_a_descarga_respeita_a_revogacao(): void
+    {
+        Storage::fake('local');
+        $this->seed(PermissaoDatabaseSeeder::class);
+        $this->cenarioDeDocencia();
+        $dono = $this->como(Perfil::ADMIN_ESCOLA, 'dono@example.com');
+        $colega = $this->como(Perfil::ADMIN_ESCOLA, 'colega@example.com');
+        $semPermissao = $this->como(Perfil::FUNCIONARIO, 'func@example.com');
+        $pedido = PedidoExportacao::create(['user_id' => $dono->id, 'titulo' => 'Docentes', 'formato' => 'pdf', 'nome' => 'd.pdf', 'permissao' => 'docente.exportar', 'linhas' => 1, 'estado' => PedidoExportacao::PRONTO, 'caminho' => 'exportacoes/x/9.pdf']);
+        Storage::disk('local')->put('exportacoes/x/9.pdf', 'pdf');
+
+        // Só aparecem como destinatários os colegas com a permissão.
+        $ids = collect($this->actingAs($dono)->getJson("/ficheiros/{$pedido->id}/destinatarios")->assertOk()->json())->pluck('id');
+        $this->assertTrue($ids->contains($colega->id));
+        $this->assertFalse($ids->contains($semPermissao->id));
+
+        // Sem permissão: recusado. Sem partilha: 404 ao descarregar.
+        $this->post('/ficheiros/partilhar', ['ids' => [$pedido->id], 'destinatarios' => [$semPermissao->id]])->assertSessionHasErrors('destinatarios');
+        $this->actingAs($colega)->get("/ficheiros/{$pedido->id}/descarregar")->assertNotFound();
+
+        // Partilhado: o colega vê e descarrega; não elimina.
+        $this->actingAs($dono)->post('/ficheiros/partilhar', ['ids' => [$pedido->id], 'destinatarios' => [$colega->id]])->assertRedirect();
+        $this->actingAs($colega)->get("/ficheiros/{$pedido->id}/descarregar")->assertOk();
+        $this->get('/ficheiros')->assertInertia(fn ($p) => $p->has('partilhados', 1)->where('partilhados.0.partilhado_por', 'dono@example.com'));
+        $this->delete('/ficheiros', ['ids' => [$pedido->id]]);
+        $this->assertNotNull(PedidoExportacao::find($pedido->id));
+
+        // Revogado (lista vazia): deixa de poder descarregar.
+        $this->actingAs($dono)->post('/ficheiros/partilhar', ['ids' => [$pedido->id], 'destinatarios' => []])->assertRedirect();
+        $this->actingAs($colega)->get("/ficheiros/{$pedido->id}/descarregar")->assertNotFound();
+    }
 }

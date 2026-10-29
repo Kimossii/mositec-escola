@@ -23,7 +23,13 @@ class PedidoExportacao extends Model
 
     protected $table = 'pedidos_exportacao';
 
-    protected $fillable = ['user_id', 'titulo', 'formato', 'nome', 'linhas', 'tamanho', 'estado', 'caminho', 'erro', 'concluido_em', 'visto_em'];
+    public function partilhas(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PartilhaExportacao::class, 'pedido_exportacao_id');
+    }
+
+
+    protected $fillable = ['user_id', 'titulo', 'formato', 'nome', 'permissao', 'linhas', 'tamanho', 'estado', 'caminho', 'erro', 'concluido_em', 'visto_em'];
 
     protected $casts = ['concluido_em' => 'datetime', 'visto_em' => 'datetime'];
 }

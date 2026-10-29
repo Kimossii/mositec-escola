@@ -50,7 +50,7 @@ class RelatorioFinanceiroController extends Controller
             assinaturas: ['Elaborado por', 'Verificado por', 'O Director'],
         );
 
-        return $exportador->responder($tabela, $request->query('formato'), "recebimentos-{$de}-{$ate}");
+        return $exportador->responder($tabela, $request->query("formato"), "recebimentos-{$de}-{$ate}", "pagamento.exportar");
     }
 
     /** @return array{0: string, 1: string} início do mês corrente → hoje, por omissão */

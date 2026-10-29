@@ -59,7 +59,7 @@ class AtribuicaoDocenteController extends Controller
             'pesquisa' => ['nullable', 'string', 'max:100'],
         ]);
 
-        return $exportador->responder($exportacao->tabela($dados), $dados['formato'], 'atribuicoes-docentes');
+        return $exportador->responder($exportacao->tabela($dados), $dados['formato'], 'atribuicoes-docentes', 'atribuicao-docente.exportar');
     }
 
     public function store(AtribuirDocenteRequest $request)
