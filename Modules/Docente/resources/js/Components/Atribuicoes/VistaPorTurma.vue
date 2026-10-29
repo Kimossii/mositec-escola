@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { can } from '@/Composables/usePermissoes';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import VigenciaBadge from './VigenciaBadge.vue';
+import AcessoBadge from '../Docentes/AcessoBadge.vue';
 import { VIGENCIA, formatarDia, papelLabel } from '../../Models/PapelDocente';
 
 /**
@@ -13,7 +14,10 @@ const props = defineProps({
     porTurma: { type: Object, default: null }, // { linhas, motivo_vazio } ou null sem turma escolhida
     turma: { type: Object, default: null },
     semTurmas: { type: Boolean, default: false },
+    docentesSemAcesso: { type: Array, default: () => [] }, // ids de docentes activos sem conta
 });
+
+const semAcesso = (a) => props.docentesSemAcesso.includes(a?.docente_id);
 const emit = defineEmits(['atribuir', 'substituir', 'editar', 'encerrar', 'eliminar']);
 
 const linhas = computed(() => props.porTurma?.linhas ?? []);
@@ -92,7 +96,10 @@ const cobertura = (linha) => {
                         </td>
                         <td>
                             <template v-if="linha.titular">
-                                <div class="text-gray-800">{{ linha.titular.professor_nome }}</div>
+                                <div class="text-gray-800">
+                                    {{ linha.titular.docente_nome }}
+                                    <AcessoBadge v-if="semAcesso(linha.titular)" :tem-acesso="false" class="fs-8 ms-2" title="Ainda sem conta de utilizador: crie-lhe acesso em Pessoal → Docentes." />
+                                </div>
                                 <div class="text-muted fs-8">
                                     desde {{ formatarDia(linha.titular.data_inicio) }}<span v-if="linha.titular.data_fim"> até {{ formatarDia(linha.titular.data_fim) }}</span>
                                 </div>
@@ -100,13 +107,15 @@ const cobertura = (linha) => {
                             <span v-else class="text-danger fs-7">Sem titular</span>
                             <div v-if="linha.titular_agendado" class="mt-1 fs-8">
                                 <VigenciaBadge :estado="linha.titular_agendado.estado" class="me-1" />
-                                {{ linha.titular_agendado.professor_nome }} a partir de {{ formatarDia(linha.titular_agendado.data_inicio) }}
+                                {{ linha.titular_agendado.docente_nome }} a partir de {{ formatarDia(linha.titular_agendado.data_inicio) }}
+                                <AcessoBadge v-if="semAcesso(linha.titular_agendado)" :tem-acesso="false" class="fs-8 ms-1" title="Ainda sem conta de utilizador: crie-lhe acesso em Pessoal → Docentes." />
                             </div>
                         </td>
                         <td>
                             <div v-for="s in linha.substitutos" :key="s.id" class="mb-1">
-                                <span class="text-gray-800">{{ s.professor_nome }}</span>
+                                <span class="text-gray-800">{{ s.docente_nome }}</span>
                                 <VigenciaBadge :estado="s.estado" class="ms-2" />
+                                <AcessoBadge v-if="semAcesso(s)" :tem-acesso="false" class="fs-8 ms-1" title="Ainda sem conta de utilizador: crie-lhe acesso em Pessoal → Docentes." />
                                 <div class="text-muted fs-8">{{ formatarDia(s.data_inicio) }}<span v-if="s.data_fim"> – {{ formatarDia(s.data_fim) }}</span></div>
                             </div>
                             <span v-if="!linha.substitutos?.length" class="text-muted">—</span>
@@ -135,7 +144,7 @@ const cobertura = (linha) => {
                                     </div>
                                     <template v-for="a in pessoasDaLinha(linha).filter(podeGerir)" :key="a.id">
                                         <div class="menu-item px-3 pt-3">
-                                            <div class="menu-content fs-8 text-muted text-uppercase px-3 py-1">{{ a.professor_nome }} · {{ papelLabel(a.papel) }}</div>
+                                            <div class="menu-content fs-8 text-muted text-uppercase px-3 py-1">{{ a.docente_nome }} · {{ papelLabel(a.papel) }}</div>
                                         </div>
                                         <div v-if="can('atribuicao-docente.editar')" class="menu-item px-3">
                                             <a href="#" class="menu-link px-3" @click.prevent="emit('editar', a, linha)">

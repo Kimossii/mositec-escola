@@ -24,7 +24,7 @@ const props = defineProps({
     atribuicoes: { type: Object, required: true }, // paginator
     indicadores: { type: Object, default: null }, // diferido: { em_vigor, disciplinas_sem_titular }
     filtros: { type: Object, default: () => ({}) },
-    opcoes: { type: Object, required: true }, // { anosLectivos, turmas, professores }
+    opcoes: { type: Object, required: true }, // { anosLectivos, turmas, docentes, disciplinas }
 });
 defineOptions({ layout: AppLayout });
 
@@ -35,7 +35,9 @@ const opcoesAno = computed(() => props.opcoes.anosLectivos.map((a) => ({ value: 
 const opcoesTurma = computed(() => props.opcoes.turmas.map((t) => ({ value: t.id, label: t.codigo ? `${t.nome} (${t.codigo})` : t.nome })));
 const opcoesTurmaFiltro = computed(() => [{ value: '', label: 'Todas as turmas' }, ...opcoesTurma.value]);
 const opcoesDisciplinaFiltro = computed(() => [{ value: '', label: 'Todas as disciplinas' }, ...(props.opcoes.disciplinas ?? []).map((d) => ({ value: d.id, label: d.nome }))]);
-const opcoesProfessorFiltro = computed(() => [{ value: '', label: 'Todos os professores' }, ...props.opcoes.professores.map((p) => ({ value: p.id, label: p.nome }))]);
+// Ids dos docentes activos ainda sem conta: as linhas assinalam-nos (não poderão lançar notas enquanto não tiverem acesso).
+const docentesSemAcesso = computed(() => props.opcoes.docentes.filter((d) => !d.tem_acesso).map((d) => d.id));
+const opcoesDocenteFiltro = computed(() => [{ value: '', label: 'Todos os docentes' }, ...props.opcoes.docentes.map((d) => ({ value: d.id, label: d.nome }))]);
 const opcoesPapel = [
     { value: '', label: 'Todos os papéis' },
     { value: PAPEL.TITULAR, label: 'Titular' },
@@ -57,7 +59,7 @@ const estado = reactive({
     ano_lectivo_id: id(props.anoLectivoId),
     vista: props.vista,
     turma_id: id(props.filtros.turma_id),
-    professor_id: id(props.filtros.professor_id),
+    docente_id: id(props.filtros.docente_id),
     disciplina_id: id(props.filtros.disciplina_id),
     papel: id(props.filtros.papel),
     estado_vigencia: props.filtros.estado_vigencia ?? '',
@@ -65,9 +67,9 @@ const estado = reactive({
 });
 
 const turmaEscolhida = computed(() => props.opcoes.turmas.find((t) => t.id === estado.turma_id) ?? null);
-const filtrosAtivos = computed(() => ['turma_id', 'professor_id', 'disciplina_id', 'papel', 'estado_vigencia'].filter((c) => estado[c] !== '').length);
+const filtrosAtivos = computed(() => ['turma_id', 'docente_id', 'disciplina_id', 'papel', 'estado_vigencia'].filter((c) => estado[c] !== '').length);
 const comFiltros = computed(() => filtrosAtivos.value > 0 || estado.pesquisa !== '');
-const limparFiltros = () => Object.assign(estado, { turma_id: '', professor_id: '', disciplina_id: '', papel: '', estado_vigencia: '' });
+const limparFiltros = () => Object.assign(estado, { turma_id: '', docente_id: '', disciplina_id: '', papel: '', estado_vigencia: '' });
 
 const parametros = () => Object.fromEntries(Object.entries(estado).filter(([, v]) => v !== ''));
 const paramsExportacao = computed(() => {
@@ -217,6 +219,7 @@ function confirmarEliminacao() {
                     :por-turma="estado.turma_id !== '' ? porTurma : null"
                     :turma="turmaEscolhida"
                     :sem-turmas="!opcoes.turmas.length"
+                    :docentes-sem-acesso="docentesSemAcesso"
                     @atribuir="(linha) => abrir('atribuir', null, linha)"
                     @substituir="(linha) => abrir('substituir', null, linha)"
                     @editar="(a, linha) => abrir('editar', a, linha)"
@@ -226,14 +229,14 @@ function confirmarEliminacao() {
             </template>
 
             <template v-else>
-                <FiltrosRecolhiveis v-model="estado.pesquisa" placeholder="Pesquisar por professor, disciplina ou turma" :ativos="filtrosAtivos" @limpar="limparFiltros">
+                <FiltrosRecolhiveis v-model="estado.pesquisa" placeholder="Pesquisar por docente, disciplina ou turma" :ativos="filtrosAtivos" @limpar="limparFiltros">
                     <div class="col-12 col-md-6 col-xl-4">
                         <label class="fw-semibold fs-7 text-muted mb-1">Turma</label>
                         <SelectSolid v-model="estado.turma_id" :options="opcoesTurmaFiltro" searchable />
                     </div>
                     <div class="col-12 col-md-6 col-xl-4">
-                        <label class="fw-semibold fs-7 text-muted mb-1">Professor</label>
-                        <SelectSolid v-model="estado.professor_id" :options="opcoesProfessorFiltro" searchable />
+                        <label class="fw-semibold fs-7 text-muted mb-1">Docente</label>
+                        <SelectSolid v-model="estado.docente_id" :options="opcoesDocenteFiltro" searchable />
                     </div>
                     <div class="col-12 col-md-6 col-xl-4">
                         <label class="fw-semibold fs-7 text-muted mb-1">Disciplina</label>
@@ -252,6 +255,7 @@ function confirmarEliminacao() {
                 <VistaLista
                     :atribuicoes="atribuicoes"
                     :com-filtros="comFiltros"
+                    :docentes-sem-acesso="docentesSemAcesso"
                     @editar="(a) => abrir('editar', a)"
                     @encerrar="(a) => abrir('encerrar', a)"
                     @eliminar="(a) => (paraEliminar = a)"
@@ -263,7 +267,7 @@ function confirmarEliminacao() {
             :show="modal === 'atribuir'"
             :linha="linhaAlvo"
             :turma="turmaEscolhida"
-            :professores="opcoes.professores"
+            :docentes="opcoes.docentes"
             :processing="processing"
             :errors="errors"
             @submit="atribuir"
@@ -273,7 +277,7 @@ function confirmarEliminacao() {
             :show="modal === 'substituir'"
             :linha="linhaAlvo"
             :turma="turmaEscolhida"
-            :professores="opcoes.professores"
+            :docentes="opcoes.docentes"
             :processing="processing"
             :errors="errors"
             @submit="substituir"
@@ -301,7 +305,7 @@ function confirmarEliminacao() {
         <ConfirmModal
             :show="!!paraEliminar"
             titulo="Eliminar atribuição"
-            :mensagem="`Eliminar a atribuição agendada de ${paraEliminar?.professor_nome}? Só é possível porque ainda não começou.`"
+            :mensagem="`Eliminar a atribuição agendada de ${paraEliminar?.docente_nome}? Só é possível porque ainda não começou.`"
             texto-confirmar="Eliminar"
             :processando="eliminando"
             @confirmar="confirmarEliminacao"

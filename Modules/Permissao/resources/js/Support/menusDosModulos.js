@@ -10,6 +10,7 @@ export const MENU_DE = {
     'plano-curricular': { menu: 'Académico', entrada: 'Planos curriculares' },
     turmas: { menu: 'Académico', entrada: 'Turmas' },
     'atribuicao-docente': { menu: 'Académico', entrada: 'Atribuições docentes' },
+    docente: { menu: 'Académico', entrada: 'Docentes' },
     matricula: { menu: 'Académico', entrada: 'Matrículas' },
     professor: { menu: 'Académico', entrada: 'Professores' },
 

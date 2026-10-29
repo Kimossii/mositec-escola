@@ -14,7 +14,7 @@ final class SobreposicaoDeAtribuicao
 
     /** Constraints de exclusão → [campo, mensagem do validador]. */
     private const CONSTRAINTS = [
-        'atribuicoes_docentes_professor_excl' => ['professor_id', ValidadorAtribuicaoDocenteService::MENSAGEM_PROFESSOR_SOBREPOSTO],
+        'atribuicoes_docentes_docente_excl' => ['docente_id', ValidadorAtribuicaoDocenteService::MENSAGEM_DOCENTE_SOBREPOSTO],
         'atribuicoes_docentes_um_titular_excl' => ['data_inicio', ValidadorAtribuicaoDocenteService::MENSAGEM_TITULAR_SOBREPOSTO],
     ];
 

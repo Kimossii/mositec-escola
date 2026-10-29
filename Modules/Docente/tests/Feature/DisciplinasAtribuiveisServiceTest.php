@@ -13,12 +13,9 @@ use Modules\Docente\Services\DisciplinasAtribuiveisService;
 use Modules\Docente\Services\ValidadorAtribuicaoDocenteService;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Actions\InscreverDisciplinasAutomaticamenteAction;
-use Modules\Permissao\Enums\Perfil;
-use Modules\Permissao\Models\Role;
 use Modules\PlanoCurricular\Models\PlanoCurricular;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
 use Modules\Turma\Models\Turma;
-use Modules\Usuario\Models\User;
 use Modules\Docente\Tests\Support\CenarioDeDocencia;
 use Tests\TestCase;
 
@@ -37,10 +34,10 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
         return app(ValidadorAtribuicaoDocenteService::class);
     }
 
-    private function dto(array $c, int $professorId, array $o = []): AtribuicaoDocenteDTO
+    private function dto(array $c, int $docenteId, array $o = []): AtribuicaoDocenteDTO
     {
         return new AtribuicaoDocenteDTO(
-            professor_id: $o['professor_id'] ?? $professorId,
+            docente_id: $o['docente_id'] ?? $docenteId,
             turma_id: $o['turma_id'] ?? $c['turma']->id,
             disciplina_id: $o['disciplina_id'] ?? $c['disciplina']->id,
             papel: $o['papel'] ?? PapelDocente::TITULAR,
@@ -49,11 +46,11 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
         );
     }
 
-    private function existente(array $c, int $professorId, array $o = []): AtribuicaoDocente
+    private function existente(array $c, int $docenteId, array $o = []): AtribuicaoDocente
     {
         return AtribuicaoDocente::create([
             'ano_lectivo_id' => $c['ano']->id, 'turma_id' => $c['turma']->id,
-            'disciplina_id' => $o['disciplina_id'] ?? $c['disciplina']->id, 'professor_id' => $professorId,
+            'disciplina_id' => $o['disciplina_id'] ?? $c['disciplina']->id, 'docente_id' => $docenteId,
             'papel' => $o['papel'] ?? PapelDocente::TITULAR,
             'data_inicio' => $o['data_inicio'] ?? '2026-03-01', 'data_fim' => $o['data_fim'] ?? null,
         ]);
@@ -133,7 +130,7 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
     public function test_aceita_atribuicao_valida_e_devolve_a_turma(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
 
         $turma = $this->validador()->validar($this->dto($c, $prof->id));
 
@@ -144,7 +141,7 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
     public function test_aceita_ano_planeado_e_activo(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
         $c['ano']->update(['estado' => EstadoAnoLectivo::PLANEADO]);
 
         $this->assertSame($c['turma']->id, $this->validador()->validar($this->dto($c, $prof->id))->id);
@@ -156,7 +153,7 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
     public function test_rejeita_disciplina_fora_do_plano(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
         $fora = Disciplina::create(['estabelecimento_id' => Estabelecimento::current()->id, 'codigo' => 'FIS', 'nome' => 'Física']);
 
         $this->assertErro('disciplina_id', fn () => $this->validador()->validar($this->dto($c, $prof->id, ['disciplina_id' => $fora->id])));
@@ -165,7 +162,7 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
     public function test_rejeita_datas_fora_do_ano_lectivo(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
 
         $this->assertErro('data_inicio', fn () => $this->validador()->validar($this->dto($c, $prof->id, ['data_inicio' => '2025-12-31'])));
         $this->assertErro('data_inicio', fn () => $this->validador()->validar($this->dto($c, $prof->id, ['data_inicio' => '2027-01-01'])));
@@ -178,7 +175,7 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
     public function test_rejeita_data_fim_anterior_a_data_inicio(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
 
         $this->assertErro('data_fim', fn () => $this->validador()->validar($this->dto($c, $prof->id, ['data_inicio' => '2026-05-10', 'data_fim' => '2026-05-09'])));
         $this->validador()->validar($this->dto($c, $prof->id, ['data_inicio' => '2026-05-10', 'data_fim' => '2026-05-10']));
@@ -188,7 +185,7 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
     public function test_rejeita_turma_inactiva(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
         $c['turma']->update(['estado' => 0]);
 
         $this->assertErro('turma_id', fn () => $this->validador()->validar($this->dto($c, $prof->id)));
@@ -197,7 +194,7 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
     public function test_rejeita_turma_inexistente(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
 
         $this->assertErro('turma_id', fn () => $this->validador()->validar($this->dto($c, $prof->id, ['turma_id' => 999999])));
     }
@@ -205,49 +202,46 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
     public function test_rejeita_ano_lectivo_encerrado(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
         $c['ano']->update(['estado' => EstadoAnoLectivo::ENCERRADO]);
 
         $this->assertErro('turma_id', fn () => $this->validador()->validar($this->dto($c, $prof->id)));
     }
 
-    public function test_rejeita_professor_inexistente_inactivo_ou_sem_perfil(): void
+    public function test_rejeita_docente_inexistente_ou_inactivo(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
-        $this->assertErro('professor_id', fn () => $this->validador()->validar($this->dto($c, 999999)));
+        $docente = $this->criarDocente();
+        $this->assertErro('docente_id', fn () => $this->validador()->validar($this->dto($c, 999999)));
 
-        $prof->update(['estado' => 0]);
-        $this->assertErro('professor_id', fn () => $this->validador()->validar($this->dto($c, $prof->id)));
-
-        $semPerfil = User::create(['name' => 'X', 'email' => 'x@example.com', 'password' => 'segredo123']);
-        $this->assertErro('professor_id', fn () => $this->validador()->validar($this->dto($c, $semPerfil->id)));
+        $docente->update(['estado' => 0]);
+        $this->assertErro('docente_id', fn () => $this->validador()->validar($this->dto($c, $docente->id)));
     }
 
-    public function test_rejeita_professor_de_outro_tenant(): void
+    public function test_rejeita_docente_de_outro_tenant(): void
     {
         $c = $this->cenarioDeDocencia();
         $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
-        $profB = $this->noTenant($outro, fn () => $this->criarProfessor('b@example.com'));
+        $docenteB = $this->noTenant($outro, fn () => $this->criarDocente('Docente b'));
 
-        $this->assertErro('professor_id', fn () => $this->validador()->validar($this->dto($c, $profB->id)));
+        $this->assertErro('docente_id', fn () => $this->validador()->validar($this->dto($c, $docenteB->id)));
     }
 
-    public function test_aceita_professor_com_outros_perfis(): void
+    public function test_aceita_docente_activo_com_ou_sem_conta(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
-        $outroPerfil = Role::where('nome', '!=', Perfil::PROFESSOR->value)->first();
-        $prof->roles()->attach($outroPerfil->id);
+        $semConta = $this->criarDocente('Sem Conta');
+        $comConta = $this->criarDocente('Com Conta', comAcesso: true);
 
-        $this->assertSame($c['turma']->id, $this->validador()->validar($this->dto($c, $prof->id))->id);
+        $this->assertSame($c['turma']->id, $this->validador()->validar($this->dto($c, $semConta->id))->id);
+        $this->assertSame($c['turma']->id, $this->validador()->validar($this->dto($c, $comConta->id, ['disciplina_id' => $c['outraDisciplina']->id]))->id);
     }
 
     public function test_rejeita_segundo_titular_sobreposto(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->criarProfessor('a@example.com');
-        $b = $this->criarProfessor('b@example.com');
+        $a = $this->criarDocente('Docente a');
+        $b = $this->criarDocente('Docente b');
         $this->existente($c, $a->id, ['data_inicio' => '2026-03-01', 'data_fim' => '2026-06-30']);
 
         $this->assertErro('data_inicio', fn () => $this->validador()->validar($this->dto($c, $b->id, ['data_inicio' => '2026-06-30'])));
@@ -263,8 +257,8 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
     public function test_substituto_pode_coexistir_com_titular_de_outro_professor(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->criarProfessor('a@example.com');
-        $b = $this->criarProfessor('b@example.com');
+        $a = $this->criarDocente('Docente a');
+        $b = $this->criarDocente('Docente b');
         $this->existente($c, $a->id);
 
         $turma = $this->validador()->validar($this->dto($c, $b->id, ['papel' => PapelDocente::SUBSTITUTO]));
@@ -275,11 +269,11 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
     public function test_rejeita_mesmo_professor_sobreposto_qualquer_papel(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->criarProfessor('a@example.com');
+        $a = $this->criarDocente('Docente a');
         $this->existente($c, $a->id, ['papel' => PapelDocente::SUBSTITUTO, 'data_inicio' => '2026-03-01', 'data_fim' => '2026-04-30']);
 
-        $this->assertErro('professor_id', fn () => $this->validador()->validar($this->dto($c, $a->id, ['data_inicio' => '2026-04-30'])));
-        $this->assertErro('professor_id', fn () => $this->validador()->validar($this->dto($c, $a->id, ['papel' => PapelDocente::SUBSTITUTO, 'data_inicio' => '2026-04-01'])));
+        $this->assertErro('docente_id', fn () => $this->validador()->validar($this->dto($c, $a->id, ['data_inicio' => '2026-04-30'])));
+        $this->assertErro('docente_id', fn () => $this->validador()->validar($this->dto($c, $a->id, ['papel' => PapelDocente::SUBSTITUTO, 'data_inicio' => '2026-04-01'])));
         $this->validador()->validar($this->dto($c, $a->id, ['data_inicio' => '2026-05-01']));
         // outra disciplina da mesma turma não colide
         $this->validador()->validar($this->dto($c, $a->id, ['disciplina_id' => $c['outraDisciplina']->id]));
@@ -289,11 +283,11 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
     public function test_ignora_a_atribuicao_indicada_e_as_eliminadas(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->criarProfessor('a@example.com');
+        $a = $this->criarDocente('Docente a');
         $existente = $this->existente($c, $a->id);
 
         // sem ignorar: colide consigo própria
-        $this->assertErro('professor_id', fn () => $this->validador()->validar($this->dto($c, $a->id)));
+        $this->assertErro('docente_id', fn () => $this->validador()->validar($this->dto($c, $a->id)));
         // a ignorar: ok
         $this->validador()->validar($this->dto($c, $a->id), $existente);
         // eliminada: ok
@@ -305,8 +299,8 @@ class DisciplinasAtribuiveisServiceTest extends TestCase
     public function test_sobreposicao_considera_fim_do_ano_para_data_fim_nula(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->criarProfessor('a@example.com');
-        $b = $this->criarProfessor('b@example.com');
+        $a = $this->criarDocente('Docente a');
+        $b = $this->criarDocente('Docente b');
         $this->existente($c, $a->id, ['data_inicio' => '2026-03-01', 'data_fim' => null]);
 
         $this->assertErro('data_inicio', fn () => $this->validador()->validar($this->dto($c, $b->id, ['data_inicio' => '2026-12-31'])));

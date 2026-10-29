@@ -21,7 +21,7 @@
             </span>
             <div class="menu-sub menu-sub-accordion">
                 <div v-for="link in itemsVisiveis" :key="link.href" class="menu-item">
-                    <a :class="['menu-link', { active: isActive(link.href) }]" :href="link.href">
+                    <a :class="['menu-link', { active: isActive(link.href, { exact: link.exact, prefix: link.activePrefix }) }]" :href="link.href">
                         <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                         <span class="menu-title">{{ link.title }}</span>
                     </a>

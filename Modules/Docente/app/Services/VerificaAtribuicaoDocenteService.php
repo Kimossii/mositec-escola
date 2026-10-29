@@ -6,11 +6,17 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Core\Contracts\VerificaAtribuicaoDocente;
 use Modules\Docente\Models\AtribuicaoDocente;
+use Modules\Docente\Models\Docente;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
+use Modules\Usuario\Models\User;
 
 /**
  * Implementa o contrato do Core. A vigência efectiva é [data_inicio, min(data_fim, fim do ano lectivo)]:
  * o scope `emVigor` do model é cru, o corte pelo fim do ano lectivo aplica-se aqui.
+ *
+ * O contrato recebe o id do UTILIZADOR (quem está autenticado); a atribuição aponta para o docente. A ponte é a
+ * pessoa: `users.dados_pessoa_id` → `docentes.dados_pessoa_id`, ambas as leituras no tenant corrente. Utilizador
+ * sem docente ligado (ou de outro tenant) não lecciona nada.
  */
 class VerificaAtribuicaoDocenteService implements VerificaAtribuicaoDocente
 {
@@ -20,8 +26,14 @@ class VerificaAtribuicaoDocenteService implements VerificaAtribuicaoDocente
 
     public function podeGerir(int $professorId, int $turmaId, int $disciplinaId, ?CarbonInterface $data = null): bool
     {
+        $docenteId = $this->docenteDoUtilizador($professorId);
+
+        if ($docenteId === null) {
+            return false;
+        }
+
         return $this->emVigorEfectivo($data ?? $this->relogio->hoje())
-            ->where('professor_id', $professorId)
+            ->where('docente_id', $docenteId)
             ->where('turma_id', $turmaId)
             ->where('disciplina_id', $disciplinaId)
             ->exists();
@@ -29,8 +41,14 @@ class VerificaAtribuicaoDocenteService implements VerificaAtribuicaoDocente
 
     public function atribuicoesEmVigorDoProfessor(int $professorId, ?int $anoLectivoId = null): array
     {
+        $docenteId = $this->docenteDoUtilizador($professorId);
+
+        if ($docenteId === null) {
+            return [];
+        }
+
         return $this->emVigorEfectivo($this->relogio->hoje())
-            ->where('professor_id', $professorId)
+            ->where('docente_id', $docenteId)
             ->when($anoLectivoId !== null, fn (Builder $q) => $q->where('ano_lectivo_id', $anoLectivoId))
             ->with(['turma:id,nome', 'disciplina:id,nome'])
             ->orderBy('data_inicio')
@@ -47,6 +65,20 @@ class VerificaAtribuicaoDocenteService implements VerificaAtribuicaoDocente
                 'data_fim' => $a->data_fim?->toDateString(),
             ])
             ->all();
+    }
+
+    /** O docente do tenant corrente com a mesma pessoa que a conta; null se a conta não tiver pessoa ou docente. */
+    private function docenteDoUtilizador(int $utilizadorId): ?int
+    {
+        $pessoaId = User::query()->whereKey($utilizadorId)->value('dados_pessoa_id');
+
+        if ($pessoaId === null) {
+            return null;
+        }
+
+        $docenteId = Docente::query()->where('dados_pessoa_id', $pessoaId)->value('id');
+
+        return $docenteId === null ? null : (int) $docenteId;
     }
 
     /** @return Builder<AtribuicaoDocente> */

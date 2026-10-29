@@ -65,7 +65,7 @@ class SubstituirTitularAction
         $titular->update(['data_fim' => $ultimoDia->toDateString(), 'motivo_encerramento' => $motivo]);
 
         return $this->atribuir->executar(new AtribuicaoDocenteDTO(
-            professor_id: $dto->novo_professor_id,
+            docente_id: $dto->novo_docente_id,
             turma_id: $dto->turma_id,
             disciplina_id: $dto->disciplina_id,
             papel: PapelDocente::TITULAR,
@@ -74,7 +74,7 @@ class SubstituirTitularAction
         ));
     }
 
-    /** A pauta tem de dizer quem leccionou em cada dia: nada do que já passou muda de professor. */
+    /** A pauta tem de dizer quem leccionou em cada dia: nada do que já passou muda de docente. */
     private function exigirSemReescreverHistorico(AtribuicaoDocente $titular, CarbonImmutable $ultimoDia, CarbonImmutable $fimDoAno): void
     {
         $hoje = $this->relogio->hoje();

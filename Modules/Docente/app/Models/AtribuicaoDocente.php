@@ -13,7 +13,6 @@ use Modules\Core\Traits\RegistaAutoria;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\Docente\Enums\PapelDocente;
 use Modules\Turma\Models\Turma;
-use Modules\Usuario\Models\User;
 
 class AtribuicaoDocente extends Model
 {
@@ -27,7 +26,7 @@ class AtribuicaoDocente extends Model
         'ano_lectivo_id',
         'turma_id',
         'disciplina_id',
-        'professor_id',
+        'docente_id',
         'papel',
         'papel_descricao',
         'data_inicio',
@@ -65,9 +64,10 @@ class AtribuicaoDocente extends Model
         return $this->belongsTo(Disciplina::class);
     }
 
-    public function professor(): BelongsTo
+    /** O docente (pessoa da escola); pode não ter conta de acesso. */
+    public function docente(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'professor_id');
+        return $this->belongsTo(Docente::class);
     }
 
     /** Vigente na data: início ≤ data e (fim nulo ou fim ≥ data); extremos inclusivos, ao dia. */

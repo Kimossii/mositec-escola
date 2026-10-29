@@ -110,7 +110,7 @@ class AcoesAplicaveisTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('acoes', 12)
                 ->where('acoes.0.nome', 'ver')
-                ->has('modulos', 29)
+                ->has('modulos', 30)
                 ->where('modulos.0.acoes', fn ($ids) => collect($ids)->sort()->values()->all()
                     === Acao::whereIn('nome', self::BASE)->pluck('id')->sort()->values()->all()));
     }

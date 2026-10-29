@@ -12,7 +12,7 @@ use Modules\Turma\Models\Turma;
 
 /**
  * Regra 10 do desenho: só se elimina uma atribuição ainda agendada; o resto é histórico e encerra-se. Como nunca
- * começou, não tem valor histórico e apaga-se de vez (senão prenderia o professor pela FK para `users`).
+ * começou, não tem valor histórico e apaga-se de vez (senão prenderia o docente pela FK para `docentes`).
  */
 class EliminarAtribuicaoAction
 {

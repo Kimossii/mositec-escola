@@ -22,7 +22,7 @@ class AtribuicaoDocenteModelTest extends TestCase
             'ano_lectivo_id' => $cenario['ano']->id,
             'turma_id' => $cenario['turma']->id,
             'disciplina_id' => $cenario['disciplina']->id,
-            'professor_id' => $this->criarProfessor('prof' . ++$this->professores . '@example.com')->id,
+            'docente_id' => $this->criarDocente('Docente ' . ++$this->professores)->id,
             'papel' => PapelDocente::TITULAR,
             'data_inicio' => '2026-03-01',
         ], $atributos));

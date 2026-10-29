@@ -32,7 +32,7 @@ class GestaoAtribuicaoDocenteService
         $dados = $request->validated();
 
         return $this->atribuirDocente->executar(new AtribuicaoDocenteDTO(
-            professor_id: (int) $dados['professor_id'],
+            docente_id: (int) $dados['docente_id'],
             turma_id: (int) $dados['turma_id'],
             disciplina_id: (int) $dados['disciplina_id'],
             papel: PapelDocente::from((int) $dados['papel']),
@@ -48,7 +48,7 @@ class GestaoAtribuicaoDocenteService
         return $this->substituirTitular->executar(new SubstituicaoTitularDTO(
             turma_id: (int) $dados['turma_id'],
             disciplina_id: (int) $dados['disciplina_id'],
-            novo_professor_id: (int) $dados['novo_professor_id'],
+            novo_docente_id: (int) $dados['novo_docente_id'],
             ultimo_dia_do_titular: $dados['ultimo_dia_do_titular'],
             motivo: $dados['motivo'],
         ));

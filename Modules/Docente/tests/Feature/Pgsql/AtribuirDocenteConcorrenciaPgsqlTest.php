@@ -22,14 +22,14 @@ class AtribuirDocenteConcorrenciaPgsqlTest extends PgsqlConcorrenciaTestCase
     public function test_pg_dois_titulares_em_simultaneo_so_um_e_criado(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->criarProfessor('a@example.com');
-        $b = $this->criarProfessor('b@example.com');
+        $a = $this->criarDocente('Docente a');
+        $b = $this->criarDocente('Docente b');
         $base = ['turma' => $c['turma']->id, 'disciplina' => $c['disciplina']->id, 'papel' => PapelDocente::TITULAR->value];
 
         $partida = microtime(true) + 2.5;
         $filhos = [
-            $this->lancar('atribuir', $base + ['professor' => $a->id, 'inicio' => '2026-03-01', 'fim' => '2026-06-30'], $partida),
-            $this->lancar('atribuir', $base + ['professor' => $b->id, 'inicio' => '2026-05-01'], $partida),
+            $this->lancar('atribuir', $base + ['docente' => $a->id, 'inicio' => '2026-03-01', 'fim' => '2026-06-30'], $partida),
+            $this->lancar('atribuir', $base + ['docente' => $b->id, 'inicio' => '2026-05-01'], $partida),
         ];
         $respostas = [];
         foreach ($filhos as $i => $filho) {

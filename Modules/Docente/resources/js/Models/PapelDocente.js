@@ -35,3 +35,12 @@ export const hojeIso = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
+
+/**
+ * Opções do selector de docentes (`opcoes.docentes` do servidor): quem ainda não tem conta é atribuível na mesma, mas
+ * fica assinalado (não poderá lançar notas enquanto não lhe for criado acesso).
+ */
+export const opcoesDeDocentes = (docentes) => docentes.map((d) => ({
+    value: d.id,
+    label: d.tem_acesso ? d.nome : `${d.nome} (sem acesso)`,
+}));

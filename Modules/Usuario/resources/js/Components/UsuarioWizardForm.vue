@@ -1,11 +1,12 @@
 <script setup>
 import PermissoesPorMenu from '../../../../Permissao/resources/js/Components/PermissoesPorMenu.vue';
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import AlunoMatriculaLookup from './AlunoMatriculaLookup.vue';
+import DocenteSemContaLookup from './DocenteSemContaLookup.vue';
 import UsuarioFormFields from './UsuarioFormFields.vue';
 
 const props = defineProps({
@@ -16,6 +17,8 @@ const props = defineProps({
     permissoesPorPerfil: { type: Object, required: true },
     utilizador: { type: Object, default: null },
     rotaCriar: { type: String, required: true },
+    // Novo professor: permite escolher um docente já registado e sem conta (quem tem usuario.criar e docente.editar).
+    permitirDocente: { type: Boolean, default: false },
 });
 const emit = defineEmits(['fechado']);
 
@@ -47,6 +50,32 @@ const cadastroDeAluno = computed(() => !props.utilizador && perfilSelecionado.va
 // Só se avança/guarda com o aluno encontrado, activo e sem conta (o servidor volta a validar tudo).
 const alunoPronto = computed(() => !cadastroDeAluno.value
     || (alunoEncontrado.value !== null && alunoEncontrado.value.estado === 1 && !alunoEncontrado.value.ja_tem_conta));
+
+// Cadastro de professor a partir de um docente sem conta: o nome e a pessoa vêm do docente (servidor);
+// do formulário só vão docente_id, email de login e senha. Desligado, o formulário é o de sempre.
+const MODOS_PROFESSOR = [
+    { valor: false, texto: 'Novo professor' },
+    { valor: true, texto: 'A partir de um docente' },
+];
+const aPartirDeDocente = ref(false);
+const docenteEscolhido = ref(null);
+const cadastroDeDocente = computed(() => !props.utilizador && props.permitirDocente
+    && perfilSelecionado.value === 'professor' && aPartirDeDocente.value);
+const identidadePronta = computed(() => alunoPronto.value && (!cadastroDeDocente.value || docenteEscolhido.value !== null));
+
+// O email de contacto do docente serve de sugestão para o login (só se ainda estiver vazio).
+watch(docenteEscolhido, (d) => {
+    if (d?.email && !form.email) form.email = d.email;
+});
+
+// Os campos partilhados lêem `errors.x[0]`; o Inertia manda cada erro como texto. Neste modo normalizam-se para listas.
+const errosDosCampos = computed(() => (cadastroDeDocente.value
+    ? Object.fromEntries(Object.entries(errors.value).map(([k, v]) => [k, Array.isArray(v) ? v : [v]]))
+    : errors.value));
+const erroDocente = computed(() => {
+    const e = errors.value.docente_id;
+    return (Array.isArray(e) ? e[0] : e) ?? '';
+});
 
 const matriculaEducando = ref('');
 const matriculasEducandos = ref([]);
@@ -87,7 +116,7 @@ const nomesDasAcoes = computed(() => props.acoes.map((a) => a.nome));
 const descricaoDoPerfil = computed(() => props.perfis.find((p) => p.slug === perfilSelecionado.value)?.descricao ?? '');
 
 function validarAntesDeAvancar() {
-    if (!alunoPronto.value) {
+    if (!identidadePronta.value) {
         return false;
     }
     if (form.password && form.password !== form.passwordConfirmation) {
@@ -127,7 +156,7 @@ function fecharModal() {
 function guardar() {
     errors.value = {};
 
-    if (!alunoPronto.value) {
+    if (!identidadePronta.value) {
         passo.value = 1;
         return;
     }
@@ -142,15 +171,21 @@ function guardar() {
     processing.value = true;
 
     // Aluno: nunca se envia nome, email, tipo de login nem dados pessoais (vêm do registo do aluno).
+    // Professor a partir de docente: sem nome nem dados da pessoa (o servidor usa os do docente).
     const payload = perfilSelecionado.value === 'aluno'
         ? { perfil: perfilSelecionado.value }
-        : {
-            name: form.name,
-            email: tipoLogin.value === 'email' ? form.email : undefined,
-            perfil: perfilSelecionado.value,
-        };
+        : cadastroDeDocente.value
+            ? { perfil: 'professor', docente_id: docenteEscolhido.value.id, email: form.email }
+            : {
+                name: form.name,
+                email: tipoLogin.value === 'email' ? form.email : undefined,
+                perfil: perfilSelecionado.value,
+            };
 
-    if (!props.utilizador) {
+    if (cadastroDeDocente.value) {
+        payload.password = form.password;
+        payload.password_confirmation = form.passwordConfirmation;
+    } else if (!props.utilizador) {
         payload.password = form.password;
         payload.password_confirmation = form.passwordConfirmation;
         if (cadastroDeAluno.value) {
@@ -174,6 +209,7 @@ function guardar() {
         onSuccess: () => {
             matriculaAluno.value = '';
             alunoEncontrado.value = null;
+            docenteEscolhido.value = null;
             toast.success(props.utilizador ? 'Utilizador atualizado com sucesso.' : 'Utilizador criado com sucesso.');
             fecharModal();
             emit('fechado');
@@ -207,9 +243,28 @@ function guardar() {
         </div>
 
         <div v-if="passo === 1">
+            <div v-if="!props.utilizador && permitirDocente && perfilSelecionado === 'professor'" class="mb-7">
+                <div class="d-inline-flex p-1 rounded bg-body-secondary" role="group" aria-label="Origem do professor">
+                    <button
+                        v-for="o in MODOS_PROFESSOR"
+                        :key="String(o.valor)"
+                        type="button"
+                        class="btn btn-sm px-4 border-0"
+                        :class="aPartirDeDocente === o.valor ? 'btn-success shadow-sm' : 'btn-transparent text-gray-600'"
+                        :aria-pressed="aPartirDeDocente === o.valor"
+                        @click="aPartirDeDocente = o.valor"
+                    >
+                        {{ o.texto }}
+                    </button>
+                </div>
+                <div v-if="aPartirDeDocente" class="text-muted fs-7 mt-2">Docente já registado em Pessoal → Docentes que ainda não tem acesso.</div>
+            </div>
+
+            <DocenteSemContaLookup v-if="cadastroDeDocente" v-model:docente="docenteEscolhido" :erro="erroDocente" />
+
             <UsuarioFormFields v-model:name="form.name" v-model:email="form.email" v-model:password="form.password"
-                v-model:password-confirmation="form.passwordConfirmation" :tipo-login="tipoLogin" :errors="errors"
-                :edicao="!!props.utilizador" :matricula="props.utilizador?.matricula ?? ''">
+                v-model:password-confirmation="form.passwordConfirmation" :tipo-login="tipoLogin" :errors="errosDosCampos"
+                :edicao="!!props.utilizador" :matricula="props.utilizador?.matricula ?? ''" :ocultar-nome="cadastroDeDocente">
                 <template #identidade>
                     <AlunoMatriculaLookup v-model:matricula="matriculaAluno" v-model:aluno="alunoEncontrado"
                         :erro="errors.numero_matricula?.[0] ?? ''" />
@@ -251,7 +306,7 @@ function guardar() {
                     </i>
                     Cancelar
                 </button>
-                <button type="button" class="btn btn-primary" :disabled="!alunoPronto" @click="avancar">Seguinte</button>
+                <button type="button" class="btn btn-primary" :disabled="!identidadePronta" @click="avancar">Seguinte</button>
             </div>
         </div>
 
@@ -285,7 +340,7 @@ function guardar() {
                         </i>
                         Cancelar
                     </button>
-                    <button type="button" class="btn btn-primary" :disabled="processing || !alunoPronto" @click="guardar">
+                    <button type="button" class="btn btn-primary" :disabled="processing || !identidadePronta" @click="guardar">
                         <span v-if="!processing">Guardar</span>
                         <span v-else>Aguarde... <Loader size="0.3px" class="align-middle ms-2" /></span>
                     </button>

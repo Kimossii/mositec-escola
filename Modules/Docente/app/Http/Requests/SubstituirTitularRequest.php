@@ -16,7 +16,7 @@ class SubstituirTitularRequest extends BaseRequest
         return [
             'turma_id' => ['required', 'integer', 'exists:turmas,id'],
             'disciplina_id' => ['required', 'integer', 'exists:disciplinas,id'],
-            'novo_professor_id' => ['required', 'integer', 'exists:users,id'],
+            'novo_docente_id' => ['required', 'integer', 'exists:docentes,id'],
             'ultimo_dia_do_titular' => ['required', 'date_format:Y-m-d'],
             'motivo' => ['required', 'string', 'max:500'],
         ];
@@ -31,9 +31,9 @@ class SubstituirTitularRequest extends BaseRequest
             'disciplina_id.required' => 'A disciplina é obrigatória.',
             'disciplina_id.integer' => 'A disciplina indicada é inválida.',
             'disciplina_id.exists' => 'A disciplina indicada não existe.',
-            'novo_professor_id.required' => 'O novo professor é obrigatório.',
-            'novo_professor_id.integer' => 'O professor indicado é inválido.',
-            'novo_professor_id.exists' => 'O professor indicado não existe.',
+            'novo_docente_id.required' => 'O novo docente é obrigatório.',
+            'novo_docente_id.integer' => 'O docente indicado é inválido.',
+            'novo_docente_id.exists' => 'O docente indicado não existe.',
             'ultimo_dia_do_titular.required' => 'O último dia do titular actual é obrigatório.',
             'ultimo_dia_do_titular.date_format' => 'O último dia do titular tem de estar no formato AAAA-MM-DD.',
             'motivo.required' => 'Indique o motivo da substituição.',

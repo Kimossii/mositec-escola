@@ -1,7 +1,7 @@
 <script setup>
 import { reactive, watch } from 'vue';
 import Loader from '@/Components/Shared/Loader.vue';
-import ErrosGerais from './ErrosGerais.vue';
+import ErrosGerais from '../Shared/ErrosGerais.vue';
 import { formatarDia, hojeIso, papelLabel } from '../../Models/PapelDocente';
 
 const props = defineProps({
@@ -30,7 +30,7 @@ watch(() => props.show, (show) => {
             <div class="modal-content p-6">
                 <h3 class="mb-1">Encerrar atribuição</h3>
                 <div class="text-muted fs-7 mb-5">
-                    {{ atribuicao?.professor_nome }} ({{ papelLabel(atribuicao?.papel) }})<span v-if="contexto"> · {{ contexto }}</span>
+                    {{ atribuicao?.docente_nome }} ({{ papelLabel(atribuicao?.papel) }})<span v-if="contexto"> · {{ contexto }}</span>
                     · desde {{ formatarDia(atribuicao?.data_inicio) }}
                 </div>
                 <form @submit.prevent="emit('submit', { ...form })">

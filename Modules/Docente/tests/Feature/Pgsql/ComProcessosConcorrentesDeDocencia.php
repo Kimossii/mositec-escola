@@ -36,7 +36,7 @@ try {
     $a = $args['dados'];
     if ($args['op'] === 'atribuir') {
         $r = app(Modules\Docente\Actions\AtribuirDocenteAction::class)->executar(new Modules\Docente\DTO\AtribuicaoDocenteDTO(
-            professor_id: $a['professor'],
+            docente_id: $a['docente'],
             turma_id: $a['turma'],
             disciplina_id: $a['disciplina'],
             papel: Modules\Docente\Enums\PapelDocente::from($a['papel']),

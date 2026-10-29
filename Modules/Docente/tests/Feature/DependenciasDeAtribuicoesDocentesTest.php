@@ -19,7 +19,7 @@ class DependenciasDeAtribuicoesDocentesTest extends TestCase
     {
         return AtribuicaoDocente::create([
             'ano_lectivo_id' => $c['ano']->id, 'turma_id' => $c['turma']->id, 'disciplina_id' => $c['disciplina']->id,
-            'professor_id' => $this->criarProfessor()->id, 'papel' => PapelDocente::TITULAR, 'data_inicio' => $inicio,
+            'docente_id' => $this->criarDocente()->id, 'papel' => PapelDocente::TITULAR, 'data_inicio' => $inicio,
         ]);
     }
 

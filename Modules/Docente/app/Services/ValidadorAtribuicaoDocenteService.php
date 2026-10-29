@@ -8,12 +8,11 @@ use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\Docente\DTO\AtribuicaoDocenteDTO;
 use Modules\Docente\Enums\PapelDocente;
 use Modules\Docente\Models\AtribuicaoDocente;
-use Modules\Permissao\Enums\Perfil;
+use Modules\Docente\Models\Docente;
 use Modules\Turma\Models\Turma;
-use Modules\Usuario\Models\User;
 
 /**
- * Regras 1 a 6 do desenho (professor, turma/ano, disciplina atribuível, datas, sobreposição).
+ * Regras 1 a 6 do desenho (docente, turma/ano, disciplina atribuível, datas, sobreposição).
  * Deve ser chamado dentro de uma transacção que já bloqueou a linha da turma; não abre transacção própria.
  */
 class ValidadorAtribuicaoDocenteService
@@ -22,7 +21,7 @@ class ValidadorAtribuicaoDocenteService
     public const MENSAGEM_TITULAR_SOBREPOSTO = 'Já existe um titular em vigor nesta turma e disciplina durante este período. Use "Substituir titular".';
 
     /** Regra 6: idem. */
-    public const MENSAGEM_PROFESSOR_SOBREPOSTO = 'Este professor já tem uma atribuição nesta turma e disciplina que se sobrepõe ao período indicado.';
+    public const MENSAGEM_DOCENTE_SOBREPOSTO = 'Este docente já tem uma atribuição nesta turma e disciplina que se sobrepõe ao período indicado.';
 
     public const MENSAGEM_ANO_ENCERRADO = 'O ano lectivo da turma está encerrado e não aceita atribuições de docentes.';
 
@@ -33,7 +32,7 @@ class ValidadorAtribuicaoDocenteService
     /** Devolve a turma validada (com o ano lectivo carregado). */
     public function validar(AtribuicaoDocenteDTO $dto, ?AtribuicaoDocente $ignorar = null): Turma
     {
-        $this->validarProfessor($dto->professor_id);
+        $this->validarDocente($dto->docente_id);
 
         $turma = Turma::query()->with('anoLectivo')->find($dto->turma_id);
 
@@ -98,24 +97,21 @@ class ValidadorAtribuicaoDocenteService
         return $turma;
     }
 
-    private function validarProfessor(int $professorId): void
+    /** O docente tem de existir no tenant (scope do model) e estar activo; com ou sem conta, seja qual for o perfil. */
+    private function validarDocente(int $docenteId): void
     {
-        $professor = User::query()->find($professorId);
+        $docente = Docente::query()->find($docenteId);
 
-        if ($professor === null) {
-            $this->falhar('professor_id', 'O professor indicado não existe.');
+        if ($docente === null) {
+            $this->falhar('docente_id', 'O docente indicado não existe.');
         }
 
-        if ((int) $professor->estado !== 1) {
-            $this->falhar('professor_id', 'O professor indicado está inactivo.');
-        }
-
-        if (! $professor->roles()->where('nome', Perfil::PROFESSOR->value)->exists()) {
-            $this->falhar('professor_id', 'O utilizador indicado não tem o perfil de Professor.');
+        if ((int) $docente->estado !== 1) {
+            $this->falhar('docente_id', 'O docente indicado está inactivo.');
         }
     }
 
-    /** Regra 5 (titular contra titular) e regra 6 (mesmo professor, qualquer papel). Extremos inclusivos. */
+    /** Regra 5 (titular contra titular) e regra 6 (mesmo docente, qualquer papel). Extremos inclusivos. */
     private function validarSobreposicao(AtribuicaoDocenteDTO $dto, string $inicio, string $fim, string $fimAno, ?AtribuicaoDocente $ignorar): void
     {
         $existentes = AtribuicaoDocente::query()
@@ -132,8 +128,8 @@ class ValidadorAtribuicaoDocenteService
                 continue;
             }
 
-            if ((int) $existente->professor_id === (int) $dto->professor_id) {
-                $this->falhar('professor_id', self::MENSAGEM_PROFESSOR_SOBREPOSTO);
+            if ((int) $existente->docente_id === (int) $dto->docente_id) {
+                $this->falhar('docente_id', self::MENSAGEM_DOCENTE_SOBREPOSTO);
             }
 
             if ($dto->papel === PapelDocente::TITULAR && $existente->papel === PapelDocente::TITULAR) {

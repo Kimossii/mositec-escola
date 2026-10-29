@@ -1,4 +1,6 @@
 <script setup>
+import { can } from '@/Composables/usePermissoes';
+
 defineProps({
     perfis: { type: Array, required: true },
     modulos: { type: Array, required: true },
@@ -17,6 +19,7 @@ defineProps({
         :permissoes-por-perfil="permissoesPorPerfil"
         :utilizador="utilizador"
         rota-criar="/usuarios/professores/cadastrar"
+        :permitir-docente="!utilizador && can('usuario.criar') && can('docente.editar')"
     />
 </template>
 

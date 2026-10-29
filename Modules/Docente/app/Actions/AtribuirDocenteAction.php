@@ -50,7 +50,7 @@ class AtribuirDocenteAction
             'ano_lectivo_id' => $turma->ano_lectivo_id,
             'turma_id' => $turma->id,
             'disciplina_id' => $dto->disciplina_id,
-            'professor_id' => $dto->professor_id,
+            'docente_id' => $dto->docente_id,
             'papel' => $dto->papel,
             'data_inicio' => $dto->data_inicio,
             'data_fim' => $dto->data_fim,

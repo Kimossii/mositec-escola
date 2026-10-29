@@ -23,7 +23,7 @@ class ExportacaoDeAtribuicoesService
 
         return new TabelaExportavel(
             titulo: 'Atribuições docentes',
-            colunas: ['professor' => 'Professor', 'turma' => 'Turma', 'disciplina' => 'Disciplina', 'papel' => 'Papel', 'inicio' => 'Início', 'fim' => 'Fim', 'estado' => 'Estado'],
+            colunas: ['docente' => 'Docente', 'turma' => 'Turma', 'disciplina' => 'Disciplina', 'papel' => 'Papel', 'inicio' => 'Início', 'fim' => 'Fim', 'estado' => 'Estado'],
             linhas: $this->consulta->paraExportacao($filtros, Exportador::MAXIMO_LINHAS + 1),
             subtitulo: 'Ano lectivo: '.($ano?->nome ?? 'todos').($pesquisa !== '' ? ', pesquisa «'.$pesquisa.'»' : ''),
             entidade: Estabelecimento::current()?->nome,

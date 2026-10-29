@@ -2,13 +2,13 @@
 import { reactive, watch } from 'vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Loader from '@/Components/Shared/Loader.vue';
-import ErrosGerais from './ErrosGerais.vue';
+import ErrosGerais from '../Shared/ErrosGerais.vue';
 import VigenciaBadge from './VigenciaBadge.vue';
 import { PAPEL } from '../../Models/PapelDocente';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
-    atribuicao: { type: Object, default: null }, // { id, professor_nome, papel, data_inicio, data_fim, estado }
+    atribuicao: { type: Object, default: null }, // { id, docente_nome, papel, data_inicio, data_fim, estado }
     contexto: { type: String, default: '' }, // «Disciplina · Turma»
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
@@ -41,7 +41,7 @@ function submeter() {
             <div class="modal-content p-6">
                 <h3 class="mb-1">Editar vigência</h3>
                 <div class="text-muted fs-7 mb-5">
-                    {{ atribuicao?.professor_nome }}<span v-if="contexto"> · {{ contexto }}</span>
+                    {{ atribuicao?.docente_nome }}<span v-if="contexto"> · {{ contexto }}</span>
                     <VigenciaBadge v-if="atribuicao?.estado" :estado="atribuicao.estado" class="ms-2" />
                 </div>
                 <form @submit.prevent="submeter">

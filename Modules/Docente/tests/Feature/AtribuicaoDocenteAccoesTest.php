@@ -38,10 +38,10 @@ class AtribuicaoDocenteAccoesTest extends TestCase
         parent::tearDown();
     }
 
-    private function atribuir(array $c, int $professorId, string $inicio, ?string $fim = null, PapelDocente $papel = PapelDocente::TITULAR): AtribuicaoDocente
+    private function atribuir(array $c, int $docenteId, string $inicio, ?string $fim = null, PapelDocente $papel = PapelDocente::TITULAR): AtribuicaoDocente
     {
         return app(AtribuirDocenteAction::class)->executar(new AtribuicaoDocenteDTO(
-            $professorId, $c['turma']->id, $c['disciplina']->id, $papel, $inicio, $fim,
+            $docenteId, $c['turma']->id, $c['disciplina']->id, $papel, $inicio, $fim,
         ));
     }
 
@@ -69,15 +69,15 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_substituir_define_data_fim_no_antigo_e_cria_novo_no_dia_seguinte(): void
     {
         $c = $this->cenarioDeDocencia();
-        $antigo = $this->atribuir($c, $this->criarProfessor('a@example.com')->id, '2026-03-01');
-        $novoProf = $this->criarProfessor('b@example.com');
+        $antigo = $this->atribuir($c, $this->criarDocente('Docente a')->id, '2026-03-01');
+        $novoProf = $this->criarDocente('Docente b');
 
         $novo = app(SubstituirTitularAction::class)->executar($this->substituicao($c, $novoProf->id, '2026-06-30', 'Licença de maternidade'));
 
         $antigo->refresh();
         $this->assertSame('2026-06-30', $antigo->data_fim->toDateString());
         $this->assertSame('Licença de maternidade', $antigo->motivo_encerramento);
-        $this->assertSame($novoProf->id, $novo->professor_id);
+        $this->assertSame($novoProf->id, $novo->docente_id);
         $this->assertSame(PapelDocente::TITULAR, $novo->papel);
         $this->assertSame('2026-07-01', $novo->data_inicio->toDateString());
         $this->assertNull($novo->data_fim);
@@ -88,12 +88,12 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_substituir_e_atomico_se_o_novo_professor_for_invalido(): void
     {
         $c = $this->cenarioDeDocencia();
-        $antigo = $this->atribuir($c, $this->criarProfessor('a@example.com')->id, '2026-03-01');
+        $antigo = $this->atribuir($c, $this->criarDocente('Docente a')->id, '2026-03-01');
         $total = AtribuicaoDocente::count();
 
         $this->rejeita(
             fn () => app(SubstituirTitularAction::class)->executar($this->substituicao($c, 999999)),
-            'professor_id',
+            'docente_id',
         );
 
         $antigo->refresh();
@@ -105,8 +105,8 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_substituir_rejeita_ultimo_dia_anterior_ao_inicio_do_titular(): void
     {
         $c = $this->cenarioDeDocencia();
-        $antigo = $this->atribuir($c, $this->criarProfessor('a@example.com')->id, '2026-03-01');
-        $novoProf = $this->criarProfessor('b@example.com');
+        $antigo = $this->atribuir($c, $this->criarDocente('Docente a')->id, '2026-03-01');
+        $novoProf = $this->criarDocente('Docente b');
 
         $this->rejeita(
             fn () => app(SubstituirTitularAction::class)->executar($this->substituicao($c, $novoProf->id, '2026-02-15')),
@@ -122,8 +122,8 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     {
         $c = $this->cenarioDeDocencia();
         // Começou ontem: o último dia pode ser o próprio início (ontem) e o novo começa hoje.
-        $antigo = $this->atribuir($c, $this->criarProfessor('a@example.com')->id, '2026-06-14');
-        $novoProf = $this->criarProfessor('b@example.com');
+        $antigo = $this->atribuir($c, $this->criarDocente('Docente a')->id, '2026-06-14');
+        $novoProf = $this->criarDocente('Docente b');
 
         $novo = app(SubstituirTitularAction::class)->executar($this->substituicao($c, $novoProf->id, '2026-06-14'));
 
@@ -134,9 +134,9 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_substituir_nao_reescreve_titular_ja_terminado(): void
     {
         $c = $this->cenarioDeDocencia();
-        $antigo = $this->atribuir($c, $this->criarProfessor('a@example.com')->id, '2026-01-10', '2026-02-10');
+        $antigo = $this->atribuir($c, $this->criarDocente('Docente a')->id, '2026-01-10', '2026-02-10');
         $antigo->update(['motivo_encerramento' => 'Fim original']);
-        $novoProf = $this->criarProfessor('b@example.com');
+        $novoProf = $this->criarDocente('Docente b');
 
         $this->rejeita(
             fn () => app(SubstituirTitularAction::class)->executar($this->substituicao($c, $novoProf->id, '2026-01-31', 'Reescrito')),
@@ -153,8 +153,8 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_substituir_nao_aceita_ultimo_dia_anterior_a_ontem(): void
     {
         $c = $this->cenarioDeDocencia();
-        $antigo = $this->atribuir($c, $this->criarProfessor('a@example.com')->id, '2026-03-01');
-        $novoProf = $this->criarProfessor('b@example.com');
+        $antigo = $this->atribuir($c, $this->criarDocente('Docente a')->id, '2026-03-01');
+        $novoProf = $this->criarDocente('Docente b');
 
         $this->rejeita(
             fn () => app(SubstituirTitularAction::class)->executar($this->substituicao($c, $novoProf->id, '2026-06-13')),
@@ -174,8 +174,8 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_substituir_rejeita_dia_seguinte_depois_do_fim_do_ano_lectivo(): void
     {
         $c = $this->cenarioDeDocencia();
-        $antigo = $this->atribuir($c, $this->criarProfessor('a@example.com')->id, '2026-03-01');
-        $novoProf = $this->criarProfessor('b@example.com');
+        $antigo = $this->atribuir($c, $this->criarDocente('Docente a')->id, '2026-03-01');
+        $novoProf = $this->criarDocente('Docente b');
 
         $this->rejeita(
             fn () => app(SubstituirTitularAction::class)->executar($this->substituicao($c, $novoProf->id, '2026-12-31')),
@@ -190,7 +190,7 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_substituir_sem_titular_em_vigor_e_rejeitado(): void
     {
         $c = $this->cenarioDeDocencia();
-        $novoProf = $this->criarProfessor('b@example.com');
+        $novoProf = $this->criarDocente('Docente b');
 
         $this->rejeita(
             fn () => app(SubstituirTitularAction::class)->executar($this->substituicao($c, $novoProf->id)),
@@ -199,7 +199,7 @@ class AtribuicaoDocenteAccoesTest extends TestCase
         );
 
         // Titular já terminado antes da data indicada: também não está em vigor.
-        $this->atribuir($c, $this->criarProfessor('a@example.com')->id, '2026-01-10', '2026-02-10');
+        $this->atribuir($c, $this->criarDocente('Docente a')->id, '2026-01-10', '2026-02-10');
         $this->rejeita(
             fn () => app(SubstituirTitularAction::class)->executar($this->substituicao($c, $novoProf->id, '2026-06-30')),
             'ultimo_dia_do_titular',
@@ -209,8 +209,8 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_substituir_exige_motivo(): void
     {
         $c = $this->cenarioDeDocencia();
-        $antigo = $this->atribuir($c, $this->criarProfessor('a@example.com')->id, '2026-03-01');
-        $novoProf = $this->criarProfessor('b@example.com');
+        $antigo = $this->atribuir($c, $this->criarDocente('Docente a')->id, '2026-03-01');
+        $novoProf = $this->criarDocente('Docente b');
 
         $this->rejeita(
             fn () => app(SubstituirTitularAction::class)->executar($this->substituicao($c, $novoProf->id, '2026-06-30', '   ')),
@@ -224,9 +224,9 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_substituir_nao_toca_nos_substitutos(): void
     {
         $c = $this->cenarioDeDocencia();
-        $this->atribuir($c, $this->criarProfessor('a@example.com')->id, '2026-03-01');
-        $substituto = $this->atribuir($c, $this->criarProfessor('c@example.com')->id, '2026-03-01', null, PapelDocente::SUBSTITUTO);
-        $novoProf = $this->criarProfessor('b@example.com');
+        $this->atribuir($c, $this->criarDocente('Docente a')->id, '2026-03-01');
+        $substituto = $this->atribuir($c, $this->criarDocente('Docente c')->id, '2026-03-01', null, PapelDocente::SUBSTITUTO);
+        $novoProf = $this->criarDocente('Docente b');
 
         app(SubstituirTitularAction::class)->executar($this->substituicao($c, $novoProf->id));
 
@@ -236,7 +236,7 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_encerrar_define_fim_e_motivo_e_aceita_data_futura(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->atribuir($c, $this->criarProfessor()->id, '2026-03-01');
+        $a = $this->atribuir($c, $this->criarDocente()->id, '2026-03-01');
 
         $r = app(EncerrarAtribuicaoAction::class)->executar($a, '2026-09-30', 'Fim de contrato');
 
@@ -245,14 +245,14 @@ class AtribuicaoDocenteAccoesTest extends TestCase
         $this->assertSame('Fim de contrato', $r->motivo_encerramento);
 
         // Hoje também é válido.
-        $b = $this->atribuir($c, $this->criarProfessor('b@example.com')->id, '2026-03-01', null, PapelDocente::SUBSTITUTO);
+        $b = $this->atribuir($c, $this->criarDocente('Docente b')->id, '2026-03-01', null, PapelDocente::SUBSTITUTO);
         $this->assertSame('2026-06-15', app(EncerrarAtribuicaoAction::class)->executar($b, '2026-06-15', 'Saída')->data_fim->toDateString());
     }
 
     public function test_encerrar_rejeita_fim_anterior_ao_inicio_e_motivo_vazio_e_fim_no_passado(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->atribuir($c, $this->criarProfessor()->id, '2026-03-01');
+        $a = $this->atribuir($c, $this->criarDocente()->id, '2026-03-01');
         $acao = app(EncerrarAtribuicaoAction::class);
 
         $this->rejeita(fn () => $acao->executar($a, '2026-02-28', 'x'), 'data_fim', 'A data de fim não pode ser anterior à data de início.');
@@ -267,8 +267,8 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_encerrar_nao_alarga_a_vigencia_nem_cria_sobreposicao(): void
     {
         $c = $this->cenarioDeDocencia();
-        $titular = $this->atribuir($c, $this->criarProfessor()->id, '2026-03-01', '2026-06-30');
-        $this->atribuir($c, $this->criarProfessor('b@example.com')->id, '2026-07-01');
+        $titular = $this->atribuir($c, $this->criarDocente()->id, '2026-03-01', '2026-06-30');
+        $this->atribuir($c, $this->criarDocente('Docente b')->id, '2026-07-01');
 
         $this->rejeita(
             fn () => app(EncerrarAtribuicaoAction::class)->executar($titular, '2026-07-10', 'Alargar'),
@@ -284,7 +284,7 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_encerrar_com_a_mesma_data_fim_ou_anterior_continua_a_funcionar(): void
     {
         $c = $this->cenarioDeDocencia();
-        $titular = $this->atribuir($c, $this->criarProfessor()->id, '2026-03-01', '2026-06-30');
+        $titular = $this->atribuir($c, $this->criarDocente()->id, '2026-03-01', '2026-06-30');
         $acao = app(EncerrarAtribuicaoAction::class);
 
         $this->assertSame('2026-06-30', $acao->executar($titular, '2026-06-30', 'Igual')->refresh()->data_fim->toDateString());
@@ -294,7 +294,7 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_atribuicao_terminada_nao_se_actualiza_nem_se_reabre(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->atribuir($c, $this->criarProfessor()->id, '2026-01-10', '2026-02-10');
+        $a = $this->atribuir($c, $this->criarDocente()->id, '2026-01-10', '2026-02-10');
 
         $this->rejeita(fn () => app(AtualizarAtribuicaoAction::class)->executar($a, PapelDocente::TITULAR, '2026-01-10', null), 'atribuicao', 'Uma atribuição terminada não se altera; crie uma nova.');
         $this->rejeita(fn () => app(EncerrarAtribuicaoAction::class)->executar($a, '2026-12-31', 'Reabrir'), 'atribuicao', 'Uma atribuição terminada não se altera; crie uma nova.');
@@ -305,8 +305,8 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_actualizar_altera_papel_e_vigencia_de_agendada_e_em_curso(): void
     {
         $c = $this->cenarioDeDocencia();
-        $emCurso = $this->atribuir($c, $this->criarProfessor()->id, '2026-03-01');
-        $agendada = $this->atribuir($c, $this->criarProfessor('b@example.com')->id, '2026-09-01', null, PapelDocente::SUBSTITUTO);
+        $emCurso = $this->atribuir($c, $this->criarDocente()->id, '2026-03-01');
+        $agendada = $this->atribuir($c, $this->criarDocente('Docente b')->id, '2026-09-01', null, PapelDocente::SUBSTITUTO);
         $acao = app(AtualizarAtribuicaoAction::class);
 
         $r = $acao->executar($emCurso, PapelDocente::TITULAR, '2026-02-01', '2026-11-30');
@@ -316,13 +316,13 @@ class AtribuicaoDocenteAccoesTest extends TestCase
         $r = $acao->executar($agendada, PapelDocente::SUBSTITUTO, '2026-10-01', '2026-12-15');
         $this->assertSame('2026-10-01', $r->refresh()->data_inicio->toDateString());
         $this->assertSame('Substituto', $r->papel_descricao);
-        $this->assertSame($emCurso->professor_id !== $r->professor_id, true);
+        $this->assertSame($emCurso->docente_id !== $r->docente_id, true);
     }
 
     public function test_actualizar_nao_move_inicio_de_em_curso_para_o_futuro(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->atribuir($c, $this->criarProfessor()->id, '2026-03-01');
+        $a = $this->atribuir($c, $this->criarDocente()->id, '2026-03-01');
 
         $this->rejeita(fn () => app(AtualizarAtribuicaoAction::class)->executar($a, PapelDocente::TITULAR, '2026-07-01', null), 'data_inicio');
         $this->assertSame('2026-03-01', $a->refresh()->data_inicio->toDateString());
@@ -331,8 +331,8 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_actualizar_revalida_sobreposicao_ignorando_a_propria(): void
     {
         $c = $this->cenarioDeDocencia();
-        $titular = $this->atribuir($c, $this->criarProfessor()->id, '2026-03-01', '2026-06-30');
-        $seguinte = $this->atribuir($c, $this->criarProfessor('b@example.com')->id, '2026-07-01');
+        $titular = $this->atribuir($c, $this->criarDocente()->id, '2026-03-01', '2026-06-30');
+        $seguinte = $this->atribuir($c, $this->criarDocente('Docente b')->id, '2026-07-01');
         $acao = app(AtualizarAtribuicaoAction::class);
 
         // Sem mudar nada de relevante: a própria não conta como sobreposição.
@@ -353,18 +353,18 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_eliminar_agendada_apaga_definitivamente(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->atribuir($c, $this->criarProfessor()->id, '2026-09-01');
+        $a = $this->atribuir($c, $this->criarDocente()->id, '2026-09-01');
 
         app(EliminarAtribuicaoAction::class)->executar($a);
 
-        // Nunca começou, não tem valor histórico: não fica a prender o professor (FK restrict para users).
+        // Nunca começou, não tem valor histórico: não fica a prender o docente (FK restrict para docentes).
         $this->assertDatabaseMissing('atribuicoes_docentes', ['id' => $a->id]);
     }
 
     public function test_actualizar_limpa_o_motivo_quando_a_data_fim_volta_a_ficar_aberta(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->atribuir($c, $this->criarProfessor()->id, '2026-03-01');
+        $a = $this->atribuir($c, $this->criarDocente()->id, '2026-03-01');
         app(EncerrarAtribuicaoAction::class)->executar($a, '2026-09-30', 'Fim de contrato');
 
         $r = app(AtualizarAtribuicaoAction::class)->executar($a, PapelDocente::TITULAR, '2026-03-01', null);
@@ -376,8 +376,8 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_eliminar_em_curso_ou_terminada_e_rejeitado(): void
     {
         $c = $this->cenarioDeDocencia();
-        $emCurso = $this->atribuir($c, $this->criarProfessor()->id, '2026-03-01');
-        $terminada = $this->atribuir($c, $this->criarProfessor('b@example.com')->id, '2026-01-10', '2026-02-10', PapelDocente::SUBSTITUTO);
+        $emCurso = $this->atribuir($c, $this->criarDocente()->id, '2026-03-01');
+        $terminada = $this->atribuir($c, $this->criarDocente('Docente b')->id, '2026-01-10', '2026-02-10', PapelDocente::SUBSTITUTO);
 
         foreach ([$emCurso, $terminada] as $a) {
             $this->rejeita(fn () => app(EliminarAtribuicaoAction::class)->executar($a), 'atribuicao', 'Uma atribuição já iniciada não se elimina; encerre-a.');
@@ -388,9 +388,9 @@ class AtribuicaoDocenteAccoesTest extends TestCase
     public function test_ano_lectivo_encerrado_bloqueia_as_quatro_accoes(): void
     {
         $c = $this->cenarioDeDocencia();
-        $titular = $this->atribuir($c, $this->criarProfessor()->id, '2026-03-01');
-        $agendada = $this->atribuir($c, $this->criarProfessor('b@example.com')->id, '2026-09-01', null, PapelDocente::SUBSTITUTO);
-        $novoProf = $this->criarProfessor('c@example.com');
+        $titular = $this->atribuir($c, $this->criarDocente()->id, '2026-03-01');
+        $agendada = $this->atribuir($c, $this->criarDocente('Docente b')->id, '2026-09-01', null, PapelDocente::SUBSTITUTO);
+        $novoProf = $this->criarDocente('Docente c');
         $c['ano']->update(['estado' => EstadoAnoLectivo::ENCERRADO]);
         $mensagem = 'O ano lectivo da turma está encerrado e não aceita atribuições de docentes.';
 

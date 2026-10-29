@@ -11,11 +11,11 @@ use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\Docente\Enums\PapelDocente;
 use Modules\Docente\Models\AtribuicaoDocente;
+use Modules\Docente\Models\Docente;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\InscricaoDisciplina;
-use Modules\Permissao\Enums\Perfil;
 use Modules\Turma\Models\Turma;
 use Modules\Usuario\Models\User;
 
@@ -71,7 +71,7 @@ class AtribuicaoDocenteConsultaService
         $comInscricoes = $this->disciplinasComInscricaoActiva($turma);
 
         $atribuicoes = AtribuicaoDocente::query()
-            ->with('professor:id,name')
+            ->with('docente.dadosPessoa:id,nome_completo')
             ->where('turma_id', $turma->id)
             ->whereIn('disciplina_id', $disciplinas->pluck('id'))
             ->where(fn ($q) => $q->whereNull('data_fim')->orWhereDate('data_fim', '>=', $hoje->toDateString()))
@@ -103,7 +103,7 @@ class AtribuicaoDocenteConsultaService
     }
 
     /**
-     * @param  array{ano_lectivo_id?: mixed, turma_id?: mixed, professor_id?: mixed, disciplina_id?: mixed, papel?: mixed, estado_vigencia?: mixed, pesquisa?: mixed}  $filtros
+     * @param  array{ano_lectivo_id?: mixed, turma_id?: mixed, docente_id?: mixed, disciplina_id?: mixed, papel?: mixed, estado_vigencia?: mixed, pesquisa?: mixed}  $filtros
      */
     public function lista(array $filtros, int $porPagina = 15): LengthAwarePaginator
     {
@@ -118,7 +118,7 @@ class AtribuicaoDocenteConsultaService
     /**
      * Linhas da lista, com os mesmos filtros e a mesma referência de data, prontas a exportar (sem paginação).
      *
-     * @param  array{ano_lectivo_id?: mixed, turma_id?: mixed, professor_id?: mixed, disciplina_id?: mixed, papel?: mixed, estado_vigencia?: mixed, pesquisa?: mixed}  $filtros
+     * @param  array{ano_lectivo_id?: mixed, turma_id?: mixed, docente_id?: mixed, disciplina_id?: mixed, papel?: mixed, estado_vigencia?: mixed, pesquisa?: mixed}  $filtros
      * @return list<array<string, string>>
      */
     public function paraExportacao(array $filtros, int $limite): array
@@ -129,7 +129,7 @@ class AtribuicaoDocenteConsultaService
             ->limit($limite)
             ->get()
             ->map(fn (AtribuicaoDocente $a) => [
-                'professor' => (string) $a->professor?->name,
+                'docente' => (string) $a->docente?->dadosPessoa?->nome_completo,
                 'turma' => (string) $a->turma?->nome,
                 'disciplina' => (string) $a->disciplina?->nome,
                 'papel' => $a->papel->label(),
@@ -151,10 +151,10 @@ class AtribuicaoDocenteConsultaService
         $dia = $hoje->toDateString();
 
         return AtribuicaoDocente::query()
-            ->with(['turma:id,nome,codigo', 'disciplina:id,nome', 'professor:id,name'])
+            ->with(['turma:id,nome,codigo', 'disciplina:id,nome', 'docente.dadosPessoa:id,nome_completo'])
             ->when($filtros['ano_lectivo_id'] ?? null, fn ($q, $v) => $q->where('ano_lectivo_id', (int) $v))
             ->when($filtros['turma_id'] ?? null, fn ($q, $v) => $q->where('turma_id', (int) $v))
-            ->when($filtros['professor_id'] ?? null, fn ($q, $v) => $q->where('professor_id', (int) $v))
+            ->when($filtros['docente_id'] ?? null, fn ($q, $v) => $q->where('docente_id', (int) $v))
             ->when($filtros['disciplina_id'] ?? null, fn ($q, $v) => $q->where('disciplina_id', (int) $v))
             ->when(($filtros['papel'] ?? '') !== '' && isset($filtros['papel']), fn ($q) => $q->where('papel', (int) $filtros['papel']))
             ->when($filtros['estado_vigencia'] ?? null, fn ($q, $estado) => match ($estado) {
@@ -164,7 +164,7 @@ class AtribuicaoDocenteConsultaService
                 default => $q,
             })
             ->when($filtros['pesquisa'] ?? null, fn ($q, $pesquisa) => $q->where(fn ($q) => $q
-                ->whereHas('professor', fn ($p) => $p->whereContem('name', $pesquisa))
+                ->whereHas('docente.dadosPessoa', fn ($p) => $p->whereContem('nome_completo', $pesquisa))
                 ->orWhereHas('disciplina', fn ($d) => $d->whereContem('nome', $pesquisa))
                 ->orWhereHas('turma', fn ($t) => $t->whereContem('nome', $pesquisa)->orWhereContem('codigo', $pesquisa))))
             ->orderBy('turma_id')
@@ -219,9 +219,10 @@ class AtribuicaoDocenteConsultaService
     }
 
     /**
+     * `docentes`: os activos, com ou sem conta (`tem_acesso`: se já podem entrar no sistema, p. ex. para lançar notas).
      * `disciplinas`: as que têm atribuições no ano (as únicas que o filtro da lista pode encontrar).
      *
-     * @return array{anosLectivos: list<array<string, mixed>>, turmas: list<array<string, mixed>>, professores: list<array<string, mixed>>, disciplinas: list<array{id: int, nome: string}>}
+     * @return array{anosLectivos: list<array<string, mixed>>, turmas: list<array<string, mixed>>, docentes: list<array{id: int, nome: string, tem_acesso: bool}>, disciplinas: list<array{id: int, nome: string}>}
      */
     public function opcoes(int $anoLectivoId): array
     {
@@ -232,17 +233,36 @@ class AtribuicaoDocenteConsultaService
             'turmas' => Turma::query()->where('ano_lectivo_id', $anoLectivoId)->where('estado', 1)->orderBy('nome')->get(['id', 'nome', 'codigo'])
                 ->map(fn (Turma $t) => ['id' => $t->id, 'nome' => $t->nome, 'codigo' => $t->codigo])
                 ->all(),
-            'professores' => User::query()->where('estado', 1)
-                ->whereHas('roles', fn ($q) => $q->where('nome', Perfil::PROFESSOR->value))
-                ->orderBy('name')->get(['id', 'name'])
-                ->map(fn (User $u) => ['id' => $u->id, 'nome' => $u->name])
-                ->all(),
+            'docentes' => $this->docentesActivos(),
             'disciplinas' => Disciplina::query()
                 ->whereIn('id', AtribuicaoDocente::query()->where('ano_lectivo_id', $anoLectivoId)->select('disciplina_id'))
                 ->orderBy('nome')->get(['id', 'nome'])
                 ->map(fn (Disciplina $d) => ['id' => $d->id, 'nome' => $d->nome])
                 ->all(),
         ];
+    }
+
+    /**
+     * Docentes activos por nome. O acesso resolve-se numa só consulta às contas com a mesma pessoa (sem N+1).
+     *
+     * @return list<array{id: int, nome: string, tem_acesso: bool}>
+     */
+    private function docentesActivos(): array
+    {
+        $docentes = Docente::query()
+            ->where('docentes.estado', 1)
+            ->join('dados_pessoas', 'dados_pessoas.id', '=', 'docentes.dados_pessoa_id')
+            ->orderBy('dados_pessoas.nome_completo')
+            ->orderBy('docentes.id')
+            ->get(['docentes.id', 'docentes.dados_pessoa_id', 'dados_pessoas.nome_completo']);
+
+        $comConta = User::query()->whereIn('dados_pessoa_id', $docentes->pluck('dados_pessoa_id'))->pluck('dados_pessoa_id')->flip();
+
+        return $docentes->map(fn (Docente $d) => [
+            'id' => $d->id,
+            'nome' => $d->nome_completo,
+            'tem_acesso' => $comConta->has($d->dados_pessoa_id),
+        ])->values()->all();
     }
 
     /**
@@ -274,8 +294,8 @@ class AtribuicaoDocenteConsultaService
     {
         return [
             'id' => $a->id,
-            'professor_id' => $a->professor_id,
-            'professor_nome' => $a->professor?->name,
+            'docente_id' => $a->docente_id,
+            'docente_nome' => $a->docente?->dadosPessoa?->nome_completo,
             'papel' => $a->papel->value,
             'papel_descricao' => $a->papel_descricao,
             'data_inicio' => $a->data_inicio->toDateString(),

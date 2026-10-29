@@ -9,6 +9,9 @@ use Carbon\CarbonInterface;
  * "este professor lecciona esta disciplina nesta turma, hoje?". Implementado pelo módulo Docente, que
  * conhece as atribuições, sem que os consumidores o importem. Respeita o tenant corrente.
  *
+ * `$professorId` é sempre o id do UTILIZADOR (a conta autenticada): a implementação resolve o docente pela pessoa
+ * ligada à conta; uma conta sem docente não lecciona nada (`false` / lista vazia).
+ *
  * A vigência efectiva de uma atribuição é [data_inicio, min(data_fim, fim do ano lectivo)], com os dois
  * extremos inclusivos, ao dia, no fuso da escola; uma data_fim nula vale o fim do ano lectivo.
  */

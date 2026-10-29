@@ -13,6 +13,7 @@ use Modules\Curso\Models\Curso;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\Docente\Enums\PapelDocente;
 use Modules\Docente\Models\AtribuicaoDocente;
+use Modules\Docente\Models\Docente;
 use Modules\Docente\Tests\Support\CenarioDeDocencia;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -51,26 +52,26 @@ class AtribuicaoDocenteHttpTest extends TestCase
         return $admin;
     }
 
-    private function payload(array $c, User $prof, array $extra = []): array
+    private function payload(array $c, Docente $prof, array $extra = []): array
     {
         return array_merge([
-            'professor_id' => $prof->id, 'turma_id' => $c['turma']->id, 'disciplina_id' => $c['disciplina']->id,
+            'docente_id' => $prof->id, 'turma_id' => $c['turma']->id, 'disciplina_id' => $c['disciplina']->id,
             'papel' => PapelDocente::TITULAR->value, 'data_inicio' => '2026-06-15',
         ], $extra);
     }
 
-    private function existente(array $c, User $prof, string $inicio, ?string $fim = null): AtribuicaoDocente
+    private function existente(array $c, Docente $prof, string $inicio, ?string $fim = null): AtribuicaoDocente
     {
         return AtribuicaoDocente::create([
             'ano_lectivo_id' => $c['ano']->id, 'turma_id' => $c['turma']->id, 'disciplina_id' => $c['disciplina']->id,
-            'professor_id' => $prof->id, 'papel' => PapelDocente::TITULAR, 'data_inicio' => $inicio, 'data_fim' => $fim,
+            'docente_id' => $prof->id, 'papel' => PapelDocente::TITULAR, 'data_inicio' => $inicio, 'data_fim' => $fim,
         ]);
     }
 
     public function test_index_renderiza_inertia_com_props(): void
     {
         $c = $this->cenarioDeDocencia();
-        $this->criarProfessor();
+        $this->criarDocente();
         $this->actingAsAdmin();
 
         $this->get(route('atribuicoes-docentes.index', ['turma_id' => $c['turma']->id]))
@@ -84,7 +85,9 @@ class AtribuicaoDocenteHttpTest extends TestCase
                 ->has('filtros')
                 ->has('opcoes.anosLectivos')
                 ->has('opcoes.turmas', 1)
-                ->has('opcoes.professores', 1)
+                ->has('opcoes.docentes', 1)
+                ->where('opcoes.docentes.0.tem_acesso', false)
+                ->missing('opcoes.professores')
                 ->has('opcoes.disciplinas', 0)
                 ->missing('indicadores')
                 ->loadDeferredProps(fn (Assert $deferred) => $deferred
@@ -100,7 +103,7 @@ class AtribuicaoDocenteHttpTest extends TestCase
             'estabelecimento_id' => $c['ano']->estabelecimento_id, 'nome' => '2027', 'data_inicio' => '2027-01-01',
             'data_fim' => '2027-12-31', 'estado' => EstadoAnoLectivo::PLANEADO,
         ]);
-        $this->existente($c, $this->criarProfessor(), '2026-03-01');
+        $this->existente($c, $this->criarDocente(), '2026-03-01');
         $this->actingAsAdmin();
 
         $this->get(route('atribuicoes-docentes.index', ['vista' => 'lista']))
@@ -111,10 +114,10 @@ class AtribuicaoDocenteHttpTest extends TestCase
     public function test_index_filtra_a_lista_por_disciplina(): void
     {
         $c = $this->cenarioDeDocencia();
-        $this->existente($c, $this->criarProfessor(), '2026-03-01');
+        $this->existente($c, $this->criarDocente(), '2026-03-01');
         AtribuicaoDocente::create([
             'ano_lectivo_id' => $c['ano']->id, 'turma_id' => $c['turma']->id, 'disciplina_id' => $c['outraDisciplina']->id,
-            'professor_id' => $this->criarProfessor('b@example.com')->id, 'papel' => PapelDocente::TITULAR, 'data_inicio' => '2026-03-01',
+            'docente_id' => $this->criarDocente('Docente b')->id, 'papel' => PapelDocente::TITULAR, 'data_inicio' => '2026-03-01',
         ]);
         $this->actingAsAdmin();
 
@@ -140,7 +143,7 @@ class AtribuicaoDocenteHttpTest extends TestCase
     public function test_store_cria_e_regista_autoria(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
         $admin = $this->actingAsAdmin();
 
         $this->post(route('atribuicoes-docentes.store'), $this->payload($c, $prof))
@@ -155,12 +158,12 @@ class AtribuicaoDocenteHttpTest extends TestCase
     public function test_store_devolve_erros_de_validacao_em_portugues(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
         $this->actingAsAdmin();
 
         $this->post(route('atribuicoes-docentes.store'), [])
-            ->assertSessionHasErrors(['professor_id', 'turma_id', 'disciplina_id', 'papel', 'data_inicio']);
-        $this->assertSame('O professor é obrigatório.', session('errors')->first('professor_id'));
+            ->assertSessionHasErrors(['docente_id', 'turma_id', 'disciplina_id', 'papel', 'data_inicio']);
+        $this->assertSame('O docente é obrigatório.', session('errors')->first('docente_id'));
 
         $this->post(route('atribuicoes-docentes.store'), $this->payload($c, $prof, ['data_inicio' => '15/06/2026']))
             ->assertSessionHasErrors(['data_inicio']);
@@ -174,23 +177,23 @@ class AtribuicaoDocenteHttpTest extends TestCase
     public function test_substituir_encerrar_actualizar_eliminar(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->criarProfessor('a@example.com');
-        $b = $this->criarProfessor('b@example.com');
+        $a = $this->criarDocente('Docente a');
+        $b = $this->criarDocente('Docente b');
         $this->actingAsAdmin();
         $titular = $this->existente($c, $a, '2026-01-01');
 
         // Substituir.
         $this->post(route('atribuicoes-docentes.substituir'), [
-            'turma_id' => $c['turma']->id, 'disciplina_id' => $c['disciplina']->id, 'novo_professor_id' => $b->id,
+            'turma_id' => $c['turma']->id, 'disciplina_id' => $c['disciplina']->id, 'novo_docente_id' => $b->id,
             'ultimo_dia_do_titular' => '2026-06-30', 'motivo' => 'Licença',
         ])->assertSessionHasNoErrors()->assertRedirect();
         $this->assertSame('2026-06-30', $titular->fresh()->data_fim->toDateString());
-        $novo = AtribuicaoDocente::where('professor_id', $b->id)->firstOrFail();
+        $novo = AtribuicaoDocente::where('docente_id', $b->id)->firstOrFail();
         $this->assertSame('2026-07-01', $novo->data_inicio->toDateString());
 
         // Substituir sem motivo.
         $this->post(route('atribuicoes-docentes.substituir'), [
-            'turma_id' => $c['turma']->id, 'disciplina_id' => $c['disciplina']->id, 'novo_professor_id' => $b->id,
+            'turma_id' => $c['turma']->id, 'disciplina_id' => $c['disciplina']->id, 'novo_docente_id' => $b->id,
             'ultimo_dia_do_titular' => '2026-06-30',
         ])->assertSessionHasErrors(['motivo']);
 
@@ -217,7 +220,7 @@ class AtribuicaoDocenteHttpTest extends TestCase
     public function test_ano_lectivo_encerrado_le_mas_nao_escreve(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
         $this->actingAsAdmin();
         $existente = $this->existente($c, $prof, '2026-01-01');
         $c['ano']->update(['estado' => EstadoAnoLectivo::ENCERRADO]);
@@ -237,15 +240,15 @@ class AtribuicaoDocenteHttpTest extends TestCase
     public function test_ids_de_outro_tenant_em_turma_disciplina_e_professor_dao_erro_de_validacao_ou_404(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
 
         $outro = $this->criarTenant('MOSI-000002', 'Outra Escola', 'outra.test');
         [$turmaB, $discB, $profB, $atribB] = $this->noTenant($outro, function () {
             $cb = $this->cenarioDeDocencia();
-            $pb = $this->criarProfessor('prof-b@example.com');
+            $pb = $this->criarDocente('Docente prof-b');
             $ab = AtribuicaoDocente::create([
                 'ano_lectivo_id' => $cb['ano']->id, 'turma_id' => $cb['turma']->id, 'disciplina_id' => $cb['disciplina']->id,
-                'professor_id' => $pb->id, 'papel' => PapelDocente::TITULAR, 'data_inicio' => '2026-01-01',
+                'docente_id' => $pb->id, 'papel' => PapelDocente::TITULAR, 'data_inicio' => '2026-01-01',
             ]);
 
             return [$cb['turma'], $cb['disciplina'], $pb, $ab];
@@ -258,11 +261,11 @@ class AtribuicaoDocenteHttpTest extends TestCase
         $this->post(route('atribuicoes-docentes.store'), $this->payload($c, $prof, ['disciplina_id' => $discB->id]))
             ->assertSessionHasErrors(['disciplina_id']);
         $this->post(route('atribuicoes-docentes.store'), $this->payload($c, $profB))
-            ->assertSessionHasErrors(['professor_id']);
+            ->assertSessionHasErrors(['docente_id']);
         $this->post(route('atribuicoes-docentes.substituir'), [
-            'turma_id' => $turmaB->id, 'disciplina_id' => $discB->id, 'novo_professor_id' => $profB->id,
+            'turma_id' => $turmaB->id, 'disciplina_id' => $discB->id, 'novo_docente_id' => $profB->id,
             'ultimo_dia_do_titular' => '2026-06-30', 'motivo' => 'x',
-        ])->assertSessionHasErrors(['turma_id', 'disciplina_id', 'novo_professor_id']);
+        ])->assertSessionHasErrors(['turma_id', 'disciplina_id', 'novo_docente_id']);
 
         // Atribuição de outro tenant: 404, nunca dados dessa escola.
         $this->delete(route('atribuicoes-docentes.destroy', $atribB->id))->assertNotFound();
@@ -279,7 +282,7 @@ class AtribuicaoDocenteHttpTest extends TestCase
     public function test_delete_de_atribuicao_iniciada_devolve_erro(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
         $this->actingAsAdmin();
         $iniciada = $this->existente($c, $prof, '2026-01-01');
 

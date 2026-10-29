@@ -2,27 +2,25 @@
 import { computed, reactive, watch } from 'vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Loader from '@/Components/Shared/Loader.vue';
-import ErrosGerais from './ErrosGerais.vue';
-import { formatarDia, hojeIso } from '../../Models/PapelDocente';
+import ErrosGerais from '../Shared/ErrosGerais.vue';
+import { formatarDia, hojeIso, opcoesDeDocentes } from '../../Models/PapelDocente';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
     linha: { type: Object, default: null }, // linha da vista por turma, com `titular`
     turma: { type: Object, default: null },
-    professores: { type: Array, default: () => [] },
+    docentes: { type: Array, default: () => [] }, // [{ id, nome, tem_acesso }]
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
 });
 const emit = defineEmits(['submit', 'cancelar']);
 
-// O validador partilhado chama `professor_id` ao novo professor; mostra-se no mesmo campo.
-const CAMPOS = ['novo_professor_id', 'professor_id', 'ultimo_dia_do_titular', 'motivo', 'data_inicio'];
+// O validador partilhado chama `docente_id` ao novo docente; mostra-se no mesmo campo.
+const CAMPOS = ['novo_docente_id', 'docente_id', 'ultimo_dia_do_titular', 'motivo', 'data_inicio'];
 
-const opcoesProfessor = computed(() => props.professores
-    .filter((p) => p.id !== props.linha?.titular?.professor_id)
-    .map((p) => ({ value: p.id, label: p.nome })));
+const opcoesDocente = computed(() => opcoesDeDocentes(props.docentes.filter((d) => d.id !== props.linha?.titular?.docente_id)));
 
-const form = reactive({ novo_professor_id: '', ultimo_dia_do_titular: '', motivo: '' });
+const form = reactive({ novo_docente_id: '', ultimo_dia_do_titular: '', motivo: '' });
 
 const inicioDoNovo = computed(() => {
     if (!form.ultimo_dia_do_titular) return '';
@@ -33,7 +31,7 @@ const inicioDoNovo = computed(() => {
 
 watch(() => props.show, (show) => {
     if (!show) return;
-    form.novo_professor_id = '';
+    form.novo_docente_id = '';
     form.ultimo_dia_do_titular = hojeIso();
     form.motivo = '';
 });
@@ -55,15 +53,15 @@ function submeter() {
                     <div class="card border-0 bg-body-secondary mb-7">
                         <div class="card-body py-4 px-5">
                             <div class="text-muted fs-8 fw-bold text-uppercase mb-1">Titular actual</div>
-                            <div class="fw-bold">{{ linha?.titular?.professor_nome }}</div>
+                            <div class="fw-bold">{{ linha?.titular?.docente_nome }}</div>
                             <div class="text-muted fs-7">desde {{ formatarDia(linha?.titular?.data_inicio) }}</div>
                         </div>
                     </div>
 
                     <div class="fv-row mb-7">
                         <label class="required fw-semibold fs-6 mb-2">Novo titular</label>
-                        <SelectSolid v-model="form.novo_professor_id" :options="opcoesProfessor" placeholder="Seleccione o professor" searchable />
-                        <div class="text-danger fs-7 mt-1" v-if="errors.novo_professor_id || errors.professor_id">{{ errors.novo_professor_id || errors.professor_id }}</div>
+                        <SelectSolid v-model="form.novo_docente_id" :options="opcoesDocente" placeholder="Seleccione o docente" searchable />
+                        <div class="text-danger fs-7 mt-1" v-if="errors.novo_docente_id || errors.docente_id">{{ errors.novo_docente_id || errors.docente_id }}</div>
                     </div>
 
                     <div class="fv-row mb-7">

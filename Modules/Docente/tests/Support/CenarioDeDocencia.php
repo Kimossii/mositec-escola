@@ -2,12 +2,12 @@
 
 namespace Modules\Docente\Tests\Support;
 
-
 use Illuminate\Support\Facades\Hash;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Curso\Models\Curso;
 use Modules\Disciplina\Models\Disciplina;
+use Modules\Docente\Models\Docente;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
@@ -18,6 +18,7 @@ use Modules\PlanoCurricular\Models\PlanoCurricularAnoLectivo;
 use Modules\PlanoCurricular\Models\PlanoCurricularDisciplina;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 
 /**
@@ -26,6 +27,9 @@ use Modules\Usuario\Models\User;
  */
 trait CenarioDeDocencia
 {
+    /** Contador para BI e email únicos dos docentes criados nos testes. */
+    private static int $docentesCriados = 0;
+
     /**
      * Ano lectivo 2026 (activo), turma com curso, e um plano curricular desse curso/nível associado ao ano
      * com duas disciplinas.
@@ -74,5 +78,32 @@ trait CenarioDeDocencia
         $professor->roles()->attach(Role::where('nome', Perfil::PROFESSOR->value)->firstOrFail()->id);
 
         return $professor;
+    }
+
+    /**
+     * Docente activo do tenant do contexto, com a sua `DadosPessoa` (tipo professor). Com acesso, ganha também
+     * a conta: um utilizador com o perfil PROFESSOR ligado à mesma pessoa.
+     */
+    protected function criarDocente(string $nome = 'Docente Teste', bool $comAcesso = false): Docente
+    {
+        $n = ++self::$docentesCriados;
+
+        $pessoa = DadosPessoa::create([
+            'nome_completo' => $nome,
+            'numero_identificacao' => 'BI-DOC-' . $n,
+            'tipo_pessoa' => DadosPessoa::TIPO_PROFESSOR,
+        ]);
+
+        $docente = Docente::create([
+            'estabelecimento_id' => Estabelecimento::current()->id,
+            'dados_pessoa_id' => $pessoa->id,
+        ]);
+
+        if ($comAcesso) {
+            $professor = $this->criarProfessor('docente' . $n . '@example.com');
+            $professor->update(['name' => $nome, 'dados_pessoa_id' => $pessoa->id]);
+        }
+
+        return $docente;
     }
 }

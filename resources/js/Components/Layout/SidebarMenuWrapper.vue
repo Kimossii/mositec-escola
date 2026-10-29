@@ -65,7 +65,7 @@
             <!-- ── Section: Financeiro (operação; a configuração fica em Configurações → Financeiro) ── -->
             <SidebarAccordion :item="financeiro" heading="Financeiro" />
 
-            <!-- ── Section: Pessoal (por agora só as atribuições docentes) ── -->
+            <!-- ── Section: Pessoal (por agora docentes e atribuições docentes) ── -->
             <SidebarAccordion :item="pessoal" heading="Pessoal" />
 
             <!-- ── Sections por implementar: Frequência,
@@ -517,6 +517,7 @@ const pessoal = {
     icon: 'ki-briefcase',
     paths: 2,
     items: [
+        { href: '/docentes', title: 'Docentes', exact: true, permissao: 'docente.ver' },
         { href: '/docentes/atribuicoes', title: 'Atribuições docentes', permissao: 'atribuicao-docente.ver' },
         // { href: '#', title: 'Funcionários' },
         // { href: '#', title: 'Assiduidade do Pessoal' },

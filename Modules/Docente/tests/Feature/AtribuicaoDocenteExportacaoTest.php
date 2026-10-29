@@ -11,6 +11,7 @@ use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\Core\Exportacao\Exportador;
 use Modules\Docente\Enums\PapelDocente;
 use Modules\Docente\Models\AtribuicaoDocente;
+use Modules\Docente\Models\Docente;
 use Modules\Docente\Services\AtribuicaoDocenteConsultaService;
 use Modules\Docente\Tests\Support\CenarioDeDocencia;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
@@ -46,11 +47,11 @@ class AtribuicaoDocenteExportacaoTest extends TestCase
         return $u;
     }
 
-    private function atribuir(array $c, User $prof, PapelDocente $papel, string $inicio, ?string $fim = null, ?int $disciplinaId = null): AtribuicaoDocente
+    private function atribuir(array $c, Docente $prof, PapelDocente $papel, string $inicio, ?string $fim = null, ?int $disciplinaId = null): AtribuicaoDocente
     {
         return AtribuicaoDocente::create([
             'ano_lectivo_id' => $c['ano']->id, 'turma_id' => $c['turma']->id, 'disciplina_id' => $disciplinaId ?? $c['disciplina']->id,
-            'professor_id' => $prof->id, 'papel' => $papel, 'data_inicio' => $inicio, 'data_fim' => $fim,
+            'docente_id' => $prof->id, 'papel' => $papel, 'data_inicio' => $inicio, 'data_fim' => $fim,
         ]);
     }
 
@@ -64,44 +65,44 @@ class AtribuicaoDocenteExportacaoTest extends TestCase
     public function test_exporta_com_os_filtros_da_lista_e_as_colunas_certas(): void
     {
         $c = $this->cenarioDeDocencia();
-        $ana = $this->criarProfessor('ana@example.com');
-        $rui = $this->criarProfessor('rui@example.com');
+        $ana = $this->criarDocente('Ana Docente');
+        $rui = $this->criarDocente('Rui Docente');
         $this->atribuir($c, $ana, PapelDocente::TITULAR, '2026-02-01');
         $this->atribuir($c, $rui, PapelDocente::SUBSTITUTO, '2026-08-01', null, $c['outraDisciplina']->id);
         $this->como(Perfil::ADMIN_ESCOLA);
 
         $todas = $this->csv(route('atribuicoes-docentes.exportar', ['formato' => 'csv']));
-        $this->assertStringContainsString('Professor;Turma;Disciplina;Papel;Início;Fim;Estado', $todas);
-        $this->assertStringContainsString('Professor ana@example.com', $todas);
-        $this->assertStringContainsString('Professor rui@example.com', $todas);
+        $this->assertStringContainsString('Docente;Turma;Disciplina;Papel;Início;Fim;Estado', $todas);
+        $this->assertStringContainsString('Ana Docente', $todas);
+        $this->assertStringContainsString('Rui Docente', $todas);
         $this->assertStringContainsString('Titular', $todas);
         $this->assertStringContainsString('Turma 10A', $todas);
         $this->assertStringContainsString('Matemática', $todas);
         $this->assertStringContainsString('2026-02-01', $todas);
 
-        $porProfessor = $this->csv(route('atribuicoes-docentes.exportar', ['formato' => 'csv', 'professor_id' => $rui->id]));
-        $this->assertStringContainsString('rui@example.com', $porProfessor);
-        $this->assertStringNotContainsString('ana@example.com', $porProfessor);
+        $porProfessor = $this->csv(route('atribuicoes-docentes.exportar', ['formato' => 'csv', 'docente_id' => $rui->id]));
+        $this->assertStringContainsString('Rui Docente', $porProfessor);
+        $this->assertStringNotContainsString('Ana Docente', $porProfessor);
         $this->assertStringContainsString('Agendada', $porProfessor);
 
         $porPapel = $this->csv(route('atribuicoes-docentes.exportar', ['formato' => 'csv', 'papel' => PapelDocente::TITULAR->value]));
-        $this->assertStringContainsString('ana@example.com', $porPapel);
-        $this->assertStringNotContainsString('rui@example.com', $porPapel);
+        $this->assertStringContainsString('Ana Docente', $porPapel);
+        $this->assertStringNotContainsString('Rui Docente', $porPapel);
         $this->assertStringContainsString('Em curso', $porPapel);
 
         $porEstado = $this->csv(route('atribuicoes-docentes.exportar', ['formato' => 'csv', 'estado_vigencia' => 'agendada']));
-        $this->assertStringContainsString('rui@example.com', $porEstado);
-        $this->assertStringNotContainsString('ana@example.com', $porEstado);
+        $this->assertStringContainsString('Rui Docente', $porEstado);
+        $this->assertStringNotContainsString('Ana Docente', $porEstado);
 
         $porPesquisa = $this->csv(route('atribuicoes-docentes.exportar', ['formato' => 'csv', 'pesquisa' => 'Portug']));
-        $this->assertStringContainsString('rui@example.com', $porPesquisa);
-        $this->assertStringNotContainsString('ana@example.com', $porPesquisa);
+        $this->assertStringContainsString('Rui Docente', $porPesquisa);
+        $this->assertStringNotContainsString('Ana Docente', $porPesquisa);
     }
 
     public function test_exporta_em_todos_os_formatos(): void
     {
         $c = $this->cenarioDeDocencia();
-        $this->atribuir($c, $this->criarProfessor(), PapelDocente::TITULAR, '2026-02-01');
+        $this->atribuir($c, $this->criarDocente(), PapelDocente::TITULAR, '2026-02-01');
         $this->como(Perfil::ADMIN_ESCOLA);
 
         foreach (['excel' => 'spreadsheetml', 'pdf' => 'application/pdf', 'csv' => 'text/csv', 'zip' => 'application/zip'] as $formato => $mime) {
@@ -137,7 +138,7 @@ class AtribuicaoDocenteExportacaoTest extends TestCase
         $this->cenarioDeDocencia();
         $this->como(Perfil::ADMIN_ESCOLA);
 
-        $linha = ['professor' => 'P', 'turma' => 'T', 'disciplina' => 'D', 'papel' => 'Titular', 'inicio' => '2026-01-01', 'fim' => '', 'estado' => 'Em curso'];
+        $linha = ['docente' => 'P', 'turma' => 'T', 'disciplina' => 'D', 'papel' => 'Titular', 'inicio' => '2026-01-01', 'fim' => '', 'estado' => 'Em curso'];
         $this->partialMock(AtribuicaoDocenteConsultaService::class, function ($mock) use ($linha) {
             $mock->shouldReceive('paraExportacao')
                 ->once()
@@ -151,19 +152,19 @@ class AtribuicaoDocenteExportacaoTest extends TestCase
     public function test_nao_vaza_atribuicoes_de_outro_tenant(): void
     {
         $c = $this->cenarioDeDocencia();
-        $this->atribuir($c, $this->criarProfessor('a@example.com'), PapelDocente::TITULAR, '2026-02-01');
+        $this->atribuir($c, $this->criarDocente('Docente Escola A'), PapelDocente::TITULAR, '2026-02-01');
 
         $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
         $this->noTenant($outro, function () {
             $cb = $this->cenarioDeDocencia();
-            $this->atribuir($cb, $this->criarProfessor('b@example.com'), PapelDocente::TITULAR, '2026-02-01');
+            $this->atribuir($cb, $this->criarDocente('Docente Escola B'), PapelDocente::TITULAR, '2026-02-01');
         });
 
         $this->como(Perfil::ADMIN_ESCOLA);
 
         $csv = $this->csv(route('atribuicoes-docentes.exportar', ['formato' => 'csv']));
-        $this->assertStringContainsString('a@example.com', $csv);
-        $this->assertStringNotContainsString('b@example.com', $csv);
+        $this->assertStringContainsString('Docente Escola A', $csv);
+        $this->assertStringNotContainsString('Docente Escola B', $csv);
     }
 
     public function test_estado_de_um_ano_encerrado_usa_a_referencia_do_ano(): void
@@ -171,7 +172,7 @@ class AtribuicaoDocenteExportacaoTest extends TestCase
         $c = $this->cenarioDeDocencia();
         // «Hoje» já passou o fim do ano: a referência é o último dia do ano (2026-12-31), em que esta atribuição (fim a 2026-12-31) ainda está em curso; com «hoje» estaria terminada.
         Carbon::setTestNow(CarbonImmutable::parse('2027-03-10 10:00:00', 'UTC'));
-        $this->atribuir($c, $this->criarProfessor('a@example.com'), PapelDocente::TITULAR, '2026-02-01', '2026-12-31');
+        $this->atribuir($c, $this->criarDocente('Docente a'), PapelDocente::TITULAR, '2026-02-01', '2026-12-31');
         $c['ano']->update(['estado' => EstadoAnoLectivo::ENCERRADO]);
         $this->como(Perfil::ADMIN_ESCOLA);
 

@@ -38,11 +38,11 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
         return app(AtribuicaoDocenteConsultaService::class);
     }
 
-    private function criar(array $c, $disciplina, int $professorId, PapelDocente $papel, string $inicio, ?string $fim = null): AtribuicaoDocente
+    private function criar(array $c, $disciplina, int $docenteId, PapelDocente $papel, string $inicio, ?string $fim = null): AtribuicaoDocente
     {
         return AtribuicaoDocente::create([
             'ano_lectivo_id' => $c['ano']->id, 'turma_id' => $c['turma']->id, 'disciplina_id' => $disciplina->id,
-            'professor_id' => $professorId, 'papel' => $papel, 'data_inicio' => $inicio, 'data_fim' => $fim,
+            'docente_id' => $docenteId, 'papel' => $papel, 'data_inicio' => $inicio, 'data_fim' => $fim,
         ]);
     }
 
@@ -54,7 +54,7 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
     public function test_por_turma_marca_disciplinas_sem_titular(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
         $this->criar($c, $c['disciplina'], $prof->id, PapelDocente::TITULAR, '2026-01-01');
 
         $r = $this->servico()->porTurma($c['ano']->id, $c['turma']->id);
@@ -63,7 +63,7 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
         $mat = $this->linha($r['linhas'], $c['disciplina']->id);
         $this->assertFalse($mat['sem_titular']);
         $this->assertFalse($mat['conta_como_em_falta']);
-        $this->assertSame($prof->id, $mat['titular']['professor_id']);
+        $this->assertSame($prof->id, $mat['titular']['docente_id']);
         $this->assertSame('Matemática', $mat['disciplina_nome']);
 
         $por = $this->linha($r['linhas'], $c['outraDisciplina']->id);
@@ -100,7 +100,7 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
     public function test_substituto_sem_titular_conta_como_em_falta(): void
     {
         $c = $this->cenarioDeDocencia();
-        $sub = $this->criarProfessor('sub@example.com');
+        $sub = $this->criarDocente('Docente sub');
         $this->criar($c, $c['disciplina'], $sub->id, PapelDocente::SUBSTITUTO, '2026-01-01');
 
         $linha = $this->linha($this->servico()->porTurma($c['ano']->id, $c['turma']->id)['linhas'], $c['disciplina']->id);
@@ -114,7 +114,7 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
     public function test_substituto_agendado_aparece_marcado(): void
     {
         $c = $this->cenarioDeDocencia();
-        $sub = $this->criarProfessor('sub@example.com');
+        $sub = $this->criarDocente('Docente sub');
         $this->criar($c, $c['disciplina'], $sub->id, PapelDocente::SUBSTITUTO, '2026-09-01');
 
         $linha = $this->linha($this->servico()->porTurma($c['ano']->id, $c['turma']->id)['linhas'], $c['disciplina']->id);
@@ -125,7 +125,7 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
     public function test_indicadores_contam_sem_titular_em_toda_a_escola(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
         $this->criar($c, $c['disciplina'], $prof->id, PapelDocente::TITULAR, '2026-01-01');
 
         $i = $this->servico()->indicadores($c['ano']->id);
@@ -141,8 +141,8 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
     public function test_lista_filtra_e_pagina(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->criarProfessor('a@example.com');
-        $b = $this->criarProfessor('b@example.com');
+        $a = $this->criarDocente('Docente a');
+        $b = $this->criarDocente('Docente b');
         $this->criar($c, $c['disciplina'], $a->id, PapelDocente::TITULAR, '2026-01-01');
         $this->criar($c, $c['outraDisciplina'], $b->id, PapelDocente::SUBSTITUTO, '2026-09-01');
 
@@ -150,7 +150,7 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
         $this->assertSame(2, $todas->total());
         $this->assertCount(1, $todas->items());
 
-        $porProf = $this->servico()->lista(['ano_lectivo_id' => $c['ano']->id, 'professor_id' => $a->id]);
+        $porProf = $this->servico()->lista(['ano_lectivo_id' => $c['ano']->id, 'docente_id' => $a->id]);
         $this->assertSame(1, $porProf->total());
 
         $agendadas = $this->servico()->lista(['ano_lectivo_id' => $c['ano']->id, 'estado_vigencia' => 'agendada']);
@@ -164,26 +164,45 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
         $this->assertSame(1, $pesquisa->total());
     }
 
-    public function test_opcoes_lista_so_professores_activos(): void
+    public function test_opcoes_lista_so_docentes_activos_com_indicacao_de_acesso(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
-        $outro = $this->criarProfessor('inactivo@example.com');
+        $semConta = $this->criarDocente('Bruno Sem Conta');
+        $comConta = $this->criarDocente('Ana Com Conta', comAcesso: true);
+        $outro = $this->criarDocente('Docente inactivo');
         $outro->update(['estado' => 0]);
 
         $o = $this->servico()->opcoes($c['ano']->id);
 
-        $this->assertSame([$prof->id], array_column($o['professores'], 'id'));
+        $this->assertArrayNotHasKey('professores', $o);
+        $this->assertSame([
+            ['id' => $comConta->id, 'nome' => 'Ana Com Conta', 'tem_acesso' => true],
+            ['id' => $semConta->id, 'nome' => 'Bruno Sem Conta', 'tem_acesso' => false],
+        ], $o['docentes']);
         $this->assertSame([$c['turma']->id], array_column($o['turmas'], 'id'));
         $this->assertSame([$c['ano']->id], array_column($o['anosLectivos'], 'id'));
+    }
+
+    public function test_linhas_trazem_o_nome_do_docente_e_a_pesquisa_procura_por_ele(): void
+    {
+        $c = $this->cenarioDeDocencia();
+        $docente = $this->criarDocente('Carla Pesquisável');
+        $this->criar($c, $c['disciplina'], $docente->id, PapelDocente::TITULAR, '2026-01-01');
+
+        $mat = $this->linha($this->servico()->porTurma($c['ano']->id, $c['turma']->id)['linhas'], $c['disciplina']->id);
+        $this->assertSame('Carla Pesquisável', $mat['titular']['docente_nome']);
+
+        $lista = $this->servico()->lista(['ano_lectivo_id' => $c['ano']->id, 'pesquisa' => 'Carla']);
+        $this->assertSame(1, $lista->total());
+        $this->assertSame('Carla Pesquisável', $lista->items()[0]['docente_nome']);
     }
 
     public function test_ano_encerrado_usa_o_ultimo_dia_do_ano_como_referencia(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->criarProfessor('a@example.com');
-        $b = $this->criarProfessor('b@example.com');
-        $d = $this->criarProfessor('d@example.com');
+        $a = $this->criarDocente('Docente a');
+        $b = $this->criarDocente('Docente b');
+        $d = $this->criarDocente('Docente d');
         // Matemática: titular antigo terminou a meio do ano e foi substituído por outro, aberto até ao fim.
         $this->criar($c, $c['disciplina'], $a->id, PapelDocente::TITULAR, '2026-01-01', '2026-06-30');
         $novo = $this->criar($c, $c['disciplina'], $b->id, PapelDocente::TITULAR, '2026-07-01');
@@ -207,7 +226,7 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
     public function test_ano_planeado_usa_o_primeiro_dia_do_ano_como_referencia(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->criarProfessor('a@example.com');
+        $a = $this->criarDocente('Docente a');
         $this->criar($c, $c['disciplina'], $a->id, PapelDocente::TITULAR, '2026-01-01');
         $c['ano']->update(['estado' => EstadoAnoLectivo::PLANEADO]);
         Carbon::setTestNow(CarbonImmutable::parse('2025-11-10 10:00:00', 'UTC'));
@@ -221,8 +240,8 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
     public function test_filtro_estado_vigencia_usa_a_mesma_referencia(): void
     {
         $c = $this->cenarioDeDocencia();
-        $a = $this->criarProfessor('a@example.com');
-        $b = $this->criarProfessor('b@example.com');
+        $a = $this->criarDocente('Docente a');
+        $b = $this->criarDocente('Docente b');
         $this->criar($c, $c['disciplina'], $a->id, PapelDocente::TITULAR, '2026-01-01', '2026-06-30');
         $this->criar($c, $c['disciplina'], $b->id, PapelDocente::TITULAR, '2026-07-01');
         $c['ano']->update(['estado' => EstadoAnoLectivo::ENCERRADO]);
@@ -268,7 +287,7 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
         $c = $this->cenarioDeDocencia();
         $this->assertSame([], $this->servico()->opcoes($c['ano']->id)['disciplinas']);
 
-        $this->criar($c, $c['outraDisciplina'], $this->criarProfessor()->id, PapelDocente::TITULAR, '2026-03-01');
+        $this->criar($c, $c['outraDisciplina'], $this->criarDocente()->id, PapelDocente::TITULAR, '2026-03-01');
 
         $this->assertSame(
             [['id' => $c['outraDisciplina']->id, 'nome' => 'Português']],

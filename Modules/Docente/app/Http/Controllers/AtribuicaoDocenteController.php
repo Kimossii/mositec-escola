@@ -27,7 +27,7 @@ class AtribuicaoDocenteController extends Controller
     {
         $this->authorize('atribuicao-docente.ver');
 
-        $filtros = $request->only(['turma_id', 'professor_id', 'disciplina_id', 'papel', 'estado_vigencia', 'pesquisa']);
+        $filtros = $request->only(['turma_id', 'docente_id', 'disciplina_id', 'papel', 'estado_vigencia', 'pesquisa']);
         $anoLectivoId = (int) ($request->input('ano_lectivo_id') ?: $this->consulta->anoLectivoPadrao());
         $vista = $request->input('vista') === 'lista' ? 'lista' : 'turma';
         $turmaId = (int) $request->input('turma_id');
@@ -52,7 +52,7 @@ class AtribuicaoDocenteController extends Controller
             'formato' => ['required', 'string'],
             'ano_lectivo_id' => ['nullable', 'integer'],
             'turma_id' => ['nullable', 'integer'],
-            'professor_id' => ['nullable', 'integer'],
+            'docente_id' => ['nullable', 'integer'],
             'disciplina_id' => ['nullable', 'integer'],
             'papel' => ['nullable', 'in:0,1'],
             'estado_vigencia' => ['nullable', 'in:agendada,em_curso,terminada'],

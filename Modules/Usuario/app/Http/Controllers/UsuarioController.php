@@ -15,8 +15,10 @@ use Modules\Usuario\Actions\RedefinirSenhaUsuarioAction;
 use Modules\Usuario\Http\Requests\AtualizarUsuarioRequest;
 use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
 use Modules\Usuario\Http\Requests\ProcurarAlunoPorMatriculaRequest;
+use Modules\Usuario\Http\Requests\ProcurarDocenteSemContaRequest;
 use Modules\Usuario\Models\User;
 use Modules\Usuario\Services\AlunoParaContaConsultaService;
+use Modules\Usuario\Services\DocenteParaContaConsultaService;
 use Modules\Usuario\Services\ExportacaoDeUtilizadoresService;
 use Modules\Usuario\Services\GestaoUsuarioService;
 use Modules\Usuario\Services\UsuarioConsultaService;
@@ -109,6 +111,17 @@ class UsuarioController extends Controller
         }
 
         return response()->json($resumo);
+    }
+
+    /**
+     * Docentes activos sem conta (nome ou número de identificação), para o novo professor em Utilizadores → Professores.
+     * Identificação e email de contacto só para quem tem docente.ver (decidido aqui, nunca pelo cliente).
+     */
+    public function procurarDocente(ProcurarDocenteSemContaRequest $request, DocenteParaContaConsultaService $docentes)
+    {
+        return response()->json([
+            'docentes' => $docentes->semConta((string) $request->validated('pesquisa'), $request->user()->can('docente.ver')),
+        ]);
     }
 
     public function edit(User $user)

@@ -4,7 +4,6 @@ namespace Modules\Usuario\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Modules\Core\Support\DependenciasRegistadasDoUtilizador;
 use Modules\Permissao\Actions\GarantirAdministradorEfetivoAction;
 use Modules\Permissao\Support\PermissaoCache;
 use Modules\Usuario\Models\User;
@@ -17,7 +16,6 @@ class EliminarUsuarioAction
     public function __construct(
         private readonly PermissaoCache $cache,
         private readonly GarantirAdministradorEfetivoAction $garantirAdministrador,
-        private readonly DependenciasRegistadasDoUtilizador $dependencias,
     ) {
     }
 
@@ -39,11 +37,6 @@ class EliminarUsuarioAction
             throw ValidationException::withMessages([
                 'utilizador' => 'Este utilizador tem encarregados vinculados e não pode ser eliminado.',
             ]);
-        }
-
-        // Registos de outros módulos (ex.: atribuições docentes) que não podem ficar sem o utilizador.
-        if (($motivo = $this->dependencias->bloqueiaEliminacao($user)) !== null) {
-            throw ValidationException::withMessages(['utilizador' => $motivo]);
         }
 
         DB::transaction(function () use ($user) {

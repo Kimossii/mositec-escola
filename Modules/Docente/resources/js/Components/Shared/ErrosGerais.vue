@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 
-/** Erros do servidor sem campo correspondente no modal (ex.: `turma_id`, `atribuicao`): mostrados num aviso no topo. */
+/** Erros do servidor sem campo correspondente no modal (ex.: `turma_id`, `atribuicao`, `docente_id` no «Criar acesso»): mostrados num aviso no topo. */
 const props = defineProps({
     errors: { type: Object, default: () => ({}) },
     campos: { type: Array, required: true }, // chaves que o modal já mostra junto ao campo

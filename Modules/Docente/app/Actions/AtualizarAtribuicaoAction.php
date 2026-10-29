@@ -15,7 +15,7 @@ use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Turma\Models\Turma;
 
 /**
- * Regra 9 do desenho: só papel e vigência de atribuições agendadas ou em curso; professor, turma e disciplina não
+ * Regra 9 do desenho: só papel e vigência de atribuições agendadas ou em curso; docente, turma e disciplina não
  * mudam. Revalida a sobreposição ignorando a própria atribuição.
  */
 class AtualizarAtribuicaoAction
@@ -68,7 +68,7 @@ class AtualizarAtribuicaoAction
         }
 
         $this->validador->validar(new AtribuicaoDocenteDTO(
-            professor_id: (int) $actual->professor_id,
+            docente_id: (int) $actual->docente_id,
             turma_id: (int) $actual->turma_id,
             disciplina_id: (int) $actual->disciplina_id,
             papel: $papel,

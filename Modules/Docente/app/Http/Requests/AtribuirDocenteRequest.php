@@ -16,7 +16,7 @@ class AtribuirDocenteRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'professor_id' => ['required', 'integer', 'exists:users,id'],
+            'docente_id' => ['required', 'integer', 'exists:docentes,id'],
             'turma_id' => ['required', 'integer', 'exists:turmas,id'],
             'disciplina_id' => ['required', 'integer', 'exists:disciplinas,id'],
             'papel' => ['required', Rule::enum(PapelDocente::class)],
@@ -28,9 +28,9 @@ class AtribuirDocenteRequest extends BaseRequest
     public function messages(): array
     {
         return [
-            'professor_id.required' => 'O professor é obrigatório.',
-            'professor_id.integer' => 'O professor indicado é inválido.',
-            'professor_id.exists' => 'O professor indicado não existe.',
+            'docente_id.required' => 'O docente é obrigatório.',
+            'docente_id.integer' => 'O docente indicado é inválido.',
+            'docente_id.exists' => 'O docente indicado não existe.',
             'turma_id.required' => 'A turma é obrigatória.',
             'turma_id.integer' => 'A turma indicada é inválida.',
             'turma_id.exists' => 'A turma indicada não existe.',

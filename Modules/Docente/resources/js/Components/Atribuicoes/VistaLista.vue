@@ -4,12 +4,14 @@ import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import VigenciaBadge from './VigenciaBadge.vue';
+import AcessoBadge from '../Docentes/AcessoBadge.vue';
 import { VIGENCIA, formatarDia, papelLabel } from '../../Models/PapelDocente';
 
 /** Todas as atribuições do ano, filtradas e paginadas, no padrão das outras listas. */
 defineProps({
     atribuicoes: { type: Object, required: true }, // paginator
     comFiltros: { type: Boolean, default: false },
+    docentesSemAcesso: { type: Array, default: () => [] }, // ids de docentes activos sem conta
 });
 const emit = defineEmits(['editar', 'encerrar', 'eliminar']);
 
@@ -25,7 +27,7 @@ const temAccoes = (a) => podeGerir(a) && (can('atribuicao-docente.editar') || ca
             <table class="table align-middle table-row-dashed table-hover fs-6 gy-5 mb-0">
                 <thead>
                     <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                        <th class="min-w-175px">Professor</th>
+                        <th class="min-w-175px">Docente</th>
                         <th class="min-w-125px">Turma</th>
                         <th class="min-w-150px">Disciplina</th>
                         <th class="min-w-100px">Papel</th>
@@ -41,7 +43,10 @@ const temAccoes = (a) => podeGerir(a) && (can('atribuicao-docente.editar') || ca
                         </td>
                     </tr>
                     <tr v-for="a in atribuicoes.data" :key="a.id">
-                        <td class="text-gray-800">{{ a.professor_nome }}</td>
+                        <td class="text-gray-800">
+                            {{ a.docente_nome }}
+                            <AcessoBadge v-if="docentesSemAcesso.includes(a.docente_id)" :tem-acesso="false" class="fs-8 ms-2" title="Ainda sem conta de utilizador: crie-lhe acesso em Pessoal → Docentes." />
+                        </td>
                         <td>{{ a.turma_nome }}</td>
                         <td>{{ a.disciplina_nome }}</td>
                         <td>{{ a.papel_descricao || papelLabel(a.papel) }}</td>

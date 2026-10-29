@@ -28,10 +28,10 @@ class AtribuicaoDocenteAutorizacaoTest extends TestCase
         $this->seed(PermissaoDatabaseSeeder::class);
 
         $this->c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor('titular@example.com');
+        $prof = $this->criarDocente('Docente titular');
         $this->atribuicao = AtribuicaoDocente::create([
             'ano_lectivo_id' => $this->c['ano']->id, 'turma_id' => $this->c['turma']->id,
-            'disciplina_id' => $this->c['disciplina']->id, 'professor_id' => $prof->id,
+            'disciplina_id' => $this->c['disciplina']->id, 'docente_id' => $prof->id,
             'papel' => PapelDocente::TITULAR, 'data_inicio' => '2026-12-01',
         ]);
     }
@@ -49,12 +49,12 @@ class AtribuicaoDocenteAutorizacaoTest extends TestCase
     private function pedidos(): array
     {
         $a = $this->atribuicao;
-        $corpo = ['professor_id' => $a->professor_id, 'turma_id' => $a->turma_id, 'disciplina_id' => $a->disciplina_id, 'papel' => 1, 'data_inicio' => '2026-06-15'];
+        $corpo = ['docente_id' => $a->docente_id, 'turma_id' => $a->turma_id, 'disciplina_id' => $a->disciplina_id, 'papel' => 1, 'data_inicio' => '2026-06-15'];
 
         return [
             'index' => ['get', route('atribuicoes-docentes.index'), []],
             'store' => ['post', route('atribuicoes-docentes.store'), $corpo],
-            'substituir' => ['post', route('atribuicoes-docentes.substituir'), ['turma_id' => $a->turma_id, 'disciplina_id' => $a->disciplina_id, 'novo_professor_id' => $a->professor_id, 'ultimo_dia_do_titular' => '2026-06-30', 'motivo' => 'x']],
+            'substituir' => ['post', route('atribuicoes-docentes.substituir'), ['turma_id' => $a->turma_id, 'disciplina_id' => $a->disciplina_id, 'novo_docente_id' => $a->docente_id, 'ultimo_dia_do_titular' => '2026-06-30', 'motivo' => 'x']],
             'update' => ['put', route('atribuicoes-docentes.update', $a), ['papel' => 0, 'data_inicio' => '2026-12-02']],
             'encerrar' => ['patch', route('atribuicoes-docentes.encerrar', $a), ['data_fim' => '2026-12-20', 'motivo' => 'x']],
             'destroy' => ['delete', route('atribuicoes-docentes.destroy', $a), []],

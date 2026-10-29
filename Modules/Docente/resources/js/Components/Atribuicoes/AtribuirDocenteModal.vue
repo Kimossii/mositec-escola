@@ -2,32 +2,32 @@
 import { computed, reactive, watch } from 'vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Loader from '@/Components/Shared/Loader.vue';
-import ErrosGerais from './ErrosGerais.vue';
-import { PAPEL, hojeIso } from '../../Models/PapelDocente';
+import ErrosGerais from '../Shared/ErrosGerais.vue';
+import { PAPEL, hojeIso, opcoesDeDocentes } from '../../Models/PapelDocente';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
     linha: { type: Object, default: null }, // linha da vista por turma: disciplina_id, disciplina_nome, sem_titular
     turma: { type: Object, default: null }, // { id, nome }
-    professores: { type: Array, default: () => [] }, // [{ id, nome }]
+    docentes: { type: Array, default: () => [] }, // [{ id, nome, tem_acesso }]
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
 });
 const emit = defineEmits(['submit', 'cancelar']);
 
-const CAMPOS = ['professor_id', 'papel', 'data_inicio', 'data_fim'];
+const CAMPOS = ['docente_id', 'papel', 'data_inicio', 'data_fim'];
 const PAPEL_OPCOES = [
     { value: PAPEL.TITULAR, label: 'Titular' },
     { value: PAPEL.SUBSTITUTO, label: 'Substituto' },
 ];
 
-const opcoesProfessor = computed(() => props.professores.map((p) => ({ value: p.id, label: p.nome })));
+const opcoesDocente = computed(() => opcoesDeDocentes(props.docentes));
 
-const form = reactive({ professor_id: '', papel: PAPEL.TITULAR, data_inicio: '', data_fim: '' });
+const form = reactive({ docente_id: '', papel: PAPEL.TITULAR, data_inicio: '', data_fim: '' });
 
 watch(() => props.show, (show) => {
     if (!show) return;
-    form.professor_id = '';
+    form.docente_id = '';
     form.papel = props.linha?.sem_titular === false ? PAPEL.SUBSTITUTO : PAPEL.TITULAR;
     form.data_inicio = hojeIso();
     form.data_fim = '';
@@ -53,10 +53,10 @@ function submeter() {
                     <ErrosGerais :errors="errors" :campos="CAMPOS" />
 
                     <div class="fv-row mb-7">
-                        <label class="required fw-semibold fs-6 mb-2">Professor</label>
-                        <SelectSolid v-model="form.professor_id" :options="opcoesProfessor" placeholder="Seleccione o professor" searchable />
-                        <div class="text-danger fs-7 mt-1" v-if="errors.professor_id">{{ errors.professor_id }}</div>
-                        <div class="text-muted fs-7 mt-1" v-else-if="!professores.length">Não há professores activos para atribuir.</div>
+                        <label class="required fw-semibold fs-6 mb-2">Docente</label>
+                        <SelectSolid v-model="form.docente_id" :options="opcoesDocente" placeholder="Seleccione o docente" searchable />
+                        <div class="text-danger fs-7 mt-1" v-if="errors.docente_id">{{ errors.docente_id }}</div>
+                        <div class="text-muted fs-7 mt-1" v-else-if="!docentes.length">Não há docentes activos para atribuir.</div>
                     </div>
 
                     <div class="fv-row mb-7">

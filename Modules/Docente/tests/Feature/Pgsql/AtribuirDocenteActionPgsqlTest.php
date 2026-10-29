@@ -23,10 +23,10 @@ class AtribuirDocenteActionPgsqlTest extends PgsqlTestCase
 {
     use CenarioDeDocencia;
 
-    private function dto(array $c, int $professorId, PapelDocente $papel = PapelDocente::TITULAR): AtribuicaoDocenteDTO
+    private function dto(array $c, int $docenteId, PapelDocente $papel = PapelDocente::TITULAR): AtribuicaoDocenteDTO
     {
         return new AtribuicaoDocenteDTO(
-            professor_id: $professorId, turma_id: $c['turma']->id, disciplina_id: $c['disciplina']->id,
+            docente_id: $docenteId, turma_id: $c['turma']->id, disciplina_id: $c['disciplina']->id,
             papel: $papel, data_inicio: '2026-03-01',
         );
     }
@@ -62,8 +62,8 @@ class AtribuirDocenteActionPgsqlTest extends PgsqlTestCase
     public function test_pg_violacao_do_titular_unico_vira_erro_de_validacao(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
-        $this->gravarConflitoDepoisDeValidar($c, ['professor_id' => $this->criarProfessor('outro@example.com')->id]);
+        $prof = $this->criarDocente();
+        $this->gravarConflitoDepoisDeValidar($c, ['docente_id' => $this->criarDocente('Docente outro')->id]);
 
         $e = $this->erroDeValidacao($this->dto($c, $prof->id));
 
@@ -72,22 +72,22 @@ class AtribuirDocenteActionPgsqlTest extends PgsqlTestCase
         $this->assertSame(0, AtribuicaoDocente::count());
     }
 
-    public function test_pg_violacao_do_mesmo_professor_vira_erro_de_validacao(): void
+    public function test_pg_violacao_do_mesmo_docente_vira_erro_de_validacao(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
-        $this->gravarConflitoDepoisDeValidar($c, ['professor_id' => $prof->id, 'papel' => PapelDocente::SUBSTITUTO]);
+        $prof = $this->criarDocente();
+        $this->gravarConflitoDepoisDeValidar($c, ['docente_id' => $prof->id, 'papel' => PapelDocente::SUBSTITUTO]);
 
         $e = $this->erroDeValidacao($this->dto($c, $prof->id, PapelDocente::SUBSTITUTO));
 
-        $this->assertSame(['professor_id' => [ValidadorAtribuicaoDocenteService::MENSAGEM_PROFESSOR_SOBREPOSTO]], $e->errors());
+        $this->assertSame(['docente_id' => [ValidadorAtribuicaoDocenteService::MENSAGEM_DOCENTE_SOBREPOSTO]], $e->errors());
         $this->assertSame(0, AtribuicaoDocente::count());
     }
 
     public function test_pg_outras_falhas_da_base_propagam_tal_como_estao(): void
     {
         $c = $this->cenarioDeDocencia();
-        $prof = $this->criarProfessor();
+        $prof = $this->criarDocente();
         // Uma FK violada (23503) não é concorrência: não pode ser disfarçada de erro de validação.
         // Closure sem valor de retorno: um `creating` que devolve algo interrompe os restantes ouvintes (ex.: o tenant).
         AtribuicaoDocente::creating(function (AtribuicaoDocente $a): void {

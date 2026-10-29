@@ -9,7 +9,7 @@
                         </h4>
 
                         <div v-for="link in section.links" :key="link.href" class="menu-item p-0 m-0">
-                            <a :href="link.href" :class="['menu-link', { active: isActive(link.href) }]">
+                            <a :href="link.href" :class="['menu-link', { active: isActive(link.href, { exact: link.exact, prefix: link.activePrefix }) }]">
                                 <span class="menu-title">
                                     {{ link.label }}
                                 </span>

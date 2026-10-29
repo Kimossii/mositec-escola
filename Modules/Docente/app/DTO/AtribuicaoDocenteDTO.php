@@ -7,7 +7,7 @@ use Modules\Docente\Enums\PapelDocente;
 readonly class AtribuicaoDocenteDTO
 {
     public function __construct(
-        public int $professor_id,
+        public int $docente_id,
         public int $turma_id,
         public int $disciplina_id,
         public PapelDocente $papel,

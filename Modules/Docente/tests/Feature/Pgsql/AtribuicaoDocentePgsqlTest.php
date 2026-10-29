@@ -5,6 +5,7 @@ namespace Modules\Docente\Tests\Feature\Pgsql;
 use Closure;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Modules\Docente\Enums\PapelDocente;
 use Modules\Docente\Models\AtribuicaoDocente;
 use Modules\Docente\Tests\Support\CenarioDeDocencia;
@@ -20,7 +21,7 @@ class AtribuicaoDocentePgsqlTest extends PgsqlTestCase
 {
     use CenarioDeDocencia;
 
-    private int $professores = 0;
+    private int $docentes = 0;
 
     /** Savepoint: no PostgreSQL um erro aborta a transacção do teste inteira. */
     private function assertRecusadoPelaBase(string $sqlstate, Closure $operacao): void
@@ -38,7 +39,7 @@ class AtribuicaoDocentePgsqlTest extends PgsqlTestCase
 
     private function atribuir(array $cenario, array $atributos = []): AtribuicaoDocente
     {
-        $atributos['professor_id'] ??= $this->criarProfessor('p' . ++$this->professores . '@example.com')->id;
+        $atributos['docente_id'] ??= $this->criarDocente('Docente ' . ++$this->docentes)->id;
 
         return AtribuicaoDocente::create(array_merge([
             'ano_lectivo_id' => $cenario['ano']->id,
@@ -49,24 +50,24 @@ class AtribuicaoDocentePgsqlTest extends PgsqlTestCase
         ], $atributos));
     }
 
-    public function test_pg_rejeita_referencias_a_turma_disciplina_ano_ou_professor_de_outro_tenant(): void
+    public function test_pg_rejeita_referencias_a_turma_disciplina_ano_ou_docente_de_outro_tenant(): void
     {
         $cenario = $this->cenarioDeDocencia();
-        $professor = $this->criarProfessor();
+        $docente = $this->criarDocente();
         $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
-        [$cenarioB, $professorB] = $this->noTenant($outro, fn () => [$this->cenarioDeDocencia(), $this->criarProfessor('prof-b@example.com')]);
+        [$cenarioB, $docenteB] = $this->noTenant($outro, fn () => [$this->cenarioDeDocencia(), $this->criarDocente('Docente B')]);
 
         $validos = [
             'ano_lectivo_id' => $cenario['ano']->id,
             'turma_id' => $cenario['turma']->id,
             'disciplina_id' => $cenario['disciplina']->id,
-            'professor_id' => $professor->id,
+            'docente_id' => $docente->id,
         ];
         $deB = [
             'ano_lectivo_id' => $cenarioB['ano']->id,
             'turma_id' => $cenarioB['turma']->id,
             'disciplina_id' => $cenarioB['disciplina']->id,
-            'professor_id' => $professorB->id,
+            'docente_id' => $docenteB->id,
         ];
 
         // O tenant da linha é o do contexto (A): cada referência de B tem de ser recusada (FK composta).
@@ -83,33 +84,57 @@ class AtribuicaoDocentePgsqlTest extends PgsqlTestCase
         $cenario = $this->cenarioDeDocencia();
         $this->atribuir($cenario, ['data_inicio' => '2026-03-01', 'data_fim' => '2026-03-31']);
 
-        // Outro professor, titular, a sobrepor-se (extremo inclusivo: 31 de Março).
+        // Outro docente, titular, a sobrepor-se (extremo inclusivo: 31 de Março).
         $this->assertRecusadoPelaBase('23P01', fn () => $this->atribuir($cenario, [
-            'professor_id' => $this->criarProfessor('outro@example.com')->id, 'data_inicio' => '2026-03-31', 'data_fim' => null,
+            'docente_id' => $this->criarDocente('Docente outro')->id, 'data_inicio' => '2026-03-31', 'data_fim' => null,
         ]));
 
         // Sem sobreposição (dia seguinte), outra disciplina, ou substituto: aceites.
-        $this->atribuir($cenario, ['professor_id' => $this->criarProfessor('seguinte@example.com')->id, 'data_inicio' => '2026-04-01']);
-        $this->atribuir($cenario, ['professor_id' => $this->criarProfessor('mat2@example.com')->id, 'disciplina_id' => $cenario['outraDisciplina']->id]);
+        $this->atribuir($cenario, ['docente_id' => $this->criarDocente('Docente seguinte')->id, 'data_inicio' => '2026-04-01']);
+        $this->atribuir($cenario, ['docente_id' => $this->criarDocente('Docente mat2')->id, 'disciplina_id' => $cenario['outraDisciplina']->id]);
         $this->atribuir($cenario, [
-            'professor_id' => $this->criarProfessor('subs@example.com')->id, 'papel' => PapelDocente::SUBSTITUTO, 'data_inicio' => '2026-03-10', 'data_fim' => '2026-03-12',
+            'docente_id' => $this->criarDocente('Docente subs')->id, 'papel' => PapelDocente::SUBSTITUTO, 'data_inicio' => '2026-03-10', 'data_fim' => '2026-03-12',
         ]);
 
         // Uma atribuição eliminada (soft delete) já não conta.
         AtribuicaoDocente::where('data_inicio', '2026-04-01')->firstOrFail()->delete();
-        $this->atribuir($cenario, ['professor_id' => $this->criarProfessor('reposto@example.com')->id, 'data_inicio' => '2026-04-01']);
+        $this->atribuir($cenario, ['docente_id' => $this->criarDocente('Docente reposto')->id, 'data_inicio' => '2026-04-01']);
     }
 
-    public function test_pg_rejeita_o_mesmo_professor_sobreposto_na_mesma_turma_e_disciplina(): void
+    public function test_pg_rejeita_mesmo_docente_sobreposto(): void
     {
         $cenario = $this->cenarioDeDocencia();
-        $professor = $this->criarProfessor();
-        $this->atribuir($cenario, ['professor_id' => $professor->id, 'papel' => PapelDocente::SUBSTITUTO, 'data_inicio' => '2026-03-01', 'data_fim' => '2026-03-31']);
+        $docente = $this->criarDocente();
+        $this->atribuir($cenario, ['docente_id' => $docente->id, 'papel' => PapelDocente::SUBSTITUTO, 'data_inicio' => '2026-03-01', 'data_fim' => '2026-03-31']);
 
         $this->assertRecusadoPelaBase('23P01', fn () => $this->atribuir($cenario, [
-            'professor_id' => $professor->id, 'papel' => PapelDocente::TITULAR, 'data_inicio' => '2026-03-31',
+            'docente_id' => $docente->id, 'papel' => PapelDocente::TITULAR, 'data_inicio' => '2026-03-31',
         ]));
 
-        $this->atribuir($cenario, ['professor_id' => $professor->id, 'papel' => PapelDocente::TITULAR, 'data_inicio' => '2026-04-01']);
+        $this->atribuir($cenario, ['docente_id' => $docente->id, 'papel' => PapelDocente::TITULAR, 'data_inicio' => '2026-04-01']);
+    }
+
+    public function test_pg_fk_composta_rejeita_docente_de_outro_tenant(): void
+    {
+        $cenario = $this->cenarioDeDocencia();
+        $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
+        $docenteB = $this->noTenant($outro, fn () => $this->criarDocente('Docente B'));
+
+        // Mesmo sem passar pela Action (validador), a base recusa o docente de outro tenant.
+        $this->assertRecusadoPelaBase('23503', fn () => $this->atribuir($cenario, ['docente_id' => $docenteB->id]));
+        // E um id de docente que não existe.
+        $this->assertRecusadoPelaBase('23503', fn () => $this->atribuir($cenario, ['docente_id' => 999999]));
+    }
+
+    public function test_pg_constraints_de_exclusao_usam_docente_e_mantem_a_do_titular(): void
+    {
+        $constraints = collect(DB::select(
+            "select conname, pg_get_constraintdef(oid) as def from pg_constraint where conrelid = 'atribuicoes_docentes'::regclass and contype = 'x'"
+        ))->pluck('def', 'conname');
+
+        $this->assertEqualsCanonicalizing(['atribuicoes_docentes_um_titular_excl', 'atribuicoes_docentes_docente_excl'], $constraints->keys()->all());
+        $this->assertStringContainsString('docente_id WITH =', $constraints['atribuicoes_docentes_docente_excl']);
+        $this->assertStringNotContainsString('professor_id', $constraints->implode(' '));
+        $this->assertFalse(Schema::hasColumn('atribuicoes_docentes', 'professor_id'));
     }
 }
