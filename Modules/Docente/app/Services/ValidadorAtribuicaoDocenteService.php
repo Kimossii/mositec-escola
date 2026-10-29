@@ -100,7 +100,9 @@ class ValidadorAtribuicaoDocenteService
     /** O docente tem de existir no tenant (scope do model) e estar activo; com ou sem conta, seja qual for o perfil. */
     private function validarDocente(int $docenteId): void
     {
-        $docente = Docente::query()->find($docenteId);
+        // FOR SHARE: enquanto a atribuição não grava, um «eliminar docente» concorrente (que bloqueia a linha e confere as
+        // atribuições) espera, e vice-versa; sem isto a gravação falhava com uma violação da FK em vez de uma validação.
+        $docente = Docente::query()->whereKey($docenteId)->sharedLock()->first();
 
         if ($docente === null) {
             $this->falhar('docente_id', 'O docente indicado não existe.');

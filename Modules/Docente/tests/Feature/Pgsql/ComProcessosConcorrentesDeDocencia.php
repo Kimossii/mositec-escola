@@ -10,7 +10,7 @@ use RuntimeException;
  * e os filhos só falam por stdout (uma linha JSON) e pela base. Requer PgsqlConcorrenciaTestCase. Mesmo mecanismo
  * de Modules/Financeiro/tests/Feature/Pgsql/ComProcessosConcorrentes.php.
  *
- * Operações: atribuir (AtribuirDocenteAction).
+ * Operações: atribuir (AtribuirDocenteAction) e eliminar-docente (EliminarDocenteAction).
  */
 trait ComProcessosConcorrentesDeDocencia
 {
@@ -44,6 +44,9 @@ try {
             data_fim: $a['fim'] ?? null,
         ));
         $saida(['ok' => true, 'atribuicao' => $r->id]);
+    } elseif ($args['op'] === 'eliminar-docente') {
+        app(Modules\Docente\Actions\EliminarDocenteAction::class)->executar(Modules\Docente\Models\Docente::findOrFail($a['docente']));
+        $saida(['ok' => true]);
     } else {
         throw new RuntimeException('operação desconhecida');
     }

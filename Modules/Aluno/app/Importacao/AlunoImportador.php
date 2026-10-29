@@ -86,7 +86,7 @@ class AlunoImportador extends ImportadorDeEntidade
         $dados = parent::normalizar($dados);
 
         if (is_string($dados['numero_identificacao'] ?? null)) {
-            $dados['numero_identificacao'] = mb_strtoupper(preg_replace('/\s+/', '', $dados['numero_identificacao']));
+            $dados['numero_identificacao'] = DadosPessoa::normalizarNumeroIdentificacao($dados['numero_identificacao']);
         }
 
         $dados['data_nascimento'] = $this->data($dados['data_nascimento'] ?? null);

@@ -3,9 +3,12 @@
 namespace Modules\Usuario\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
+use Modules\Usuario\Http\Requests\Concerns\NormalizaNumeroIdentificacao;
 
 class CriarDadosPessoalRequest extends BaseRequest
 {
+    use NormalizaNumeroIdentificacao;
+
     public function authorize(): bool
     {
         return true;

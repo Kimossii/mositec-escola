@@ -5,9 +5,12 @@ namespace Modules\Docente\Http\Requests;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 use Modules\Core\Tenancy\TenantContext;
+use Modules\Usuario\Http\Requests\Concerns\NormalizaNumeroIdentificacao;
 
 class CriarDocenteRequest extends BaseRequest
 {
+    use NormalizaNumeroIdentificacao;
+
     public function authorize(): bool
     {
         return $this->user()?->can('docente.criar') ?? false;

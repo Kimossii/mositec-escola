@@ -6,9 +6,12 @@ use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Docente\Models\Docente;
+use Modules\Usuario\Http\Requests\Concerns\NormalizaNumeroIdentificacao;
 
 class AtualizarDocenteRequest extends BaseRequest
 {
+    use NormalizaNumeroIdentificacao;
+
     public function authorize(): bool
     {
         return $this->user()?->can('docente.editar') ?? false;

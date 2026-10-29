@@ -46,4 +46,27 @@ class AtribuirDocenteConcorrenciaPgsqlTest extends PgsqlConcorrenciaTestCase
         $this->assertSame(1, AtribuicaoDocente::count());
         $this->assertSame($sucessos[0]['atribuicao'], AtribuicaoDocente::firstOrFail()->id);
     }
+
+    /** Eliminar o docente e atribuí-lo ao mesmo tempo: nunca uma violação de FK; ou fica atribuído (e não se elimina) ou fica eliminado (e não se atribui). */
+    public function test_pg_eliminar_docente_e_atribuir_em_simultaneo_acaba_sempre_coerente(): void
+    {
+        {
+            $c = $this->cenarioDeDocencia();
+            $docente = $this->criarDocente('Docente a eliminar');
+            $partida = microtime(true) + 2.5;
+            $filhos = [
+                $this->lancar('atribuir', ['turma' => $c['turma']->id, 'disciplina' => $c['disciplina']->id, 'papel' => PapelDocente::TITULAR->value, 'docente' => $docente->id, 'inicio' => '2026-03-01'], $partida),
+                $this->lancar('eliminar-docente', ['docente' => $docente->id], $partida),
+            ];
+            [$atribuir, $eliminar] = [$this->esperar($filhos[0]), $this->esperar($filhos[1])];
+            $detalhe = json_encode([$atribuir, $eliminar], JSON_UNESCAPED_UNICODE);
+
+            foreach ([$atribuir, $eliminar] as $r) {
+                $this->assertTrue($r['ok'] || $r['tipo'] === 'validacao', $detalhe);
+            }
+            $this->assertNotSame($atribuir['ok'], $eliminar['ok'], $detalhe);
+            $this->assertSame($atribuir['ok'], \Modules\Docente\Models\Docente::query()->whereKey($docente->id)->exists(), $detalhe);
+            $this->assertSame($atribuir['ok'] ? 1 : 0, AtribuicaoDocente::query()->where('docente_id', $docente->id)->count(), $detalhe);
+        }
+    }
 }
