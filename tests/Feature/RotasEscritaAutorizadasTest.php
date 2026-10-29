@@ -35,6 +35,10 @@ class RotasEscritaAutorizadasTest extends TestCase
         'definicoes/sessoes/terminar-outras',
         'definicoes/sessoes/{referencia}',
         'definicoes/foto',
+        // Ficheiros do próprio utilizador (eliminar e partilhar só actuam sobre pedidos com user_id = utilizador autenticado;
+        // o destinatário da partilha tem de ter a permissão do tipo de ficheiro).
+        'ficheiros',
+        'ficheiros/partilhar',
         'api/v1/autenticacaoApi/api/logout',
         'api/v1/autenticacaoApi/api/logout-all-devices',
         'user/profile-information',

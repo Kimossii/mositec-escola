@@ -31,4 +31,7 @@ interface VerificaAtribuicaoDocente
      * @return list<array{atribuicao_id: int, turma_id: int, turma_nome: string, turma_rotulo: string, disciplina_id: int, disciplina_nome: string, papel: int, data_inicio: string, data_fim: ?string}>
      */
     public function atribuicoesEmVigorDoProfessor(int $professorId, ?int $anoLectivoId = null): array;
+
+    /** A turma tem alguma atribuição de docente (de qualquer vigência)? Impede eliminar a turma. */
+    public function turmaTemAtribuicoes(int $turmaId): bool;
 }

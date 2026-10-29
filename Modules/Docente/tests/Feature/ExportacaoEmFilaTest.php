@@ -87,7 +87,7 @@ class ExportacaoEmFilaTest extends TestCase
         $preso->forceFill(['created_at' => now()->subHour()])->save();
         Storage::disk('local')->put(GerarExportacaoJob::origem($preso->id), '{}');
 
-        $this->artisan('exportacoes:limpar')->assertSuccessful();
+        $this->artisan('exportacoes:limpar', ['--todos' => true])->assertSuccessful();
 
         $this->assertSame(PedidoExportacao::ERRO, $preso->fresh()->estado);
         Storage::disk('local')->assertMissing(GerarExportacaoJob::origem($preso->id));

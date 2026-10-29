@@ -11,8 +11,9 @@ use Modules\Core\Importacao\Jobs\ImportarImportacaoJob;
 use Modules\Core\Importacao\Jobs\ValidarImportacaoJob;
 use Modules\Core\Models\Importacao;
 use Modules\Core\Models\ImportacaoLinha;
-use Modules\Estabelecimento\Models\Estabelecimento;
-use Modules\Usuario\Models\User;
+use Modules\Core\Tenancy\CaminhoTenant;
+use Modules\Core\Tenancy\TenantContext;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 /** Casos de uso do motor: o modelo, carregar o ficheiro, confirmar e cancelar. O trabalho pesado está nos jobs. */
 class ServicoDeImportacao
@@ -40,19 +41,19 @@ class ServicoDeImportacao
             colunas: $colunas,
             linhas: [$exemplo],
             subtitulo: 'Preencha a partir da linha abaixo do cabeçalho. Os campos com * são obrigatórios. A linha de exemplo é ignorada.',
-            entidade: Estabelecimento::current()?->nome,
+            entidade: app(TenantContext::class)->atual()->nome,
             assinaturas: [],
         );
     }
 
-    public function iniciar(User $utilizador, ImportadorDeEntidade $importador, UploadedFile $ficheiro): Importacao
+    public function iniciar(Authenticatable $utilizador, ImportadorDeEntidade $importador, UploadedFile $ficheiro): Importacao
     {
         if ($this->semFilaReal() && $ficheiro->getSize() > config('importacao.maximo_sync_bytes', self::MAXIMO_SYNC_BYTES)) {
             throw ValidationException::withMessages(['ficheiro' => 'Ficheiros grandes precisam do processamento em segundo plano (worker de filas) activo. Peça ao administrador do sistema ou divida o ficheiro.']);
         }
 
         $extensao = strtolower($ficheiro->getClientOriginalExtension());
-        $caminho = Storage::disk('local')->putFileAs('importacoes/'.app(\Modules\Core\Tenancy\TenantContext::class)->id(), $ficheiro, Str::uuid().'.'.$extensao);
+        $caminho = Storage::disk('local')->putFileAs(CaminhoTenant::para('importacoes'), $ficheiro, Str::uuid().'.'.$extensao);
 
         $importacao = Importacao::create([
             'user_id' => $utilizador->id,

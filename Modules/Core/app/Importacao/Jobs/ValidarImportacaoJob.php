@@ -7,7 +7,6 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Modules\Core\Importacao\ImportadorDeEntidade;
@@ -194,6 +193,7 @@ class ValidarImportacaoJob implements ShouldBeUnique, ShouldQueue
             }]++;
 
             $registos[] = [
+                'tenant_id' => $importacao->tenant_id,
                 'importacao_id' => $importacao->id,
                 'linha' => $numero,
                 'dados' => json_encode($dados, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE),
@@ -202,7 +202,7 @@ class ValidarImportacaoJob implements ShouldBeUnique, ShouldQueue
             ];
         }
 
-        DB::table('importacao_linhas')->insert($registos);
+        ImportacaoLinha::insert($registos);
         $importacao->update(['total' => $contagem['total']]);
     }
 

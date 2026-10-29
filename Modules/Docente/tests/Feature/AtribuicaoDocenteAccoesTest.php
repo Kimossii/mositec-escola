@@ -309,14 +309,31 @@ class AtribuicaoDocenteAccoesTest extends TestCase
         $agendada = $this->atribuir($c, $this->criarDocente('Docente b')->id, '2026-09-01', null, PapelDocente::SUBSTITUTO);
         $acao = app(AtualizarAtribuicaoAction::class);
 
-        $r = $acao->executar($emCurso, PapelDocente::TITULAR, '2026-02-01', '2026-11-30');
+        $r = $acao->executar($emCurso, PapelDocente::TITULAR, '2026-02-01', null);
         $this->assertSame('2026-02-01', $r->refresh()->data_inicio->toDateString());
-        $this->assertSame('2026-11-30', $r->data_fim->toDateString());
+        $this->assertNull($r->data_fim);
 
         $r = $acao->executar($agendada, PapelDocente::SUBSTITUTO, '2026-10-01', '2026-12-15');
         $this->assertSame('2026-10-01', $r->refresh()->data_inicio->toDateString());
         $this->assertSame('Substituto', $r->papel_descricao);
         $this->assertSame($emCurso->docente_id !== $r->docente_id, true);
+    }
+
+    public function test_actualizar_nao_encurta_a_vigencia_de_em_curso_sem_passar_por_encerrar(): void
+    {
+        $c = $this->cenarioDeDocencia();
+        $aberta = $this->atribuir($c, $this->criarDocente()->id, '2026-03-01');
+        $comFim = $this->atribuir($c, $this->criarDocente('Docente b')->id, '2026-03-01', '2026-11-30', PapelDocente::SUBSTITUTO);
+        $acao = app(AtualizarAtribuicaoAction::class);
+
+        $this->rejeita(fn () => $acao->executar($aberta, PapelDocente::TITULAR, '2026-03-01', '2026-11-30'), 'data_fim');
+        $this->rejeita(fn () => $acao->executar($comFim, PapelDocente::SUBSTITUTO, '2026-03-01', '2026-10-31'), 'data_fim');
+        $this->assertNull($aberta->refresh()->data_fim);
+        $this->assertSame('2026-11-30', $comFim->refresh()->data_fim->toDateString());
+
+        // Alargar continua a poder fazer-se aqui.
+        $acao->executar($comFim, PapelDocente::SUBSTITUTO, '2026-03-01', '2026-12-15');
+        $this->assertSame('2026-12-15', $comFim->refresh()->data_fim->toDateString());
     }
 
     public function test_actualizar_nao_move_inicio_de_em_curso_para_o_futuro(): void
@@ -401,5 +418,20 @@ class AtribuicaoDocenteAccoesTest extends TestCase
 
         $this->assertNull($titular->refresh()->data_fim);
         $this->assertNotSoftDeleted('atribuicoes_docentes', ['id' => $agendada->id]);
+    }
+
+    public function test_opcoes_do_filtro_incluem_docente_inactivo_com_historico_no_ano(): void
+    {
+        $c = $this->cenarioDeDocencia();
+        $inactivo = $this->criarDocente('Docente Inactivo');
+        $this->atribuir($c, $inactivo->id, '2026-01-10', '2026-02-10');
+        $inactivo->update(['estado' => 0]);
+        $semHistorico = $this->criarDocente('Docente Sem Historico');
+
+        $opcoes = app(\Modules\Docente\Services\AtribuicaoDocenteConsultaService::class)->opcoes($c['ano']->id);
+
+        $this->assertSame([['id' => $inactivo->id, 'nome' => 'Docente Inactivo', 'activo' => false]], $opcoes['docentes_filtro']);
+        $this->assertNotContains($inactivo->id, array_column($opcoes['docentes'], 'id'));
+        $this->assertContains($semHistorico->id, array_column($opcoes['docentes'], 'id'));
     }
 }

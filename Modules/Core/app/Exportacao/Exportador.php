@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Core\Models\PedidoExportacao;
+use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Core\Traits\LogService;
 use Throwable;
@@ -107,7 +108,7 @@ class Exportador
             'estado' => PedidoExportacao::PENDENTE,
         ]);
 
-        Storage::disk('local')->put(GerarExportacaoJob::origem($pedido->id), json_encode([
+        Storage::disk('local')->put(CaminhoTenant::para(GerarExportacaoJob::PENDENTES."/{$pedido->id}.json"), json_encode([
             'titulo' => $tabela->titulo, 'colunas' => $tabela->colunas, 'linhas' => $tabela->linhasComoLista(),
             'subtitulo' => $tabela->subtitulo, 'entidade' => $tabela->entidade, 'assinaturas' => $tabela->assinaturas,
         ], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));

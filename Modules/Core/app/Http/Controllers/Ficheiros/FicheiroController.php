@@ -10,7 +10,7 @@ use Modules\Core\Exportacao\FormatoExportacao;
 use Illuminate\Validation\ValidationException;
 use Modules\Core\Models\PartilhaExportacao;
 use Modules\Core\Models\PedidoExportacao;
-use Modules\Usuario\Models\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Core\Traits\LogService;
 use Illuminate\Support\Str;
 use ZipArchive;
@@ -56,11 +56,11 @@ class FicheiroController extends Controller
         abort_unless($pedido->user_id === $request->user()->id && $pedido->permissao !== null, 404);
         $q = trim((string) $request->query('q', ''));
 
-        $utilizadores = User::query()->where('id', '!=', $request->user()->id)
+        $utilizadores = $this->modeloUtilizador()::query()->where('id', '!=', $request->user()->id)
             ->when($q !== '', fn ($query) => $query->where(fn ($w) => $w->where('name', 'ilike', "%{$q}%")->orWhere('email', 'ilike', "%{$q}%")))
             ->orderBy('name')->limit(40)->get(['id', 'name', 'email'])
-            ->filter(fn (User $u) => $this->podeReceber($u, $pedido))
-            ->map(fn (User $u) => ['id' => $u->id, 'nome' => $u->name, 'email' => $u->email])->values();
+            ->filter(fn (Authenticatable $u) => $this->podeReceber($u, $pedido))
+            ->map(fn (Authenticatable $u) => ['id' => $u->id, 'nome' => $u->name, 'email' => $u->email])->values();
 
         return response()->json($utilizadores);
     }
@@ -80,7 +80,7 @@ class FicheiroController extends Controller
             ->where('estado', PedidoExportacao::PRONTO)->whereNotNull('permissao')->get();
         abort_if($pedidos->isEmpty(), 404);
 
-        $utilizadores = User::query()->whereIn('id', $dados['destinatarios'])->where('id', '!=', $request->user()->id)->get();
+        $utilizadores = $this->modeloUtilizador()::query()->whereIn('id', $dados['destinatarios'])->where('id', '!=', $request->user()->id)->get();
 
         foreach ($pedidos as $pedido) {
             foreach ($utilizadores as $u) {
@@ -100,8 +100,14 @@ class FicheiroController extends Controller
         return redirect()->back()->with('success', $utilizadores->isEmpty() ? 'Partilha removida.' : 'Partilhado com '.$utilizadores->count().' colega(s).');
     }
 
+    /** @return class-string<\Illuminate\Database\Eloquent\Model&Authenticatable> */
+    private function modeloUtilizador(): string
+    {
+        return config('auth.providers.users.model');
+    }
+
     /** O destinatário tem TODAS as permissões do tipo de ficheiro (verificadas também no momento da descarga). */
-    private function podeReceber(User $utilizador, PedidoExportacao $pedido): bool
+    private function podeReceber(Authenticatable $utilizador, PedidoExportacao $pedido): bool
     {
         foreach (array_filter(explode(',', (string) $pedido->permissao)) as $permissao) {
             if (! $utilizador->can(trim($permissao))) {

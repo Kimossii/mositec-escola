@@ -16,7 +16,7 @@ class CriarUsuarioRequest extends BaseRequest
             return $this->user()?->can('autorizacao.criar') ?? false;
         }
 
-        // Conta a partir de um docente (decisão E11): a mesma dupla permissão do botão «Criar acesso» em
+        // Professor: só a partir de um docente (decisão E11, sem nome livre): a mesma dupla permissão do botão «Criar acesso» em
         // Pessoal → Docentes. Permissão por nome: o Usuario não conhece o módulo Docente.
         if ($this->eProfessorDeDocente()) {
             return ($this->user()?->can('usuario.criar') ?? false) && $this->user()->can('docente.editar');
@@ -27,7 +27,7 @@ class CriarUsuarioRequest extends BaseRequest
 
     private function eProfessorDeDocente(): bool
     {
-        return $this->input('perfil') === Perfil::PROFESSOR->slug() && $this->filled('docente_id');
+        return $this->input('perfil') === Perfil::PROFESSOR->slug();
     }
 
     public function rules(): array
@@ -43,7 +43,7 @@ class CriarUsuarioRequest extends BaseRequest
             ];
         }
 
-        // Professor a partir de um docente sem conta (decisão E6): nome e pessoa vêm do registo do docente; do cliente
+        // Professor a partir de um docente sem conta (decisões E6/E11): nome e pessoa vêm do registo do docente; do cliente
         // só o email de login, a senha e o estado. Nome, tipo de login e dados pessoais nunca chegam a validated().
         if ($this->eProfessorDeDocente()) {
             return [

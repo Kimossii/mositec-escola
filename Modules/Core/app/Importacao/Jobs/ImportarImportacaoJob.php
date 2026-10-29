@@ -13,7 +13,6 @@ use Modules\Core\Models\Importacao;
 use Modules\Core\Models\ImportacaoLinha;
 use Modules\Core\Tenancy\Jobs\ComTenant;
 use Modules\Core\Traits\LogService;
-use Modules\Usuario\Models\User;
 use Throwable;
 
 /**
@@ -52,7 +51,8 @@ class ImportarImportacaoJob implements ShouldQueue
         }
 
         // Autoria e registos em nome de quem confirmou, não do worker.
-        Auth::setUser(User::findOrFail($importacao->user_id));
+        $modeloUtilizador = config('auth.providers.users.model');
+        Auth::setUser($modeloUtilizador::findOrFail($importacao->user_id));
         $importador = $registo->obter($importacao->entidade);
         $inicio = microtime(true);
 

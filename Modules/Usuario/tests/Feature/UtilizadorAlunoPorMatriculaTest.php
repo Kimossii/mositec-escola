@@ -428,8 +428,8 @@ class UtilizadorAlunoPorMatriculaTest extends TestCase
     {
         $this->actingAsStaff();
 
-        $this->post('/usuarios/professores/cadastrar', [
-            'perfil' => 'professor',
+        $this->post('/usuarios/cadastrarUsuario', [
+            'perfil' => 'funcionario',
             'tipo_login' => 'email',
             'password' => 'segredo123',
             'password_confirmation' => 'segredo123',

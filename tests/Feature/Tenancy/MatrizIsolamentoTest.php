@@ -211,6 +211,7 @@ class MatrizIsolamentoTest extends TestCase
         'Core' => 'Modules/Core/tests/Feature/HorarioTenancyTest.php',
         'Curso' => 'Modules/Curso/tests/Feature/CursoTenancyTest.php',
         'Disciplina' => 'Modules/Disciplina/tests/Feature/DisciplinaTenancyTest.php',
+        'Docente' => 'Modules/Docente/tests/Feature/DocenteTenancyTest.php',
         'Estabelecimento' => 'Modules/Estabelecimento/tests/Feature/EstabelecimentoTenancyTest.php',
         'Financeiro' => 'Modules/Financeiro/tests/Feature/FinanceiroTenancyTest.php',
         'Infraestrutura' => 'Modules/Infraestrutura/tests/Feature/SalaTenancyTest.php',

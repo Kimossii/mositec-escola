@@ -89,7 +89,7 @@ const cobertura = (linha) => {
                     </tr>
                 </thead>
                 <tbody class="text-gray-600 fw-semibold">
-                    <tr v-for="linha in linhas" :key="linha.disciplina_id" :class="{ 'bg-light-danger': linha.conta_como_em_falta }">
+                    <tr v-for="linha in linhas" :key="linha.disciplina_id" :class="{ 'bg-danger-subtle': linha.conta_como_em_falta }">
                         <td>
                             <div class="text-gray-800 fw-bold">{{ linha.disciplina_nome }}</div>
                             <div v-if="!linha.obrigatoria" class="text-muted fs-8">Opcional</div>

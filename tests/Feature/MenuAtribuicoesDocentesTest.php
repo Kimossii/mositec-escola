@@ -14,7 +14,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * Itens «Docentes» e «Atribuições docentes» nos dois menus partilhados (sidebar e cabeçalho), cada um com a sua
+ * Itens «Docentes» e «Atribuições docentes» nos dois menus partilhados (sidebar e cabeçalho, ambos no grupo «Pessoal»), cada um com a sua
  * permissão, e quem os vê: os menus filtram os links pela prop partilhada `permissoes` (podeVer), por isso o admin da
  * escola recebe `docente.ver` e `atribuicao-docente.ver`, e o professor e o aluno nenhuma. Lê os ficheiros do menu sem
  * os executar e ignora o que está comentado.
@@ -78,7 +78,7 @@ class MenuAtribuicoesDocentesTest extends TestCase
 
     public function test_o_menu_academico_do_cabecalho_tem_os_mesmos_links_com_as_mesmas_permissoes(): void
     {
-        $composable = $this->semComentariosJs($this->ficheiro('resources/js/Composables/useAcademicoMenu.js'));
+        $composable = $this->semComentariosJs($this->ficheiro('resources/js/Composables/usePessoalMenu.js'));
 
         $this->assertStringContainsString(self::ITEM_HEADER_DOCENTES, $composable);
         $this->assertStringContainsString(self::ITEM_HEADER, $composable);

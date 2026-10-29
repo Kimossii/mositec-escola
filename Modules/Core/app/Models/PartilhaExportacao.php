@@ -5,7 +5,6 @@ namespace Modules\Core\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Core\Tenancy\PertenceAoTenant;
-use Modules\Usuario\Models\User;
 
 /** Um ficheiro de exportação partilhado, só para leitura, com um colega da escola. Termina com o ficheiro ou quando o dono revoga. */
 class PartilhaExportacao extends Model
@@ -25,11 +24,11 @@ class PartilhaExportacao extends Model
 
     public function destinatario(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'destinatario_id');
+        return $this->belongsTo(config('auth.providers.users.model'), 'destinatario_id');
     }
 
     public function partilhadoPor(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'partilhado_por');
+        return $this->belongsTo(config('auth.providers.users.model'), 'partilhado_por');
     }
 }

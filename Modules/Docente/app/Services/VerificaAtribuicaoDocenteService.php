@@ -39,6 +39,11 @@ class VerificaAtribuicaoDocenteService implements VerificaAtribuicaoDocente
             ->exists();
     }
 
+    public function turmaTemAtribuicoes(int $turmaId): bool
+    {
+        return AtribuicaoDocente::query()->where('turma_id', $turmaId)->exists();
+    }
+
     public function atribuicoesEmVigorDoProfessor(int $professorId, ?int $anoLectivoId = null): array
     {
         $docenteId = $this->docenteDoUtilizador($professorId);

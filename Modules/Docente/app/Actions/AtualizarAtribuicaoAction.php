@@ -63,6 +63,11 @@ class AtualizarAtribuicaoAction
             throw ValidationException::withMessages(['data_inicio' => 'Uma atribuição em curso não pode passar a começar no futuro.']);
         }
 
+        // Encurtar a vigência de uma atribuição já iniciada exige motivo: só se faz em «Encerrar».
+        if ($estado === 'em_curso' && $dataFim !== null && ($actual->data_fim === null || $dataFim < $actual->data_fim->toDateString())) {
+            throw ValidationException::withMessages(['data_fim' => 'Para encurtar a vigência de uma atribuição em curso use "Encerrar" e indique o motivo.']);
+        }
+
         if ($dataFim !== null && $dataFim < $hoje->toDateString()) {
             throw ValidationException::withMessages(['data_fim' => 'A data de fim não pode ser anterior a hoje; para terminar a atribuição use "Encerrar".']);
         }

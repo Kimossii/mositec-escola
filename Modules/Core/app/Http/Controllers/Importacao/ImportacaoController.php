@@ -56,6 +56,7 @@ class ImportacaoController extends Controller
             'ficheiro.max' => 'O ficheiro não pode ter mais de 50 MB.',
         ]);
 
+        Gate::authorize($importador->permissao());
         $importacao = $this->servico->iniciar($request->user(), $importador, $request->file('ficheiro'));
 
         return redirect()->route('importacoes.show', $importacao);
@@ -75,6 +76,7 @@ class ImportacaoController extends Controller
     public function confirmar(Request $request, Importacao $importacao)
     {
         $this->daqui($request, $importacao);
+        Gate::authorize($this->importador($importacao->entidade)->permissao());
         $this->servico->confirmar($importacao);
 
         return redirect()->route('importacoes.show', $importacao);
@@ -83,6 +85,7 @@ class ImportacaoController extends Controller
     public function cancelar(Request $request, Importacao $importacao)
     {
         $this->daqui($request, $importacao);
+        Gate::authorize($this->importador($importacao->entidade)->permissao());
         $this->servico->cancelar($importacao);
 
         return redirect()->route('importacoes.show', $importacao);

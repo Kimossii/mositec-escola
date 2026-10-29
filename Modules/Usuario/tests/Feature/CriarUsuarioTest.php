@@ -54,7 +54,7 @@ class CriarUsuarioTest extends TestCase
 
         $response = $this->post('/usuarios/cadastrarUsuario', [
             'name' => 'Professor Novo',
-            'perfil' => 'professor',
+            'perfil' => 'funcionario',
             'tipo_login' => 'email',
             'email' => 'professor@example.com',
             'password' => 'segredo123',
@@ -199,7 +199,7 @@ class CriarUsuarioTest extends TestCase
 
         $response = $this->post('/usuarios/cadastrarUsuario', [
             'name' => 'Professor Com Extra',
-            'perfil' => 'professor',
+            'perfil' => 'funcionario',
             'tipo_login' => 'email',
             'email' => 'professor.extra@example.com',
             'password' => 'segredo123',
@@ -229,7 +229,7 @@ class CriarUsuarioTest extends TestCase
         // o Funcionário não tem.
         $response = $this->post('/usuarios/cadastrarUsuario', [
             'name' => 'Professor Escalado',
-            'perfil' => 'professor',
+            'perfil' => 'funcionario',
             'tipo_login' => 'email',
             'email' => 'professor.escalado@example.com',
             'password' => 'segredo123',

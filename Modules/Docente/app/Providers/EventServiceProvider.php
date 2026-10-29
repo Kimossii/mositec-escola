@@ -4,6 +4,7 @@ namespace Modules\Docente\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Modules\Docente\Listeners\GarantirDocenteAoCriarProfessor;
+use Modules\Usuario\Events\PerfilAtribuidoAUtilizador;
 use Modules\Usuario\Events\UtilizadorCriado;
 
 class EventServiceProvider extends ServiceProvider
@@ -15,6 +16,7 @@ class EventServiceProvider extends ServiceProvider
      */
     protected $listen = [
         UtilizadorCriado::class => [GarantirDocenteAoCriarProfessor::class],
+        PerfilAtribuidoAUtilizador::class => [GarantirDocenteAoCriarProfessor::class],
     ];
 
     /**

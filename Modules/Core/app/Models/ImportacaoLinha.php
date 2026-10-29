@@ -4,10 +4,13 @@ namespace Modules\Core\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Core\Tenancy\PertenceAoTenant;
 
-/** Linha de uma importação. Sem tenant próprio: chega-se sempre por Importacao, que é do tenant. */
+/** Linha de uma importação. Leva o tenant_id da Importacao a que pertence (preenchido na inserção em bloco). */
 class ImportacaoLinha extends Model
 {
+    use PertenceAoTenant;
+
     public const PENDENTE = 0;
 
     public const VALIDA = 1;

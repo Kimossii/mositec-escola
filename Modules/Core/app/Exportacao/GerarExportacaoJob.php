@@ -9,6 +9,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Core\Models\PedidoExportacao;
+use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Core\Tenancy\Jobs\ComTenant;
 use Throwable;
 
@@ -28,9 +29,12 @@ class GerarExportacaoJob implements ShouldQueue
     {
     }
 
+    /** Pasta (relativa ao tenant) dos pedidos ainda por gerar. */
+    public const PENDENTES = 'exportacoes/pendentes';
+
     public static function origem(int $pedidoId): string
     {
-        return "exportacoes/pendentes/{$pedidoId}.json";
+        return CaminhoTenant::para(self::PENDENTES."/{$pedidoId}.json");
     }
 
     public function handle(Exportador $exportador): void
@@ -51,8 +55,9 @@ class GerarExportacaoJob implements ShouldQueue
         );
 
         try {
-            $destino = "exportacoes/{$pedido->tenant_id}/{$pedido->id}.{$formato->extensao()}";
-            $disco->put($destino, fopen($temporario, 'rb'));
+            $relativo = "exportacoes/{$pedido->id}.{$formato->extensao()}";
+            $destino = CaminhoTenant::para($relativo);
+            $disco->put(CaminhoTenant::para($relativo), fopen($temporario, 'rb'));
         } finally {
             @unlink($temporario);
         }

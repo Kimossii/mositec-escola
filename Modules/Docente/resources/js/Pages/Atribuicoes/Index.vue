@@ -25,7 +25,7 @@ const props = defineProps({
     atribuicoes: { type: Object, required: true }, // paginator
     indicadores: { type: Object, default: null }, // diferido: { em_vigor, disciplinas_sem_titular }
     filtros: { type: Object, default: () => ({}) },
-    opcoes: { type: Object, required: true }, // { anosLectivos, turmas, docentes, disciplinas }
+    opcoes: { type: Object, required: true }, // { anosLectivos, turmas, docentes, docentes_filtro, disciplinas }
 });
 defineOptions({ layout: AppLayout });
 
@@ -38,7 +38,7 @@ const opcoesTurmaFiltro = computed(() => [{ value: '', label: 'Todas as turmas' 
 const opcoesDisciplinaFiltro = computed(() => [{ value: '', label: 'Todas as disciplinas' }, ...(props.opcoes.disciplinas ?? []).map((d) => ({ value: d.id, label: d.nome }))]);
 // Ids dos docentes activos ainda sem conta: as linhas assinalam-nos (não poderão lançar notas enquanto não tiverem acesso).
 const docentesSemAcesso = computed(() => props.opcoes.docentes.filter((d) => !d.tem_acesso).map((d) => d.id));
-const opcoesDocenteFiltro = computed(() => [{ value: '', label: 'Todos os docentes' }, ...props.opcoes.docentes.map((d) => ({ value: d.id, label: d.nome }))]);
+const opcoesDocenteFiltro = computed(() => [{ value: '', label: 'Todos os docentes' }, ...props.opcoes.docentes_filtro.map((d) => ({ value: d.id, label: d.activo ? d.nome : `${d.nome} (inactivo)` }))]);
 const opcoesPapel = [
     { value: '', label: 'Todos os papéis' },
     { value: PAPEL.TITULAR, label: 'Titular' },
@@ -53,7 +53,7 @@ const opcoesVigencia = [
 
 const VISTAS = [
     { valor: 'turma', texto: 'Por turma', icone: 'ki-people', paths: 5 },
-    { valor: 'lista', texto: 'Lista', icone: 'ki-row-horizontal', paths: 2 },
+    { valor: 'lista', texto: 'Todas', icone: 'ki-row-horizontal', paths: 2 },
 ];
 
 const estado = reactive({

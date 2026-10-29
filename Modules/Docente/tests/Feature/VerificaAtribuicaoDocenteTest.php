@@ -274,4 +274,30 @@ class VerificaAtribuicaoDocenteTest extends TestCase
         $this->assertSame([], $this->contrato()->atribuicoesEmVigorDoProfessor($prof->id));
         Carbon::setTestNow();
     }
+
+    public function test_turma_tem_atribuicoes_so_quando_existe_alguma(): void
+    {
+        $c = $this->cenarioDeDocencia();
+        $prof = $this->utilizadorDocente();
+
+        $this->assertFalse($this->contrato()->turmaTemAtribuicoes($c['turma']->id));
+
+        $this->atribuir($c, $prof);
+
+        $this->assertTrue($this->contrato()->turmaTemAtribuicoes($c['turma']->id));
+    }
+
+    public function test_eliminar_turma_com_atribuicoes_e_recusado(): void
+    {
+        $c = $this->cenarioDeDocencia();
+        $this->atribuir($c, $this->utilizadorDocente());
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        try {
+            app(\Modules\Turma\Actions\EliminarTurmaAction::class)->executar($c['turma']);
+        } finally {
+            $this->assertNotSoftDeleted('turmas', ['id' => $c['turma']->id]);
+        }
+    }
 }

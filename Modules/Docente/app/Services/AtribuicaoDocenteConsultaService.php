@@ -220,9 +220,10 @@ class AtribuicaoDocenteConsultaService
 
     /**
      * `docentes`: os activos, com ou sem conta (`tem_acesso`: se já podem entrar no sistema, p. ex. para lançar notas).
+     * `docentes_filtro`: os que têm atribuições no ano, activos ou não (o histórico de um docente inactivo continua pesquisável).
      * `disciplinas`: as que têm atribuições no ano (as únicas que o filtro da lista pode encontrar).
      *
-     * @return array{anosLectivos: list<array<string, mixed>>, turmas: list<array<string, mixed>>, docentes: list<array{id: int, nome: string, tem_acesso: bool}>, disciplinas: list<array{id: int, nome: string}>}
+     * @return array{anosLectivos: list<array<string, mixed>>, turmas: list<array<string, mixed>>, docentes: list<array{id: int, nome: string, tem_acesso: bool}>, disciplinas: list<array{id: int, nome: string}>, docentes_filtro: list<array{id: int, nome: string, activo: bool}>}
      */
     public function opcoes(int $anoLectivoId): array
     {
@@ -234,12 +235,26 @@ class AtribuicaoDocenteConsultaService
                 ->map(fn (Turma $t) => ['id' => $t->id, 'nome' => $t->nome, 'codigo' => $t->codigo, 'rotulo' => $t->rotulo(completo: true)])
                 ->all(),
             'docentes' => $this->docentesActivos(),
+            'docentes_filtro' => $this->docentesDoFiltro($anoLectivoId),
             'disciplinas' => Disciplina::query()
                 ->whereIn('id', AtribuicaoDocente::query()->where('ano_lectivo_id', $anoLectivoId)->select('disciplina_id'))
                 ->orderBy('nome')->get(['id', 'nome'])
                 ->map(fn (Disciplina $d) => ['id' => $d->id, 'nome' => $d->nome])
                 ->all(),
         ];
+    }
+
+    /** @return list<array{id: int, nome: string, activo: bool}> */
+    private function docentesDoFiltro(int $anoLectivoId): array
+    {
+        return Docente::query()
+            ->whereIn('docentes.id', AtribuicaoDocente::query()->where('ano_lectivo_id', $anoLectivoId)->select('docente_id'))
+            ->join('dados_pessoas', 'dados_pessoas.id', '=', 'docentes.dados_pessoa_id')
+            ->orderBy('dados_pessoas.nome_completo')
+            ->orderBy('docentes.id')
+            ->get(['docentes.id', 'docentes.estado', 'dados_pessoas.nome_completo'])
+            ->map(fn (Docente $d) => ['id' => $d->id, 'nome' => $d->nome_completo, 'activo' => (int) $d->estado === 1])
+            ->values()->all();
     }
 
     /**

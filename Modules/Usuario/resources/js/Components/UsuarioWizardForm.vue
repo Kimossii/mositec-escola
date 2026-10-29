@@ -3,6 +3,7 @@ import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import PermissoesPorMenu from '../../../../Permissao/resources/js/Components/PermissoesPorMenu.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { can } from '@/Composables/usePermissoes';
 import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
@@ -18,8 +19,6 @@ const props = defineProps({
     permissoesPorPerfil: { type: Object, required: true },
     utilizador: { type: Object, default: null },
     rotaCriar: { type: String, required: true },
-    // Novo professor: permite escolher um docente já registado e sem conta (quem tem usuario.criar e docente.editar).
-    permitirDocente: { type: Boolean, default: false },
 });
 const emit = defineEmits(['fechado']);
 
@@ -52,17 +51,12 @@ const cadastroDeAluno = computed(() => !props.utilizador && perfilSelecionado.va
 const alunoPronto = computed(() => !cadastroDeAluno.value
     || (alunoEncontrado.value !== null && alunoEncontrado.value.estado === 1 && !alunoEncontrado.value.ja_tem_conta));
 
-// Cadastro de professor a partir de um docente sem conta: o nome e a pessoa vêm do docente (servidor);
-// do formulário só vão docente_id, email de login e senha. Desligado, o formulário é o de sempre.
-const MODOS_PROFESSOR = [
-    { valor: false, texto: 'Novo professor' },
-    { valor: true, texto: 'A partir de um docente' },
-];
-const aPartirDeDocente = ref(false);
+// Professor: nunca se escreve à mão. A conta nasce de um docente já registado (Pessoal → Docentes) e sem acesso; o nome
+// e a pessoa vêm do docente (servidor) e do formulário só vão docente_id, email de login e senha. Exige usuario.criar e docente.editar.
 const docenteEscolhido = ref(null);
-const cadastroDeDocente = computed(() => !props.utilizador && props.permitirDocente
-    && perfilSelecionado.value === 'professor' && aPartirDeDocente.value);
-const identidadePronta = computed(() => alunoPronto.value && (!cadastroDeDocente.value || docenteEscolhido.value !== null));
+const cadastroDeDocente = computed(() => !props.utilizador && perfilSelecionado.value === 'professor');
+const semPermissaoDeDocente = computed(() => cadastroDeDocente.value && !(can('usuario.criar') && can('docente.editar')));
+const identidadePronta = computed(() => alunoPronto.value && (!cadastroDeDocente.value || (docenteEscolhido.value !== null && !semPermissaoDeDocente.value)));
 
 // O email de contacto do docente serve de sugestão para o login (só se ainda estiver vazio).
 watch(docenteEscolhido, (d) => {
@@ -244,24 +238,11 @@ function guardar() {
         </div>
 
         <div v-if="passo === 1">
-            <div v-if="!props.utilizador && permitirDocente && perfilSelecionado === 'professor'" class="mb-7">
-                <div class="d-inline-flex p-1 rounded bg-body-secondary" role="group" aria-label="Origem do professor">
-                    <button
-                        v-for="o in MODOS_PROFESSOR"
-                        :key="String(o.valor)"
-                        type="button"
-                        class="btn btn-sm px-4 border-0"
-                        :class="aPartirDeDocente === o.valor ? 'btn-success shadow-sm' : 'btn-transparent text-gray-600'"
-                        :aria-pressed="aPartirDeDocente === o.valor"
-                        @click="aPartirDeDocente = o.valor"
-                    >
-                        {{ o.texto }}
-                    </button>
-                </div>
-                <div v-if="aPartirDeDocente" class="text-muted fs-7 mt-2">Docente já registado em Pessoal → Docentes que ainda não tem acesso.</div>
+            <div v-if="semPermissaoDeDocente" class="alert alert-warning mb-7">
+                Para criar o acesso de um professor é preciso poder editar docentes. Peça a um administrador.
             </div>
 
-            <DocenteSemContaLookup v-if="cadastroDeDocente" v-model:docente="docenteEscolhido" :erro="erroDocente" />
+            <DocenteSemContaLookup v-if="cadastroDeDocente && !semPermissaoDeDocente" v-model:docente="docenteEscolhido" :erro="erroDocente" />
 
             <UsuarioFormFields v-model:name="form.name" v-model:email="form.email" v-model:password="form.password"
                 v-model:password-confirmation="form.passwordConfirmation" :tipo-login="tipoLogin" :errors="errosDosCampos"

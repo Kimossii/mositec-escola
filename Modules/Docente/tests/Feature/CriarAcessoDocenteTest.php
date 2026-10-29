@@ -104,6 +104,20 @@ class CriarAcessoDocenteTest extends TestCase
         $this->assertSame(1, $conta->roles()->count());
     }
 
+    public function test_api_cria_conta_a_partir_do_docente_como_a_interface_web(): void
+    {
+        $this->como(Perfil::ADMIN_ESCOLA);
+        $docente = $this->criarDocente('Rita Docente');
+
+        $this->postJson('/api/v1/usuarios', ['perfil' => 'professor', 'docente_id' => $docente->id, 'email' => 'api@example.com', 'password' => 'segredo123', 'password_confirmation' => 'segredo123'])
+            ->assertCreated();
+
+        $conta = $this->contaDe($docente);
+        $this->assertNotNull($conta);
+        $this->assertSame('Rita Docente', $conta->name);
+        $this->assertSame('api@example.com', $conta->email);
+    }
+
     public function test_nao_cria_segundo_docente_e_tem_acesso_fica_verdadeiro(): void
     {
         $this->como(Perfil::ADMIN_ESCOLA);
@@ -275,7 +289,7 @@ class CriarAcessoDocenteTest extends TestCase
         $this->como(Perfil::ADMIN_ESCOLA);
         $docente = $this->criarDocente('Rita Docente');
 
-        foreach (['funcionario', 'professor'] as $i => $perfil) {
+        foreach (['funcionario'] as $i => $perfil) {
             $this->post('/usuarios/cadastrarUsuario', $this->corpo([
                 'perfil' => $perfil, 'name' => 'Intruso ' . $i, 'tipo_login' => 'email', 'email' => "intruso{$i}@example.com",
                 'dados_pessoa_id' => $docente->dados_pessoa_id,
@@ -304,16 +318,15 @@ class CriarAcessoDocenteTest extends TestCase
         $this->assertSame(1, User::query()->count()); // só o autenticado
     }
 
-    public function test_fluxo_de_utilizadores_sem_docente_id_continua_a_criar_professor_e_docente(): void
+    public function test_professor_sem_docente_id_e_recusado_e_nada_e_criado(): void
     {
         $this->como(Perfil::ADMIN_ESCOLA);
 
         $this->post(self::URL_PROFESSORES, $this->corpo(['perfil' => 'professor', 'name' => 'Novo Prof', 'tipo_login' => 'email']))
-            ->assertSessionHasNoErrors();
+            ->assertSessionHasErrors('docente_id');
 
-        $conta = User::query()->where('email', 'acesso@example.com')->firstOrFail();
-        $this->assertSame('Novo Prof', $conta->name);
-        $this->assertSame(1, Docente::query()->where('dados_pessoa_id', $conta->dados_pessoa_id)->count());
+        $this->assertNull(User::query()->where('email', 'acesso@example.com')->first());
+        $this->assertSame(0, Docente::query()->count());
     }
 
     public function test_procura_de_docentes_sem_conta(): void

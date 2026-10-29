@@ -21,4 +21,4 @@ Schedule::command('financeiro:gerar-propinas --todos --fila')->dailyAt('02:00')-
 Schedule::command('financeiro:aplicar-multas --todos --fila')->dailyAt('02:30')->withoutOverlapping();
 
 // Exportações em fila: os ficheiros duram 7 dias e os pedidos presos há 30 min falham.
-Schedule::command('exportacoes:limpar')->everyTenMinutes()->withoutOverlapping();
+Schedule::command('exportacoes:limpar --todos')->everyTenMinutes()->withoutOverlapping();
