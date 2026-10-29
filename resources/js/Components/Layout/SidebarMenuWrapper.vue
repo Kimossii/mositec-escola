@@ -65,14 +65,16 @@
             <!-- ── Section: Financeiro (operação; a configuração fica em Configurações → Financeiro) ── -->
             <SidebarAccordion :item="financeiro" heading="Financeiro" />
 
-            <!-- ── Sections por implementar: Frequência, Pessoal,
+            <!-- ── Section: Pessoal (por agora só as atribuições docentes) ── -->
+            <SidebarAccordion :item="pessoal" heading="Pessoal" />
+
+            <!-- ── Sections por implementar: Frequência,
                  Comunicação, Documentos, Biblioteca, Relatórios.
                  Descomentar uma a uma, sequencialmente, à medida que cada
                  módulo for implementado — cabeçalho e acordeão já vêm juntos
                  num só <SidebarAccordion>, controlados pelo mesmo v-if. -->
             <!--
             <SidebarAccordion :item="frequencia" heading="Frequência" />
-            <SidebarAccordion :item="pessoal" heading="Pessoal" />
             <SidebarAccordion :item="comunicacao" heading="Comunicação" />
             <SidebarAccordion :item="documentos" heading="Documentos" />
             <SidebarAccordion :item="biblioteca" heading="Biblioteca" />
@@ -508,18 +510,20 @@ const pedagogico = {
 //     ],
 // }
 //
-// const pessoal = {
-//     title: 'Pessoal',
-//     icon: 'ki-briefcase',
-//     paths: 2,
-//     items: [
-//         { href: '#', title: 'Docentes' },
-//         { href: '#', title: 'Funcionários' },
-//         { href: '#', title: 'Assiduidade do Pessoal' },
-//         { href: '#', title: 'Horários do Pessoal' },
-//     ],
-// }
-//
+
+// ── Pessoal — os restantes itens entram à medida que forem construídos ──
+const pessoal = {
+    title: 'Pessoal',
+    icon: 'ki-briefcase',
+    paths: 2,
+    items: [
+        { href: '/docentes/atribuicoes', title: 'Atribuições docentes', permissao: 'atribuicao-docente.ver' },
+        // { href: '#', title: 'Funcionários' },
+        // { href: '#', title: 'Assiduidade do Pessoal' },
+        // { href: '#', title: 'Horários do Pessoal' },
+    ],
+}
+
 // ── Financeiro (operação) — os restantes itens entram com as respectivas fases ──
 const financeiro = {
     title: 'Financeiro',

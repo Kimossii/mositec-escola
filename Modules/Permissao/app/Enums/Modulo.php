@@ -32,6 +32,7 @@ enum Modulo: int
     case COBRANCA = 25;
     case BOLSA = 26;
     case ACORDO = 27;
+    case ATRIBUICAO_DOCENTE = 28;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -64,6 +65,8 @@ enum Modulo: int
             self::BOLSA => ['ver', 'listar', 'criar', 'editar'],
             // Acordos de pagamento em prestações: cria-se e cancela-se (ou quebra-se); nunca se edita nem elimina.
             self::ACORDO => ['ver', 'listar', 'criar', 'cancelar'],
+            // Atribuições docentes: encerram-se (histórico) e só se elimina uma ainda agendada.
+            self::ATRIBUICAO_DOCENTE => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar', 'exportar'],
             // `trancar` cobre trancar e reactivar uma matrícula.
             self::MATRICULA => [...self::ACOES_BASE, 'trancar'],
             default => self::ACOES_BASE,
@@ -101,6 +104,7 @@ enum Modulo: int
             self::COBRANCA => 'cobranca',
             self::BOLSA => 'bolsa',
             self::ACORDO => 'acordo',
+            self::ATRIBUICAO_DOCENTE => 'atribuicao-docente',
         };
     }
 
@@ -146,6 +150,7 @@ enum Modulo: int
             self::COBRANCA => 'Cobrança',
             self::BOLSA => 'Bolsa',
             self::ACORDO => 'Acordo de Dívida',
+            self::ATRIBUICAO_DOCENTE => 'Atribuição Docente',
         };
     }
 }

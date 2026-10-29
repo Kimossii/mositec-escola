@@ -55,9 +55,11 @@ class SincronizarPerfisDeSistemaAction
             Modulo::COBRANCA->value => ['ver', 'listar', 'criar', 'cancelar', 'exportar'],
             Modulo::BOLSA->value => ['ver', 'listar', 'criar', 'editar'],
             Modulo::ACORDO->value => ['ver', 'listar', 'criar', 'cancelar'],
+            Modulo::ATRIBUICAO_DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar', 'exportar'],
         ],
         Perfil::FUNCIONARIO->value => [
             Modulo::USUARIO->value => ['ver', 'criar', 'editar'],
+            Modulo::ATRIBUICAO_DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'encerrar'],
         ],
     ];
 

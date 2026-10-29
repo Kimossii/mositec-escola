@@ -1,0 +1,14 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Modules\Docente\Http\Controllers\AtribuicaoDocenteController;
+
+Route::middleware(['auth'])->prefix('docentes/atribuicoes')->name('atribuicoes-docentes.')->group(function () {
+    Route::get('/', [AtribuicaoDocenteController::class, 'index'])->middleware('can:atribuicao-docente.ver')->name('index');
+    Route::get('/exportar', [AtribuicaoDocenteController::class, 'exportar'])->middleware('can:atribuicao-docente.exportar')->name('exportar');
+    Route::post('/', [AtribuicaoDocenteController::class, 'store'])->middleware('can:atribuicao-docente.criar')->name('store');
+    Route::post('/substituir', [AtribuicaoDocenteController::class, 'substituir'])->middleware('can:atribuicao-docente.criar')->name('substituir');
+    Route::put('/{atribuicao}', [AtribuicaoDocenteController::class, 'update'])->middleware('can:atribuicao-docente.editar')->name('update');
+    Route::patch('/{atribuicao}/encerrar', [AtribuicaoDocenteController::class, 'encerrar'])->middleware('can:atribuicao-docente.encerrar')->name('encerrar');
+    Route::delete('/{atribuicao}', [AtribuicaoDocenteController::class, 'destroy'])->middleware('can:atribuicao-docente.eliminar')->name('destroy');
+});
