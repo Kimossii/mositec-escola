@@ -2,9 +2,9 @@
 
 namespace Modules\AnoLectivo\Providers;
 
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 
-class AnoLectivoServiceProvider extends ModuleServiceProvider
+class AnoLectivoServiceProvider extends BaseModuleServiceProvider
 {
     protected string $name = 'AnoLectivo';
 

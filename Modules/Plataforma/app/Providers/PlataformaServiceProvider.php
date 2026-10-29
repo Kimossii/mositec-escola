@@ -5,9 +5,9 @@ namespace Modules\Plataforma\Providers;
 use Modules\Plataforma\Console\CriarSuperAdminCommand;
 use Modules\Plataforma\Console\RedefinirSuperAdminCommand;
 use Modules\Plataforma\Support\LimitadorLoginPlataforma;
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 
-class PlataformaServiceProvider extends ModuleServiceProvider
+class PlataformaServiceProvider extends BaseModuleServiceProvider
 {
     /**
      * Prefixo de caminho de todas as rotas do painel. Elimina a colisão com as rotas da escola

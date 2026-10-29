@@ -4,10 +4,10 @@ namespace Modules\Turma\Providers;
 
 use Modules\Core\Importacao\RegistoDeImportadores;
 use Modules\Turma\Importacao\TurmaImportador;
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 
-class TurmaServiceProvider extends ModuleServiceProvider
+class TurmaServiceProvider extends BaseModuleServiceProvider
 {
     /**
      * The name of the module.

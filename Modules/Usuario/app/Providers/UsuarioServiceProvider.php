@@ -4,10 +4,10 @@ namespace Modules\Usuario\Providers;
 
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
 use Modules\Usuario\Provisioning\ProvisionarTiposDocumento;
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Modules\Core\Providers\BaseModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 
-class UsuarioServiceProvider extends ModuleServiceProvider
+class UsuarioServiceProvider extends BaseModuleServiceProvider
 {
     /**
      * The name of the module.
