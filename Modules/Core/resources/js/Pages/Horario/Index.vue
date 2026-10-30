@@ -9,6 +9,7 @@ import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import HorarioStatusBadge from '../../Components/HorarioStatusBadge.vue';
 import HorarioFormModal from '../../Components/HorarioFormModal.vue';
 import { tipoLabel } from '../../Models/Horario';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 defineProps({
     horarios: { type: Array, required: true },
@@ -112,7 +113,7 @@ function confirmarEliminacao() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="horarios.length === 0">
-                            <td colspan="5" class="text-center text-muted py-6">Nenhum Horário criado.</td>
+                            <td colspan="5"><EstadoVazio titulo="Nenhum Horário criado." /></td>
                         </tr>
                         <tr v-for="horario in horarios" :key="horario.id">
                             <td>{{ horario.nome }}</td>

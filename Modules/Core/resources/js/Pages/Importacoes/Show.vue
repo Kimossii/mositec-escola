@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 
 const props = defineProps({
     importacao: { type: Object, required: true },
@@ -27,12 +28,18 @@ const cancelar = () => router.post(`/importacoes/${props.importacao.id}/cancelar
 <template>
     <div class="app-container container-xxl py-6">
         <div class="mb-6">
-            <Link href="/importacoes" class="text-muted fs-7">← Importações</Link>
-            <h1 class="fs-2 fw-bold mb-1 mt-2">Importação de {{ importacao.titulo }}</h1>
+            <BotaoVoltar href="/importacoes" />
+            <h1 class="fs-2 fw-bold mb-1">Importação de {{ importacao.titulo }}</h1>
             <div class="text-muted">{{ importacao.nome_ficheiro }} <span class="badge ms-2" :class="ESTADO[importacao.estado]">{{ importacao.estado_texto }}</span></div>
         </div>
 
         <div v-if="importacao.erro_geral" class="alert alert-danger">{{ importacao.erro_geral }}</div>
+
+        <div v-if="importacao.estado === 4 && importacao.importadas > 0 && !importacao.com_erro" class="d-flex flex-column align-items-center text-center mb-6">
+            <img src="/images/mosi/mosi-sucesso.svg" width="130" alt="" />
+            <div class="fs-4 fw-bold mt-2">Importação concluída</div>
+            <div class="text-muted">{{ importacao.importadas }} registo(s) importado(s).</div>
+        </div>
 
         <div class="row g-4 mb-6">
             <div v-for="[rotulo, valor] in [['Linhas no ficheiro', importacao.total], ['Válidas', importacao.validas], ['Já existiam (ignoradas)', importacao.ignoradas], ['Com erro', importacao.com_erro], ['Importadas', importacao.importadas]]" :key="rotulo" class="col-6 col-md">

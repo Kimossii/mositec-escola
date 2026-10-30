@@ -10,7 +10,7 @@ use Modules\Usuario\Http\Controllers\UsuarioController;
 Route::middleware(['auth'])->prefix('usuarios')->group(function () {
 
     Route::get('/', [UsuarioController::class, 'index'])->middleware('can:usuario.ver')->name('usuario.index');
-    Route::get('/exportar', [UsuarioController::class, 'exportar'])->middleware('can:usuario.exportar')->name('usuario.exportar');
+    Route::get('/exportar', [UsuarioController::class, 'exportar'])->middleware(['can:usuario.exportar', 'throttle:operacao-pesada'])->name('usuario.exportar');
     Route::post('/cadastrarUsuario', [UsuarioController::class, 'store'])->name('usuario.store');
     Route::get('/{user}/foto', [UsuarioController::class, 'foto'])->middleware('can:usuario.ver')->name('usuario.foto');
     Route::get('/{user}/editar', [UsuarioController::class, 'edit'])->middleware('can:usuario.ver')->name('usuario.edit');
@@ -67,7 +67,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/documentos-pessoa/{documento}/estado', [DocumentoPessoaController::class, 'alternarEstado'])
         ->middleware('can:documento-pessoa.editar')->name('documentos-pessoa.alternarEstado');
     Route::get('/documentos-pessoa/{documento}/download', [DocumentoPessoaController::class, 'download'])
-        ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.download');
+        ->middleware(['can:documento-pessoa.ver', 'throttle:operacao-pesada'])->name('documentos-pessoa.download');
     Route::get('/documentos-pessoa/{documento}/visualizar', [DocumentoPessoaController::class, 'visualizar'])
         ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.visualizar');
     Route::get('/tipos-documentos', [DocumentoPessoaController::class, 'tipos'])

@@ -16,6 +16,7 @@ import PlanoPropinaFormModal from '../../Components/PlanosPropina/PlanoPropinaFo
 import { ESTADO } from '../../Models/Estado';
 import { formatarDinheiro } from '../../Support/dinheiro';
 import { dataCurta, mesAno } from '../../Support/periodos';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const BASE = '/financeiro/configuracao/planos-propina';
 
@@ -267,7 +268,7 @@ function confirmarEliminacao() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="planos.data.length === 0">
-                            <td colspan="8" class="text-center text-muted py-6">Nenhum plano de propina encontrado.</td>
+                            <td colspan="8"><EstadoVazio titulo="Nenhum plano de propina encontrado." /></td>
                         </tr>
                         <tr v-for="plano in planos.data" :key="plano.id">
                             <td class="text-gray-800">

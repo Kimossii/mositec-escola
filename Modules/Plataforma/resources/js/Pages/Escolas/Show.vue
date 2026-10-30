@@ -1,13 +1,15 @@
 <script setup>
 import { onBeforeUnmount, ref, watch } from 'vue';
-import { Link, router, usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import LayoutPlataforma from '../../Components/LayoutPlataforma.vue';
+import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import EstadoBadge from '../../Components/EstadoBadge.vue';
 import AcoesCicloDeVida from '../../Components/AcoesCicloDeVida.vue';
 import DominiosCard from '../../Components/DominiosCard.vue';
 import RecuperarAdministradorModal from '../../Components/RecuperarAdministradorModal.vue';
 import SenhaTemporariaModal from '../../Components/SenhaTemporariaModal.vue';
 import { formatarDataHora } from '../../Composables/formatarData';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 defineProps({
     escola: { type: Object, required: true },
@@ -44,6 +46,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div>
+        <BotaoVoltar href="/plataforma/escolas" />
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-6">
             <div class="d-flex align-items-center gap-4">
                 <h1 class="fs-2 fw-bold mb-0">{{ escola.nome }}</h1>
@@ -59,7 +62,6 @@ onBeforeUnmount(() => {
                     Recuperar administrador
                 </button>
                 <AcoesCicloDeVida :escola="escola" />
-                <Link href="/plataforma/escolas" class="btn btn-light">Voltar</Link>
             </div>
         </div>
 
@@ -123,7 +125,7 @@ onBeforeUnmount(() => {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="auditoria.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Sem actividade registada.</td>
+                            <td colspan="4"><EstadoVazio titulo="Sem actividade registada." /></td>
                         </tr>
                         <tr v-for="registo in auditoria" :key="registo.id">
                             <td>{{ formatarDataHora(registo.created_at) }}</td>

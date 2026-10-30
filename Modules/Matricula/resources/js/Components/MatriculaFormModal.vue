@@ -3,6 +3,7 @@ import { rotuloTurma } from '@/Support/turma';
 import { computed, reactive, ref, watch } from 'vue';
 import axios from 'axios';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import { useUsaCursos } from '@/Composables/useUsaCursos';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -13,6 +14,8 @@ const props = defineProps({
     renovacao: { type: Boolean, default: false },
 });
 const emit = defineEmits(['submit', 'cancelar']);
+
+const usaCursos = useUsaCursos();
 
 // O Nível Académico está sempre presente; o Curso só aparece quando a turma
 // tem um (Ensino Secundário/Superior — turmas de Creche/Pré-Escolar/Primário
@@ -142,7 +145,7 @@ function submeter() {
                     </div>
 
                     <div v-if="turmaSeleccionada" class="row mb-7">
-                        <div class="col-6">
+                        <div v-if="usaCursos" class="col-6">
                             <label class="fw-semibold fs-7 text-muted mb-1">Curso</label>
                             <div class="fs-6">{{ turmaSeleccionada.curso?.nome ?? '—' }}</div>
                         </div>

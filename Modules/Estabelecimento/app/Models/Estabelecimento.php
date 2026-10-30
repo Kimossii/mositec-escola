@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Tenancy\TenantContext;
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
@@ -74,6 +75,17 @@ class Estabelecimento extends Model
     public function etapasEnsino(): HasMany
     {
         return $this->hasMany(EstabelecimentoEtapaEnsino::class, 'estabelecimento_id');
+    }
+
+    /**
+     * A escola trabalha com cursos? Sim se alguma das etapas declaradas os exige (Secundário, Superior). Uma escola que
+     * ainda não declarou etapas não esconde nada: esconder só quando se sabe que não há cursos.
+     */
+    public function usaCursos(): bool
+    {
+        $etapas = $this->etapasEnsino()->pluck('etapa_ensino');
+
+        return $etapas->isEmpty() || $etapas->contains(fn (EtapaEnsinoEnum $etapa) => $etapa->exigeCurso());
     }
 
     /**

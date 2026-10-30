@@ -11,6 +11,7 @@ import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { estadoPagamentoBadgeClass } from '../../Models/Pagamento';
 import { formatarDinheiro } from '../../Support/dinheiro';
 import { dataCurta } from '../../Support/periodos';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const BASE = '/financeiro/pagamentos';
 
@@ -115,7 +116,7 @@ watch(filtros, (valor) => {
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
                             <tr v-if="pagamentos.data.length === 0">
-                                <td colspan="10" class="text-center text-muted py-6">Nenhum pagamento encontrado.</td>
+                                <td colspan="10"><EstadoVazio titulo="Nenhum pagamento encontrado." /></td>
                             </tr>
                             <tr v-for="pagamento in pagamentos.data" :key="pagamento.id">
                                 <td class="text-gray-800">{{ pagamento.numero }}</td>

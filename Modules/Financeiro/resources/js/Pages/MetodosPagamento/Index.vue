@@ -12,6 +12,7 @@ import Pagination from '@/Components/Shared/Pagination.vue';
 import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
 import MetodoPagamentoFormModal from '../../Components/MetodosPagamento/MetodoPagamentoFormModal.vue';
 import { ESTADO } from '../../Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const BASE = '/financeiro/configuracao/metodos-pagamento';
 
@@ -153,7 +154,7 @@ function confirmarEliminacao() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="metodos.data.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhum método de pagamento encontrado.</td>
+                            <td colspan="4"><EstadoVazio titulo="Nenhum método de pagamento encontrado." /></td>
                         </tr>
                         <tr v-for="metodo in metodos.data" :key="metodo.id">
                             <td class="text-gray-800">{{ metodo.nome }}</td>

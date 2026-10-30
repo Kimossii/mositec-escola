@@ -13,6 +13,7 @@ import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
 import TurmaTabs from '../../Components/Shared/TurmaTabs.vue';
 import NivelAcademicoFormModal from '../../Components/NivelAcademico/NivelAcademicoFormModal.vue';
 import { ESTADO } from '../../Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     niveisAcademicos: { type: Object, required: true }, // paginator: { data, links, ... }
@@ -195,7 +196,7 @@ function confirmarEliminacao() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="niveisAcademicos.data.length === 0">
-                            <td colspan="6" class="text-center text-muted py-6">Nenhum nível académico encontrado.</td>
+                            <td colspan="6"><EstadoVazio titulo="Nenhum nível académico encontrado." /></td>
                         </tr>
                         <tr v-for="nivel in niveisAcademicos.data" :key="nivel.id">
                             <td>{{ nivel.ordem }}</td>

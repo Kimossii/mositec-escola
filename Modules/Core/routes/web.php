@@ -16,20 +16,20 @@ Route::middleware(['auth'])->prefix('horarios')->name('horarios.')->group(functi
 Route::middleware(['auth'])->prefix('ficheiros')->name('ficheiros.')->group(function () {
     Route::get('/', [FicheiroController::class, 'index'])->name('index');
     Route::delete('/', [FicheiroController::class, 'eliminar'])->name('eliminar');
-    Route::post('/partilhar', [FicheiroController::class, 'partilhar'])->name('partilhar');
+    Route::post('/partilhar', [FicheiroController::class, 'partilhar'])->middleware('throttle:operacao-pesada')->name('partilhar');
     Route::get('/{pedido}/destinatarios', [FicheiroController::class, 'destinatarios'])->whereNumber('pedido')->name('destinatarios');
-    Route::get('/pasta/descarregar', [FicheiroController::class, 'descarregarPasta'])->name('descarregar-pasta');
-    Route::get('/{pedido}/descarregar', [FicheiroController::class, 'descarregar'])->whereNumber('pedido')->name('descarregar');
+    Route::get('/pasta/descarregar', [FicheiroController::class, 'descarregarPasta'])->middleware('throttle:operacao-pesada')->name('descarregar-pasta');
+    Route::get('/{pedido}/descarregar', [FicheiroController::class, 'descarregar'])->whereNumber('pedido')->middleware('throttle:operacao-pesada')->name('descarregar');
 });
 
 // Importações em massa (modelo → carregar → validar → confirmar). A permissão é a da entidade (ex.: curso.criar), verificada no controller.
 Route::middleware(['auth'])->prefix('importacoes')->name('importacoes.')->group(function () {
     Route::get('/', [ImportacaoController::class, 'index'])->name('index');
     Route::get('/{importacao}', [ImportacaoController::class, 'show'])->whereNumber('importacao')->name('show');
-    Route::post('/{importacao}/confirmar', [ImportacaoController::class, 'confirmar'])->whereNumber('importacao')->name('confirmar');
+    Route::post('/{importacao}/confirmar', [ImportacaoController::class, 'confirmar'])->whereNumber('importacao')->middleware('throttle:operacao-pesada')->name('confirmar');
     Route::post('/{importacao}/cancelar', [ImportacaoController::class, 'cancelar'])->whereNumber('importacao')->name('cancelar');
     Route::get('/{importacao}/erros', [ImportacaoController::class, 'erros'])->whereNumber('importacao')->name('erros');
     Route::get('/{entidade}/nova', [ImportacaoController::class, 'nova'])->where('entidade', '[a-z\-]+')->name('nova');
     Route::get('/{entidade}/modelo', [ImportacaoController::class, 'modelo'])->where('entidade', '[a-z\-]+')->name('modelo');
-    Route::post('/{entidade}', [ImportacaoController::class, 'store'])->where('entidade', '[a-z\-]+')->name('store');
+    Route::post('/{entidade}', [ImportacaoController::class, 'store'])->where('entidade', '[a-z\-]+')->middleware('throttle:operacao-pesada')->name('store');
 });

@@ -14,6 +14,7 @@ import TurmaTabs from '../../Components/Shared/TurmaTabs.vue';
 import TurnoFormModal from '../../Components/Turno/TurnoFormModal.vue';
 import TurnoHorariosModal from '../../Components/Turno/TurnoHorariosModal.vue';
 import { ESTADO } from '../../Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     turnos: { type: Object, required: true }, // paginator: { data, links, ... }
@@ -216,7 +217,7 @@ function adicionarHorario(payload) {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="turnos.data.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhum turno encontrado.</td>
+                            <td colspan="4"><EstadoVazio titulo="Nenhum turno encontrado." /></td>
                         </tr>
                         <tr v-for="turno in turnos.data" :key="turno.id">
                             <td>

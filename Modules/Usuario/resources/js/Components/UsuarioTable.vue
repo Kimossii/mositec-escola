@@ -10,6 +10,7 @@ import UsuarioAvatar from './UsuarioAvatar.vue';
 import UsuarioCartao from './UsuarioCartao.vue';
 import UsuarioPerfis from '@/Components/Shared/PerfisDoUtilizador.vue';
 import UsuarioStatusBadge from './UsuarioStatusBadge.vue';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 defineProps({
     usuarios: {
@@ -152,7 +153,7 @@ function confirmarEliminacao() {
         </thead>
         <tbody class="text-gray-600 fw-semibold">
             <tr v-if="usuarios.length === 0">
-                <td colspan="6" class="text-center text-muted py-6">Nenhum utilizador encontrado.</td>
+                <td colspan="6"><EstadoVazio titulo="Nenhum utilizador encontrado." /></td>
             </tr>
             <tr v-for="usuario in usuarios" :key="usuario.id">
                 <td class="d-flex align-items-center">

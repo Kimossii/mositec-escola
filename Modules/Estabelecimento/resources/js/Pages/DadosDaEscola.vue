@@ -234,6 +234,7 @@ function submeter() {
                                     <div class="fw-semibold mt-1">Ensino Superior <span class="text-muted fs-8 fw-normal">(fixo para Ensino Universitário)</span></div>
                                 </template>
                                 <CampoFicha v-else v-model="form.etapas_ensino" label="Etapas de Ensino" type="checkboxes" :options="etapasNaoSuperior" required :editing="editando" :error="errors.etapas_ensino?.[0]" icon="ki-teacher" :icon-paths="2" />
+                                <div v-if="editando && form.tipo_ensino !== TIPO_ENSINO_UNIVERSITARIO" class="text-muted fs-8 mt-2">Os Cursos só existem em escolas com Ensino Secundário. Sem esta etapa, o menu e os campos de curso ficam escondidos (os dados já gravados não se perdem).</div>
                             </div>
                         </div>
                     </SeccaoFicha>

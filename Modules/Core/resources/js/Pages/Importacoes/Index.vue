@@ -14,7 +14,7 @@ const data = (iso) => (iso ? new Date(iso).toLocaleString('pt-PT', { dateStyle: 
     <div class="app-container container-xxl py-6">
         <div class="mb-6">
             <h1 class="fs-2 fw-bold mb-1">Importações</h1>
-            <div class="text-muted">As suas importações em massa. Para começar, use o botão «Importar» na lista de Cursos ou Disciplinas.</div>
+            <div class="text-muted">As suas importações em massa. Para começar, use o botão «Importar» numa das listas (Disciplinas, Turmas…).</div>
         </div>
 
         <div class="card card-flush">

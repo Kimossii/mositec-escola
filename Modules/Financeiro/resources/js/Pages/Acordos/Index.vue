@@ -11,6 +11,7 @@ import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import { formatarDinheiro } from '../../Support/dinheiro';
 import { dataCurta } from '../../Support/periodos';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     acordos: { type: Object, required: true },
@@ -76,7 +77,7 @@ const badge = (a) => ({ Cumprido: 'badge-light-success', 'Em atraso': 'badge-lig
                             </tr>
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
-                            <tr v-if="acordos.data.length === 0"><td colspan="8" class="text-center text-muted py-6">Nenhum acordo encontrado.</td></tr>
+                            <tr v-if="acordos.data.length === 0"><td colspan="8"><EstadoVazio titulo="Nenhum acordo encontrado." /></td></tr>
                             <tr v-for="a in acordos.data" :key="a.id">
                                 <td class="text-gray-800">#{{ a.id }}</td>
                                 <td class="text-gray-800"><span class="text-uppercase">{{ a.aluno_nome ?? '—' }}</span><div class="text-muted fs-7">nº {{ a.aluno_numero ?? '—' }} · matrícula {{ a.matricula_numero }}</div></td>

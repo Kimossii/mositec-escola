@@ -1,6 +1,7 @@
 <script setup>
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { tipoPeriodoLabel } from '../../Models/AnoLectivo';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 defineProps({
     periodos: { type: Array, required: true },
@@ -23,7 +24,7 @@ defineEmits(['editar-periodo', 'eliminar-periodo']);
         </thead>
         <tbody class="text-gray-600 fw-semibold">
             <tr v-if="periodos.length === 0">
-                <td colspan="5" class="text-center text-muted py-6">Nenhum período criado.</td>
+                <td colspan="5"><EstadoVazio titulo="Nenhum período criado." /></td>
             </tr>
             <tr v-for="periodo in periodos" :key="periodo.id">
                 <td>{{ periodo.nome }}</td>

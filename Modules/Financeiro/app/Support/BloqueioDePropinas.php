@@ -31,6 +31,7 @@ class BloqueioDePropinas
             return new Collection();
         }
 
-        return Propina::query()->whereKey($ids)->orderBy('id')->lockForUpdate()->get();
+        // A multa vai já: a distribuição lê-a por propina (multaPendente), e sem isto seria uma query por propina.
+        return Propina::query()->whereKey($ids)->with('multa')->orderBy('id')->lockForUpdate()->get();
     }
 }

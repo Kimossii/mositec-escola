@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('codigo', '429')
+@section('titulo', 'Pedidos a mais')
+@section('mensagem', 'Fez muitos pedidos num curto espaço de tempo. Aguarde um minuto e tente de novo.')
+@section('imagem', 'mosi-a-pensar')

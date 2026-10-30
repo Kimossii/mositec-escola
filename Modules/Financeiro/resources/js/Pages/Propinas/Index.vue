@@ -13,6 +13,7 @@ import GerarPropinasModal from '../../Components/Propinas/GerarPropinasModal.vue
 import { ORIGEM_GERACAO } from '../../Models/Propina';
 import { formatarDinheiro } from '../../Support/dinheiro';
 import { dataCurta, mesAno } from '../../Support/periodos';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const BASE = '/financeiro/propinas';
 
@@ -239,7 +240,7 @@ function gerar(payload) {
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
                             <tr v-if="propinas.data.length === 0">
-                                <td colspan="9" class="text-center text-muted py-6">Nenhuma propina encontrada.</td>
+                                <td colspan="9"><EstadoVazio titulo="Nenhuma propina encontrada." /></td>
                             </tr>
                             <template v-for="propina in propinas.data" :key="propina.id">
                             <tr>
