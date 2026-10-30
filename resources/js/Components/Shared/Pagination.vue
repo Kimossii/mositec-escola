@@ -34,7 +34,7 @@ function ir(url) {
             class="page-item"
             :class="{ active: link.active, disabled: !link.url }"
         >
-            <a href="#" class="page-link" v-html="traduzir(link.label)" @click.prevent="ir(link.url)"></a>
+            <a href="#" class="page-link" @click.prevent="ir(link.url)">{{ traduzir(link.label) }}</a>
         </li>
     </ul>
 </template>
