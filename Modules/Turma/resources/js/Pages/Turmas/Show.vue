@@ -5,6 +5,7 @@ import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { can } from '@/Composables/usePermissoes';
+import { useUsaCursos } from '@/Composables/useUsaCursos';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
@@ -12,6 +13,7 @@ import TurmaFormModal from '../../Components/Turma/TurmaFormModal.vue';
 import AssociarSalaModal from '../../Components/Turma/AssociarSalaModal.vue';
 import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
+const usaCursos = useUsaCursos();
 const props = defineProps({
     turma: { type: Object, required: true },
     salas: { type: Array, required: true },
@@ -149,7 +151,7 @@ function encerrarSala(turmaSala) {
                         <div class="text-muted fs-7 text-uppercase fw-bold mb-1">Nível Académico</div>
                         <div class="fs-6">{{ turma.nivel_academico?.nome ?? '—' }}</div>
                     </div>
-                    <div class="col-md-4 mb-6">
+                    <div v-if="usaCursos" class="col-md-4 mb-6">
                         <div class="text-muted fs-7 text-uppercase fw-bold mb-1">Curso</div>
                         <div class="fs-6">{{ turma.curso?.nome ?? '—' }}</div>
                     </div>

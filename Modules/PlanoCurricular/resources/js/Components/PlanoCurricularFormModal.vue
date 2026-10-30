@@ -1,6 +1,7 @@
 <script setup>
 import { computed, reactive, watch } from 'vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import { useUsaCursos } from '@/Composables/useUsaCursos';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -11,6 +12,7 @@ const props = defineProps({
 });
 const emit = defineEmits(['submit', 'cancelar']);
 
+const usaCursos = useUsaCursos();
 const opcoesCurso = () => [{ value: '', label: 'Sem curso' }, ...props.opcoes.cursos.map((c) => ({ value: c.id, label: c.nome }))];
 const opcoesNiveisAcademicos = computed(() =>
     [...props.opcoes.niveisAcademicos].sort((a, b) => a.ordem - b.ordem).map((n) => ({ value: n.id, label: n.nome })),
@@ -51,7 +53,7 @@ function submeter() {
                             <SelectSolid v-model="form.nivel_academico_id" :options="opcoesNiveisAcademicos" placeholder="Selecione o nível" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.nivel_academico_id">{{ errors.nivel_academico_id }}</div>
                         </div>
-                        <div class="col-md-6 fv-row mb-7">
+                        <div v-if="usaCursos" class="col-md-6 fv-row mb-7">
                             <label class="fw-semibold fs-6 mb-2">Curso</label>
                             <SelectSolid v-model="form.curso_id" :options="opcoesCurso()" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.curso_id">{{ errors.curso_id }}</div>
