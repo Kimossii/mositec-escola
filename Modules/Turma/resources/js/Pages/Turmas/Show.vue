@@ -10,6 +10,7 @@ import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
 import TurmaFormModal from '../../Components/Turma/TurmaFormModal.vue';
 import AssociarSalaModal from '../../Components/Turma/AssociarSalaModal.vue';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     turma: { type: Object, required: true },
@@ -181,7 +182,7 @@ function encerrarSala(turmaSala) {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="!turma.turma_salas?.length">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhuma sala associada.</td>
+                            <td colspan="4"><EstadoVazio titulo="Nenhuma sala associada." /></td>
                         </tr>
                         <tr v-for="turmaSala in turma.turma_salas" :key="turmaSala.id">
                             <td>{{ turmaSala.sala?.codigo }} — {{ turmaSala.sala?.nome }}</td>

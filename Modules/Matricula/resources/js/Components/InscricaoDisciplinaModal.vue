@@ -11,6 +11,7 @@ import {
     estadoInscricaoDisciplinaLabel,
     transicoesDisponiveisInscricaoDisciplina,
 } from '../Models/EstadoInscricaoDisciplina';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -173,7 +174,7 @@ function confirmarEliminacao() {
                             </thead>
                             <tbody class="text-gray-600 fw-semibold">
                                 <tr v-if="!disciplinas.length">
-                                    <td colspan="3" class="text-center text-muted py-6">Nenhuma disciplina inscrita.</td>
+                                    <td colspan="3"><EstadoVazio titulo="Nenhuma disciplina inscrita." /></td>
                                 </tr>
                                 <tr v-for="inscricao in disciplinas" :key="inscricao.id">
                                     <td>{{ inscricao.plano_curricular_disciplina?.disciplina?.nome ?? '—' }}</td>

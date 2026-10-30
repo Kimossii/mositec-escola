@@ -2,6 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 import LayoutPlataforma from '../Components/LayoutPlataforma.vue';
 import { formatarDataHora } from '../Composables/formatarData';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 defineProps({
     contagem: { type: Object, required: true }, // { 1: activas, 2: suspensas, 3: encerradas }
@@ -52,7 +53,7 @@ const CARTOES = [
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="actividade.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Sem actividade registada.</td>
+                            <td colspan="4"><EstadoVazio titulo="Sem actividade registada." /></td>
                         </tr>
                         <tr v-for="registo in actividade" :key="registo.id">
                             <td>{{ formatarDataHora(registo.created_at) }}</td>

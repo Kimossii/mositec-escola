@@ -18,6 +18,7 @@ import InscricaoDisciplinaModal from '../Components/InscricaoDisciplinaModal.vue
 import TrancamentoModal from '../Components/TrancamentoModal.vue';
 import FimDeMatriculaModal from '../Components/FimDeMatriculaModal.vue';
 import { ESTADO_MATRICULA, ESTADO_MATRICULA_LABEL, estadoMatriculaLabel, transicoesDisponiveis } from '../Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     matriculas: { type: Object, required: true }, // paginator: { data, links, ... }
@@ -417,7 +418,7 @@ function confirmarRenovacaoEmMassa() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="matriculas.data.length === 0">
-                            <td colspan="9" class="text-center text-muted py-6">Nenhuma matrícula encontrada.</td>
+                            <td colspan="9"><EstadoVazio titulo="Nenhuma matrícula encontrada." /></td>
                         </tr>
                         <template v-for="matricula in matriculas.data" :key="matricula.id">
                         <tr :class="{ 'bg-light-primary bg-opacity-25': linhasExpandidas.has(matricula.id) }">

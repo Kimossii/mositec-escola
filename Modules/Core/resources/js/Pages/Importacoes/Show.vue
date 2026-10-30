@@ -34,6 +34,12 @@ const cancelar = () => router.post(`/importacoes/${props.importacao.id}/cancelar
 
         <div v-if="importacao.erro_geral" class="alert alert-danger">{{ importacao.erro_geral }}</div>
 
+        <div v-if="importacao.estado === 4 && importacao.importadas > 0 && !importacao.com_erro" class="d-flex flex-column align-items-center text-center mb-6">
+            <img src="/images/mosi/mosi-sucesso.svg" width="130" alt="" />
+            <div class="fs-4 fw-bold mt-2">Importação concluída</div>
+            <div class="text-muted">{{ importacao.importadas }} registo(s) importado(s).</div>
+        </div>
+
         <div class="row g-4 mb-6">
             <div v-for="[rotulo, valor] in [['Linhas no ficheiro', importacao.total], ['Válidas', importacao.validas], ['Já existiam (ignoradas)', importacao.ignoradas], ['Com erro', importacao.com_erro], ['Importadas', importacao.importadas]]" :key="rotulo" class="col-6 col-md">
                 <div class="card card-flush h-100"><div class="card-body py-4"><div class="text-muted fs-8">{{ rotulo }}</div><div class="fs-2 fw-bold">{{ valor }}</div></div></div>

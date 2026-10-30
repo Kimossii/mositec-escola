@@ -8,6 +8,7 @@ import { can } from '@/Composables/usePermissoes';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const BASE = '/financeiro/configuracao/moeda-cambio';
 
@@ -192,7 +193,7 @@ function confirmarEliminacao() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="historico.data.length === 0">
-                            <td colspan="3" class="text-center text-muted py-5">Ainda não registou nenhum câmbio.</td>
+                            <td colspan="3"><EstadoVazio titulo="Ainda não registou nenhum câmbio." /></td>
                         </tr>
                         <tr v-for="linha in historico.data" :key="linha.id">
                             <td>{{ linha.data }}</td>

@@ -8,6 +8,7 @@ import DominiosCard from '../../Components/DominiosCard.vue';
 import RecuperarAdministradorModal from '../../Components/RecuperarAdministradorModal.vue';
 import SenhaTemporariaModal from '../../Components/SenhaTemporariaModal.vue';
 import { formatarDataHora } from '../../Composables/formatarData';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 defineProps({
     escola: { type: Object, required: true },
@@ -123,7 +124,7 @@ onBeforeUnmount(() => {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="auditoria.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Sem actividade registada.</td>
+                            <td colspan="4"><EstadoVazio titulo="Sem actividade registada." /></td>
                         </tr>
                         <tr v-for="registo in auditoria" :key="registo.id">
                             <td>{{ formatarDataHora(registo.created_at) }}</td>

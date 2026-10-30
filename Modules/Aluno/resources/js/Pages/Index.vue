@@ -19,6 +19,7 @@ import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/
 import { estadoMatriculaLabel } from '../../../../Matricula/resources/js/Models/Estado';
 import { formatarDinheiro } from '../../../../Financeiro/resources/js/Support/dinheiro.js';
 import { ESTADO } from '../Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     alunos: { type: Object, required: true }, // paginator: { data, links, ... }
@@ -288,7 +289,7 @@ async function alternarLinha(aluno) {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="alunos.data.length === 0">
-                            <td colspan="5" class="text-center text-muted py-6">Nenhum aluno encontrado.</td>
+                            <td colspan="5"><EstadoVazio titulo="Nenhum aluno encontrado." /></td>
                         </tr>
                         <template v-for="aluno in alunos.data" :key="aluno.id">
                             <tr>

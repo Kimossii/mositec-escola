@@ -13,6 +13,7 @@ import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import { formatarDinheiro } from '../../Support/dinheiro';
 import { dataCurta } from '../../Support/periodos';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const BASE = '/financeiro/bolsas';
 
@@ -158,7 +159,7 @@ function aplicar() {
                             </tr>
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
-                            <tr v-if="bolsas.data.length === 0"><td colspan="7" class="text-center text-muted py-6">Nenhuma bolsa encontrada.</td></tr>
+                            <tr v-if="bolsas.data.length === 0"><td colspan="7"><EstadoVazio titulo="Nenhuma bolsa encontrada." /></td></tr>
                             <tr v-for="b in bolsas.data" :key="b.id">
                                 <td class="text-gray-800"><span class="text-uppercase">{{ b.aluno_nome ?? '—' }}</span><div class="text-muted fs-7">nº {{ b.aluno_numero ?? '—' }}</div></td>
                                 <td class="text-gray-800">{{ b.nome }}<div class="text-muted fs-7">{{ b.motivo }}</div></td>

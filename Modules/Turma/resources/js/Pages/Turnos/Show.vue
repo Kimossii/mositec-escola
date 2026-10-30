@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 defineProps({
     turno: { type: Object, required: true },
@@ -45,7 +46,7 @@ defineOptions({ layout: AppLayout });
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="turno.turno_horarios.length === 0">
-                            <td colspan="2" class="text-center text-muted py-6">Nenhum horário associado a este turno.</td>
+                            <td colspan="2"><EstadoVazio titulo="Nenhum horário associado a este turno." /></td>
                         </tr>
                         <tr v-for="th in turno.turno_horarios" :key="th.id">
                             <td>{{ th.ordem }}</td>
@@ -73,7 +74,7 @@ defineOptions({ layout: AppLayout });
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="turno.turmas.length === 0">
-                            <td colspan="5" class="text-center text-muted py-6">Nenhuma turma associada a este turno.</td>
+                            <td colspan="5"><EstadoVazio titulo="Nenhuma turma associada a este turno." /></td>
                         </tr>
                         <tr v-for="turma in turno.turmas" :key="turma.id">
                             <td>

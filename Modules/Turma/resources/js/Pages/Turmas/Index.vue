@@ -15,6 +15,7 @@ import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
 import TurmaTabs from '../../Components/Shared/TurmaTabs.vue';
 import TurmaFormModal from '../../Components/Turma/TurmaFormModal.vue';
 import { ESTADO } from '../../Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     turmas: { type: Object, required: true }, // paginator: { data, links, ... }
@@ -219,7 +220,7 @@ function confirmarEliminacao() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="turmas.data.length === 0">
-                            <td colspan="6" class="text-center text-muted py-6">Nenhuma turma encontrada.</td>
+                            <td colspan="6"><EstadoVazio titulo="Nenhuma turma encontrada." /></td>
                         </tr>
                         <tr v-for="turma in turmas.data" :key="turma.id">
                             <td>{{ turma.codigo }}</td>

@@ -9,6 +9,7 @@ import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SalaStatusBadge from '../../Components/Sala/SalaStatusBadge.vue';
 import SalaFormModal from '../../Components/Sala/SalaFormModal.vue';
 import { ESTADO_SALA, tipoSalaLabel } from '../../Models/Sala';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 defineProps({
     salas: { type: Array, required: true },
@@ -136,7 +137,7 @@ function confirmarEliminacao() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="salas.length === 0">
-                            <td colspan="5" class="text-center text-muted py-6">Nenhuma sala criada.</td>
+                            <td colspan="5"><EstadoVazio titulo="Nenhuma sala criada." /></td>
                         </tr>
                         <tr v-for="sala in salas" :key="sala.id">
                             <td>{{ sala.codigo }}</td>

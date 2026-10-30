@@ -13,6 +13,7 @@ import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
 import CatalogoItemFormModal from '../../Components/ProdutosServicos/CatalogoItemFormModal.vue';
 import { ESTADO } from '../../Models/Estado';
 import { formatarDinheiro } from '../../Support/dinheiro';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const LISTA = '/financeiro/configuracao/produtos-servicos';
 const BASE = { produto: '/financeiro/configuracao/produtos', servico: '/financeiro/configuracao/servicos' };
@@ -185,7 +186,7 @@ function confirmarEliminacao() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="itens.data.length === 0">
-                            <td colspan="6" class="text-center text-muted py-6">Nenhum item encontrado.</td>
+                            <td colspan="6"><EstadoVazio titulo="Nenhum item encontrado." /></td>
                         </tr>
                         <tr v-for="item in itens.data" :key="`${item.tipo}-${item.id}`">
                             <td>{{ item.codigo ?? '—' }}</td>
