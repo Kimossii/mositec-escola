@@ -521,6 +521,7 @@ const areaProfessor = {
     paths: 2,
     items: [
         { href: '/professor/turmas', title: 'As minhas turmas', permissao: 'area-professor.ver' },
+        { href: '/professor/alunos', title: 'Os meus alunos', permissao: 'area-professor.ver' },
     ],
 }
 

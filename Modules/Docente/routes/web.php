@@ -32,3 +32,10 @@ Route::middleware(['auth', 'can:area-professor.ver'])->prefix('professor/turmas'
     Route::get('/', [AreaProfessorController::class, 'index'])->name('index');
     Route::get('/{turma}/disciplinas/{disciplina}/alunos', [AreaProfessorController::class, 'alunos'])->whereNumber(['turma', 'disciplina'])->name('alunos');
 });
+
+// Lista única dos alunos do professor e ficha limitada: só alunos das suas turmas/disciplinas em vigor.
+Route::middleware(['auth', 'can:area-professor.ver'])->prefix('professor/alunos')->name('area-professor.alunos-')->group(function () {
+    Route::get('/', [AreaProfessorController::class, 'meusAlunos'])->name('index');
+    Route::get('/{aluno}/foto', [AreaProfessorController::class, 'foto'])->whereNumber('aluno')->name('foto');
+    Route::get('/{aluno}', [AreaProfessorController::class, 'ficha'])->whereNumber('aluno')->name('ficha');
+});

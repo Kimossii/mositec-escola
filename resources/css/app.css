@@ -248,6 +248,16 @@ html[data-bs-theme='light'] .form-select.form-select-solid.focus {
     color: #000000;
 }
 
+/* Seta dos selects: o cinza do tema (#7E8299 no claro, #6D6D80 no escuro) quase some sobre o fundo "solid".
+   Só se escurece/clareia o traço da seta; o resto do select fica como o tema o traz. */
+html[data-bs-theme='light'] .form-select {
+    --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23252F4A' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+html[data-bs-theme='dark'] .form-select {
+    --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23B5B7C8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
 /* Botão "Concedido" da grelha de permissões individuais: o verde padrão do
    Metronic (.btn-light-success) fica pouco visível no modo claro; no modo
    escuro já está bem. Reforça só a cor no claro. */
