@@ -50,6 +50,12 @@ class TurmaRotuloTest extends TestCase
         $this->assertSame('Turma 10.ª A', $turma->rotulo(true));
     }
 
+    public function test_completo_nao_repete_o_turno_que_ja_esta_no_nome(): void
+    {
+        $this->assertSame('Turma 6.ª Classe - Manhã · 2026/2027', $this->turma('6.ª Classe - Manhã')->rotulo(true));
+        $this->assertSame('Turma 6.ª Classe - MANHÃ · 2026/2027', $this->turma('6.ª Classe - MANHÃ')->rotulo(true));
+    }
+
     public function test_sem_nome_usa_o_codigo(): void
     {
         $this->assertSame('Turma T-1', (new Turma(['codigo' => 'T-1']))->rotulo());

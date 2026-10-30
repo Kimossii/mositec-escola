@@ -54,7 +54,7 @@ class AreaProfessorService
      */
     public function alunos(int $turmaId, int $disciplinaId): array
     {
-        $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome'])->findOrFail($turmaId);
+        $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,nome', 'curso:id,nome'])->findOrFail($turmaId);
         $disciplina = Disciplina::query()->findOrFail($disciplinaId);
 
         $alunos = Matricula::query()
@@ -75,8 +75,14 @@ class AreaProfessorService
             ->values()
             ->all();
 
+        $rotulo = $turma->rotulo(completo: true);
+        $nivel = trim((string) $turma->nivelAcademico?->nome);
+
         return [
-            'turma_rotulo' => $turma->rotulo(completo: true),
+            'turma_rotulo' => $rotulo,
+            // Nível só se o nome da turma ainda não o diz; curso só quando a turma tem (uma 6.ª classe não tem).
+            'nivel' => $nivel !== '' && mb_stripos($rotulo, $nivel) === false ? $nivel : null,
+            'curso' => $turma->curso?->nome,
             'disciplina_nome' => (string) $disciplina->nome,
             'alunos' => $alunos,
         ];

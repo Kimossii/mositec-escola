@@ -49,7 +49,7 @@ class AreaProfessorHttpTest extends TestCase
             ->where('turmas.0.disciplinas.0.disciplina_id', $c['disciplina']->id));
 
         $this->get("/professor/turmas/{$c['turma']->id}/disciplinas/{$c['disciplina']->id}/alunos")
-            ->assertInertia(fn (Assert $p) => $p->component('Docente/AreaProfessor/Alunos')->has('alunos', 0));
+            ->assertInertia(fn (Assert $p) => $p->component('Docente/AreaProfessor/Alunos')->has('alunos', 0)->has('nivel')->has('curso')->where('disciplina_nome', $c['disciplina']->nome));
 
         $this->get("/professor/turmas/{$c['turma']->id}/disciplinas/{$c['outraDisciplina']->id}/alunos")->assertForbidden();
     }
