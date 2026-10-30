@@ -1,6 +1,6 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import AvatarUtilizador from '@/Components/Shared/AvatarUtilizador.vue';
 import { iniciais } from './iniciais';
 
@@ -13,8 +13,8 @@ defineOptions({ layout: AppLayout });
 <template>
     <div class="app-container container-fluid">
         <div class="mb-6">
-            <Link href="/professor/alunos" class="text-muted fs-7">← Os meus alunos</Link>
-            <div class="d-flex align-items-center gap-4 mt-3">
+            <BotaoVoltar href="/professor/alunos" />
+            <div class="d-flex align-items-center gap-4">
                 <AvatarUtilizador :foto="aluno.foto_url" :iniciais="iniciais(aluno.nome)" tamanho="symbol-75px" circulo />
                 <div>
                     <h1 class="fs-2 fw-bold mb-1">{{ aluno.nome }}</h1>

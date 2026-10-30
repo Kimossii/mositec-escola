@@ -1,7 +1,8 @@
 <script setup>
 import { onBeforeUnmount, ref, watch } from 'vue';
-import { Link, router, usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import LayoutPlataforma from '../../Components/LayoutPlataforma.vue';
+import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import EstadoBadge from '../../Components/EstadoBadge.vue';
 import AcoesCicloDeVida from '../../Components/AcoesCicloDeVida.vue';
 import DominiosCard from '../../Components/DominiosCard.vue';
@@ -45,6 +46,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div>
+        <BotaoVoltar href="/plataforma/escolas" />
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-6">
             <div class="d-flex align-items-center gap-4">
                 <h1 class="fs-2 fw-bold mb-0">{{ escola.nome }}</h1>
@@ -60,7 +62,6 @@ onBeforeUnmount(() => {
                     Recuperar administrador
                 </button>
                 <AcoesCicloDeVida :escola="escola" />
-                <Link href="/plataforma/escolas" class="btn btn-light">Voltar</Link>
             </div>
         </div>
 

@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 
 const props = defineProps({
     importacao: { type: Object, required: true },
@@ -27,8 +28,8 @@ const cancelar = () => router.post(`/importacoes/${props.importacao.id}/cancelar
 <template>
     <div class="app-container container-xxl py-6">
         <div class="mb-6">
-            <Link href="/importacoes" class="text-muted fs-7">← Importações</Link>
-            <h1 class="fs-2 fw-bold mb-1 mt-2">Importação de {{ importacao.titulo }}</h1>
+            <BotaoVoltar href="/importacoes" />
+            <h1 class="fs-2 fw-bold mb-1">Importação de {{ importacao.titulo }}</h1>
             <div class="text-muted">{{ importacao.nome_ficheiro }} <span class="badge ms-2" :class="ESTADO[importacao.estado]">{{ importacao.estado_texto }}</span></div>
         </div>
 
