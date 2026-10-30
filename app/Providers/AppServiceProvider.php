@@ -33,6 +33,10 @@ class AppServiceProvider extends ServiceProvider
             logger()->warning('N+1: relação carregada em ciclo', ['modelo' => $modelo::class, 'relacao' => $relacao]);
         });
 
+        // Por utilizador (ou IP): travam um cliente em ciclo ou um script, sem incomodar o uso normal.
+        RateLimiter::for('pesquisa', fn ($request) => Limit::perMinute(120)->by($request->user()?->id ?: $request->ip()));
+        RateLimiter::for('operacao-pesada', fn ($request) => Limit::perMinute(20)->by($request->user()?->id ?: $request->ip()));
+
         RateLimiter::for('api', function ($request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });

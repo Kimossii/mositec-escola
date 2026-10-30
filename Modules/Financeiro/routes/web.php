@@ -118,10 +118,10 @@ Route::middleware(['auth'])->prefix('financeiro/cobrancas')->name('financeiro.co
 
 Route::middleware(['auth'])->prefix('financeiro')->name('financeiro.')->group(function () {
     Route::get('/dividas', [DividaController::class, 'index'])->middleware('can:propina.ver')->name('dividas.index');
-    Route::get('/dividas/exportar', [DividaController::class, 'exportar'])->middleware('can:pagamento.exportar')->name('dividas.exportar');
+    Route::get('/dividas/exportar', [DividaController::class, 'exportar'])->middleware(['can:pagamento.exportar', 'throttle:operacao-pesada'])->name('dividas.exportar');
     Route::get('/recibos', [ReciboController::class, 'index'])->middleware('can:pagamento.ver')->name('recibos.index');
     Route::get('/relatorios', [RelatorioFinanceiroController::class, 'index'])->middleware('can:pagamento.exportar')->name('relatorios.index');
-    Route::get('/relatorios/recebimentos/exportar', [RelatorioFinanceiroController::class, 'exportarRecebimentos'])->middleware('can:pagamento.exportar')->name('relatorios.recebimentos');
+    Route::get('/relatorios/recebimentos/exportar', [RelatorioFinanceiroController::class, 'exportarRecebimentos'])->middleware(['can:pagamento.exportar', 'throttle:operacao-pesada'])->name('relatorios.recebimentos');
 });
 
 Route::middleware(['auth'])->prefix('financeiro/bolsas')->name('financeiro.bolsas.')->group(function () {
