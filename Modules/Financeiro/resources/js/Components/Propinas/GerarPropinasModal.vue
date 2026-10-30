@@ -156,6 +156,9 @@ function confirmar() {
                 <h3 class="mb-5">Gerar propinas</h3>
 
                 <template v-if="resultado">
+                    <div v-if="resultado.totais.criadas > 0" class="text-center mb-4">
+                        <img src="/images/mosi/mosi-parabens.svg" width="90" alt="" />
+                    </div>
                     <ResultadoGeracao :resultado="resultado" :moeda="moeda" />
                     <div class="text-end mt-5">
                         <button type="button" class="btn btn-primary" @click="emit('cancelar')">Fechar</button>

@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import Loader from '@/Components/Shared/Loader.vue';
 import LayoutPlataforma from '../../Components/LayoutPlataforma.vue';
+import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 
 defineOptions({ layout: LayoutPlataforma });
 
@@ -40,9 +41,9 @@ function submit() {
 
 <template>
     <div>
-        <div class="d-flex justify-content-between align-items-center mb-6">
+        <BotaoVoltar href="/plataforma/escolas" />
+        <div class="mb-6">
             <h1 class="fs-2 fw-bold">Nova escola</h1>
-            <Link href="/plataforma/escolas" class="btn btn-light">Voltar</Link>
         </div>
 
         <div class="card">

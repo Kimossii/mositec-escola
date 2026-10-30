@@ -11,6 +11,7 @@ import Pagination from '@/Components/Shared/Pagination.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import DisciplinaFormModal from '../Components/DisciplinaFormModal.vue';
 import { ESTADO } from '../Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     disciplinas: { type: Object, required: true }, // paginator: { data, links, ... }
@@ -158,7 +159,7 @@ function confirmarAlteracaoEstado() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="disciplinas.data.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhuma disciplina encontrada.</td>
+                            <td colspan="4"><EstadoVazio titulo="Nenhuma disciplina encontrada." /></td>
                         </tr>
                         <tr v-for="disciplina in disciplinas.data" :key="disciplina.id">
                             <td>

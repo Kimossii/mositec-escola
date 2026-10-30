@@ -94,7 +94,8 @@ class Turma extends Model
             foreach (['turno', 'anoLectivo'] as $relacao) {
                 $parte = $this->relationLoaded($relacao) ? trim((string) $this->getRelation($relacao)?->nome) : '';
 
-                if ($parte !== '') {
+                // «6.ª Classe - Manhã» já diz o turno: repeti-lo daria «… - Manhã · Manhã».
+                if ($parte !== '' && mb_stripos($nome, $parte) === false) {
                     $partes[] = $parte;
                 }
             }

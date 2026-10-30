@@ -12,6 +12,7 @@ import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import EstadoCobrancaBadge from '../../Components/Shared/EstadoCobrancaBadge.vue';
 import { formatarDinheiro } from '../../Support/dinheiro';
 import { dataCurta } from '../../Support/periodos';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const BASE = '/financeiro/cobrancas';
 
@@ -100,7 +101,7 @@ watch(filtros, (valor) => {
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
                             <tr v-if="cobrancas.data.length === 0">
-                                <td colspan="9" class="text-center text-muted py-6">Nenhuma cobrança encontrada.</td>
+                                <td colspan="9"><EstadoVazio titulo="Nenhuma cobrança encontrada." /></td>
                             </tr>
                             <tr v-for="c in cobrancas.data" :key="c.id">
                                 <td class="text-gray-800">#{{ c.id }}</td>

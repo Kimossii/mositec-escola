@@ -72,6 +72,52 @@ class RotasEscritaAutorizadasTest extends TestCase
         );
     }
 
+    /**
+     * Leituras sem `can:` no grupo: auto-serviço do utilizador, ou autorização feita dentro do controller/serviço
+     * (importações, pesquisa por permissão de cada resultado). O painel da Plataforma tem a sua fronteira em FronteiraRotasTest.
+     */
+    private const LEITURAS_ISENTAS = [
+        '/', 'login', 'alterar-senha', 'calendario-vencimentos', 'pesquisa',
+        'definicoes', 'definicoes/foto',
+        'ficheiros', 'ficheiros/pasta/descarregar', 'ficheiros/{pedido}/descarregar', 'ficheiros/{pedido}/destinatarios',
+        'importacoes', 'importacoes/{entidade}/modelo', 'importacoes/{entidade}/nova', 'importacoes/{importacao}', 'importacoes/{importacao}/erros',
+    ];
+
+    public function test_toda_leitura_autenticada_tem_can_ou_authorize_no_controller_ou_esta_isenta(): void
+    {
+        $semAutorizacao = [];
+
+        foreach (Route::getRoutes() as $rota) {
+            if (!in_array('GET', $rota->methods(), true) || !$this->eAutenticada($rota)) {
+                continue;
+            }
+            if (str_starts_with($rota->uri(), 'plataforma') || in_array($rota->uri(), self::LEITURAS_ISENTAS, true) || str_starts_with($rota->getActionName(), 'Laravel\\Fortify\\')) {
+                continue;
+            }
+            if ($this->temMiddlewareCan($rota) || $this->temAutorizacaoVerificavel($rota)) {
+                continue;
+            }
+
+            $semAutorizacao[] = "{$rota->uri()} => {$rota->getActionName()}";
+        }
+
+        $this->assertEmpty(
+            $semAutorizacao,
+            "Leituras autenticadas sem 'can:' nem authorize no controller (e fora da lista de isenções):\n" . implode("\n", $semAutorizacao)
+        );
+    }
+
+    private function eAutenticada(RotaRegistada $rota): bool
+    {
+        foreach ($rota->gatherMiddleware() as $m) {
+            if (is_string($m) && ($m === 'auth' || str_starts_with($m, 'auth:'))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function eEscritaAutenticada(RotaRegistada $rota): bool
     {
         $metodos = array_diff($rota->methods(), ['HEAD']);

@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('codigo', '419')
+@section('titulo', 'A sessão expirou')
+@section('mensagem', 'Passou demasiado tempo sem actividade. Volte atrás, recarregue a página e tente de novo.')
+@section('imagem', 'mosi-a-pensar')

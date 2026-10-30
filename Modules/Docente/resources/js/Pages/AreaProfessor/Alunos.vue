@@ -1,10 +1,12 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 
 defineProps({
     turma_rotulo: { type: String, required: true },
     disciplina_nome: { type: String, required: true },
+    nivel: { type: String, default: null }, // só quando o nome da turma não o diz
+    curso: { type: String, default: null }, // só turmas de curso
     alunos: { type: Array, required: true }, // [{ matricula_id, aluno_id, numero_matricula, nome }]
 });
 defineOptions({ layout: AppLayout });
@@ -13,9 +15,10 @@ defineOptions({ layout: AppLayout });
 <template>
     <div class="app-container container-fluid">
         <div class="mb-6">
-            <Link href="/professor/turmas" class="text-muted fs-7">← As minhas turmas</Link>
-            <h1 class="fs-2 fw-bold mb-1 mt-2">{{ disciplina_nome }}</h1>
-            <div class="text-muted">{{ turma_rotulo }} · {{ alunos.length }} {{ alunos.length === 1 ? 'aluno' : 'alunos' }}</div>
+            <BotaoVoltar href="/professor/turmas" />
+            <div class="text-muted fs-8 text-uppercase fw-bold">Disciplina</div>
+            <h1 class="fs-2 fw-bold mb-1">{{ disciplina_nome }}</h1>
+            <div class="text-muted">{{ [turma_rotulo, nivel, curso ? `Curso: ${curso}` : null].filter(Boolean).join(' · ') }} · {{ alunos.length }} {{ alunos.length === 1 ? 'aluno' : 'alunos' }}</div>
         </div>
 
         <div class="card card-flush">

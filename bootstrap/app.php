@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use App\Http\Middleware\CabecalhosDeSeguranca;
 use Modules\Autenticacao\Http\Middleware\ExigirTrocaDeSenha;
 use Modules\Autenticacao\Http\Middleware\VerificarTenantDaSessao;
 use Modules\Core\Tenancy\Http\Middleware\ExigirTenantNoContexto;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // EnsureFrontendRequestsAreStateful (que inicia a sessão e autentica)
         // à frente de tudo o que o grupo registe.
         $middleware->append(ResolverTenant::class);
+        $middleware->append(CabecalhosDeSeguranca::class);
 
         // Os dois mundos: `web` e `api` são a escola e exigem tenant resolvido (ExigirTenantNoContexto
         // é o primeiro de cada grupo, antes até do Sanctum, que iniciaria a sessão); `plataforma` é o

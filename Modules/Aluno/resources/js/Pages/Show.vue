@@ -19,6 +19,7 @@ import MatriculaFormModal from '../../../../Matricula/resources/js/Components/Ma
 import InscricaoDisciplinaModal from '../../../../Matricula/resources/js/Components/InscricaoDisciplinaModal.vue';
 import DocumentoPessoaModal from '../../../../Usuario/resources/js/Components/DocumentoPessoaModal.vue';
 import { ESTADO_MATRICULA, estadoMatriculaBadgeClass, estadoMatriculaLabel, estadoMatriculaTerminal, transicoesDisponiveis } from '../../../../Matricula/resources/js/Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     aluno: { type: Object, required: true },
@@ -746,10 +747,10 @@ function confirmarEliminacao() {
                             </thead>
                             <tbody class="text-gray-600 fw-semibold">
                                 <tr v-if="situacaoPropinas.periodos.length === 0">
-                                    <td colspan="7" class="text-center text-muted py-6">Sem propinas registadas.</td>
+                                    <td colspan="7"><EstadoVazio titulo="Sem propinas registadas." /></td>
                                 </tr>
                                 <tr v-else-if="periodosFiltrados.length === 0">
-                                    <td colspan="7" class="text-center text-muted py-6">Nenhum período corresponde ao filtro.</td>
+                                    <td colspan="7"><EstadoVazio titulo="Nenhum período corresponde ao filtro." /></td>
                                 </tr>
                                 <tr v-for="periodo in periodosDaPagina" :key="periodo.periodo">
                                     <td class="text-gray-800">{{ periodo.periodo }}</td>
@@ -856,7 +857,7 @@ function confirmarEliminacao() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="!matriculas.data.length">
-                            <td colspan="6" class="text-center text-muted py-6">Nenhuma matrícula encontrada.</td>
+                            <td colspan="6"><EstadoVazio titulo="Nenhuma matrícula encontrada." /></td>
                         </tr>
                         <tr v-for="matricula in matriculas.data" :key="matricula.id">
                             <td>{{ matricula.numero_registo_matricula }}</td>

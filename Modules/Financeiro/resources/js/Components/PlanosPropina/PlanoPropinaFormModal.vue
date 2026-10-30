@@ -3,6 +3,7 @@ import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import { useUsaCursos } from '@/Composables/useUsaCursos';
 import { unidadesMenoresParaDecimal } from '../../Support/dinheiro';
 import { dataCurta, mesesDeDatas, rotuloCompetencia } from '../../Support/periodos';
 
@@ -41,6 +42,7 @@ const form = reactive({
 
 const opcoesAno = computed(() => props.anosLectivos.map((a) => ({ value: a.id, label: a.nome })));
 const opcoesNivel = computed(() => [{ value: '', label: 'Todos os níveis' }, ...props.niveis.map((n) => ({ value: n.id, label: n.nome }))]);
+const usaCursos = useUsaCursos();
 const opcoesCurso = computed(() => [{ value: '', label: 'Todos os cursos' }, ...props.cursos.map((c) => ({ value: c.id, label: c.nome }))]);
 const opcoesTurno = computed(() => [{ value: '', label: 'Todos os turnos' }, ...props.turnos.map((t) => ({ value: t.id, label: t.rotulo }))]);
 const opcoesTurma = computed(() => [
@@ -271,10 +273,10 @@ function enviar(confirmado) {
                             <div class="col-md-2 text-end"><span class="badge badge-light-warning">Eliminado</span></div>
                           </template>
                           <template v-else>
-                            <div class="col-md-2"><SelectSolid :model-value="alvo.nivel_academico_id" :options="opcoesNivel" @update:model-value="(v) => definirCampo(alvo, 'nivel_academico_id', v)" /></div>
-                            <div class="col-md-3"><SelectSolid :model-value="alvo.curso_id" :options="opcoesCurso" @update:model-value="(v) => definirCampo(alvo, 'curso_id', v)" /></div>
-                            <div class="col-md-2"><SelectSolid :model-value="alvo.turno_id" :options="opcoesTurno" @update:model-value="(v) => definirCampo(alvo, 'turno_id', v)" /></div>
-                            <div class="col-md-3"><SelectSolid :model-value="alvo.turma_id" :options="opcoesTurma" searchable @update:model-value="(v) => definirCampo(alvo, 'turma_id', v)" /></div>
+                            <div :class="usaCursos ? 'col-md-2' : 'col-md-3'"><SelectSolid :model-value="alvo.nivel_academico_id" :options="opcoesNivel" @update:model-value="(v) => definirCampo(alvo, 'nivel_academico_id', v)" /></div>
+                            <div v-if="usaCursos" class="col-md-3"><SelectSolid :model-value="alvo.curso_id" :options="opcoesCurso" @update:model-value="(v) => definirCampo(alvo, 'curso_id', v)" /></div>
+                            <div :class="usaCursos ? 'col-md-2' : 'col-md-3'"><SelectSolid :model-value="alvo.turno_id" :options="opcoesTurno" @update:model-value="(v) => definirCampo(alvo, 'turno_id', v)" /></div>
+                            <div :class="usaCursos ? 'col-md-3' : 'col-md-4'"><SelectSolid :model-value="alvo.turma_id" :options="opcoesTurma" searchable @update:model-value="(v) => definirCampo(alvo, 'turma_id', v)" /></div>
                             <div class="col-md-2 text-end">
                                 <button type="button" class="btn btn-sm btn-light-danger" @click="removerAlvo(indice)"><AcaoIcone acao="remover" herda-cor class="me-1" /> Remover</button>
                             </div>

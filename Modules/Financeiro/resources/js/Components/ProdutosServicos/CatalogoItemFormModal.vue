@@ -4,6 +4,9 @@ import { computed, reactive, watch } from 'vue';
 import { unidadesMenoresParaDecimal } from '../../Support/dinheiro';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import ListaDeAlvos from './ListaDeAlvos.vue';
+import { useUsaCursos } from '@/Composables/useUsaCursos';
+
+const usaCursos = useUsaCursos();
 
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -124,8 +127,8 @@ watch(() => props.show, (show) => {
                             </div>
                             <div class="fw-semibold fs-6 mb-2">Aplica-se a (sem escolha = todos)</div>
                             <div class="row g-4">
-                                <div class="col-md-6"><ListaDeAlvos v-model="form.alvos_niveis" titulo="Níveis" :itens="opcoes.niveis" /></div>
-                                <div class="col-md-6"><ListaDeAlvos v-model="form.alvos_cursos" titulo="Cursos" :itens="opcoes.cursos" /></div>
+                                <div :class="usaCursos ? 'col-md-6' : 'col-12'"><ListaDeAlvos v-model="form.alvos_niveis" titulo="Níveis" :itens="opcoes.niveis" /></div>
+                                <div v-if="usaCursos" class="col-md-6"><ListaDeAlvos v-model="form.alvos_cursos" titulo="Cursos" :itens="opcoes.cursos" /></div>
                             </div>
                         </template>
                     </div>

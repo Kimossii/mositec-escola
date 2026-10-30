@@ -7,6 +7,7 @@ import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
+import { useUsaCursos } from '@/Composables/useUsaCursos';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
@@ -15,6 +16,7 @@ import EstadoBadge from '../../Components/Shared/EstadoBadge.vue';
 import TurmaTabs from '../../Components/Shared/TurmaTabs.vue';
 import TurmaFormModal from '../../Components/Turma/TurmaFormModal.vue';
 import { ESTADO } from '../../Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     turmas: { type: Object, required: true }, // paginator: { data, links, ... }
@@ -62,11 +64,13 @@ const filtros = reactive({
     estado: props.filtros.estado ?? '',
 });
 
+const usaCursos = useUsaCursos();
+
 const montarIndicadores = (i) => [
     { rotulo: 'Turmas', valor: String(i.total), nota: 'no ano lectivo escolhido', cor: 'primary' },
     { rotulo: 'Activas', valor: String(i.activas), nota: 'a funcionar', cor: 'success' },
     { rotulo: 'Inactivas', valor: String(i.inactivas), nota: 'desactivadas', cor: 'danger' },
-    { rotulo: 'Cursos com turmas', valor: String(i.cursos), nota: 'distintos', cor: 'info' },
+    ...(usaCursos.value ? [{ rotulo: 'Cursos com turmas', valor: String(i.cursos), nota: 'distintos', cor: 'info' }] : []),
 ];
 const filtrosAtivos = computed(() => [filtros.curso_id, filtros.nivel_academico_id, filtros.turno_id, filtros.estado].filter((v) => v !== '').length);
 const limparFiltros = () => { filtros.curso_id = ''; filtros.nivel_academico_id = ''; filtros.turno_id = ''; filtros.estado = ''; };
@@ -193,11 +197,11 @@ function confirmarEliminacao() {
             </div>
         </div>
 
-        <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" :quantidade="4" />
+        <IndicadoresDiferidos :indicadores="indicadores" :montar="montarIndicadores" :quantidade="usaCursos ? 4 : 3" />
 
         <FiltrosRecolhiveis v-model="filtros.pesquisa" placeholder="Pesquisar por código ou nome" :ativos="filtrosAtivos" @limpar="limparFiltros">
             <div class="col-6 col-md-4 col-xl-3"><label class="fw-semibold fs-7 text-muted mb-1">Ano Lectivo</label><SelectSolid v-model="filtros.ano_lectivo_id" :options="opcoesAnoLectivo" /></div>
-            <div class="col-6 col-md-4 col-xl-3"><label class="fw-semibold fs-7 text-muted mb-1">Curso</label><SelectSolid v-model="filtros.curso_id" :options="opcoesCurso" searchable /></div>
+            <div v-if="usaCursos" class="col-6 col-md-4 col-xl-3"><label class="fw-semibold fs-7 text-muted mb-1">Curso</label><SelectSolid v-model="filtros.curso_id" :options="opcoesCurso" searchable /></div>
             <div class="col-6 col-md-4 col-xl-3"><label class="fw-semibold fs-7 text-muted mb-1">Nível Académico</label><SelectSolid v-model="filtros.nivel_academico_id" :options="opcoesNivelAcademico" searchable /></div>
             <div class="col-6 col-md-4 col-xl-3"><label class="fw-semibold fs-7 text-muted mb-1">Turno</label><SelectSolid v-model="filtros.turno_id" :options="opcoesTurno" /></div>
             <div class="col-6 col-md-4 col-xl-3"><label class="fw-semibold fs-7 text-muted mb-1">Estado</label><SelectSolid v-model="filtros.estado" :options="opcoesEstado" /></div>
@@ -211,7 +215,7 @@ function confirmarEliminacao() {
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th class="min-w-100px">Código</th>
                             <th class="min-w-200px">Nome</th>
-                            <th class="min-w-150px">Curso</th>
+                            <th v-if="usaCursos" class="min-w-150px">Curso</th>
                             <th class="min-w-100px">Ano Lectivo</th>
                             <th class="min-w-125px">Estado</th>
                             <th class="text-end min-w-125px">Ações</th>
@@ -219,12 +223,12 @@ function confirmarEliminacao() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="turmas.data.length === 0">
-                            <td colspan="6" class="text-center text-muted py-6">Nenhuma turma encontrada.</td>
+                            <td :colspan="usaCursos ? 6 : 5"><EstadoVazio titulo="Nenhuma turma encontrada." /></td>
                         </tr>
                         <tr v-for="turma in turmas.data" :key="turma.id">
                             <td>{{ turma.codigo }}</td>
                             <td>{{ turma.nome }}</td>
-                            <td>{{ turma.curso?.nome ?? '—' }}</td>
+                            <td v-if="usaCursos">{{ turma.curso?.nome ?? '—' }}</td>
                             <td>{{ turma.ano_lectivo?.nome ?? '—' }}</td>
                             <td>
                                 <EstadoBadge :estado="turma.estado" :estado-descricao="turma.estado_descricao" />

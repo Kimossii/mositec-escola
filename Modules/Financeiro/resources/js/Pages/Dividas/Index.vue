@@ -10,6 +10,7 @@ import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import { formatarDinheiro } from '../../Support/dinheiro';
 import { dataCurta } from '../../Support/periodos';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const BASE = '/financeiro/dividas';
 
@@ -100,7 +101,7 @@ watch(filtros, (valor) => {
                             </tr>
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
-                            <tr v-if="dividas.data.length === 0"><td colspan="8" class="text-center text-muted py-6">Sem dívidas para os filtros escolhidos.</td></tr>
+                            <tr v-if="dividas.data.length === 0"><td colspan="8"><EstadoVazio titulo="Sem dívidas para os filtros escolhidos." /></td></tr>
                             <tr v-for="d in dividas.data" :key="d.matricula_id">
                                 <td class="text-gray-800">
                                     <span class="text-uppercase">{{ d.aluno_nome ?? '—' }}</span>

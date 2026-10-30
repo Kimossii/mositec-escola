@@ -9,6 +9,7 @@ import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
+import { useUsaCursos } from '@/Composables/useUsaCursos';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
@@ -19,6 +20,7 @@ import MatriculaEstadoBadge from '../../../../Matricula/resources/js/Components/
 import { estadoMatriculaLabel } from '../../../../Matricula/resources/js/Models/Estado';
 import { formatarDinheiro } from '../../../../Financeiro/resources/js/Support/dinheiro.js';
 import { ESTADO } from '../Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     alunos: { type: Object, required: true }, // paginator: { data, links, ... }
@@ -38,6 +40,8 @@ defineOptions({ layout: AppLayout });
 
 const situacaoPropina = (aluno) => props.situacoesPropinas?.[aluno.id] ?? {};
 
+const usaCursos = useUsaCursos();
+
 // --- Filtros ---
 const CRITERIO_CAMPO = { curso: 'curso_id', turma: 'turma_id', nivel_academico: 'nivel_academico_id' };
 
@@ -50,12 +54,12 @@ function criterioInicial() {
 
 const criterio = ref(criterioInicial());
 
-const opcoesCriterio = [
+const opcoesCriterio = computed(() => [
     { value: '', label: 'Todos' },
-    { value: 'curso', label: 'Curso' },
+    ...(usaCursos.value ? [{ value: 'curso', label: 'Curso' }] : []),
     { value: 'turma', label: 'Turma' },
     { value: 'nivel_academico', label: 'Nível Académico' },
-];
+]);
 
 const opcoesAnoLectivo = computed(() => [
     { value: '', label: 'Todos os anos lectivos' },
@@ -288,7 +292,7 @@ async function alternarLinha(aluno) {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="alunos.data.length === 0">
-                            <td colspan="5" class="text-center text-muted py-6">Nenhum aluno encontrado.</td>
+                            <td colspan="5"><EstadoVazio titulo="Nenhum aluno encontrado." /></td>
                         </tr>
                         <template v-for="aluno in alunos.data" :key="aluno.id">
                             <tr>
@@ -354,7 +358,7 @@ async function alternarLinha(aluno) {
                                                         <MatriculaEstadoBadge :estado="resumosAcademicos[aluno.id].matriculaActual.estado" />
                                                     </div>
                                                     <div class="fs-7 mb-1"><span class="text-muted">Ano Lectivo:</span> {{ resumosAcademicos[aluno.id].matriculaActual.ano_lectivo?.nome ?? '—' }}</div>
-                                                    <div class="fs-7 mb-1"><span class="text-muted">Curso:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma?.curso?.nome ?? '—' }}</div>
+                                                    <div v-if="usaCursos" class="fs-7 mb-1"><span class="text-muted">Curso:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma?.curso?.nome ?? '—' }}</div>
                                                     <div class="fs-7 mb-1"><span class="text-muted">Nível Académico:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma?.nivel_academico?.nome ?? '—' }}</div>
                                                     <div class="fs-7 mb-1"><span class="text-muted">Turma:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma ? rotuloTurma(resumosAcademicos[aluno.id].matriculaActual.turma) : '—' }}</div>
                                                     <div class="fs-7"><span class="text-muted">Turno:</span> {{ resumosAcademicos[aluno.id].matriculaActual.turma?.turno?.nome ?? '—' }}</div>
@@ -403,7 +407,7 @@ async function alternarLinha(aluno) {
                                                 <thead>
                                                     <tr class="text-muted text-uppercase fs-9">
                                                         <th>Turma</th>
-                                                        <th>Curso</th>
+                                                        <th v-if="usaCursos">Curso</th>
                                                         <th>Nível Académico</th>
                                                         <th>Ano Lectivo</th>
                                                         <th>Estado</th>
@@ -413,7 +417,7 @@ async function alternarLinha(aluno) {
                                                 <tbody>
                                                     <tr v-for="matricula in resumosAcademicos[aluno.id].ultimasMatriculas" :key="matricula.id">
                                                         <td>{{ matricula.turma ? rotuloTurma(matricula.turma) : '—' }}</td>
-                                                        <td>{{ matricula.turma?.curso?.nome ?? '—' }}</td>
+                                                        <td v-if="usaCursos">{{ matricula.turma?.curso?.nome ?? '—' }}</td>
                                                         <td>{{ matricula.turma?.nivel_academico?.nome ?? '—' }}</td>
                                                         <td>{{ matricula.ano_lectivo?.nome ?? '—' }}</td>
                                                         <td>{{ estadoMatriculaLabel(matricula.estado) }}</td>

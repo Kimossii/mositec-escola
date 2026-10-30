@@ -5,6 +5,7 @@
 import { computed, ref } from 'vue';
 import axios from 'axios';
 import Loader from '@/Components/Shared/Loader.vue';
+import { useUsaCursos } from '@/Composables/useUsaCursos';
 
 const matricula = defineModel('matricula', { default: '' });
 // { nome, estado, estado_descricao, ja_tem_conta } ou null enquanto não foi encontrado.
@@ -21,6 +22,7 @@ const mensagemPesquisa = ref('');
 const jaTemConta = computed(() => aluno.value?.ja_tem_conta === true);
 // Sem aluno.ver o servidor responde só com nome/estado: nada de linhas vazias nem "—".
 const temDadosCompletos = computed(() => aluno.value !== null && 'data_nascimento' in aluno.value);
+const usaCursos = useUsaCursos();
 const semCursoNemTurma = computed(() => !aluno.value?.curso && !aluno.value?.turma);
 
 // Formata a string ISO (AAAA-MM-DD) sem passar por Date, para não haver desvio de fuso.
@@ -87,7 +89,7 @@ async function procurar() {
                 </div>
                 <div v-if="semCursoNemTurma" class="text-muted fs-7 mb-3">Sem turma ou curso atribuído</div>
                 <div v-else class="row mb-3">
-                    <div class="col-sm-6 mb-3 mb-sm-0">
+                    <div v-if="usaCursos" class="col-sm-6 mb-3 mb-sm-0">
                         <div class="text-muted fs-7 mb-1">Curso</div>
                         <div class="fw-semibold">{{ aluno.curso || '—' }}</div>
                     </div>

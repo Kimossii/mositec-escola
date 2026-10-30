@@ -9,6 +9,7 @@ import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import CursoFormModal from '../Components/CursoFormModal.vue';
 import NovoPlanoCurricularModal from '../Components/PlanosCurriculares/NovoPlanoCurricularModal.vue';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     curso: { type: Object, required: true },
@@ -126,7 +127,7 @@ function guardarPlano(payload) {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="curso.planos_curriculares.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhum plano curricular criado para este curso.</td>
+                            <td colspan="4"><EstadoVazio titulo="Nenhum plano curricular criado para este curso." /></td>
                         </tr>
                         <tr v-for="plano in curso.planos_curriculares" :key="plano.id">
                             <td>

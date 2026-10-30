@@ -474,7 +474,7 @@ const academico = {
     items: [
         { href: '/alunos', title: 'Alunos', permissao: 'aluno.ver' },
         // { href: '#', title: 'Encarregados de Educação' },
-        { href: '/cursos', title: 'Cursos', permissao: 'curso.ver' },
+        { href: '/cursos', title: 'Cursos', permissao: 'curso.ver', soComCursos: true },
         { href: '/turmas', title: 'Turmas', permissao: 'turmas.ver' },
         { href: '/matriculas', title: 'Matrículas', permissao: 'matricula.ver' },
         // { href: '#', title: 'Transferências' },
@@ -521,6 +521,7 @@ const areaProfessor = {
     paths: 2,
     items: [
         { href: '/professor/turmas', title: 'As minhas turmas', permissao: 'area-professor.ver' },
+        { href: '/professor/alunos', title: 'Os meus alunos', permissao: 'area-professor.ver' },
     ],
 }
 

@@ -8,6 +8,7 @@ use Modules\Docente\Models\Docente;
 use Modules\Docente\Tests\Support\CenarioDeDocencia;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
+use Modules\Usuario\Actions\AtualizarUsuarioAction;
 use Modules\Usuario\Actions\UsuarioAction;
 use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Enums\TipoLogin;
@@ -48,6 +49,20 @@ class DocenteSincronizacaoTest extends TestCase
         $this->criarUtilizador(Perfil::ADMIN_ESCOLA, 'a1@example.com');
 
         $this->assertSame(0, Docente::query()->count());
+    }
+
+    public function test_editar_utilizador_para_professor_cria_o_docente_uma_so_vez(): void
+    {
+        $user = $this->criarUtilizador(Perfil::FUNCIONARIO, 'f2@example.com');
+        $this->assertSame(0, Docente::query()->count());
+
+        $actualizar = fn () => app(AtualizarUsuarioAction::class)->atualizar($user->fresh(), [
+            'name' => $user->name, 'email' => $user->email, 'perfil' => Perfil::PROFESSOR->slug(),
+        ]);
+        $actualizar();
+        $actualizar();
+
+        $this->assertSame(1, Docente::query()->count());
     }
 
     public function test_comando_cria_docentes_para_professores_existentes_e_e_idempotente(): void

@@ -14,6 +14,7 @@ import Pagination from '@/Components/Shared/Pagination.vue';
 import EstadoBadge from '../Components/Shared/EstadoBadge.vue';
 import CursoFormModal from '../Components/CursoFormModal.vue';
 import { ESTADO } from '../Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     cursos: { type: Object, required: true }, // paginator: { data, links, ... }
@@ -160,7 +161,7 @@ function confirmarAlteracaoEstado() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="cursos.data.length === 0">
-                            <td colspan="4" class="text-center text-muted py-6">Nenhum curso encontrado.</td>
+                            <td colspan="4"><EstadoVazio titulo="Nenhum curso encontrado." /></td>
                         </tr>
                         <tr v-for="curso in cursos.data" :key="curso.id">
                             <td>

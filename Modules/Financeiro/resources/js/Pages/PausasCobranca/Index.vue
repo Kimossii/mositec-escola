@@ -11,6 +11,7 @@ import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import PausaCobrancaFormModal from '../../Components/PausasCobranca/PausaCobrancaFormModal.vue';
 import { dataCurta } from '../../Support/periodos';
 import { rotuloMes } from '../../Support/pausas';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const BASE = '/financeiro/configuracao/pausas-cobranca';
 
@@ -146,7 +147,7 @@ function confirmarEliminacao() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="pausas.length === 0">
-                            <td colspan="5" class="text-center text-muted py-6">Nenhuma pausa de cobrança neste ano lectivo.</td>
+                            <td colspan="5"><EstadoVazio titulo="Nenhuma pausa de cobrança neste ano lectivo." /></td>
                         </tr>
                         <tr v-for="pausa in pausas" :key="pausa.id">
                             <td class="text-gray-800">{{ pausa.descricao }}</td>

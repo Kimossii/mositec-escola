@@ -11,6 +11,7 @@ import Pagination from '@/Components/Shared/Pagination.vue';
 import { estadoPagamentoBadgeClass } from '../../Models/Pagamento';
 import { formatarDinheiro } from '../../Support/dinheiro';
 import { dataCurta } from '../../Support/periodos';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const BASE = '/financeiro/recibos';
 
@@ -87,7 +88,7 @@ watch(filtros, (valor) => {
                             </tr>
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
-                            <tr v-if="recibos.data.length === 0"><td colspan="7" class="text-center text-muted py-6">Nenhum recibo encontrado.</td></tr>
+                            <tr v-if="recibos.data.length === 0"><td colspan="7"><EstadoVazio titulo="Nenhum recibo encontrado." /></td></tr>
                             <tr v-for="r in recibos.data" :key="r.id">
                                 <td class="text-gray-800">{{ r.numero }}</td>
                                 <td>{{ dataCurta(r.data_pagamento) }}</td>

@@ -1,6 +1,7 @@
 <script setup>
-import { Link, useForm } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 
 const props = defineProps({
     entidade: { type: String, required: true },
@@ -16,8 +17,8 @@ const enviar = () => form.post(`/importacoes/${props.entidade}`, { forceFormData
 <template>
     <div class="app-container container-xxl py-6">
         <div class="mb-6">
-            <Link href="/importacoes" class="text-muted fs-7">← Importações</Link>
-            <h1 class="fs-2 fw-bold mb-1 mt-2">Importar {{ titulo }}</h1>
+            <BotaoVoltar href="/importacoes" />
+            <h1 class="fs-2 fw-bold mb-1">Importar {{ titulo }}</h1>
             <div class="text-muted">Descarregue o modelo, preencha-o e carregue-o. Nada é gravado antes de ver o resultado da validação e confirmar.</div>
         </div>
 

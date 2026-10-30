@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('codigo', '403')
+@section('titulo', 'Sem permissão')
+@section('mensagem', 'Não tem permissão para aceder a esta página. Se precisa dela, peça ao responsável pela sua escola.')
+@section('imagem', 'mosi-erro')

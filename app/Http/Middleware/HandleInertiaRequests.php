@@ -108,6 +108,8 @@ class HandleInertiaRequests extends Middleware
                 ? PedidoExportacao::query()->where('user_id', $request->user()->id)->where('estado', '!=', PedidoExportacao::PENDENTE)->whereNull('visto_em')->count()
                     + PartilhaExportacao::query()->where('destinatario_id', $request->user()->id)->whereNull('visto_em')->count()
                 : 0),
+            // A escola trabalha com cursos? Esconde o menu, filtros e campos de curso das que só têm Creche, Pré-Escolar ou Primário.
+            'usa_cursos' => $request->user() ? Estabelecimento::current()->usaCursos() : true,
             'permissoes' => $request->user()
                 ? app(PermissionResolver::class)->conjuntoConcedido($request->user())
                 : [],

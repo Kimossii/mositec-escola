@@ -9,6 +9,7 @@ import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
 import { can } from '@/Composables/usePermissoes';
+import { useUsaCursos } from '@/Composables/useUsaCursos';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
@@ -18,6 +19,7 @@ import InscricaoDisciplinaModal from '../Components/InscricaoDisciplinaModal.vue
 import TrancamentoModal from '../Components/TrancamentoModal.vue';
 import FimDeMatriculaModal from '../Components/FimDeMatriculaModal.vue';
 import { ESTADO_MATRICULA, ESTADO_MATRICULA_LABEL, estadoMatriculaLabel, transicoesDisponiveis } from '../Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     matriculas: { type: Object, required: true }, // paginator: { data, links, ... }
@@ -90,6 +92,8 @@ function formatarData(data) {
     const [ano, mes, dia] = data.slice(0, 10).split('-');
     return `${dia}/${mes}/${ano}`;
 }
+
+const usaCursos = useUsaCursos();
 
 // --- Colapso de detalhes por linha (curso, nível académico, contacto, auditoria) ---
 // Todos os dados já vêm carregados no payload da listagem (ver eager loading em
@@ -417,7 +421,7 @@ function confirmarRenovacaoEmMassa() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="matriculas.data.length === 0">
-                            <td colspan="9" class="text-center text-muted py-6">Nenhuma matrícula encontrada.</td>
+                            <td colspan="9"><EstadoVazio titulo="Nenhuma matrícula encontrada." /></td>
                         </tr>
                         <template v-for="matricula in matriculas.data" :key="matricula.id">
                         <tr :class="{ 'bg-light-primary bg-opacity-25': linhasExpandidas.has(matricula.id) }">
@@ -543,8 +547,8 @@ function confirmarRenovacaoEmMassa() {
                                 <div class="row g-6">
                                     <div class="col-md-4">
                                         <div class="bg-body-secondary rounded p-4 h-100 text-gray-800">
-                                            <h6 class="fw-bold text-uppercase fs-8 text-muted mb-3">Curso e Nível Académico</h6>
-                                            <div class="fs-7 mb-1"><span class="text-muted">Curso:</span> {{ matricula.turma?.curso?.nome ?? '—' }}</div>
+                                            <h6 class="fw-bold text-uppercase fs-8 text-muted mb-3">{{ usaCursos ? 'Curso e Nível Académico' : 'Nível Académico' }}</h6>
+                                            <div v-if="usaCursos" class="fs-7 mb-1"><span class="text-muted">Curso:</span> {{ matricula.turma?.curso?.nome ?? '—' }}</div>
                                             <div class="fs-7 mb-1"><span class="text-muted">Nível Académico:</span> {{ matricula.turma?.nivel_academico?.nome ?? '—' }}</div>
                                             <div class="fs-7 mb-1"><span class="text-muted">Turno:</span> {{ matricula.turma?.turno?.nome ?? '—' }}</div>
                                             <div v-if="matricula.data_fim" class="fs-7 mb-1"><span class="text-muted">Data Fim:</span> {{ formatarData(matricula.data_fim) }}</div>

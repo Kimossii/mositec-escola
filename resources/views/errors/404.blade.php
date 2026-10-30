@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('codigo', '404')
+@section('titulo', 'Página não encontrada')
+@section('mensagem', 'Procurei por todo o lado e não encontrei esta página. O endereço pode estar errado ou o conteúdo já não existe.')
+@section('imagem', 'mosi-a-pensar')

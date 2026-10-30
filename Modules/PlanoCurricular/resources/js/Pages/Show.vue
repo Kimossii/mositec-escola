@@ -14,6 +14,7 @@ import DisciplinaPlanoFormModal from '../Components/DisciplinaPlanoFormModal.vue
 import ConfirmarAnoLectivoModal from '../Components/ConfirmarAnoLectivoModal.vue';
 import DefinirPeriodosDisciplinaModal from '../Components/DefinirPeriodosDisciplinaModal.vue';
 import { ESTADO } from '../Models/Estado';
+import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 const props = defineProps({
     planoCurricular: { type: Object, required: true },
@@ -375,7 +376,7 @@ function formatarDataHora(valor) {
                     </thead>
                     <tbody v-if="!planoCurricular.disciplinas?.length" class="text-gray-600 fw-semibold">
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-6">Nenhuma disciplina associada a este plano.</td>
+                            <td colspan="7"><EstadoVazio titulo="Nenhuma disciplina associada a este plano." /></td>
                         </tr>
                     </tbody>
                     <tbody v-for="grupo in gruposDisciplinas" :key="grupo.nome" class="text-gray-600 fw-semibold">
@@ -462,7 +463,7 @@ function formatarDataHora(valor) {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="!planoCurricular.anos_lectivos?.length">
-                            <td colspan="5" class="text-center text-muted py-6">Este plano ainda não foi confirmado para nenhum ano lectivo.</td>
+                            <td colspan="5"><EstadoVazio titulo="Este plano ainda não foi confirmado para nenhum ano lectivo." /></td>
                         </tr>
                         <tr v-for="anoLectivo in planoCurricular.anos_lectivos" :key="anoLectivo.id">
                             <td>{{ anoLectivo.ano_lectivo?.nome ?? '—' }}</td>
