@@ -83,8 +83,8 @@ class PlanoCurricularAnoLectivoModelTest extends TestCase
         PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $planoA->id, 'ano_lectivo_id' => $ano2027->id]);
         PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $planoB->id, 'ano_lectivo_id' => $ano2028->id]);
 
-        $this->assertSame(['2026/2027', '2027/2028'], $planoA->fresh()->anosLectivos->pluck('anoLectivo.nome')->all());
-        $this->assertSame(['2028/2029'], $planoB->fresh()->anosLectivos->pluck('anoLectivo.nome')->all());
+        $this->assertSame(['2026/2027', '2027/2028'], $planoA->fresh()->load('anosLectivos.anoLectivo')->anosLectivos->pluck('anoLectivo.nome')->all());
+        $this->assertSame(['2028/2029'], $planoB->fresh()->load('anosLectivos.anoLectivo')->anosLectivos->pluck('anoLectivo.nome')->all());
         // Plano A não foi tocado ao criar o Plano B — mesma instância, mesmos dados.
         $this->assertSame('Plano A', $planoA->fresh()->nome);
     }
