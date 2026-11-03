@@ -29,6 +29,10 @@ class AcaoSeeder extends Seeder
             ['nome' => 'isentar-multa', 'numero' => 11],
             ['nome' => 'trancar', 'numero' => 12],
             ['nome' => 'encerrar', 'numero' => 13],
+            // Avaliação (Modulo::NOTA): excepções de prazo e lançamento fora do prazo.
+            ['nome' => 'prolongar-prazo', 'numero' => 14],
+            ['nome' => 'lancar-fora-prazo', 'numero' => 15],
+            ['nome' => 'configurar', 'numero' => 16],
         ];
 
         foreach ($acoes as $acao) {

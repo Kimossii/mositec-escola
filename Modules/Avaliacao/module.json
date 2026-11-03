@@ -1,0 +1,11 @@
+{
+    "name": "Avaliacao",
+    "alias": "avaliacao",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Avaliacao\\Providers\\AvaliacaoServiceProvider"
+    ],
+    "files": []
+}

@@ -1,0 +1,28 @@
+{
+    "name": "nwidart/avaliacao",
+    "description": "",
+    "authors": [
+        {
+            "name": "Nicolas Widart",
+            "email": "n.widart@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Avaliacao\\": "app/",
+            "Modules\\Avaliacao\\Database\\Factories\\": "database/factories/",
+            "Modules\\Avaliacao\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Avaliacao\\Tests\\": "tests/"
+        }
+    }
+}
