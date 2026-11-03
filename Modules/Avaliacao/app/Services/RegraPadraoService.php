@@ -19,6 +19,12 @@ class RegraPadraoService
         };
     }
 
+    /** 6.ª a 9.ª classes têm exame de recurso, para as disciplinas com nota final abaixo do mínimo. */
+    public function temRecurso(string $codigoNivel): bool
+    {
+        return in_array($codigoNivel, ['PRI_6', 'SEC_7', 'SEC_8', 'SEC_9'], true);
+    }
+
     /** 6.ª e 9.ª classes têm exame próprio; a decisão destas só chega com os exames (fase seguinte). */
     public function temExameProprio(string $codigoNivel): bool
     {

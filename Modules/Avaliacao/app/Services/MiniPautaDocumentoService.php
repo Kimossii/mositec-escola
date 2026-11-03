@@ -48,6 +48,7 @@ class MiniPautaDocumentoService
             ->sortBy(fn (InscricaoDisciplina $i) => mb_strtolower((string) $i->matricula->aluno?->dadosPessoa?->nome_completo))->values();
         $resultados = $this->resultados->calcularTurma($turmaId, $disciplinaId, $inscricoes->pluck('id')->all());
         $comExame = $this->padrao->temExameProprio((string) $turma->nivelAcademico?->codigo);
+        $comRecurso = $this->padrao->temRecurso((string) $turma->nivelAcademico?->codigo);
         $prova = self::rotuloDaProva($turma->nivelAcademico?->codigo);
         $cabecalho = $this->cabecalho->dados();
 
@@ -64,13 +65,16 @@ class MiniPautaDocumentoService
             if ($comExame) {
                 array_push($linha, $mostrar($r->ne), (string) ($r->mfArredondada ?? ''));
             }
+            if ($comRecurso) {
+                array_push($linha, $mostrar($r->ner), (string) ($r->mfrArredondada ?? ''));
+            }
             $linha[] = '';
             $linhas[] = $linha;
         }
 
         $ano = (string) $turma->anoLectivo?->nome;
         $grupos = array_map(fn (string $t, int $n) => ['rotulo' => $t, 'colunas' => ['MAC', $prova, 'MT'.$n]], ['I TRIMESTRE', 'II TRIMESTRE', 'III TRIMESTRE'], [1, 2, 3]);
-        $grupos[] = ['rotulo' => 'FINAL', 'colunas' => $comExame ? ['MFD', 'NE', 'MF'] : ['MFD']];
+        $grupos[] = ['rotulo' => 'FINAL', 'colunas' => [...($comExame ? ['MFD', 'NE', 'MF'] : ['MFD']), ...($comRecurso ? ['NER', 'MFR'] : [])]];
 
         return new DocumentoPauta(
             titulo: 'MINI-PAUTA',

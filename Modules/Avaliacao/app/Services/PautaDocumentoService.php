@@ -25,6 +25,11 @@ class PautaDocumentoService
             default => [['mt1', 'mt2', 'mt3', 'mfd'], ['MT1', 'MT2', 'MT3', 'MFD']],
         };
 
+        if (! $qualitativa && ($pauta['com_recurso'] ?? false)) {
+            $campos = [...$campos, 'ner', 'mfr'];
+            $rotulos = [...$rotulos, 'NER', 'MFR'];
+        }
+
         $linhas = [];
         foreach ($pauta['alunos'] as $i => $aluno) {
             $linha = [(string) ($i + 1), (string) $aluno['nome']];

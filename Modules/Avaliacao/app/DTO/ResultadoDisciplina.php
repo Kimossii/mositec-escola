@@ -26,12 +26,28 @@ readonly class ResultadoDisciplina
         public ?string $mf = null,
         public ?string $mfArredondada = null,
         public bool $temExame = false,
+        public ?string $ner = null,
+        public ?string $mfr = null,
+        public ?string $mfrArredondada = null,
+        public bool $recursoNecessario = false,
+        public bool $recursoEmFalta = false,
     ) {
     }
 
-    /** A nota que vale no fim: a MF depois do exame, ou a MFD nas disciplinas sem exame. */
+    /**
+     * A nota que vale no fim: a MFR se houve recurso (decide mesmo que seja mais baixa que a MF); senão a MF depois do
+     * exame, ou a MFD nas disciplinas sem exame. `null` enquanto falta o que a disciplina ainda exige (incl. o recurso, até ao prazo).
+     */
     public function notaFinalArredondada(): ?string
     {
+        if ($this->mfrArredondada !== null) {
+            return $this->mfrArredondada;
+        }
+
+        if ($this->recursoEmFalta) {
+            return null;
+        }
+
         return $this->temExame ? $this->mfArredondada : $this->mfdArredondada;
     }
 

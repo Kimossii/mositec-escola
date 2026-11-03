@@ -42,6 +42,14 @@ class ExameProprioTest extends TestCase
         $this->actingAs($this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com'));
     }
 
+    /** Dá o prazo do recurso por terminado (antes de «hoje»): uma disciplina abaixo do mínimo sem NER passa a «não realizou». */
+    private function fecharORecurso(): void
+    {
+        app(\Modules\Avaliacao\Actions\DefinirPrazoAction::class)->executar(
+            \Modules\Avaliacao\Models\AvaliacaoRegra::firstOrFail()->id, $this->c['periodos'][3]->id, TipoInstrumento::RECURSO, '2026-03-01',
+        );
+    }
+
     private function mfd(string $nota): void
     {
         $this->notasCompletas($this->c, $this->inscricao, [1 => [$nota, $nota], 2 => [$nota, $nota], 3 => [$nota, $nota]]);
@@ -96,6 +104,7 @@ class ExameProprioTest extends TestCase
     {
         $this->mfd('8');
         $this->exame('2'); // 8×0,4 + 2×0,6 = 4,4 < 5
+        $this->fecharORecurso(); // sem recurso à vista, a MF abaixo do mínimo decide
 
         $this->assertSame('4.40', $this->celula()['mf']);
         $this->assertSame('Não apto', $this->pauta()['alunos'][0]['decisao']['rotulo']);

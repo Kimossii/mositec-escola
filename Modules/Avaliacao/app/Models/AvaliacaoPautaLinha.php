@@ -12,7 +12,7 @@ class AvaliacaoPautaLinha extends Model
 
     protected $table = 'avaliacao_pauta_linhas';
 
-    protected $fillable = ['pauta_id', 'versao', 'inscricao_disciplina_id', 'mt1', 'mt2', 'mt3', 'ne', 'mfd_exacta', 'mfd', 'mf_exacta', 'mf', 'aprovado'];
+    protected $fillable = ['pauta_id', 'versao', 'inscricao_disciplina_id', 'mt1', 'mt2', 'mt3', 'ne', 'mfd_exacta', 'mfd', 'mf_exacta', 'mf', 'ner', 'mfr_exacta', 'mfr', 'aprovado'];
 
     protected $casts = [
         'versao' => 'integer',
@@ -24,6 +24,9 @@ class AvaliacaoPautaLinha extends Model
         'mfd' => 'decimal:4',
         'mf_exacta' => 'decimal:10',
         'mf' => 'decimal:4',
+        'ner' => 'decimal:4',
+        'mfr_exacta' => 'decimal:10',
+        'mfr' => 'decimal:4',
         'aprovado' => 'boolean',
     ];
 }

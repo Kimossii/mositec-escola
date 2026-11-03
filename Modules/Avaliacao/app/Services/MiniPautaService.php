@@ -111,7 +111,7 @@ class MiniPautaService
 
         $instrumentos = AvaliacaoInstrumento::query()
             ->where('turma_id', $turmaId)->where('disciplina_id', $disciplinaId)->where('periodo_id', $periodo->id)
-            ->where('tipo', '!=', TipoInstrumento::EXAME->value)
+            ->whereNotIn('tipo', [TipoInstrumento::EXAME->value, TipoInstrumento::RECURSO->value])
             ->orderBy('tipo')->orderBy('id')->get();
 
         $inscricoes = $this->inscricoes($turmaId, $disciplinaId);
@@ -122,10 +122,14 @@ class MiniPautaService
         $comExame = $periodo->numero === 3 && $this->padrao->temExameProprio((string) $turma->nivelAcademico?->codigo);
         $exame = $comExame ? AvaliacaoInstrumento::query()->where('turma_id', $turmaId)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::EXAME->value)->first() : null;
         $notasExame = $exame === null ? collect() : AvaliacaoNota::query()->where('instrumento_id', $exame->id)->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))->get()->keyBy('inscricao_disciplina_id');
+        // O exame de recurso mostra-se à parte, só no 3.º trimestre, e cria-se na primeira nota (LancarRecursoAction).
+        $comRecurso = $periodo->numero === 3 && $this->padrao->temRecurso((string) $turma->nivelAcademico?->codigo);
+        $recurso = $comRecurso ? AvaliacaoInstrumento::query()->where('turma_id', $turmaId)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::RECURSO->value)->first() : null;
+        $notasRecurso = $recurso === null ? collect() : AvaliacaoNota::query()->where('instrumento_id', $recurso->id)->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))->get()->keyBy('inscricao_disciplina_id');
         $resultados = $this->resultados->calcularTurma($turmaId, $disciplinaId, $inscricoes->pluck('id')->all());
 
         $n = $periodo->numero;
-        $alunos = $inscricoes->map(function (InscricaoDisciplina $i) use ($notas, $resultados, $n, $regra, $notasExame) {
+        $alunos = $inscricoes->map(function (InscricaoDisciplina $i) use ($notas, $resultados, $n, $regra, $notasExame, $notasRecurso) {
             $r = $resultados[$i->id];
 
             return [
@@ -144,6 +148,11 @@ class MiniPautaService
                     'id' => $notasExame[$i->id]->id, 'valor' => $notasExame[$i->id]->valor, 'estado' => $notasExame[$i->id]->estado->value, 'estado_descricao' => $notasExame[$i->id]->estado_descricao,
                 ] : null,
                 'mf' => $r->mfArredondada,
+                'recurso_necessario' => $r->recursoNecessario,
+                'ner' => isset($notasRecurso[$i->id]) ? [
+                    'id' => $notasRecurso[$i->id]->id, 'valor' => $notasRecurso[$i->id]->valor, 'estado' => $notasRecurso[$i->id]->estado->value, 'estado_descricao' => $notasRecurso[$i->id]->estado_descricao,
+                ] : null,
+                'mfr' => $r->mfrArredondada,
             ];
         })->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values()->all();
 
@@ -165,6 +174,7 @@ class MiniPautaService
             ])->all(),
             'alunos' => $alunos,
             'exame' => $comExame ? ['peso_mfd' => $this->semZeros($regra->peso_mfd_exame), 'peso_exame' => $this->semZeros($regra->peso_exame)] : null,
+            'recurso' => $comRecurso ? ['peso_mf' => $this->semZeros($regra->peso_mfd_exame), 'peso_recurso' => $this->semZeros($regra->peso_exame)] : null,
             'prazos' => $prazos,
         ];
     }

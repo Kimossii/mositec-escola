@@ -29,7 +29,7 @@ const novo = reactive({ nome: '', tipo: MAC, obrigatorio: true });
 const aoFalhar = (e) => toast.error(Object.values(e)[0]);
 const tipoDoInstrumento = (i) => (i.tipo === MAC ? 'MAC' : 'PT');
 const encerrado = (i) => props.pauta?.prazos?.[tipoDoInstrumento(i)]?.encerrado ?? false;
-const algumEncerrado = computed(() => (props.pauta?.instrumentos ?? []).some(encerrado) || (props.pauta?.exame && props.pauta.prazos.EXAME.encerrado));
+const algumEncerrado = computed(() => (props.pauta?.instrumentos ?? []).some(encerrado) || (props.pauta?.exame && props.pauta.prazos.EXAME.encerrado) || (props.pauta?.recurso && props.pauta.prazos.RECURSO.encerrado));
 
 function abrir(turmaId, disciplinaId, periodoId = null) {
     if (!turmaId || !disciplinaId) return;
@@ -41,6 +41,18 @@ function textoDaCelula(aluno, instrumento) {
     if (chave in valores) return valores[chave];
     const nota = aluno.notas[instrumento.id];
     return nota?.valor ?? '';
+}
+
+const recursos = reactive({}); // inscricao -> texto da NER
+const textoRecurso = (a) => recursos[a.inscricao_id] ?? a.ner?.valor ?? '';
+
+function guardarRecurso(a) {
+    const texto = (recursos[a.inscricao_id] ?? '').trim().replace(',', '.');
+    if (!(a.inscricao_id in recursos) || texto === '' || texto === a.ner?.valor) return;
+    router.post('/avaliacao/notas/recurso', {
+        turma_id: turma.value, disciplina_id: disciplina.value, inscricao_disciplina_id: a.inscricao_id, valor: texto,
+        motivo: props.pauta.prazos.RECURSO.encerrado ? motivoForaDoPrazo.value : null,
+    }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { delete recursos[a.inscricao_id]; toast.success('Nota do recurso guardada.'); } });
 }
 
 const exames = reactive({}); // inscricao -> texto da NE
@@ -198,6 +210,7 @@ function eliminar(instrumento) {
                 <div class="d-flex flex-wrap gap-4 fs-7 text-muted mb-4">
                     <span>Prazo das avaliações contínuas: <strong :class="pauta.prazos.MAC.encerrado ? 'text-danger' : ''">{{ pauta.prazos.MAC.data_limite }}</strong></span>
                     <span>Prazo da prova: <strong :class="pauta.prazos.PT.encerrado ? 'text-danger' : ''">{{ pauta.prazos.PT.data_limite }}</strong></span>
+                    <span v-if="pauta.recurso">Só faz recurso quem tem a nota final abaixo do mínimo · prazo do recurso: <strong :class="pauta.prazos.RECURSO.encerrado ? 'text-danger' : ''">{{ pauta.prazos.RECURSO.data_limite }}</strong> · MFR = MF × {{ pauta.recurso.peso_mf }}% + NER × {{ pauta.recurso.peso_recurso }}%</span>
                     <span v-if="pauta.exame">Prazo do exame: <strong :class="pauta.prazos.EXAME.encerrado ? 'text-danger' : ''">{{ pauta.prazos.EXAME.data_limite }}</strong> · MF = MFD × {{ pauta.exame.peso_mfd }}% + NE × {{ pauta.exame.peso_exame }}%</span>
                 </div>
 
@@ -225,6 +238,7 @@ function eliminar(instrumento) {
                                 <th class="text-center">MT</th>
                                 <th class="text-center">MFD</th>
                                 <template v-if="pauta.exame"><th class="text-center">Exame (NE)</th><th class="text-center">MF</th></template>
+                                <template v-if="pauta.recurso"><th class="text-center">Recurso (NER)</th><th class="text-center">MFR</th></template>
                             </tr>
                         </thead>
                         <tbody>
@@ -257,8 +271,21 @@ function eliminar(instrumento) {
                                     </td>
                                     <td class="text-center fw-bold">{{ a.mf ?? '—' }}</td>
                                 </template>
+                                <template v-if="pauta.recurso">
+                                    <td class="text-center" style="min-width: 7rem">
+                                        <div v-if="a.recurso_necessario" class="d-flex align-items-center justify-content-center gap-1">
+                                            <input :value="textoRecurso(a)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px"
+                                                @input="recursos[a.inscricao_id] = $event.target.value" @blur="guardarRecurso(a)" @keyup.enter="$event.target.blur()">
+                                            <a v-if="pode.anular && a.ner && a.ner.estado === 0" href="#" class="text-muted" title="Anular"
+                                                @click.prevent="aAnular = { nota_id: a.ner.id, aluno: a.nome, instrumento: 'Exame de recurso' }">⊘</a>
+                                        </div>
+                                        <span v-else class="text-muted">—</span>
+                                        <div v-if="a.ner && a.ner.estado !== 0" class="fs-8 text-muted">{{ a.ner.estado_descricao }}</div>
+                                    </td>
+                                    <td class="text-center fw-bold">{{ a.mfr ?? '—' }}</td>
+                                </template>
                             </tr>
-                            <tr v-if="!pauta.alunos.length"><td :colspan="pauta.instrumentos.length + (pauta.exame ? 8 : 6)" class="text-center text-muted py-6">Nenhum aluno inscrito nesta disciplina.</td></tr>
+                            <tr v-if="!pauta.alunos.length"><td :colspan="pauta.instrumentos.length + (pauta.exame ? 8 : 6) + (pauta.recurso ? 2 : 0)" class="text-center text-muted py-6">Nenhum aluno inscrito nesta disciplina.</td></tr>
                         </tbody>
                     </table>
                 </div>

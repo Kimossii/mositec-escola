@@ -49,6 +49,10 @@ class CriarInstrumentoAction
                 $this->validarExame($turma, $periodo, $dto->disciplina_id);
             }
 
+            if ($dto->tipo === TipoInstrumento::RECURSO) {
+                $this->validarRecurso($turma, $periodo, $dto->disciplina_id);
+            }
+
             return AvaliacaoInstrumento::create([
                 'turma_id' => $turma->id,
                 'disciplina_id' => $dto->disciplina_id,
@@ -73,6 +77,22 @@ class CriarInstrumentoAction
 
         if (AvaliacaoInstrumento::query()->where('turma_id', $turma->id)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::EXAME->value)->exists()) {
             throw ValidationException::withMessages(['tipo' => 'Já existe um exame para esta turma e disciplina.']);
+        }
+    }
+
+    /** O exame de recurso só existe da 6.ª à 9.ª, no 3.º trimestre, e é um por turma e disciplina. */
+    private function validarRecurso(Turma $turma, Periodo $periodo, int $disciplinaId): void
+    {
+        if (! $this->padrao->temRecurso((string) $turma->nivelAcademico?->codigo)) {
+            throw ValidationException::withMessages(['tipo' => 'Esta classe não tem exame de recurso.']);
+        }
+
+        if ($periodo->numero !== 3) {
+            throw ValidationException::withMessages(['periodo_id' => 'O exame de recurso pertence ao 3.º trimestre.']);
+        }
+
+        if (AvaliacaoInstrumento::query()->where('turma_id', $turma->id)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::RECURSO->value)->exists()) {
+            throw ValidationException::withMessages(['tipo' => 'Já existe um exame de recurso para esta turma e disciplina.']);
         }
     }
 }

@@ -11,6 +11,7 @@ Route::middleware(['auth'])->prefix('avaliacao/notas')->name('avaliacao.notas.')
     Route::get('/exportar', [MiniPautaController::class, 'exportar'])->middleware(['can:nota.ver', 'throttle:operacao-pesada'])->name('exportar');
     Route::post('/', [MiniPautaController::class, 'lancar'])->middleware('can:nota.criar')->name('lancar');
     Route::post('/exame', [MiniPautaController::class, 'lancarExame'])->middleware('can:nota.criar')->name('exame.lancar');
+    Route::post('/recurso', [MiniPautaController::class, 'lancarRecurso'])->middleware('can:nota.criar')->name('recurso.lancar');
     Route::post('/qualitativas', [MiniPautaController::class, 'lancarQualitativa'])->middleware('can:nota.criar')->name('qualitativas.lancar');
     Route::post('/{nota}/anular', [MiniPautaController::class, 'anular'])->whereNumber('nota')->middleware('can:nota.anular')->name('anular');
     Route::post('/instrumentos', [MiniPautaController::class, 'criarInstrumento'])->name('instrumentos.store');

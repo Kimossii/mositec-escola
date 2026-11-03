@@ -127,8 +127,8 @@ class DocumentosPautaTest extends TestCase
 
         $d = $this->pautaDe($c);
 
-        $this->assertSame(['MFD', 'NE', 'MF'], $d->grupos[0]['colunas']);
-        $this->assertSame(['8.00', '10.00', '9.20', 'APTO'], array_slice($d->linhas[0], 3));
+        $this->assertSame(['MFD', 'NE', 'MF', 'NER', 'MFR'], $d->grupos[0]['colunas']);
+        $this->assertSame(['8.00', '10.00', '9.20', '', '', 'APTO'], array_slice($d->linhas[0], 3));
     }
 
     public function test_pauta_qualitativa_sem_sexo_e_com_observacao(): void
@@ -157,8 +157,8 @@ class DocumentosPautaTest extends TestCase
 
         $this->assertSame('MINI-PAUTA', $d->titulo);
         $this->assertSame(['MAC', 'NPT', 'MT1'], $d->grupos[0]['colunas']);
-        $this->assertSame(['MFD'], $d->grupos[3]['colunas']);
-        $this->assertSame(['1', $ana->matricula->aluno->dadosPessoa->nome_completo, '5.33', '7.00', '6.17', '6.00', '7.00', '6.50', '8.00', '9.00', '8.50', '7.06', ''], $d->linhas[0]);
+        $this->assertSame(['MFD', 'NER', 'MFR'], $d->grupos[3]['colunas']); // a 7.ª tem recurso, mas não exame próprio
+        $this->assertSame(['1', $ana->matricula->aluno->dadosPessoa->nome_completo, '5.33', '7.00', '6.17', '6.00', '7.00', '6.50', '8.00', '9.00', '8.50', '7.06', '', '', ''], $d->linhas[0]);
         $this->assertSame('PT', MiniPautaDocumentoService::rotuloDaProva('PRI_3'));
     }
 
@@ -171,8 +171,8 @@ class DocumentosPautaTest extends TestCase
         app(LancarExameAction::class)->executar($c['turma']->id, $c['disciplina']->id, $inscricao->id, '10');
 
         $d = app(MiniPautaDocumentoService::class)->paraTurmaDisciplina($c['turma']->id, $c['disciplina']->id);
-        $this->assertSame(['MFD', 'NE', 'MF'], $d->grupos[3]['colunas']);
-        $this->assertSame(['8.00', '10.00', '9.20', ''], array_slice($d->linhas[0], -4));
+        $this->assertSame(['MFD', 'NE', 'MF', 'NER', 'MFR'], $d->grupos[3]['colunas']);
+        $this->assertSame(['8.00', '10.00', '9.20', '', '', ''], array_slice($d->linhas[0], -6));
 
         [$q] = $this->cenarioQualitativo('Q');
         $this->expectException(ValidationException::class);

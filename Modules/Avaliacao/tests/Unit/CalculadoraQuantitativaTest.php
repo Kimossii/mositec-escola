@@ -109,4 +109,10 @@ class CalculadoraQuantitativaTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->calc()->mfComExame('10', '10', '40', '50');
     }
+
+    public function test_recurso_usa_a_mesma_formula_sobre_a_mf(): void
+    {
+        $this->assertSame('10.5600000000', $this->calc()->mfComExame('8.4', '12', '40', '60')); // MFR passa
+        $this->assertSame('6.3600000000', $this->calc()->mfComExame('8.4', '5', '40', '60'));   // MFR mais baixa que a MF
+    }
 }

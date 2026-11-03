@@ -56,6 +56,7 @@ class ResultadoDisciplinaService
     {
         $turma = Turma::query()->with('nivelAcademico:id,codigo')->findOrFail($turmaId);
         $comExame = $this->padrao->temExameProprio((string) $turma->nivelAcademico?->codigo);
+        $comRecurso = $this->padrao->temRecurso((string) $turma->nivelAcademico?->codigo);
         $regra = $this->regras->paraTurma($turma)
             ?? throw ValidationException::withMessages(['turma_id' => 'A escola ainda não configurou a regra de avaliação desta classe.']);
 
@@ -82,7 +83,7 @@ class ResultadoDisciplinaService
         $resultados = [];
         foreach ($inscricoes as $inscricaoId) {
             $doAluno = ($notas[$inscricaoId] ?? collect())->keyBy('instrumento_id');
-            $resultados[$inscricaoId] = $this->resultado($regra, $periodos, $instrumentos, $doAluno, $encerrado, $comExame);
+            $resultados[$inscricaoId] = $this->resultado($regra, $periodos, $instrumentos, $doAluno, $encerrado, $comExame, $comRecurso);
         }
 
         return $resultados;
@@ -103,7 +104,7 @@ class ResultadoDisciplinaService
         return $encerrado;
     }
 
-    private function resultado(AvaliacaoRegra $regra, Collection $periodos, Collection $instrumentos, Collection $notas, array $encerrado, bool $comExame): ResultadoDisciplina
+    private function resultado(AvaliacaoRegra $regra, Collection $periodos, Collection $instrumentos, Collection $notas, array $encerrado, bool $comExame, bool $comRecurso): ResultadoDisciplina
     {
         $mac = $pt = $mt = $pendentes = [];
 
@@ -144,7 +145,41 @@ class ResultadoDisciplinaService
 
         [$ne, $mf, $mfArredondada] = $comExame ? $this->exame($regra, $instrumentos, $notas, $mfd) : [null, null, null];
 
-        return new ResultadoDisciplina($mac, $pt, $mt, $pendentes, $mfd, $arredondada, $ne, $mf, $mfArredondada, $comExame);
+        [$ner, $mfr, $mfrArredondada, $recursoNecessario, $recursoEmFalta] = $comRecurso
+            ? $this->recurso($regra, $instrumentos, $notas, $comExame ? $mf : $mfd, $comExame ? $mfArredondada : $arredondada, $encerrado[3][TipoInstrumento::RECURSO->name] ?? false)
+            : [null, null, null, false, false];
+
+        return new ResultadoDisciplina($mac, $pt, $mt, $pendentes, $mfd, $arredondada, $ne, $mf, $mfArredondada, $comExame, $ner, $mfr, $mfrArredondada, $recursoNecessario, $recursoEmFalta);
+    }
+
+    /**
+     * Exame de recurso (6.ª a 9.ª): só a disciplina cuja nota final (MF, ou MFD sem exame próprio) ficou abaixo do mínimo precisa
+     * dele. Com NER lançada, `MFR = MF × peso + NER × peso` (os mesmos pesos do exame) e a MFR é que decide. Sem NER fica
+     * pendente até ao prazo do recurso; depois disso conta como não realizado e a nota final continua a ser a MF.
+     *
+     * @return array{0: ?string, 1: ?string, 2: ?string, 3: bool, 4: bool} [NER, MFR exacta, MFR arredondada, necessário, em falta]
+     */
+    private function recurso(AvaliacaoRegra $regra, Collection $instrumentos, Collection $notas, ?string $baseExacta, ?string $baseArredondada, bool $prazoEncerrado): array
+    {
+        if ($baseExacta === null || $baseArredondada === null || $this->calculadora->aprovadoNaDisciplina($baseArredondada, (string) $regra->nota_minima)) {
+            return [null, null, null, false, false];
+        }
+
+        $recurso = $instrumentos->firstWhere('tipo', TipoInstrumento::RECURSO);
+        $nota = $recurso === null ? null : ($notas[$recurso->id] ?? null);
+        $ner = match ($nota?->estado) {
+            EstadoNota::LANCADA => (string) $nota->valor,
+            EstadoNota::ANULADA_CONTA_ZERO => '0',
+            default => null,
+        };
+
+        if ($ner === null) {
+            return [null, null, null, true, ! $prazoEncerrado];
+        }
+
+        $mfr = $this->calculadora->mfComExame($baseExacta, $ner, (string) $regra->peso_mfd_exame, (string) $regra->peso_exame);
+
+        return [$ner, $mfr, $this->calculadora->arredondar($mfr, $regra->casas_decimais, $regra->modo_arredondamento), true, false];
     }
 
     /**

@@ -98,7 +98,7 @@ class PautaFinalService
         }
 
         $regra = $this->regras->paraTurma($turma);
-        $base = ['tipo' => 'quantitativa', 'turma_id' => $turma->id, 'turma_rotulo' => $turma->rotulo(completo: true), 'regra' => null, 'estado' => 'provisoria', 'versao' => null, 'com_exame' => false,
+        $base = ['tipo' => 'quantitativa', 'turma_id' => $turma->id, 'turma_rotulo' => $turma->rotulo(completo: true), 'regra' => null, 'estado' => 'provisoria', 'versao' => null, 'com_exame' => false, 'com_recurso' => false,
             'aprovada_em' => null, 'aprovada_por' => null, 'disciplinas' => [], 'alunos' => [], 'pode_aprovar' => false, 'bloqueios' => []];
 
         if ($regra === null) {
@@ -107,6 +107,7 @@ class PautaFinalService
 
         $base['regra'] = $this->regraParaTela($regra);
         $comExame = $this->padrao->temExameProprio((string) $turma->nivelAcademico?->codigo);
+        $comRecurso = $this->padrao->temRecurso((string) $turma->nivelAcademico?->codigo);
 
         $matriculas = Matricula::query()->where('turma_id', $turmaId)->where('estado', EstadoMatriculaEnum::ACTIVA)
             ->with('aluno.dadosPessoa:id,nome_completo,sexo')->get();
@@ -129,7 +130,11 @@ class PautaFinalService
                     'mfd' => $r->mfdArredondada,
                     'mf_exacta' => $r->mf,
                     'mf' => $r->mfArredondada,
+                    'ner' => $r->ner === null ? null : $this->apresentar($r->ner, $regra),
+                    'mfr_exacta' => $r->mfr,
+                    'mfr' => $r->mfrArredondada,
                     'nota_final' => $r->notaFinalArredondada(),
+                    'recurso_em_falta' => $r->recursoEmFalta,
                     'aprovado' => $r->notaFinalArredondada() === null ? null : $this->calculadora->aprovadoNaDisciplina($r->notaFinalArredondada(), (string) $regra->nota_minima),
                     'pendente' => $r->notaFinalArredondada() === null,
                     'exame_em_falta' => $comExame && $r->ne === null,
@@ -161,6 +166,11 @@ class PautaFinalService
         if ($alunos === []) {
             $bloqueios[] = 'A turma não tem alunos com matrícula activa.';
         }
+        $semRecurso = count(array_filter($alunos, fn (array $a) => in_array(true, array_column($a['celulas'], 'recurso_em_falta'), true)));
+        if ($semRecurso > 0) {
+            $bloqueios[] = "Faltam notas de exame de recurso em {$semRecurso} aluno(s) com disciplinas abaixo do mínimo: lance-as, ou aguarde o fim do prazo do recurso.";
+        }
+
         $semExame = count(array_filter($alunos, fn (array $a) => in_array(true, array_column($a['celulas'], 'exame_em_falta'), true)));
         if ($comExame && $semExame > 0) {
             $bloqueios[] = "Faltam notas de exame em {$semExame} aluno(s): lance-as antes de aprovar.";
@@ -172,6 +182,7 @@ class PautaFinalService
         return [
             ...$base,
             'com_exame' => $comExame,
+            'com_recurso' => $comRecurso,
             'disciplinas' => $disciplinas->map(fn (Disciplina $d) => ['id' => $d->id, 'nome' => (string) $d->nome])->all(),
             'alunos' => $alunos,
             'pode_aprovar' => $bloqueios === [],
@@ -182,7 +193,7 @@ class PautaFinalService
     /** @return array<string, mixed> */
     private function instantaneo(int $turmaId, AvaliacaoPauta $pauta): array
     {
-        $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome'])->findOrFail($turmaId);
+        $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,codigo'])->findOrFail($turmaId);
 
         if (AvaliacaoPautaLinhaQualitativa::query()->where('pauta_id', $pauta->id)->where('versao', $pauta->versao)->exists()) {
             return $this->qualitativa->instantaneo($turma, $pauta);
@@ -216,7 +227,8 @@ class PautaFinalService
                 'mt1' => $this->formatar($l->mt1, $casas), 'mt2' => $this->formatar($l->mt2, $casas), 'mt3' => $this->formatar($l->mt3, $casas),
                 'ne' => $this->formatar($l->ne, $casas),
                 'mfd_exacta' => $l->mfd_exacta, 'mfd' => $this->formatar($l->mfd, $casas), 'mf_exacta' => $l->mf_exacta, 'mf' => $this->formatar($l->mf, $casas),
-                'nota_final' => $this->formatar($l->mf ?? $l->mfd, $casas), 'aprovado' => $l->aprovado, 'pendente' => $l->mfd === null, 'exame_em_falta' => false,
+                'ner' => $this->formatar($l->ner, $casas), 'mfr_exacta' => $l->mfr_exacta, 'mfr' => $this->formatar($l->mfr, $casas), 'recurso_em_falta' => false,
+                'nota_final' => $this->formatar($l->mfr ?? $l->mf ?? $l->mfd, $casas), 'aprovado' => $l->aprovado, 'pendente' => $l->mfd === null, 'exame_em_falta' => false,
             ];
         }
         $alunos = array_values($alunos);
@@ -225,6 +237,7 @@ class PautaFinalService
         return [
             'tipo' => 'quantitativa',
             'com_exame' => $linhas->contains(fn (AvaliacaoPautaLinha $l) => $l->mf !== null),
+            'com_recurso' => $this->padrao->temRecurso((string) $turma->nivelAcademico?->codigo),
             'turma_id' => $turma->id,
             'turma_rotulo' => $turma->rotulo(completo: true),
             'regra' => $regra === null ? null : $this->regraParaTela($regra),

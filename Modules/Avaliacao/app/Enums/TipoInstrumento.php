@@ -7,6 +7,7 @@ enum TipoInstrumento: int
     case MAC = 0;
     case PT = 1;
     case EXAME = 2;
+    case RECURSO = 3;
 
     public function label(): string
     {
@@ -14,6 +15,7 @@ enum TipoInstrumento: int
             self::MAC => 'Avaliação contínua',
             self::PT => 'Prova trimestral',
             self::EXAME => 'Exame próprio',
+            self::RECURSO => 'Exame de recurso',
         };
     }
 }

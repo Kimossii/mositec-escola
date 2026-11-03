@@ -174,6 +174,22 @@ class AvaliacaoTenancyTest extends TestCase
         $this->assertSame(0, $this->noTenant($this->outro, fn () => AvaliacaoInstrumento::count()));
     }
 
+    public function test_o_recurso_de_uma_turma_do_tenant_b_nao_se_lanca_a_partir_do_tenant_a(): void
+    {
+        $b = $this->noTenant($this->outro, function () {
+            $c = $this->cenarioDeAvaliacao('PRI_6', 'B');
+            app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, '5'));
+
+            return ['c' => $c, 'inscricao' => $this->inscreverAluno($c)];
+        });
+        $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin-a@example.com');
+
+        $this->actingAs($admin)->post('/avaliacao/notas/recurso', [
+            'turma_id' => $b['c']['turma']->id, 'disciplina_id' => $b['c']['disciplina']->id, 'inscricao_disciplina_id' => $b['inscricao']->id, 'valor' => '9',
+        ])->assertNotFound();
+        $this->assertSame(0, $this->noTenant($this->outro, fn () => AvaliacaoInstrumento::count()));
+    }
+
     public function test_um_registo_nao_muda_de_tenant(): void
     {
         $b = $this->dadosDeB();

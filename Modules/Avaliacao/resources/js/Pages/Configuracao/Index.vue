@@ -34,7 +34,7 @@ function guardarRegra(c) {
     router.post('/avaliacao/configuracao/regras', { ...formulario(c), ano_lectivo_id: props.ano_id, nivel_academico_id: c.nivel_id }, aoGuardar('Regra guardada.'));
 }
 
-const tiposDe = (c) => props.tipos.filter((t) => t.valor !== 2 || c.tem_exame); // o exame só tem prazo nas classes que o têm
+const tiposDe = (c) => props.tipos.filter((t) => (t.valor !== 2 || c.tem_exame) && (t.valor !== 3 || c.tem_recurso)); // exame e recurso só têm prazo nas classes que os têm
 const prazoDe = (c, periodoId, tipo) => c.prazos.find((p) => p.periodo_id === periodoId && p.tipo === tipo);
 
 function definirPrazo(c, periodoId, tipo) {

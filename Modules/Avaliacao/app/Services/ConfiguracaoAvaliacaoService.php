@@ -49,6 +49,7 @@ class ConfiguracaoAvaliacaoService
                 'nome' => $nivel->nome,
                 'quantitativa' => $sugestao !== null,
                 'tem_exame' => $this->padrao->temExameProprio((string) $nivel->codigo),
+                'tem_recurso' => $this->padrao->temRecurso((string) $nivel->codigo),
                 // Creche e Pré-Escolar são qualitativos; as classes secundárias seguintes têm notas, mas ficam fora desta fase.
                 'ambito' => $sugestao !== null ? 'quantitativa' : (in_array($nivel->etapa_ensino, [EtapaEnsinoEnum::CRECHE, EtapaEnsinoEnum::PRE_ESCOLAR], true) ? 'qualitativa' : 'fora_de_ambito'),
                 'regra' => $regra === null ? null : [
