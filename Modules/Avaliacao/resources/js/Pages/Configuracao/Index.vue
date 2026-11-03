@@ -13,6 +13,8 @@ const props = defineProps({
     modos: { type: Array, required: true }, // [{ valor, nome }]
     tipos: { type: Array, required: true }, // [{ valor, nome }]
     escalas: { type: Array, default: () => [] }, // [{ id, nome, niveis: [{ id, codigo, designacao }] }]
+    documentos: { type: Object, default: () => ({}) }, // { linhas_extra, lema, visto_cargo, visto_nome }
+    cabecalho_linhas: { type: Array, default: () => [] }, // o cabeçalho tal como sairá nos documentos
 });
 defineOptions({ layout: AppLayout });
 
@@ -47,6 +49,9 @@ function prolongar(prazo) {
         ...aoGuardar('Prazo prolongado.'), onSuccess: () => { delete prolongamentos[prazo.id]; toast.success('Prazo prolongado.'); },
     });
 }
+
+const doc = reactive({ linhas_extra: props.documentos.linhas_extra ?? '', lema: props.documentos.lema ?? '', visto_cargo: props.documentos.visto_cargo ?? '', visto_nome: props.documentos.visto_nome ?? '' });
+const guardarDocumentos = () => router.post('/avaliacao/configuracao/documentos', { ...doc }, aoGuardar('Cabeçalho dos documentos guardado.'));
 
 const escolhas = reactive({}); // nivel_id -> escala escolhida e ainda não guardada
 const escolhaDe = (c) => escolhas[c.nivel_id] ?? c.regra_qualitativa?.escala_id ?? '';
@@ -91,6 +96,33 @@ function copiar() {
                     <option v-for="a in anos" :key="a.id" :value="a.id">{{ a.nome }}</option>
                 </select>
                 <button type="button" class="btn btn-sm btn-light" @click="copiar">Copiar regras do ano anterior</button>
+            </div>
+        </div>
+
+        <div class="card card-flush mb-6">
+            <div class="card-header"><h3 class="card-title fw-bold">Cabeçalho e assinaturas dos documentos</h3></div>
+            <div class="card-body">
+                <div class="row g-5">
+                    <div class="col-12 col-lg-6">
+                        <div class="text-muted fs-7 mb-3">A província, o município, o nome, o logótipo e o responsável da escola vêm do cadastro do estabelecimento. Aqui acrescenta o que falta.</div>
+                        <label class="form-label fs-8 fw-bold text-muted text-uppercase">Linhas a acrescentar (uma por linha)</label>
+                        <textarea v-model="doc.linhas_extra" rows="3" class="form-control form-control-sm mb-3" placeholder="Direcção Municipal da Educação&#10;Secção de Educação e Ensino"></textarea>
+                        <label class="form-label fs-8 fw-bold text-muted text-uppercase">Lema da escola (opcional)</label>
+                        <input v-model="doc.lema" type="text" class="form-control form-control-sm mb-3" placeholder="Linguagem do amor e da sabedoria">
+                        <div class="row g-3">
+                            <div class="col-6"><label class="form-label fs-8 fw-bold text-muted text-uppercase">Visto: cargo</label><input v-model="doc.visto_cargo" type="text" class="form-control form-control-sm" placeholder="Directora Municipal"></div>
+                            <div class="col-6"><label class="form-label fs-8 fw-bold text-muted text-uppercase">Visto: nome</label><input v-model="doc.visto_nome" type="text" class="form-control form-control-sm"></div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary mt-4" @click="guardarDocumentos">Guardar</button>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="fs-8 fw-bold text-muted text-uppercase mb-2">Como fica o cabeçalho</div>
+                        <div class="border rounded p-3 bg-body-secondary text-center fw-bold fs-7">
+                            <div v-for="(l, i) in cabecalho_linhas" :key="i">{{ l }}</div>
+                            <div v-if="documentos.lema" class="fw-normal fst-italic">«{{ documentos.lema }}»</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

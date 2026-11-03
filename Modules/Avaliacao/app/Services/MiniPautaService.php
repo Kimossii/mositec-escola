@@ -91,7 +91,7 @@ class MiniPautaService
         $disciplina = Disciplina::query()->findOrFail($disciplinaId);
         $regra = $this->regras->paraTurma($turma);
 
-        $base = ['tipo' => 'quantitativa', 'turma_rotulo' => $turma->rotulo(completo: true), 'disciplina_nome' => (string) $disciplina->nome, 'regra' => null];
+        $base = ['tipo' => 'quantitativa', 'rotulo_pt' => MiniPautaDocumentoService::rotuloDaProva($turma->nivelAcademico?->codigo), 'turma_rotulo' => $turma->rotulo(completo: true), 'disciplina_nome' => (string) $disciplina->nome, 'regra' => null];
 
         $qualitativa = $this->qualitativa->paraTurmaDisciplina($turma, $disciplinaId, $periodoId);
         if ($qualitativa !== null) {
@@ -196,13 +196,13 @@ class MiniPautaService
     }
 
     /** @return \Illuminate\Database\Eloquent\Collection<int, InscricaoDisciplina> */
-    private function inscricoes(int $turmaId, int $disciplinaId)
+    public function inscricoes(int $turmaId, int $disciplinaId)
     {
         return InscricaoDisciplina::query()
             ->where('estado', EstadoInscricaoDisciplinaEnum::INSCRITA)
             ->whereHas('matricula', fn ($q) => $q->where('turma_id', $turmaId)->where('estado', EstadoMatriculaEnum::ACTIVA))
             ->whereHas('planoCurricularDisciplina', fn ($q) => $q->where('disciplina_id', $disciplinaId))
-            ->with('matricula.aluno.dadosPessoa:id,nome_completo')
+            ->with('matricula.aluno.dadosPessoa:id,nome_completo,sexo')
             ->get();
     }
 

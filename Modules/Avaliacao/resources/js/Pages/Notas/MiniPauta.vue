@@ -184,9 +184,13 @@ function eliminar(instrumento) {
                     <h3 class="fw-bold mb-1">{{ pauta.disciplina_nome }}</h3>
                     <div class="text-muted fs-7">{{ pauta.turma_rotulo }} · escala 0–{{ pauta.regra.escala_maxima }} · mínimo {{ pauta.regra.nota_minima }}</div>
                 </div>
-                <div class="card-toolbar btn-group">
-                    <button v-for="p in pauta.periodos" :key="p.id" type="button" class="btn btn-sm"
-                        :class="p.id === pauta.periodo_id ? 'btn-primary' : 'btn-light'" @click="abrir(turma, disciplina, p.id)">{{ p.nome }}</button>
+                <div class="card-toolbar gap-3">
+                    <span class="btn-group">
+                        <button v-for="p in pauta.periodos" :key="p.id" type="button" class="btn btn-sm"
+                            :class="p.id === pauta.periodo_id ? 'btn-primary' : 'btn-light'" @click="abrir(turma, disciplina, p.id)">{{ p.nome }}</button>
+                    </span>
+                    <a :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&formato=pdf`" class="btn btn-sm btn-light">PDF</a>
+                    <a :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&formato=excel`" class="btn btn-sm btn-light">Excel</a>
                 </div>
             </div>
 
@@ -217,7 +221,7 @@ function eliminar(instrumento) {
                                     </div>
                                 </th>
                                 <th class="text-center">MAC</th>
-                                <th class="text-center">PT</th>
+                                <th class="text-center">{{ pauta.rotulo_pt }}</th>
                                 <th class="text-center">MT</th>
                                 <th class="text-center">MFD</th>
                                 <template v-if="pauta.exame"><th class="text-center">Exame (NE)</th><th class="text-center">MF</th></template>

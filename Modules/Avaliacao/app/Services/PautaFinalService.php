@@ -109,7 +109,7 @@ class PautaFinalService
         $comExame = $this->padrao->temExameProprio((string) $turma->nivelAcademico?->codigo);
 
         $matriculas = Matricula::query()->where('turma_id', $turmaId)->where('estado', EstadoMatriculaEnum::ACTIVA)
-            ->with('aluno.dadosPessoa:id,nome_completo')->get();
+            ->with('aluno.dadosPessoa:id,nome_completo,sexo')->get();
         $inscricoes = InscricaoDisciplina::query()->whereIn('matricula_id', $matriculas->pluck('id'))
             ->where('estado', EstadoInscricaoDisciplinaEnum::INSCRITA)->with('planoCurricularDisciplina:id,disciplina_id')->get();
 
@@ -149,6 +149,7 @@ class PautaFinalService
                 'matricula_id' => $m->id,
                 'nome' => (string) $m->aluno?->dadosPessoa?->nome_completo,
                 'numero_matricula' => $m->aluno?->numero_matricula,
+                'sexo' => $m->aluno?->dadosPessoa?->sexo,
                 'celulas' => $doAluno,
                 'decisao' => $this->decisaoParaTela($decisao),
                 'estado_decisao' => $decisao !== null ? 'definida' : 'pendente',
@@ -191,7 +192,7 @@ class PautaFinalService
 
         $linhas = AvaliacaoPautaLinha::query()->where('pauta_id', $pauta->id)->where('versao', $pauta->versao)->get();
         $inscricoes = InscricaoDisciplina::query()->whereIn('id', $linhas->pluck('inscricao_disciplina_id'))
-            ->with(['planoCurricularDisciplina:id,disciplina_id', 'matricula.aluno.dadosPessoa:id,nome_completo'])->get()->keyBy('id');
+            ->with(['planoCurricularDisciplina:id,disciplina_id', 'matricula.aluno.dadosPessoa:id,nome_completo,sexo,sexo'])->get()->keyBy('id');
         $decisoes = AvaliacaoDecisao::query()->where('pauta_id', $pauta->id)->where('versao', $pauta->versao)->get()->keyBy('matricula_id');
         $disciplinas = Disciplina::query()->findMany($inscricoes->pluck('planoCurricularDisciplina.disciplina_id')->unique())
             ->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values();
@@ -205,6 +206,7 @@ class PautaFinalService
                 'matricula_id' => $m->id,
                 'nome' => (string) $m->aluno?->dadosPessoa?->nome_completo,
                 'numero_matricula' => $m->aluno?->numero_matricula,
+                'sexo' => $m->aluno?->dadosPessoa?->sexo,
                 'celulas' => [],
                 'decisao' => $this->decisaoParaTela($decisoes[$m->id]->decisao ?? null),
                 'estado_decisao' => 'definida',

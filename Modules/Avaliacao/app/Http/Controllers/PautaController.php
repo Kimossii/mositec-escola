@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Modules\Avaliacao\Actions\AprovarPautaAction;
 use Modules\Avaliacao\Actions\ReabrirPautaAction;
+use Modules\Avaliacao\Documentos\ExportadorDePautas;
+use Modules\Avaliacao\Services\PautaDocumentoService;
 use Modules\Avaliacao\Services\PautaFinalService;
 use Modules\Turma\Models\Turma;
 
@@ -29,6 +31,14 @@ class PautaController extends Controller
             'pauta' => $turma === null ? null : $this->pautas->paraTurma($turma->id),
             'pode' => ['aprovar' => Gate::allows('nota.aprovar'), 'reabrir' => Gate::allows('nota.reabrir')],
         ]);
+    }
+
+    public function exportar(Request $request, int $turma, PautaDocumentoService $documento, ExportadorDePautas $exportador)
+    {
+        $f = $request->validate(['formato' => ['required', 'string', 'in:pdf,excel']]);
+        $alvo = Turma::query()->findOrFail($turma);
+
+        return $exportador->responder($documento->paraTurma($alvo->id), $f['formato'], 'pauta-final-'.$alvo->nome);
     }
 
     public function aprovar(int $turma, AprovarPautaAction $acao): RedirectResponse

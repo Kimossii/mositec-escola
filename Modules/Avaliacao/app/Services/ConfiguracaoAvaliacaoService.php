@@ -9,6 +9,7 @@ use Modules\AnoLectivo\Models\Periodo;
 use Modules\Avaliacao\Enums\ModoArredondamento;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Avaliacao\Enums\TipoInstrumento;
+use Modules\Avaliacao\Models\AvaliacaoDocumentoConfig;
 use Modules\Avaliacao\Models\AvaliacaoEscala;
 use Modules\Avaliacao\Models\AvaliacaoPrazo;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
@@ -19,7 +20,7 @@ use Modules\Turma\Models\Turma;
 /** Leitura da página de configuração: regras por classe, prazos por trimestre e tipo, e excepções. Só consulta. */
 class ConfiguracaoAvaliacaoService
 {
-    public function __construct(private RegraPadraoService $padrao)
+    public function __construct(private RegraPadraoService $padrao, private CabecalhoDocumentoService $cabecalho)
     {
     }
 
@@ -30,7 +31,7 @@ class ConfiguracaoAvaliacaoService
         $ano = $anos->firstWhere('id', $anoLectivoId) ?? $anos->firstWhere('estado', EstadoAnoLectivo::ATIVO) ?? $anos->first();
 
         if ($ano === null) {
-            return ['anos' => [], 'ano_id' => null, 'classes' => [], 'periodos' => [], 'modos' => $this->modos(), 'tipos' => $this->tipos(), 'escalas' => $this->escalas()];
+            return ['anos' => [], 'ano_id' => null, 'classes' => [], 'periodos' => [], 'modos' => $this->modos(), 'tipos' => $this->tipos(), 'escalas' => $this->escalas(), ...$this->documentos()];
         }
 
         $regras = AvaliacaoRegra::query()->where('ano_lectivo_id', $ano->id)->get()->keyBy('nivel_academico_id');
@@ -90,6 +91,18 @@ class ConfiguracaoAvaliacaoService
             'modos' => $this->modos(),
             'tipos' => $this->tipos(),
             'escalas' => $this->escalas(),
+            ...$this->documentos(),
+        ];
+    }
+
+    /** @return array{documentos: array<string, ?string>, cabecalho_linhas: list<string>} */
+    private function documentos(): array
+    {
+        $c = AvaliacaoDocumentoConfig::query()->first();
+
+        return [
+            'documentos' => ['linhas_extra' => $c?->linhas_extra, 'lema' => $c?->lema, 'visto_cargo' => $c?->visto_cargo, 'visto_nome' => $c?->visto_nome],
+            'cabecalho_linhas' => $this->cabecalho->dados()['linhas'],
         ];
     }
 

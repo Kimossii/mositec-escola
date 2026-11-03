@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Modules\Avaliacao\Actions\CopiarRegrasDoAnoAnteriorAction;
 use Modules\Avaliacao\Actions\DefinirPrazoAction;
+use Modules\Avaliacao\Actions\GuardarConfigDocumentosAction;
 use Modules\Avaliacao\Actions\GuardarEscalaQualitativaAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
 use Modules\Avaliacao\Actions\GuardarRegraQualitativaAction;
@@ -49,6 +50,18 @@ class ConfiguracaoAvaliacaoController extends Controller
             modo_arredondamento: ModoArredondamento::from((int) $d['modo_arredondamento']), reprova_por_aproveitamento: (bool) $d['reprova_por_aproveitamento'],
             peso_mfd_exame: (string) ($d['peso_mfd_exame'] ?? '40'), peso_exame: (string) ($d['peso_exame'] ?? '60'),
         ));
+
+        return back();
+    }
+
+    public function guardarDocumentos(Request $request, GuardarConfigDocumentosAction $acao): RedirectResponse
+    {
+        $d = $request->validate([
+            'linhas_extra' => ['nullable', 'string', 'max:1000'], 'lema' => ['nullable', 'string', 'max:200'],
+            'visto_cargo' => ['nullable', 'string', 'max:120'], 'visto_nome' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $acao->executar($d['linhas_extra'] ?? null, $d['lema'] ?? null, $d['visto_cargo'] ?? null, $d['visto_nome'] ?? null);
 
         return back();
     }

@@ -73,6 +73,8 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                 </div>
                 <div class="card-toolbar gap-2 d-print-none">
                     <button type="button" class="btn btn-sm btn-light" @click="imprimir">Imprimir</button>
+                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/exportar?formato=pdf`" class="btn btn-sm btn-light">PDF</a>
+                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/exportar?formato=excel`" class="btn btn-sm btn-light">Excel</a>
                     <button v-if="pode.aprovar && pauta.estado !== 'definitiva'" type="button" class="btn btn-sm btn-primary" :disabled="!pauta.pode_aprovar" @click="aConfirmar = true">Aprovar pauta</button>
                     <button v-if="pode.reabrir && pauta.estado === 'definitiva'" type="button" class="btn btn-sm btn-light-danger" @click="aReabrir = true">Reabrir pauta</button>
                 </div>

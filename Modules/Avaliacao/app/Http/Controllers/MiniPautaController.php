@@ -18,8 +18,10 @@ use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\DTO\LancarNotaDTO;
 use Modules\Avaliacao\DTO\LancarQualitativaDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
+use Modules\Avaliacao\Documentos\ExportadorDePautas;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
+use Modules\Avaliacao\Services\MiniPautaDocumentoService;
 use Modules\Avaliacao\Services\MiniPautaService;
 
 class MiniPautaController extends Controller
@@ -47,6 +49,14 @@ class MiniPautaController extends Controller
             'tipos' => array_map(fn (TipoInstrumento $t) => ['valor' => $t->value, 'nome' => $t->label()], array_values(array_filter(TipoInstrumento::cases(), fn (TipoInstrumento $t) => $t !== TipoInstrumento::EXAME))),
             'pode' => ['anular' => Gate::allows('nota.anular'), 'criar' => Gate::allows('nota.criar')],
         ]);
+    }
+
+    public function exportar(Request $request, MiniPautaDocumentoService $documento, ExportadorDePautas $exportador)
+    {
+        $f = $request->validate(['turma' => ['required', 'integer'], 'disciplina' => ['required', 'integer'], 'formato' => ['required', 'string', 'in:pdf,excel']]);
+        abort_unless($this->miniPauta->podeAceder($request->user(), (int) $f['turma'], (int) $f['disciplina']), 403);
+
+        return $exportador->responder($documento->paraTurmaDisciplina((int) $f['turma'], (int) $f['disciplina']), $f['formato'], 'mini-pauta');
     }
 
     public function lancar(Request $request, LancarNotaAction $acao): RedirectResponse
