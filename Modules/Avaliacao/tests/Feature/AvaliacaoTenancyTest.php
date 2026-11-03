@@ -4,20 +4,30 @@ namespace Modules\Avaliacao\Tests\Feature;
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\Avaliacao\Actions\AprovarPautaAction;
 use Modules\Avaliacao\Actions\CriarInstrumentoAction;
 use Modules\Avaliacao\Actions\DefinirPrazoAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
 use Modules\Avaliacao\Actions\LancarNotaAction;
+use Modules\Avaliacao\Actions\LancarQualitativaAction;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\DTO\LancarNotaDTO;
+use Modules\Avaliacao\DTO\LancarQualitativaDTO;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Enums\EstadoNota;
 use Modules\Avaliacao\Enums\ModoArredondamento;
 use Modules\Avaliacao\Enums\TipoInstrumento;
+use Modules\Avaliacao\Models\AvaliacaoDecisao;
+use Modules\Avaliacao\Models\AvaliacaoEscala;
+use Modules\Avaliacao\Models\AvaliacaoEscalaNivel;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
+use Modules\Avaliacao\Models\AvaliacaoPauta;
+use Modules\Avaliacao\Models\AvaliacaoPautaLinha;
 use Modules\Avaliacao\Models\AvaliacaoPrazo;
+use Modules\Avaliacao\Models\AvaliacaoQualitativa;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
+use Modules\Avaliacao\Models\AvaliacaoRegraQualitativa;
 use Modules\Avaliacao\Services\ResultadoDisciplinaService;
 use Modules\Avaliacao\Tests\Support\CenarioDeAvaliacao;
 use Modules\Core\Tenancy\Exceptions\AlteracaoDeTenantProibida;
@@ -93,6 +103,58 @@ class AvaliacaoTenancyTest extends TestCase
         $this->actingAs($admin)->get('/avaliacao/notas?'.http_build_query(['turma' => $b['c']['turma']->id, 'disciplina' => $b['c']['disciplina']->id]))->assertNotFound();
         $this->actingAs($admin)->post('/avaliacao/notas', ['instrumento_id' => $b['instrumento']->id, 'inscricao_disciplina_id' => $b['inscricao']->id, 'valor' => '9'])->assertNotFound();
         $this->actingAs($admin)->post("/avaliacao/notas/{$b['nota']->id}/anular", ['conta_como_zero' => false, 'motivo' => 'x'])->assertNotFound();
+    }
+
+    public function test_a_pauta_do_tenant_b_e_inalcancavel_a_partir_do_tenant_a(): void
+    {
+        $b = $this->dadosDeB();
+        $this->noTenant($this->outro, function () use ($b) {
+            AvaliacaoNota::query()->delete(); // a nota de dadosDeB() é substituída pelas dos três trimestres
+            $this->notasCompletas($b['c'], $b['inscricao'], [1 => ['6', '6'], 2 => ['6', '6'], 3 => ['6', '6']]);
+            $this->actingAs($this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin-b@example.com'));
+            app(AprovarPautaAction::class)->executar($b['c']['turma']->id);
+        });
+        $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin-a@example.com');
+
+        $this->assertSame(0, AvaliacaoPauta::count());
+        $this->assertSame(0, AvaliacaoPautaLinha::count());
+        $this->assertSame(0, AvaliacaoDecisao::count());
+        $this->actingAs($admin)->get('/avaliacao/pautas?turma='.$b['c']['turma']->id)->assertNotFound();
+        $this->actingAs($admin)->post("/avaliacao/pautas/{$b['c']['turma']->id}/aprovar")->assertNotFound();
+        $this->actingAs($admin)->post("/avaliacao/pautas/{$b['c']['turma']->id}/reabrir", ['motivo' => 'x'])->assertNotFound();
+
+        try {
+            app(AprovarPautaAction::class)->executar($b['c']['turma']->id);
+            $this->fail('Esperava ModelNotFoundException ao aprovar a pauta de outro tenant.');
+        } catch (ModelNotFoundException) {
+        }
+    }
+
+    public function test_a_avaliacao_qualitativa_do_tenant_b_e_inalcancavel_a_partir_do_tenant_a(): void
+    {
+        $b = $this->noTenant($this->outro, function () {
+            [$c, $escala] = $this->cenarioQualitativo('B');
+            $inscricao = $this->inscreverAluno($c);
+            $this->actingAs($this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin-b@example.com'));
+            app(LancarQualitativaAction::class)->executar(new LancarQualitativaDTO($inscricao->id, $c['periodos'][1]->id, $escala->niveis[0]->id, null, 'x'));
+
+            return compact('c', 'escala', 'inscricao');
+        });
+        $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin-a@example.com');
+
+        $this->assertSame(0, AvaliacaoEscala::count());
+        $this->assertSame(0, AvaliacaoEscalaNivel::count());
+        $this->assertSame(0, AvaliacaoRegraQualitativa::count());
+        $this->assertSame(0, AvaliacaoQualitativa::count());
+
+        $this->actingAs($admin)->post('/avaliacao/notas/qualitativas', [
+            'inscricao_disciplina_id' => $b['inscricao']->id, 'periodo_id' => $b['c']['periodos'][1]->id, 'escala_nivel_id' => $b['escala']->niveis[0]->id,
+        ])->assertNotFound();
+        $this->actingAs($admin)->post('/avaliacao/configuracao/escalas', ['id' => $b['escala']->id, 'nome' => 'Sequestrada', 'niveis' => [['codigo' => 'A', 'designacao' => 'Um'], ['codigo' => 'B', 'designacao' => 'Dois']]])->assertNotFound();
+        $this->actingAs($admin)->post('/avaliacao/configuracao/regras-qualitativas', [
+            'ano_lectivo_id' => $b['c']['ano']->id, 'nivel_academico_id' => $b['c']['nivel']->id, 'escala_id' => $b['escala']->id,
+        ])->assertNotFound();
+        $this->assertSame('Escala B', $this->noTenant($this->outro, fn () => AvaliacaoEscala::findOrFail($b['escala']->id)->nome));
     }
 
     public function test_um_registo_nao_muda_de_tenant(): void

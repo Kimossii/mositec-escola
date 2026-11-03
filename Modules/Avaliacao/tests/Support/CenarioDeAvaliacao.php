@@ -16,6 +16,14 @@ use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
+use Modules\Avaliacao\Actions\GuardarEscalaQualitativaAction;
+use Modules\Avaliacao\Actions\GuardarRegraQualitativaAction;
+use Modules\Avaliacao\Enums\EstadoNota;
+use Modules\Avaliacao\Models\AvaliacaoEscala;
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum as EtapaQualitativa;
+use Modules\Avaliacao\Enums\TipoInstrumento;
+use Modules\Avaliacao\Models\AvaliacaoInstrumento;
+use Modules\Avaliacao\Models\AvaliacaoNota;
 use Modules\Matricula\Models\InscricaoDisciplina;
 use Modules\Matricula\Models\Matricula;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
@@ -133,5 +141,59 @@ trait CenarioDeAvaliacao
         ]);
 
         return $professor;
+    }
+
+    /** Segunda disciplina no plano da turma: devolve o cenário apontado para ela (para `inscreverAluno`/`inscreverNaDisciplina`). */
+    protected function outraDisciplina(array $cenario, string $codigo = 'POR'): array
+    {
+        $disciplina = Disciplina::create(['estabelecimento_id' => Estabelecimento::current()->id, 'codigo' => $codigo, 'nome' => "Disciplina {$codigo}"]);
+        $planoDisciplina = PlanoCurricularDisciplina::create(['plano_curricular_id' => $cenario['planoDisciplina']->plano_curricular_id, 'disciplina_id' => $disciplina->id]);
+
+        return [...$cenario, 'disciplina' => $disciplina, 'planoDisciplina' => $planoDisciplina];
+    }
+
+    /** Inscreve a matrícula de uma inscrição existente noutra disciplina do cenário. */
+    protected function inscreverNaDisciplina(InscricaoDisciplina $existente, array $cenario): InscricaoDisciplina
+    {
+        return InscricaoDisciplina::create([
+            'matricula_id' => $existente->matricula_id, 'plano_curricular_disciplina_id' => $cenario['planoDisciplina']->id,
+            'data_inscricao' => '2026-02-01', 'estado' => EstadoInscricaoDisciplinaEnum::INSCRITA,
+        ]);
+    }
+
+    /**
+     * Lança uma contínua e a prova em cada trimestre (instrumentos criados uma vez por disciplina e trimestre).
+     *
+     * @param  array<int, array{0: string, 1: string}>  $porTrimestre  [trimestre => [mac, pt]]
+     */
+    protected function notasCompletas(array $cenario, InscricaoDisciplina $inscricao, array $porTrimestre): void
+    {
+        foreach ($porTrimestre as $n => [$mac, $pt]) {
+            foreach ([[TipoInstrumento::MAC, 'A', $mac], [TipoInstrumento::PT, 'PT', $pt]] as [$tipo, $nome, $valor]) {
+                $instrumento = AvaliacaoInstrumento::firstOrCreate(
+                    ['turma_id' => $cenario['turma']->id, 'disciplina_id' => $cenario['disciplina']->id, 'periodo_id' => $cenario['periodos'][$n]->id, 'tipo' => $tipo],
+                    ['nome' => "{$nome}{$n}", 'obrigatorio' => true],
+                );
+                AvaliacaoNota::create(['instrumento_id' => $instrumento->id, 'inscricao_disciplina_id' => $inscricao->id, 'valor' => $valor, 'estado' => EstadoNota::LANCADA]);
+            }
+        }
+    }
+
+    /**
+     * Classe de Pré-Escolar (PRE_I) com a escala INS/SUF/B/MB escolhida para o ano.
+     *
+     * @return array{0: array, 1: AvaliacaoEscala}
+     */
+    protected function cenarioQualitativo(string $marca = 'A'): array
+    {
+        $c = $this->cenarioDeAvaliacao('PRE_I', $marca);
+        $c['nivel']->update(['etapa_ensino' => EtapaQualitativa::PRE_ESCOLAR]);
+        $escala = app(GuardarEscalaQualitativaAction::class)->executar(null, "Escala {$marca}", [
+            ['codigo' => 'INS', 'designacao' => 'Insuficiente'], ['codigo' => 'SUF', 'designacao' => 'Suficiente'],
+            ['codigo' => 'B', 'designacao' => 'Bom'], ['codigo' => 'MB', 'designacao' => 'Muito Bom'],
+        ]);
+        app(GuardarRegraQualitativaAction::class)->executar($c['ano']->id, $c['nivel']->id, $escala->id);
+
+        return [$c, $escala];
     }
 }

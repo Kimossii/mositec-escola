@@ -1,5 +1,5 @@
 <script setup>
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -12,6 +12,7 @@ const props = defineProps({
     periodos: { type: Array, required: true }, // [{ id, nome, numero, data_fim }]
     modos: { type: Array, required: true }, // [{ valor, nome }]
     tipos: { type: Array, required: true }, // [{ valor, nome }]
+    escalas: { type: Array, default: () => [] }, // [{ id, nome, niveis: [{ id, codigo, designacao }] }]
 });
 defineOptions({ layout: AppLayout });
 
@@ -46,6 +47,32 @@ function prolongar(prazo) {
     });
 }
 
+const escolhas = reactive({}); // nivel_id -> escala escolhida e ainda não guardada
+const escolhaDe = (c) => escolhas[c.nivel_id] ?? c.regra_qualitativa?.escala_id ?? '';
+
+function guardarRegraQualitativa(c) {
+    router.post('/avaliacao/configuracao/regras-qualitativas', { ano_lectivo_id: props.ano_id, nivel_academico_id: c.nivel_id, escala_id: escolhaDe(c) }, aoGuardar('Escala da classe guardada.'));
+}
+
+const EXEMPLO = [['INS', 'Insuficiente'], ['SUF', 'Suficiente'], ['B', 'Bom'], ['MB', 'Muito Bom'], ['EXC', 'Excelente']];
+const editor = ref(null); // { id, nome, niveis: [{ id, codigo, designacao }] }
+
+const novaEscala = () => { editor.value = { id: null, nome: '', niveis: EXEMPLO.map(([codigo, designacao]) => ({ id: null, codigo, designacao })) }; };
+const editarEscala = (e) => { editor.value = { id: e.id, nome: e.nome, niveis: e.niveis.map((n) => ({ ...n })) }; };
+
+function guardarEscala() {
+    router.post('/avaliacao/configuracao/escalas', editor.value, {
+        ...aoGuardar('Escala guardada.'), onSuccess: () => { editor.value = null; toast.success('Escala guardada.'); },
+    });
+}
+
+function mover(i, delta) {
+    const lista = editor.value.niveis;
+    const j = i + delta;
+    if (j < 0 || j >= lista.length) return;
+    [lista[i], lista[j]] = [lista[j], lista[i]];
+}
+
 function copiar() {
     router.post('/avaliacao/configuracao/regras/copiar', { ano_lectivo_id: props.ano_id }, { preserveScroll: true, onError: aoFalhar, onSuccess: () => toast.success('Cópia concluída.') });
 }
@@ -66,17 +93,63 @@ function copiar() {
             </div>
         </div>
 
+        <div v-if="classes.some((c) => c.ambito === 'qualitativa')" class="card card-flush mb-6">
+            <div class="card-header">
+                <h3 class="card-title fw-bold">Escalas qualitativas</h3>
+                <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light" @click="novaEscala">Nova escala</button></div>
+            </div>
+            <div class="card-body">
+                <div v-if="!escalas.length && !editor" class="text-muted">Ainda não há escalas. Crie uma para a Creche e o Pré-Escolar avaliarem as crianças.</div>
+                <div v-for="e in escalas" :key="e.id" class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                    <strong>{{ e.nome }}</strong>
+                    <span v-for="n in e.niveis" :key="n.id" class="badge badge-light">{{ n.codigo }} · {{ n.designacao }}</span>
+                    <a href="#" class="fs-7" @click.prevent="editarEscala(e)">Editar</a>
+                </div>
+                <div v-if="editor" class="border rounded p-4 mt-4 bg-body-secondary">
+                    <input v-model="editor.nome" type="text" class="form-control form-control-sm w-300px mb-3" placeholder="Nome da escala (ex.: Escala do Pré-Escolar)">
+                    <div class="text-muted fs-8 mb-2">Do nível mais baixo para o mais alto.</div>
+                    <div v-for="(n, i) in editor.niveis" :key="i" class="d-flex flex-wrap gap-2 mb-2">
+                        <input v-model="n.codigo" type="text" class="form-control form-control-sm w-100px" placeholder="Código">
+                        <input v-model="n.designacao" type="text" class="form-control form-control-sm w-250px" placeholder="Designação">
+                        <button type="button" class="btn btn-sm btn-light" title="Subir" @click="mover(i, -1)">↑</button>
+                        <button type="button" class="btn btn-sm btn-light" title="Descer" @click="mover(i, 1)">↓</button>
+                        <button type="button" class="btn btn-sm btn-light-danger" title="Remover" @click="editor.niveis.splice(i, 1)">×</button>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="button" class="btn btn-sm btn-light" @click="editor.niveis.push({ id: null, codigo: '', designacao: '' })">Adicionar nível</button>
+                        <button type="button" class="btn btn-sm btn-primary" @click="guardarEscala">Guardar escala</button>
+                        <button type="button" class="btn btn-sm btn-light" @click="editor = null">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div v-for="c in classes" :key="c.nivel_id" class="card card-flush mb-6">
             <div class="card-header">
                 <h3 class="card-title fw-bold">{{ c.nome }} <span class="text-muted fs-7 ms-2">{{ c.codigo }}</span></h3>
                 <div class="card-toolbar">
                     <span v-if="c.regra" class="badge badge-light-success">Configurada</span>
                     <span v-else-if="c.quantitativa" class="badge badge-light-warning">Por configurar</span>
-                    <span v-else class="badge badge-light">Avaliação qualitativa</span>
+                    <span v-else-if="c.ambito === 'qualitativa' && c.regra_qualitativa" class="badge badge-light-success">Configurada · qualitativa</span>
+                    <span v-else-if="c.ambito === 'qualitativa'" class="badge badge-light-warning">Escolha a escala</span>
+                    <span v-else class="badge badge-light">Fora do âmbito desta fase</span>
                 </div>
             </div>
 
-            <div v-if="!c.quantitativa" class="card-body text-muted">Esta classe usa avaliação qualitativa, tratada numa fase seguinte.</div>
+            <div v-if="c.ambito === 'qualitativa'" class="card-body">
+                <div v-if="!escalas.length" class="text-muted">Crie primeiro uma escala qualitativa, acima.</div>
+                <div v-else class="d-flex flex-wrap align-items-end gap-3">
+                    <div>
+                        <label class="form-label fs-8 fw-bold text-muted text-uppercase">Escala desta classe</label>
+                        <select class="form-select form-select-sm w-300px" :value="escolhaDe(c)" @change="escolhas[c.nivel_id] = Number($event.target.value)">
+                            <option value="" disabled>Escolha a escala</option>
+                            <option v-for="e in escalas" :key="e.id" :value="e.id">{{ e.nome }}</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-primary" :disabled="!escolhaDe(c)" @click="guardarRegraQualitativa(c)">Guardar</button>
+                </div>
+            </div>
+            <div v-else-if="!c.quantitativa" class="card-body text-muted">A avaliação desta classe ainda não está disponível nesta fase (cobre da 1.ª à 9.ª classe).</div>
 
             <div v-else class="card-body">
                 <div class="row g-4">

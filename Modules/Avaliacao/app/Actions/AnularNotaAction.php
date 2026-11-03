@@ -9,6 +9,7 @@ use Illuminate\Validation\ValidationException;
 use Modules\Avaliacao\Enums\EstadoNota;
 use Modules\Avaliacao\Models\AvaliacaoNota;
 use Modules\Avaliacao\Services\DocenteDoUtilizadorService;
+use Modules\Avaliacao\Services\PautaFinalService;
 use Modules\Avaliacao\Services\PrazoService;
 use Modules\Avaliacao\Services\RegraAvaliacaoService;
 use Modules\Core\Traits\LogService;
@@ -26,6 +27,7 @@ class AnularNotaAction
         private PrazoService $prazos,
         private RegraAvaliacaoService $regras,
         private DocenteDoUtilizadorService $docentes,
+        private PautaFinalService $pautas,
     ) {
     }
 
@@ -42,6 +44,7 @@ class AnularNotaAction
 
             $nota = AvaliacaoNota::query()->with('instrumento')->whereKey($notaId)->lockForUpdate()->firstOrFail();
             $instrumento = $nota->instrumento;
+            $this->pautas->exigirAberta($instrumento->turma_id);
             $regra = $this->regras->paraTurma(Turma::query()->findOrFail($instrumento->turma_id));
             $foraDoPrazo = $regra !== null && $this->prazos->instrumentoEncerrado($instrumento, $regra, $this->docentes->idDe(auth()->user()));
 

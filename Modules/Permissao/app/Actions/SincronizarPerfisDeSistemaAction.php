@@ -57,7 +57,7 @@ class SincronizarPerfisDeSistemaAction
             Modulo::ACORDO->value => ['ver', 'listar', 'criar', 'cancelar'],
             Modulo::ATRIBUICAO_DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar', 'exportar'],
             Modulo::DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'eliminar', 'exportar'],
-            Modulo::NOTA->value => ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'exportar'],
+            Modulo::NOTA->value => ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'exportar'],
         ],
         Perfil::FUNCIONARIO->value => [
             Modulo::USUARIO->value => ['ver', 'criar', 'editar'],

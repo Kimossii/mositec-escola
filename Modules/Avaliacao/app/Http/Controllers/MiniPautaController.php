@@ -12,8 +12,10 @@ use Modules\Avaliacao\Actions\AnularNotaAction;
 use Modules\Avaliacao\Actions\CriarInstrumentoAction;
 use Modules\Avaliacao\Actions\EliminarInstrumentoAction;
 use Modules\Avaliacao\Actions\LancarNotaAction;
+use Modules\Avaliacao\Actions\LancarQualitativaAction;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\DTO\LancarNotaDTO;
+use Modules\Avaliacao\DTO\LancarQualitativaDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
@@ -54,6 +56,18 @@ class MiniPautaController extends Controller
         ]);
 
         $acao->executar(new LancarNotaDTO($d['instrumento_id'], $d['inscricao_disciplina_id'], $d['valor'], $d['motivo'] ?? null));
+
+        return back();
+    }
+
+    public function lancarQualitativa(Request $request, LancarQualitativaAction $acao): RedirectResponse
+    {
+        $d = $request->validate([
+            'inscricao_disciplina_id' => ['required', 'integer'], 'periodo_id' => ['required', 'integer'], 'escala_nivel_id' => ['required', 'integer'],
+            'observacao' => ['nullable', 'string', 'max:1000'], 'motivo' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $acao->executar(new LancarQualitativaDTO($d['inscricao_disciplina_id'], $d['periodo_id'], $d['escala_nivel_id'], $d['observacao'] ?? null, $d['motivo'] ?? null));
 
         return back();
     }

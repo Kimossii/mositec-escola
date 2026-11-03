@@ -7,9 +7,12 @@ use Modules\AnoLectivo\Enums\TipoPeriodo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\AnoLectivo\Models\Periodo;
 use Modules\Avaliacao\Enums\ModoArredondamento;
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Avaliacao\Enums\TipoInstrumento;
+use Modules\Avaliacao\Models\AvaliacaoEscala;
 use Modules\Avaliacao\Models\AvaliacaoPrazo;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
+use Modules\Avaliacao\Models\AvaliacaoRegraQualitativa;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
 
@@ -27,14 +30,15 @@ class ConfiguracaoAvaliacaoService
         $ano = $anos->firstWhere('id', $anoLectivoId) ?? $anos->firstWhere('estado', EstadoAnoLectivo::ATIVO) ?? $anos->first();
 
         if ($ano === null) {
-            return ['anos' => [], 'ano_id' => null, 'classes' => [], 'periodos' => [], 'modos' => $this->modos(), 'tipos' => $this->tipos()];
+            return ['anos' => [], 'ano_id' => null, 'classes' => [], 'periodos' => [], 'modos' => $this->modos(), 'tipos' => $this->tipos(), 'escalas' => $this->escalas()];
         }
 
         $regras = AvaliacaoRegra::query()->where('ano_lectivo_id', $ano->id)->get()->keyBy('nivel_academico_id');
         $prazos = AvaliacaoPrazo::query()->whereIn('regra_id', $regras->pluck('id'))->with('excepcoes')->get();
+        $regrasQ = AvaliacaoRegraQualitativa::query()->where('ano_lectivo_id', $ano->id)->get()->keyBy('nivel_academico_id');
         $turmas = Turma::query()->where('ano_lectivo_id', $ano->id)->with(['turno:id,nome', 'anoLectivo:id,nome'])->get()->groupBy('nivel_academico_id');
 
-        $classes = NivelAcademico::query()->orderBy('ordem')->get()->map(function (NivelAcademico $nivel) use ($regras, $prazos, $turmas) {
+        $classes = NivelAcademico::query()->orderBy('ordem')->get()->map(function (NivelAcademico $nivel) use ($regras, $regrasQ, $prazos, $turmas) {
             $regra = $regras->get($nivel->id);
             $sugestao = $this->padrao->paraNivel((string) $nivel->codigo);
 
@@ -43,6 +47,8 @@ class ConfiguracaoAvaliacaoService
                 'codigo' => $nivel->codigo,
                 'nome' => $nivel->nome,
                 'quantitativa' => $sugestao !== null,
+                // Creche e Pré-Escolar são qualitativos; as classes secundárias seguintes têm notas, mas ficam fora desta fase.
+                'ambito' => $sugestao !== null ? 'quantitativa' : (in_array($nivel->etapa_ensino, [EtapaEnsinoEnum::CRECHE, EtapaEnsinoEnum::PRE_ESCOLAR], true) ? 'qualitativa' : 'fora_de_ambito'),
                 'regra' => $regra === null ? null : [
                     'id' => $regra->id,
                     'escala_maxima' => $regra->escala_maxima,
@@ -56,6 +62,7 @@ class ConfiguracaoAvaliacaoService
                     'modo_arredondamento' => $regra->modo_arredondamento->value,
                     'reprova_por_aproveitamento' => $regra->reprova_por_aproveitamento,
                 ],
+                'regra_qualitativa' => isset($regrasQ[$nivel->id]) ? ['escala_id' => $regrasQ[$nivel->id]->escala_id] : null,
                 'sugestao' => $sugestao,
                 'prazos' => $regra === null ? [] : $prazos->where('regra_id', $regra->id)->map(fn (AvaliacaoPrazo $p) => [
                     'id' => $p->id,
@@ -79,7 +86,16 @@ class ConfiguracaoAvaliacaoService
                 ->map(fn (Periodo $p) => ['id' => $p->id, 'nome' => $p->nome, 'numero' => $p->numero, 'data_fim' => $p->data_fim->toDateString()])->all(),
             'modos' => $this->modos(),
             'tipos' => $this->tipos(),
+            'escalas' => $this->escalas(),
         ];
+    }
+
+    private function escalas(): array
+    {
+        return AvaliacaoEscala::query()->with('niveis')->orderBy('nome')->get()->map(fn (AvaliacaoEscala $e) => [
+            'id' => $e->id, 'nome' => $e->nome,
+            'niveis' => $e->niveis->map(fn ($n) => ['id' => $n->id, 'codigo' => $n->codigo, 'designacao' => $n->designacao])->all(),
+        ])->all();
     }
 
     private function modos(): array

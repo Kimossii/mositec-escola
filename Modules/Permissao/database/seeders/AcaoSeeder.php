@@ -33,6 +33,9 @@ class AcaoSeeder extends Seeder
             ['nome' => 'prolongar-prazo', 'numero' => 14],
             ['nome' => 'lancar-fora-prazo', 'numero' => 15],
             ['nome' => 'configurar', 'numero' => 16],
+            // Pautas: aprovar (provisório → definitivo) e reabrir uma pauta definitiva.
+            ['nome' => 'aprovar', 'numero' => 17],
+            ['nome' => 'reabrir', 'numero' => 18],
         ];
 
         foreach ($acoes as $acao) {

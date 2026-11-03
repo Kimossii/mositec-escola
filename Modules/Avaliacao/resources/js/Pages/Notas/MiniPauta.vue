@@ -72,6 +72,20 @@ function criarAvaliacao() {
     }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { novo.nome = ''; toast.success('Avaliação criada.'); } });
 }
 
+const qual = reactive({}); // inscricao -> { nivel, obs } editados e ainda não guardados
+const nivelDe = (a) => qual[a.inscricao_id]?.nivel ?? a.nivel_id ?? '';
+const obsDe = (a) => qual[a.inscricao_id]?.obs ?? a.observacao ?? '';
+
+function guardarQualitativa(a, campo, valor) {
+    qual[a.inscricao_id] = { nivel: nivelDe(a), obs: obsDe(a), [campo]: valor };
+    const nivel = qual[a.inscricao_id].nivel;
+    if (!nivel) return;
+    router.post('/avaliacao/notas/qualitativas', {
+        inscricao_disciplina_id: a.inscricao_id, periodo_id: props.pauta.periodo_id, escala_nivel_id: nivel,
+        observacao: qual[a.inscricao_id].obs, motivo: props.pauta.prazo?.encerrado ? motivoForaDoPrazo.value : null,
+    }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { delete qual[a.inscricao_id]; toast.success('Avaliação guardada.'); } });
+}
+
 function eliminar(instrumento) {
     router.delete(`/avaliacao/notas/instrumentos/${instrumento.id}`, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => toast.success('Avaliação eliminada.') });
 }
@@ -108,6 +122,48 @@ function eliminar(instrumento) {
 
         <div v-if="pauta && !pauta.regra" class="alert alert-warning">
             A escola ainda não configurou a regra de avaliação desta classe. Peça a quem administra a avaliação para a definir em Configuração da avaliação.
+        </div>
+
+        <div v-else-if="pauta && pauta.tipo === 'qualitativa'" class="card card-flush">
+            <div class="card-header pt-5">
+                <div class="card-title flex-column align-items-start">
+                    <h3 class="fw-bold mb-1">{{ pauta.disciplina_nome }}</h3>
+                    <div class="text-muted fs-7">{{ pauta.turma_rotulo }} · escala «{{ pauta.escala.nome }}»</div>
+                </div>
+                <div class="card-toolbar btn-group">
+                    <button v-for="p in pauta.periodos" :key="p.id" type="button" class="btn btn-sm"
+                        :class="p.id === pauta.periodo_id ? 'btn-primary' : 'btn-light'" @click="abrir(turma, disciplina, p.id)">{{ p.nome }}</button>
+                </div>
+            </div>
+            <div class="card-body pt-3">
+                <div v-if="pauta.prazo" class="fs-7 text-muted mb-4">Prazo de lançamento: <strong :class="pauta.prazo.encerrado ? 'text-danger' : ''">{{ pauta.prazo.data_limite }}</strong></div>
+                <div v-if="pauta.prazo?.encerrado" class="alert alert-warning py-3 d-flex flex-wrap align-items-center gap-3">
+                    <span>O prazo terminou. Só quem tem permissão pode lançar, e tem de indicar o motivo:</span>
+                    <input v-model="motivoForaDoPrazo" type="text" class="form-control form-control-sm w-300px" placeholder="Motivo do lançamento fora do prazo">
+                </div>
+                <div v-if="!pauta.alunos.length" class="text-center text-muted py-6">Nenhuma criança inscrita nesta área.</div>
+                <div v-else class="table-responsive">
+                    <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                        <thead>
+                            <tr class="text-start text-muted fw-bold fs-7 text-uppercase"><th style="width: 3rem">#</th><th>Criança</th><th style="width: 16rem">Avaliação</th><th>Observação</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(a, n) in pauta.alunos" :key="a.inscricao_id">
+                                <td class="text-muted">{{ n + 1 }}</td>
+                                <td class="fw-semibold">{{ a.nome }}</td>
+                                <td>
+                                    <select :value="nivelDe(a)" class="form-select form-select-sm" @change="guardarQualitativa(a, 'nivel', Number($event.target.value))">
+                                        <option value="" disabled>—</option>
+                                        <option v-for="nv in pauta.escala.niveis" :key="nv.id" :value="nv.id">{{ nv.designacao }}</option>
+                                    </select>
+                                </td>
+                                <td><input :value="obsDe(a)" type="text" class="form-control form-control-sm" placeholder="Observação do educador (opcional)" :disabled="!nivelDe(a)"
+                                    @blur="$event.target.value !== (a.observacao ?? '') && guardarQualitativa(a, 'obs', $event.target.value)"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div v-else-if="pauta" class="card card-flush">

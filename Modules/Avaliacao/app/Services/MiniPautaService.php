@@ -33,6 +33,7 @@ class MiniPautaService
         private CalculadoraQuantitativa $calculadora,
         private DocenteDoUtilizadorService $docentes,
         private RelogioDoTenant $relogio,
+        private MiniPautaQualitativaService $qualitativa,
     ) {
     }
 
@@ -89,7 +90,12 @@ class MiniPautaService
         $disciplina = Disciplina::query()->findOrFail($disciplinaId);
         $regra = $this->regras->paraTurma($turma);
 
-        $base = ['turma_rotulo' => $turma->rotulo(completo: true), 'disciplina_nome' => (string) $disciplina->nome, 'regra' => null];
+        $base = ['tipo' => 'quantitativa', 'turma_rotulo' => $turma->rotulo(completo: true), 'disciplina_nome' => (string) $disciplina->nome, 'regra' => null];
+
+        $qualitativa = $this->qualitativa->paraTurmaDisciplina($turma, $disciplinaId, $periodoId);
+        if ($qualitativa !== null) {
+            return [...$base, ...$qualitativa];
+        }
 
         if ($regra === null) {
             return $base + ['periodos' => [], 'periodo_id' => null, 'instrumentos' => [], 'alunos' => [], 'prazos' => []];

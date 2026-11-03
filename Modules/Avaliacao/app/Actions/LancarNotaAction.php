@@ -11,6 +11,7 @@ use Modules\Avaliacao\Enums\EstadoNota;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
 use Modules\Avaliacao\Services\DocenteDoUtilizadorService;
+use Modules\Avaliacao\Services\PautaFinalService;
 use Modules\Avaliacao\Services\PrazoService;
 use Modules\Avaliacao\Services\RegraAvaliacaoService;
 use Modules\Core\Contracts\VerificaAtribuicaoDocente;
@@ -32,6 +33,7 @@ class LancarNotaAction
         private RegraAvaliacaoService $regras,
         private DocenteDoUtilizadorService $docentes,
         private VerificaAtribuicaoDocente $atribuicoes,
+        private PautaFinalService $pautas,
     ) {
     }
 
@@ -43,6 +45,7 @@ class LancarNotaAction
     private function gravar(LancarNotaDTO $dto): AvaliacaoNota
     {
         $instrumento = AvaliacaoInstrumento::query()->findOrFail($dto->instrumento_id);
+        $this->pautas->exigirAberta($instrumento->turma_id);
         $turma = Turma::query()->findOrFail($instrumento->turma_id);
         $regra = $this->regras->paraTurma($turma)
             ?? throw ValidationException::withMessages(['instrumento_id' => 'A escola ainda não configurou a regra de avaliação desta classe.']);

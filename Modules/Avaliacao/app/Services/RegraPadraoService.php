@@ -18,4 +18,10 @@ class RegraPadraoService
             default => null,
         };
     }
+
+    /** 6.ª e 9.ª classes têm exame próprio; a decisão destas só chega com os exames (fase seguinte). */
+    public function temExameProprio(string $codigoNivel): bool
+    {
+        return in_array($codigoNivel, ['PRI_6', 'SEC_9'], true);
+    }
 }

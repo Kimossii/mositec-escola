@@ -8,7 +8,10 @@ use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoPrazo;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
 use Modules\Avaliacao\Tests\Support\CenarioDeAvaliacao;
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
+use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Permissao\Enums\Perfil;
+use Modules\Turma\Models\NivelAcademico;
 use Tests\TestCase;
 
 class ConfiguracaoAvaliacaoHttpTest extends TestCase
@@ -52,6 +55,19 @@ class ConfiguracaoAvaliacaoHttpTest extends TestCase
             ->where('classes.0.codigo', 'PRI_3')
             ->where('classes.0.regra', null)
             ->where('classes.0.sugestao.nota_minima', '5'));
+    }
+
+    public function test_o_ambito_distingue_qualitativa_de_fora_de_ambito(): void
+    {
+        foreach ([['PRE_I', EtapaEnsinoEnum::PRE_ESCOLAR, 2], ['SEC_10', EtapaEnsinoEnum::SECUNDARIO, 3]] as [$codigo, $etapa, $ordem]) {
+            NivelAcademico::create(['estabelecimento_id' => Estabelecimento::current()->id, 'codigo' => $codigo, 'nome' => $codigo, 'etapa_ensino' => $etapa, 'ordem' => $ordem]);
+        }
+        $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
+
+        $this->actingAs($admin)->get('/avaliacao/configuracao')->assertInertia(fn (Assert $p) => $p
+            ->where('classes.0.ambito', 'quantitativa')
+            ->where('classes.1.ambito', 'qualitativa')
+            ->where('classes.2.ambito', 'fora_de_ambito'));
     }
 
     public function test_admin_guarda_regra_define_prazo_e_prolonga(): void

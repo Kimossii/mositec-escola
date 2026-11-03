@@ -8,6 +8,7 @@ use Modules\AnoLectivo\Models\Periodo;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
+use Modules\Avaliacao\Services\PautaFinalService;
 use Modules\Core\Traits\LogService;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\Turma\Models\Turma;
@@ -17,10 +18,15 @@ class CriarInstrumentoAction
 {
     use LogService;
 
+    public function __construct(private PautaFinalService $pautas)
+    {
+    }
+
     public function executar(InstrumentoDTO $dto): AvaliacaoInstrumento
     {
         return $this->comLog('Criar instrumento de avaliação', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => DB::transaction(function () use ($dto) {
             $turma = Turma::query()->whereKey($dto->turma_id)->lockForUpdate()->firstOrFail();
+            $this->pautas->exigirAberta($turma->id);
             Disciplina::query()->findOrFail($dto->disciplina_id);
             $periodo = Periodo::query()->findOrFail($dto->periodo_id);
 

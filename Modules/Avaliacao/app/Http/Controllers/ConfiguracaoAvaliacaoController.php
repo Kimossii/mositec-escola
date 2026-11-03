@@ -9,7 +9,9 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Modules\Avaliacao\Actions\CopiarRegrasDoAnoAnteriorAction;
 use Modules\Avaliacao\Actions\DefinirPrazoAction;
+use Modules\Avaliacao\Actions\GuardarEscalaQualitativaAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
+use Modules\Avaliacao\Actions\GuardarRegraQualitativaAction;
 use Modules\Avaliacao\Actions\ProlongarPrazoAction;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Enums\ModoArredondamento;
@@ -45,6 +47,28 @@ class ConfiguracaoAvaliacaoController extends Controller
             peso_mt3: isset($d['peso_mt3']) ? (string) $d['peso_mt3'] : null, casas_decimais: $d['casas_decimais'],
             modo_arredondamento: ModoArredondamento::from((int) $d['modo_arredondamento']), reprova_por_aproveitamento: (bool) $d['reprova_por_aproveitamento'],
         ));
+
+        return back();
+    }
+
+    public function guardarEscala(Request $request, GuardarEscalaQualitativaAction $acao): RedirectResponse
+    {
+        $d = $request->validate([
+            'id' => ['nullable', 'integer'], 'nome' => ['required', 'string', 'max:120'],
+            'niveis' => ['required', 'array', 'min:2', 'max:12'], 'niveis.*.id' => ['nullable', 'integer'],
+            'niveis.*.codigo' => ['required', 'string', 'max:20'], 'niveis.*.designacao' => ['required', 'string', 'max:120'],
+        ]);
+
+        $acao->executar($d['id'] ?? null, $d['nome'], array_values($d['niveis']));
+
+        return back();
+    }
+
+    public function guardarRegraQualitativa(Request $request, GuardarRegraQualitativaAction $acao): RedirectResponse
+    {
+        $d = $request->validate(['ano_lectivo_id' => ['required', 'integer'], 'nivel_academico_id' => ['required', 'integer'], 'escala_id' => ['required', 'integer']]);
+
+        $acao->executar($d['ano_lectivo_id'], $d['nivel_academico_id'], $d['escala_id']);
 
         return back();
     }
