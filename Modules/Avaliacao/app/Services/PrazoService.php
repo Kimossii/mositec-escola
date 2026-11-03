@@ -10,6 +10,7 @@ use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoPrazo;
 use Modules\Avaliacao\Models\AvaliacaoPrazoExcepcao;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
+use Modules\Avaliacao\Models\AvaliacaoRegraQualitativa;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 
 /**
@@ -23,10 +24,10 @@ class PrazoService
     {
     }
 
-    public function dataLimite(AvaliacaoRegra $regra, int $periodoId, TipoInstrumento $tipo, int $turmaId, int $disciplinaId, ?int $docenteId = null): CarbonImmutable
+    public function dataLimite(AvaliacaoRegra|AvaliacaoRegraQualitativa $regra, int $periodoId, TipoInstrumento $tipo, int $turmaId, int $disciplinaId, ?int $docenteId = null): CarbonImmutable
     {
         $prazo = AvaliacaoPrazo::query()
-            ->where('regra_id', $regra->id)
+            ->where($regra instanceof AvaliacaoRegraQualitativa ? 'regra_qualitativa_id' : 'regra_id', $regra->id)
             ->where('periodo_id', $periodoId)
             ->where('tipo', $tipo->value)
             ->first();
@@ -46,7 +47,7 @@ class PrazoService
         return CarbonImmutable::parse($excepcao?->data_limite ?? $prazo->data_limite);
     }
 
-    public function prazoEncerrado(AvaliacaoRegra $regra, int $periodoId, TipoInstrumento $tipo, int $turmaId, int $disciplinaId, ?int $docenteId = null, ?CarbonInterface $hoje = null): bool
+    public function prazoEncerrado(AvaliacaoRegra|AvaliacaoRegraQualitativa $regra, int $periodoId, TipoInstrumento $tipo, int $turmaId, int $disciplinaId, ?int $docenteId = null, ?CarbonInterface $hoje = null): bool
     {
         $hoje = CarbonImmutable::parse(($hoje ?? $this->relogio->hoje())->toDateString());
 

@@ -11,11 +11,13 @@ use Inertia\Inertia;
 use Modules\Avaliacao\Actions\AnularNotaAction;
 use Modules\Avaliacao\Actions\CriarInstrumentoAction;
 use Modules\Avaliacao\Actions\EliminarInstrumentoAction;
+use Modules\Avaliacao\Actions\LancarCompetenciaAction;
 use Modules\Avaliacao\Actions\LancarExameAction;
 use Modules\Avaliacao\Actions\LancarNotaAction;
 use Modules\Avaliacao\Actions\LancarQualitativaAction;
 use Modules\Avaliacao\Actions\LancarRecursoAction;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
+use Modules\Avaliacao\DTO\LancarCompetenciaDTO;
 use Modules\Avaliacao\DTO\LancarNotaDTO;
 use Modules\Avaliacao\DTO\LancarQualitativaDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
@@ -47,17 +49,25 @@ class MiniPautaController extends Controller
             'opcoes' => $this->miniPauta->opcoes($utilizador),
             'selecao' => ['turma' => $f['turma'] ?? null, 'disciplina' => $f['disciplina'] ?? null],
             'pauta' => $pauta,
-            'tipos' => array_map(fn (TipoInstrumento $t) => ['valor' => $t->value, 'nome' => $t->label()], array_values(array_filter(TipoInstrumento::cases(), fn (TipoInstrumento $t) => ! in_array($t, [TipoInstrumento::EXAME, TipoInstrumento::RECURSO], true)))),
+            'tipos' => array_map(fn (TipoInstrumento $t) => ['valor' => $t->value, 'nome' => $t->label()], array_values(array_filter(TipoInstrumento::cases(), fn (TipoInstrumento $t) => ! in_array($t, [TipoInstrumento::EXAME, TipoInstrumento::RECURSO, TipoInstrumento::QUALITATIVA], true)))),
             'pode' => ['anular' => Gate::allows('nota.anular'), 'criar' => Gate::allows('nota.criar')],
         ]);
     }
 
     public function exportar(Request $request, MiniPautaDocumentoService $documento, ExportadorDePautas $exportador)
     {
-        $f = $request->validate(['turma' => ['required', 'integer'], 'disciplina' => ['required', 'integer'], 'formato' => ['required', 'string', 'in:pdf,excel']]);
+        $f = $request->validate([
+            'turma' => ['required', 'integer'], 'disciplina' => ['required', 'integer'], 'formato' => ['required', 'string', 'in:pdf,excel'],
+            'detalhe' => ['nullable', 'string', 'in:competencias'], 'periodo' => ['nullable', 'integer'],
+        ]);
         abort_unless($this->miniPauta->podeAceder($request->user(), (int) $f['turma'], (int) $f['disciplina']), 403);
 
-        return $exportador->responder($documento->paraTurmaDisciplina((int) $f['turma'], (int) $f['disciplina']), $f['formato'], 'mini-pauta');
+        $competencias = ($f['detalhe'] ?? null) === 'competencias';
+        $doc = $competencias
+            ? $documento->competenciasParaTurmaDisciplina((int) $f['turma'], (int) $f['disciplina'], isset($f['periodo']) ? (int) $f['periodo'] : null)
+            : $documento->paraTurmaDisciplina((int) $f['turma'], (int) $f['disciplina']);
+
+        return $exportador->responder($doc, $f['formato'], $competencias ? 'competencias' : 'mini-pauta');
     }
 
     public function lancar(Request $request, LancarNotaAction $acao): RedirectResponse
@@ -92,6 +102,18 @@ class MiniPautaController extends Controller
         ]);
 
         $acao->executar($d['turma_id'], $d['disciplina_id'], $d['inscricao_disciplina_id'], $d['valor'], $d['motivo'] ?? null);
+
+        return back();
+    }
+
+    public function lancarCompetencia(Request $request, LancarCompetenciaAction $acao): RedirectResponse
+    {
+        $d = $request->validate([
+            'inscricao_disciplina_id' => ['required', 'integer'], 'competencia_id' => ['required', 'integer'], 'periodo_id' => ['required', 'integer'],
+            'escala_nivel_id' => ['required', 'integer'], 'motivo' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $acao->executar(new LancarCompetenciaDTO($d['inscricao_disciplina_id'], $d['competencia_id'], $d['periodo_id'], $d['escala_nivel_id'], $d['motivo'] ?? null));
 
         return back();
     }

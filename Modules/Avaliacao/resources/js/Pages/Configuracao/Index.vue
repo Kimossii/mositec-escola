@@ -13,6 +13,8 @@ const props = defineProps({
     modos: { type: Array, required: true }, // [{ valor, nome }]
     tipos: { type: Array, required: true }, // [{ valor, nome }]
     escalas: { type: Array, default: () => [] }, // [{ id, nome, niveis: [{ id, codigo, designacao }] }]
+    competencias: { type: Array, default: () => [] }, // [{ id, disciplina_id, nivel_academico_id, descricao, ativa }]
+    disciplinas: { type: Array, default: () => [] }, // [{ id, nome }]
     documentos: { type: Object, default: () => ({}) }, // { linhas_extra, lema, visto_cargo, visto_nome }
     cabecalho_linhas: { type: Array, default: () => [] }, // o cabeçalho tal como sairá nos documentos
 });
@@ -34,13 +36,15 @@ function guardarRegra(c) {
     router.post('/avaliacao/configuracao/regras', { ...formulario(c), ano_lectivo_id: props.ano_id, nivel_academico_id: c.nivel_id }, aoGuardar('Regra guardada.'));
 }
 
-const tiposDe = (c) => props.tipos.filter((t) => (t.valor !== 2 || c.tem_exame) && (t.valor !== 3 || c.tem_recurso)); // exame e recurso só têm prazo nas classes que os têm
+const regraId = (c) => c.regra?.id ?? c.regra_qualitativa?.id; // a regra numérica ou a qualitativa, conforme a classe
+// Cada classe só tem prazo dos tipos que usa: as qualitativas o da avaliação qualitativa; as outras, contínuas, prova e (se os têm) exame e recurso.
+const tiposDe = (c) => props.tipos.filter((t) => (c.ambito === 'qualitativa' ? t.valor === 4 : t.valor !== 4 && (t.valor !== 2 || c.tem_exame) && (t.valor !== 3 || c.tem_recurso)));
 const prazoDe = (c, periodoId, tipo) => c.prazos.find((p) => p.periodo_id === periodoId && p.tipo === tipo);
 
 function definirPrazo(c, periodoId, tipo) {
-    const data = datas[`${c.regra.id}-${periodoId}-${tipo}`];
+    const data = datas[`${c.nivel_id}-${periodoId}-${tipo}`];
     if (!data) return;
-    router.post('/avaliacao/configuracao/prazos', { regra_id: c.regra.id, periodo_id: periodoId, tipo, data_limite: data }, aoGuardar('Prazo definido.'));
+    router.post('/avaliacao/configuracao/prazos', { regra_id: regraId(c), periodo_id: periodoId, tipo, data_limite: data }, aoGuardar('Prazo definido.'));
 }
 
 function prolongar(prazo) {
@@ -58,6 +62,28 @@ const escolhaDe = (c) => escolhas[c.nivel_id] ?? c.regra_qualitativa?.escala_id 
 
 function guardarRegraQualitativa(c) {
     router.post('/avaliacao/configuracao/regras-qualitativas', { ano_lectivo_id: props.ano_id, nivel_academico_id: c.nivel_id, escala_id: escolhaDe(c) }, aoGuardar('Escala da classe guardada.'));
+}
+
+const compNivel = ref(''); // '' = todas as classes
+const compDisciplina = ref('');
+const compLista = ref([]); // [{ id, descricao, ativa }]
+
+function carregarCompetencias() {
+    compLista.value = props.competencias
+        .filter((c) => c.disciplina_id === compDisciplina.value && (c.nivel_academico_id ?? '') === compNivel.value)
+        .map((c) => ({ id: c.id, descricao: c.descricao, ativa: c.ativa }));
+}
+
+function guardarCompetencias() {
+    router.post('/avaliacao/configuracao/competencias', {
+        disciplina_id: compDisciplina.value, nivel_academico_id: compNivel.value === '' ? null : compNivel.value, competencias: compLista.value,
+    }, { ...aoGuardar('Competências guardadas.'), onSuccess: () => { toast.success('Competências guardadas.'); carregarCompetencias(); } });
+}
+
+function moverCompetencia(i, delta) {
+    const j = i + delta;
+    if (j < 0 || j >= compLista.value.length) return;
+    [compLista.value[i], compLista.value[j]] = [compLista.value[j], compLista.value[i]];
 }
 
 const EXEMPLO = [['INS', 'Insuficiente'], ['SUF', 'Suficiente'], ['B', 'Bom'], ['MB', 'Muito Bom'], ['EXC', 'Excelente']];
@@ -157,6 +183,38 @@ function copiar() {
             </div>
         </div>
 
+        <div v-if="classes.some((c) => c.ambito === 'qualitativa')" class="card card-flush mb-6">
+            <div class="card-header"><h3 class="card-title fw-bold">Competências por área</h3></div>
+            <div class="card-body">
+                <div class="text-muted fs-7 mb-3">Opcional. Liste o que se observa em cada área (ex.: «Reconhece as cores primárias»). O educador avalia cada competência e o sistema sugere o nível da área, que ele confirma.</div>
+                <div class="d-flex flex-wrap gap-3 mb-4">
+                    <select v-model="compDisciplina" class="form-select form-select-sm w-250px" @change="carregarCompetencias">
+                        <option value="" disabled>Escolha a área</option>
+                        <option v-for="d in disciplinas" :key="d.id" :value="d.id">{{ d.nome }}</option>
+                    </select>
+                    <select v-model="compNivel" class="form-select form-select-sm w-250px" @change="carregarCompetencias">
+                        <option value="">Todas as classes</option>
+                        <option v-for="c in classes.filter((x) => x.ambito === 'qualitativa')" :key="c.nivel_id" :value="c.nivel_id">{{ c.nome }}</option>
+                    </select>
+                </div>
+                <template v-if="compDisciplina !== ''">
+                    <div v-if="!compLista.length" class="text-muted fs-7 mb-3">Esta área ainda não tem competências para esta selecção.</div>
+                    <div v-for="(c, i) in compLista" :key="i" class="d-flex flex-wrap gap-2 mb-2 align-items-center">
+                        <span class="text-muted w-30px">{{ i + 1 }}.</span>
+                        <input v-model="c.descricao" type="text" class="form-control form-control-sm w-400px mw-100" placeholder="Descrição da competência">
+                        <label class="form-check form-check-sm form-check-custom form-check-solid"><input v-model="c.ativa" type="checkbox" class="form-check-input"><span class="form-check-label">Activa</span></label>
+                        <button type="button" class="btn btn-sm btn-light" title="Subir" @click="moverCompetencia(i, -1)">↑</button>
+                        <button type="button" class="btn btn-sm btn-light" title="Descer" @click="moverCompetencia(i, 1)">↓</button>
+                        <button type="button" class="btn btn-sm btn-light-danger" title="Remover" @click="compLista.splice(i, 1)">×</button>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="button" class="btn btn-sm btn-light" @click="compLista.push({ id: null, descricao: '', ativa: true })">Adicionar competência</button>
+                        <button type="button" class="btn btn-sm btn-primary" @click="guardarCompetencias">Guardar competências</button>
+                    </div>
+                </template>
+            </div>
+        </div>
+
         <div v-for="c in classes" :key="c.nivel_id" class="card card-flush mb-6">
             <div class="card-header">
                 <h3 class="card-title fw-bold">{{ c.nome }} <span class="text-muted fs-7 ms-2">{{ c.codigo }}</span></h3>
@@ -219,43 +277,43 @@ function copiar() {
                     <div class="col-12 col-md-2 d-flex align-items-end justify-content-md-end"><button type="button" class="btn btn-sm btn-primary" @click="guardarRegra(c)">Guardar regra</button></div>
                 </div>
 
-                <div v-if="c.regra" class="border-top mt-6 pt-5">
-                    <div class="fw-bold mb-1">Prazos de lançamento</div>
-                    <div class="text-muted fs-7 mb-4">Sem prazo definido, vale o fim do trimestre.</div>
-                    <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                            <thead><tr class="text-muted fw-bold text-uppercase"><th>Trimestre</th><th v-for="t in tiposDe(c)" :key="t.valor">{{ t.nome }}</th></tr></thead>
-                            <tbody>
-                                <tr v-for="p in periodos" :key="p.id">
-                                    <td class="fw-semibold">{{ p.nome }}<div class="text-muted fs-8">termina em {{ p.data_fim }}</div></td>
-                                    <td v-for="t in tiposDe(c)" :key="t.valor">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <input v-model="datas[`${c.regra.id}-${p.id}-${t.valor}`]" type="date" class="form-control form-control-sm w-175px"
-                                                :placeholder="prazoDe(c, p.id, t.valor)?.data_limite"
-                                                @focus="datas[`${c.regra.id}-${p.id}-${t.valor}`] ??= prazoDe(c, p.id, t.valor)?.data_limite">
-                                            <button type="button" class="btn btn-sm btn-light" @click="definirPrazo(c, p.id, t.valor)">Definir</button>
+            </div>
+            <div v-if="regraId(c)" class="card-body border-top">
+                <div class="fw-bold mb-1">Prazos de lançamento</div>
+                <div class="text-muted fs-7 mb-4">Sem prazo definido, vale o fim do trimestre.</div>
+                <div class="table-responsive">
+                    <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-muted fw-bold text-uppercase"><th>Trimestre</th><th v-for="t in tiposDe(c)" :key="t.valor">{{ t.nome }}</th></tr></thead>
+                        <tbody>
+                            <tr v-for="p in periodos" :key="p.id">
+                                <td class="fw-semibold">{{ p.nome }}<div class="text-muted fs-8">termina em {{ p.data_fim }}</div></td>
+                                <td v-for="t in tiposDe(c)" :key="t.valor">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input v-model="datas[`${c.nivel_id}-${p.id}-${t.valor}`]" type="date" class="form-control form-control-sm w-175px"
+                                            :placeholder="prazoDe(c, p.id, t.valor)?.data_limite"
+                                            @focus="datas[`${c.nivel_id}-${p.id}-${t.valor}`] ??= prazoDe(c, p.id, t.valor)?.data_limite">
+                                        <button type="button" class="btn btn-sm btn-light" @click="definirPrazo(c, p.id, t.valor)">Definir</button>
+                                    </div>
+                                    <div v-if="prazoDe(c, p.id, t.valor)" class="mt-2">
+                                        <div v-for="e in prazoDe(c, p.id, t.valor).excepcoes" :key="e.id" class="fs-8 text-muted">
+                                            Excepção até {{ e.data_limite }}{{ e.turma_id ? ' (turma)' : '' }} — {{ e.motivo }}
                                         </div>
-                                        <div v-if="prazoDe(c, p.id, t.valor)" class="mt-2">
-                                            <div v-for="e in prazoDe(c, p.id, t.valor).excepcoes" :key="e.id" class="fs-8 text-muted">
-                                                Excepção até {{ e.data_limite }}{{ e.turma_id ? ' (turma)' : '' }} — {{ e.motivo }}
-                                            </div>
-                                            <a v-if="can('nota.prolongar-prazo')" href="#" class="fs-8"
-                                                @click.prevent="prolongamentos[prazoDe(c, p.id, t.valor).id] ??= { data_limite: '', motivo: '', turma_id: '' }">Prolongar prazo</a>
-                                            <div v-if="prolongamentos[prazoDe(c, p.id, t.valor).id]" class="d-flex flex-wrap gap-2 mt-2">
-                                                <input v-model="prolongamentos[prazoDe(c, p.id, t.valor).id].data_limite" type="date" class="form-control form-control-sm w-150px">
-                                                <input v-model="prolongamentos[prazoDe(c, p.id, t.valor).id].motivo" type="text" class="form-control form-control-sm w-200px" placeholder="Motivo">
-                                                <select v-model="prolongamentos[prazoDe(c, p.id, t.valor).id].turma_id" class="form-select form-select-sm w-200px">
-                                                    <option value="">Todas as turmas</option>
-                                                    <option v-for="tu in c.turmas" :key="tu.id" :value="tu.id">{{ tu.rotulo }}</option>
-                                                </select>
-                                                <button type="button" class="btn btn-sm btn-primary" @click="prolongar(prazoDe(c, p.id, t.valor))">Prolongar</button>
-                                            </div>
+                                        <a v-if="can('nota.prolongar-prazo')" href="#" class="fs-8"
+                                            @click.prevent="prolongamentos[prazoDe(c, p.id, t.valor).id] ??= { data_limite: '', motivo: '', turma_id: '' }">Prolongar prazo</a>
+                                        <div v-if="prolongamentos[prazoDe(c, p.id, t.valor).id]" class="d-flex flex-wrap gap-2 mt-2">
+                                            <input v-model="prolongamentos[prazoDe(c, p.id, t.valor).id].data_limite" type="date" class="form-control form-control-sm w-150px">
+                                            <input v-model="prolongamentos[prazoDe(c, p.id, t.valor).id].motivo" type="text" class="form-control form-control-sm w-200px" placeholder="Motivo">
+                                            <select v-model="prolongamentos[prazoDe(c, p.id, t.valor).id].turma_id" class="form-select form-select-sm w-200px">
+                                                <option value="">Todas as turmas</option>
+                                                <option v-for="tu in c.turmas" :key="tu.id" :value="tu.id">{{ tu.rotulo }}</option>
+                                            </select>
+                                            <button type="button" class="btn btn-sm btn-primary" @click="prolongar(prazoDe(c, p.id, t.valor))">Prolongar</button>
                                         </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

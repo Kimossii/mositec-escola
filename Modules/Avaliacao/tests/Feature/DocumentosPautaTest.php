@@ -162,7 +162,7 @@ class DocumentosPautaTest extends TestCase
         $this->assertSame('PT', MiniPautaDocumentoService::rotuloDaProva('PRI_3'));
     }
 
-    public function test_mini_pauta_do_exame_traz_ne_e_mf_e_a_qualitativa_nao_exporta(): void
+    public function test_mini_pauta_do_exame_traz_ne_e_mf(): void
     {
         $c = $this->cenarioDeAvaliacao('PRI_6');
         $this->regra($c);
@@ -173,10 +173,6 @@ class DocumentosPautaTest extends TestCase
         $d = app(MiniPautaDocumentoService::class)->paraTurmaDisciplina($c['turma']->id, $c['disciplina']->id);
         $this->assertSame(['MFD', 'NE', 'MF', 'NER', 'MFR'], $d->grupos[3]['colunas']);
         $this->assertSame(['8.00', '10.00', '9.20', '', '', ''], array_slice($d->linhas[0], -6));
-
-        [$q] = $this->cenarioQualitativo('Q');
-        $this->expectException(ValidationException::class);
-        app(MiniPautaDocumentoService::class)->paraTurmaDisciplina($q['turma']->id, $q['disciplina']->id);
     }
 
     public function test_excel_tem_celulas_unidas_cabecalho_e_texto_escapado(): void

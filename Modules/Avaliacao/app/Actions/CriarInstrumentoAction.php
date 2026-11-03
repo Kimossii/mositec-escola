@@ -45,6 +45,10 @@ class CriarInstrumentoAction
                 throw ValidationException::withMessages(['tipo' => 'Já existe uma prova trimestral para esta turma, disciplina e trimestre.']);
             }
 
+            if ($dto->tipo === TipoInstrumento::QUALITATIVA) {
+                throw ValidationException::withMessages(['tipo' => 'A avaliação qualitativa não usa avaliações criadas à mão.']);
+            }
+
             if ($dto->tipo === TipoInstrumento::EXAME) {
                 $this->validarExame($turma, $periodo, $dto->disciplina_id);
             }

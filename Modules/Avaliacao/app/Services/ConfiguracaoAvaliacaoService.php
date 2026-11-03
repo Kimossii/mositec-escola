@@ -9,7 +9,9 @@ use Modules\AnoLectivo\Models\Periodo;
 use Modules\Avaliacao\Enums\ModoArredondamento;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Avaliacao\Enums\TipoInstrumento;
+use Modules\Avaliacao\Models\AvaliacaoCompetencia;
 use Modules\Avaliacao\Models\AvaliacaoDocumentoConfig;
+use Modules\Disciplina\Models\Disciplina;
 use Modules\Avaliacao\Models\AvaliacaoEscala;
 use Modules\Avaliacao\Models\AvaliacaoPrazo;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
@@ -31,12 +33,14 @@ class ConfiguracaoAvaliacaoService
         $ano = $anos->firstWhere('id', $anoLectivoId) ?? $anos->firstWhere('estado', EstadoAnoLectivo::ATIVO) ?? $anos->first();
 
         if ($ano === null) {
-            return ['anos' => [], 'ano_id' => null, 'classes' => [], 'periodos' => [], 'modos' => $this->modos(), 'tipos' => $this->tipos(), 'escalas' => $this->escalas(), ...$this->documentos()];
+            return ['anos' => [], 'ano_id' => null, 'classes' => [], 'periodos' => [], 'modos' => $this->modos(), 'tipos' => $this->tipos(), 'escalas' => $this->escalas(), ...$this->competencias(), ...$this->documentos()];
         }
 
         $regras = AvaliacaoRegra::query()->where('ano_lectivo_id', $ano->id)->get()->keyBy('nivel_academico_id');
-        $prazos = AvaliacaoPrazo::query()->whereIn('regra_id', $regras->pluck('id'))->with('excepcoes')->get();
         $regrasQ = AvaliacaoRegraQualitativa::query()->where('ano_lectivo_id', $ano->id)->get()->keyBy('nivel_academico_id');
+        $prazos = AvaliacaoPrazo::query()
+            ->where(fn ($q) => $q->whereIn('regra_id', $regras->pluck('id'))->orWhereIn('regra_qualitativa_id', $regrasQ->pluck('id')))
+            ->with('excepcoes')->get();
         $turmas = Turma::query()->where('ano_lectivo_id', $ano->id)->with(['turno:id,nome', 'anoLectivo:id,nome'])->get()->groupBy('nivel_academico_id');
 
         $classes = NivelAcademico::query()->orderBy('ordem')->get()->map(function (NivelAcademico $nivel) use ($regras, $regrasQ, $prazos, $turmas) {
@@ -67,9 +71,9 @@ class ConfiguracaoAvaliacaoService
                     'modo_arredondamento' => $regra->modo_arredondamento->value,
                     'reprova_por_aproveitamento' => $regra->reprova_por_aproveitamento,
                 ],
-                'regra_qualitativa' => isset($regrasQ[$nivel->id]) ? ['escala_id' => $regrasQ[$nivel->id]->escala_id] : null,
+                'regra_qualitativa' => isset($regrasQ[$nivel->id]) ? ['id' => $regrasQ[$nivel->id]->id, 'escala_id' => $regrasQ[$nivel->id]->escala_id] : null,
                 'sugestao' => $sugestao,
-                'prazos' => $regra === null ? [] : $prazos->where('regra_id', $regra->id)->map(fn (AvaliacaoPrazo $p) => [
+                'prazos' => ($regra !== null ? $prazos->where('regra_id', $regra->id) : (isset($regrasQ[$nivel->id]) ? $prazos->where('regra_qualitativa_id', $regrasQ[$nivel->id]->id) : collect())->values())->map(fn (AvaliacaoPrazo $p) => [
                     'id' => $p->id,
                     'periodo_id' => $p->periodo_id,
                     'tipo' => $p->tipo->value,
@@ -92,7 +96,19 @@ class ConfiguracaoAvaliacaoService
             'modos' => $this->modos(),
             'tipos' => $this->tipos(),
             'escalas' => $this->escalas(),
+            ...$this->competencias(),
             ...$this->documentos(),
+        ];
+    }
+
+    /** @return array{competencias: list<array<string, mixed>>, disciplinas: list<array<string, mixed>>} */
+    private function competencias(): array
+    {
+        return [
+            'competencias' => AvaliacaoCompetencia::query()->orderBy('ordem')->orderBy('id')->get()->map(fn (AvaliacaoCompetencia $c) => [
+                'id' => $c->id, 'disciplina_id' => $c->disciplina_id, 'nivel_academico_id' => $c->nivel_academico_id, 'descricao' => $c->descricao, 'ativa' => $c->ativa,
+            ])->all(),
+            'disciplinas' => Disciplina::query()->orderBy('nome')->get(['id', 'nome'])->map(fn (Disciplina $d) => ['id' => $d->id, 'nome' => (string) $d->nome])->all(),
         ];
     }
 

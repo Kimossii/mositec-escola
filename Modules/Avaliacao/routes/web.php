@@ -12,6 +12,7 @@ Route::middleware(['auth'])->prefix('avaliacao/notas')->name('avaliacao.notas.')
     Route::post('/', [MiniPautaController::class, 'lancar'])->middleware('can:nota.criar')->name('lancar');
     Route::post('/exame', [MiniPautaController::class, 'lancarExame'])->middleware('can:nota.criar')->name('exame.lancar');
     Route::post('/recurso', [MiniPautaController::class, 'lancarRecurso'])->middleware('can:nota.criar')->name('recurso.lancar');
+    Route::post('/competencias', [MiniPautaController::class, 'lancarCompetencia'])->middleware('can:nota.criar')->name('competencias.lancar');
     Route::post('/qualitativas', [MiniPautaController::class, 'lancarQualitativa'])->middleware('can:nota.criar')->name('qualitativas.lancar');
     Route::post('/{nota}/anular', [MiniPautaController::class, 'anular'])->whereNumber('nota')->middleware('can:nota.anular')->name('anular');
     Route::post('/instrumentos', [MiniPautaController::class, 'criarInstrumento'])->name('instrumentos.store');
@@ -24,6 +25,7 @@ Route::middleware(['auth', 'can:nota.configurar'])->prefix('avaliacao/configurac
     Route::post('/regras', [ConfiguracaoAvaliacaoController::class, 'guardarRegra'])->name('regras.guardar');
     Route::post('/regras/copiar', [ConfiguracaoAvaliacaoController::class, 'copiar'])->name('regras.copiar');
     Route::post('/documentos', [ConfiguracaoAvaliacaoController::class, 'guardarDocumentos'])->name('documentos.guardar');
+    Route::post('/competencias', [ConfiguracaoAvaliacaoController::class, 'guardarCompetencias'])->name('competencias.guardar');
     Route::post('/escalas', [ConfiguracaoAvaliacaoController::class, 'guardarEscala'])->name('escalas.guardar');
     Route::post('/regras-qualitativas', [ConfiguracaoAvaliacaoController::class, 'guardarRegraQualitativa'])->name('regras-qualitativas.guardar');
     Route::post('/prazos', [ConfiguracaoAvaliacaoController::class, 'definirPrazo'])->name('prazos.definir');

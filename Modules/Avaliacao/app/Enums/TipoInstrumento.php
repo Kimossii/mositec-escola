@@ -8,6 +8,7 @@ enum TipoInstrumento: int
     case PT = 1;
     case EXAME = 2;
     case RECURSO = 3;
+    case QUALITATIVA = 4;
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum TipoInstrumento: int
             self::PT => 'Prova trimestral',
             self::EXAME => 'Exame próprio',
             self::RECURSO => 'Exame de recurso',
+            self::QUALITATIVA => 'Avaliação qualitativa',
         };
     }
 }

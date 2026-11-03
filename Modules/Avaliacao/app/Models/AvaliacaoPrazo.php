@@ -17,7 +17,7 @@ class AvaliacaoPrazo extends Model
 
     protected $table = 'avaliacao_prazos';
 
-    protected $fillable = ['regra_id', 'periodo_id', 'tipo', 'tipo_descricao', 'data_limite', 'criado_por', 'editado_por'];
+    protected $fillable = ['regra_id', 'regra_qualitativa_id', 'periodo_id', 'tipo', 'tipo_descricao', 'data_limite', 'criado_por', 'editado_por'];
 
     protected $casts = [
         'tipo' => TipoInstrumento::class,
@@ -34,6 +34,11 @@ class AvaliacaoPrazo extends Model
     public function regra(): BelongsTo
     {
         return $this->belongsTo(AvaliacaoRegra::class, 'regra_id');
+    }
+
+    public function regraQualitativa(): BelongsTo
+    {
+        return $this->belongsTo(AvaliacaoRegraQualitativa::class, 'regra_qualitativa_id');
     }
 
     public function periodo(): BelongsTo

@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Modules\Avaliacao\Actions\CopiarRegrasDoAnoAnteriorAction;
 use Modules\Avaliacao\Actions\DefinirPrazoAction;
+use Modules\Avaliacao\Actions\GuardarCompetenciasAction;
 use Modules\Avaliacao\Actions\GuardarConfigDocumentosAction;
 use Modules\Avaliacao\Actions\GuardarEscalaQualitativaAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
@@ -62,6 +63,19 @@ class ConfiguracaoAvaliacaoController extends Controller
         ]);
 
         $acao->executar($d['linhas_extra'] ?? null, $d['lema'] ?? null, $d['visto_cargo'] ?? null, $d['visto_nome'] ?? null);
+
+        return back();
+    }
+
+    public function guardarCompetencias(Request $request, GuardarCompetenciasAction $acao): RedirectResponse
+    {
+        $d = $request->validate([
+            'disciplina_id' => ['required', 'integer'], 'nivel_academico_id' => ['nullable', 'integer'],
+            'competencias' => ['present', 'array', 'max:30'], 'competencias.*.id' => ['nullable', 'integer'],
+            'competencias.*.descricao' => ['required', 'string', 'max:200'], 'competencias.*.ativa' => ['nullable', 'boolean'],
+        ]);
+
+        $acao->executar($d['disciplina_id'], $d['nivel_academico_id'] ?? null, array_values($d['competencias']));
 
         return back();
     }

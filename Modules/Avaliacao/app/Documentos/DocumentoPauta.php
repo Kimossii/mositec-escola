@@ -35,7 +35,7 @@ final class DocumentoPauta
     /** Posição (a partir de 0) da coluna do nome do aluno, para a alinhar à esquerda. */
     public function indiceDoNome(): ?int
     {
-        foreach (['Nome do aluno', 'Nome'] as $rotulo) {
+        foreach (['Nome do aluno', 'Nome da criança', 'Nome'] as $rotulo) {
             $i = array_search($rotulo, $this->fixas, true);
             if ($i !== false) {
                 return $i;

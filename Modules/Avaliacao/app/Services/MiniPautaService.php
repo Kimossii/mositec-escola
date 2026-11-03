@@ -93,7 +93,7 @@ class MiniPautaService
 
         $base = ['tipo' => 'quantitativa', 'rotulo_pt' => MiniPautaDocumentoService::rotuloDaProva($turma->nivelAcademico?->codigo), 'turma_rotulo' => $turma->rotulo(completo: true), 'disciplina_nome' => (string) $disciplina->nome, 'regra' => null];
 
-        $qualitativa = $this->qualitativa->paraTurmaDisciplina($turma, $disciplinaId, $periodoId);
+        $qualitativa = $this->qualitativa->paraTurmaDisciplina($turma, $disciplinaId, $periodoId, $this->docentes->idDe($utilizador));
         if ($qualitativa !== null) {
             return [...$base, ...$qualitativa];
         }

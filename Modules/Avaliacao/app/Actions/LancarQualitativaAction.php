@@ -2,9 +2,7 @@
 
 namespace Modules\Avaliacao\Actions;
 
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Modules\AnoLectivo\Enums\TipoPeriodo;
 use Modules\AnoLectivo\Models\Periodo;
@@ -12,16 +10,18 @@ use Modules\Avaliacao\DTO\LancarQualitativaDTO;
 use Modules\Avaliacao\Models\AvaliacaoEscalaNivel;
 use Modules\Avaliacao\Models\AvaliacaoQualitativa;
 use Modules\Avaliacao\Models\AvaliacaoRegraQualitativa;
+use Modules\Avaliacao\Enums\TipoInstrumento;
+use Modules\Avaliacao\Services\AutorizaLancamentoService;
+use Modules\Avaliacao\Services\DocenteDoUtilizadorService;
 use Modules\Avaliacao\Services\PautaFinalService;
-use Modules\Core\Contracts\VerificaAtribuicaoDocente;
+use Modules\Avaliacao\Services\PrazoService;
 use Modules\Core\Traits\LogService;
-use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\Models\InscricaoDisciplina;
 use Modules\Turma\Models\Turma;
 
 /**
  * Lança ou altera o nível qualitativo de uma criança numa área e trimestre. Mesmas regras de quem pode que as notas:
- * dentro do prazo, o docente atribuído; depois do prazo (fim do trimestre), só quem tem `nota.lancar-fora-prazo`, com motivo.
+ * dentro do prazo, o docente atribuído; depois do prazo (o da regra, ou o fim do trimestre se não houver), só quem tem `nota.lancar-fora-prazo`, com motivo.
  * O nível tem de pertencer à escala da classe. Cada alteração fica no histórico.
  */
 class LancarQualitativaAction
@@ -30,8 +30,9 @@ class LancarQualitativaAction
 
     public function __construct(
         private PautaFinalService $pautas,
-        private VerificaAtribuicaoDocente $atribuicoes,
-        private RelogioDoTenant $relogio,
+        private AutorizaLancamentoService $autorizacao,
+        private PrazoService $prazos,
+        private DocenteDoUtilizadorService $docentes,
     ) {
     }
 
@@ -60,8 +61,8 @@ class LancarQualitativaAction
         }
 
         $disciplinaId = $inscricao->planoCurricularDisciplina->disciplina_id;
-        $foraDoPrazo = $this->relogio->hoje()->toDateString() > $periodo->data_fim->toDateString();
-        $this->autorizar($turma->id, $disciplinaId, $foraDoPrazo, $dto->motivo);
+        $foraDoPrazo = $this->prazos->prazoEncerrado($regra, $periodo->id, TipoInstrumento::QUALITATIVA, $turma->id, $disciplinaId, $this->docentes->idDe(auth()->user()));
+        $this->autorizacao->exigir($turma->id, $disciplinaId, $foraDoPrazo, $dto->motivo);
 
         $actual = AvaliacaoQualitativa::query()->where('inscricao_disciplina_id', $inscricao->id)->where('periodo_id', $periodo->id)->lockForUpdate()->first();
         $observacao = $dto->observacao !== null && trim($dto->observacao) !== '' ? trim($dto->observacao) : null;
@@ -80,30 +81,5 @@ class LancarQualitativaAction
         ]);
 
         return $actual;
-    }
-
-    private function autorizar(int $turmaId, int $disciplinaId, bool $foraDoPrazo, ?string $motivo): void
-    {
-        $utilizador = auth()->user();
-        $temExcepcao = Gate::allows('nota.lancar-fora-prazo');
-
-        if ($foraDoPrazo) {
-            if (! $temExcepcao) {
-                throw new AuthorizationException('O prazo de lançamento terminou.');
-            }
-            if ($motivo === null || trim($motivo) === '') {
-                throw ValidationException::withMessages(['motivo' => 'Indique o motivo do lançamento fora do prazo.']);
-            }
-
-            return;
-        }
-
-        $podeNaTurma = $utilizador !== null
-            && (Gate::allows('nota.criar') || Gate::allows('nota.editar'))
-            && $this->atribuicoes->podeGerir($utilizador->id, $turmaId, $disciplinaId);
-
-        if (! $podeNaTurma && ! $temExcepcao) {
-            throw new AuthorizationException('Não lecciona esta área nesta turma.');
-        }
     }
 }

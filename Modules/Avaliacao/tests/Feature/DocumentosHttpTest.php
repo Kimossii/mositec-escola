@@ -78,12 +78,14 @@ class DocumentosHttpTest extends TestCase
         $this->get($this->urlMini())->assertRedirect();
     }
 
-    public function test_mini_pauta_qualitativa_nao_exporta_e_diz_porque(): void
+    public function test_mini_pauta_qualitativa_exporta_em_pdf_e_em_excel(): void
     {
         [$q] = $this->cenarioQualitativo('Q');
+        $admin = $this->admin();
+        $url = fn (string $formato) => '/avaliacao/notas/exportar?'.http_build_query(['turma' => $q['turma']->id, 'disciplina' => $q['disciplina']->id, 'formato' => $formato]);
 
-        $this->actingAs($this->admin())->get('/avaliacao/notas/exportar?'.http_build_query(['turma' => $q['turma']->id, 'disciplina' => $q['disciplina']->id, 'formato' => 'pdf']))
-            ->assertSessionHasErrors('turma');
+        $this->actingAs($admin)->get($url('pdf'))->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->actingAs($admin)->get($url('excel'))->assertOk();
     }
 
     public function test_configuracao_dos_documentos_guarda_e_mostra_o_cabecalho(): void
