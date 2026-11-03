@@ -83,20 +83,6 @@ class PautaFinalServiceTest extends TestCase
         $this->assertNull($p['alunos'][0]['celulas'][$c['disciplina']->id]['mfd']);
     }
 
-    public function test_classe_com_exame_nao_decide_nem_aprova_nesta_fase(): void
-    {
-        $c = $this->cenarioDeAvaliacao('PRI_6');
-        $this->regra($c);
-        $this->notasCompletas($c, $this->inscreverAluno($c), [1 => ['8', '8'], 2 => ['8', '8'], 3 => ['8', '8']]);
-
-        $p = $this->pauta($c);
-
-        $this->assertFalse($p['pode_aprovar']);
-        $this->assertSame('aguarda_exame', $p['alunos'][0]['estado_decisao']);
-        $this->assertNull($p['alunos'][0]['decisao']);
-        $this->assertSame('8.00', $p['alunos'][0]['celulas'][$c['disciplina']->id]['mfd']);
-    }
-
     public function test_sem_regra_ou_sem_alunos_nao_se_aprova(): void
     {
         $c = $this->cenarioDeAvaliacao();

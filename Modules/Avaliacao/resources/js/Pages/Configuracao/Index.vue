@@ -24,7 +24,7 @@ const aoFalhar = (e) => toast.error(Object.values(e)[0]);
 const aoGuardar = (texto) => ({ preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => toast.success(texto) });
 
 function formulario(c) {
-    formularios[c.nivel_id] ??= { ...(c.regra ?? { ...c.sugestao, peso_mac: '50', peso_pt: '50', peso_mt1: null, peso_mt2: null, peso_mt3: null, casas_decimais: 2, modo_arredondamento: 0 }) };
+    formularios[c.nivel_id] ??= { ...(c.regra ?? { ...c.sugestao, peso_mac: '50', peso_pt: '50', peso_mt1: null, peso_mt2: null, peso_mt3: null, peso_mfd_exame: '40', peso_exame: '60', casas_decimais: 2, modo_arredondamento: 0 }) };
     return formularios[c.nivel_id];
 }
 
@@ -32,6 +32,7 @@ function guardarRegra(c) {
     router.post('/avaliacao/configuracao/regras', { ...formulario(c), ano_lectivo_id: props.ano_id, nivel_academico_id: c.nivel_id }, aoGuardar('Regra guardada.'));
 }
 
+const tiposDe = (c) => props.tipos.filter((t) => t.valor !== 2 || c.tem_exame); // o exame só tem prazo nas classes que o têm
 const prazoDe = (c, periodoId, tipo) => c.prazos.find((p) => p.periodo_id === periodoId && p.tipo === tipo);
 
 function definirPrazo(c, periodoId, tipo) {
@@ -162,6 +163,13 @@ function copiar() {
                         <label class="form-label fs-8 fw-bold text-muted text-uppercase">Arredondamento</label>
                         <select v-model="formulario(c).modo_arredondamento" class="form-select form-select-sm"><option v-for="m in modos" :key="m.valor" :value="m.valor">{{ m.nome }}</option></select>
                     </div>
+                    <div v-if="c.tem_exame" class="col-12 col-md-6">
+                        <label class="form-label fs-8 fw-bold text-muted text-uppercase">Exame próprio: peso da MFD % e do exame % (MF = MFD × peso + NE × peso)</label>
+                        <div class="d-flex gap-2">
+                            <input v-model="formulario(c).peso_mfd_exame" type="text" class="form-control form-control-sm" placeholder="MFD">
+                            <input v-model="formulario(c).peso_exame" type="text" class="form-control form-control-sm" placeholder="Exame">
+                        </div>
+                    </div>
                     <div class="col-12 col-md-6">
                         <label class="form-label fs-8 fw-bold text-muted text-uppercase">Pesos dos trimestres % (vazio = iguais)</label>
                         <div class="d-flex gap-2">
@@ -184,11 +192,11 @@ function copiar() {
                     <div class="text-muted fs-7 mb-4">Sem prazo definido, vale o fim do trimestre.</div>
                     <div class="table-responsive">
                         <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                            <thead><tr class="text-muted fw-bold text-uppercase"><th>Trimestre</th><th v-for="t in tipos" :key="t.valor">{{ t.nome }}</th></tr></thead>
+                            <thead><tr class="text-muted fw-bold text-uppercase"><th>Trimestre</th><th v-for="t in tiposDe(c)" :key="t.valor">{{ t.nome }}</th></tr></thead>
                             <tbody>
                                 <tr v-for="p in periodos" :key="p.id">
                                     <td class="fw-semibold">{{ p.nome }}<div class="text-muted fs-8">termina em {{ p.data_fim }}</div></td>
-                                    <td v-for="t in tipos" :key="t.valor">
+                                    <td v-for="t in tiposDe(c)" :key="t.valor">
                                         <div class="d-flex align-items-center gap-2">
                                             <input v-model="datas[`${c.regra.id}-${p.id}-${t.valor}`]" type="date" class="form-control form-control-sm w-175px"
                                                 :placeholder="prazoDe(c, p.id, t.valor)?.data_limite"

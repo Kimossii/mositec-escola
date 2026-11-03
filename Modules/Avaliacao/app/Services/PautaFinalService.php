@@ -98,7 +98,7 @@ class PautaFinalService
         }
 
         $regra = $this->regras->paraTurma($turma);
-        $base = ['tipo' => 'quantitativa', 'turma_id' => $turma->id, 'turma_rotulo' => $turma->rotulo(completo: true), 'regra' => null, 'estado' => 'provisoria', 'versao' => null,
+        $base = ['tipo' => 'quantitativa', 'turma_id' => $turma->id, 'turma_rotulo' => $turma->rotulo(completo: true), 'regra' => null, 'estado' => 'provisoria', 'versao' => null, 'com_exame' => false,
             'aprovada_em' => null, 'aprovada_por' => null, 'disciplinas' => [], 'alunos' => [], 'pode_aprovar' => false, 'bloqueios' => []];
 
         if ($regra === null) {
@@ -124,10 +124,15 @@ class PautaFinalService
                 $celulas[$matriculaId][$disciplina->id] = [
                     'inscricao_id' => $inscricaoId,
                     'mt1' => $this->apresentar($r->mt[1], $regra), 'mt2' => $this->apresentar($r->mt[2], $regra), 'mt3' => $this->apresentar($r->mt[3], $regra),
+                    'ne' => $r->ne === null ? null : $this->apresentar($r->ne, $regra),
                     'mfd_exacta' => $r->mfd,
                     'mfd' => $r->mfdArredondada,
-                    'aprovado' => $r->mfdArredondada === null ? null : $this->calculadora->aprovadoNaDisciplina($r->mfdArredondada, (string) $regra->nota_minima),
-                    'pendente' => $r->mfdArredondada === null,
+                    'mf_exacta' => $r->mf,
+                    'mf' => $r->mfArredondada,
+                    'nota_final' => $r->notaFinalArredondada(),
+                    'aprovado' => $r->notaFinalArredondada() === null ? null : $this->calculadora->aprovadoNaDisciplina($r->notaFinalArredondada(), (string) $regra->nota_minima),
+                    'pendente' => $r->notaFinalArredondada() === null,
+                    'exame_em_falta' => $comExame && $r->ne === null,
                 ];
             }
         }
@@ -136,7 +141,7 @@ class PautaFinalService
         $comPendentes = 0;
         foreach ($matriculas as $m) {
             $doAluno = $celulas[$m->id] ?? [];
-            $decisao = $this->decisao->decidir(array_column($doAluno, 'mfd'), (string) $regra->nota_minima, $regra->reprova_por_aproveitamento, $comExame);
+            $decisao = $this->decisao->decidir(array_column($doAluno, 'nota_final'), (string) $regra->nota_minima, $regra->reprova_por_aproveitamento, $comExame);
             $pendente = in_array(true, array_column($doAluno, 'pendente'), true) || $doAluno === [];
             $comPendentes += $pendente ? 1 : 0;
 
@@ -146,7 +151,7 @@ class PautaFinalService
                 'numero_matricula' => $m->aluno?->numero_matricula,
                 'celulas' => $doAluno,
                 'decisao' => $this->decisaoParaTela($decisao),
-                'estado_decisao' => $decisao !== null ? 'definida' : ($comExame ? 'aguarda_exame' : 'pendente'),
+                'estado_decisao' => $decisao !== null ? 'definida' : 'pendente',
             ];
         }
         usort($alunos, fn (array $x, array $y) => strnatcasecmp($x['nome'], $y['nome']));
@@ -155,8 +160,9 @@ class PautaFinalService
         if ($alunos === []) {
             $bloqueios[] = 'A turma não tem alunos com matrícula activa.';
         }
-        if ($comExame) {
-            $bloqueios[] = 'Esta classe tem exame próprio: a pauta só pode ser aprovada com os exames (fase seguinte).';
+        $semExame = count(array_filter($alunos, fn (array $a) => in_array(true, array_column($a['celulas'], 'exame_em_falta'), true)));
+        if ($comExame && $semExame > 0) {
+            $bloqueios[] = "Faltam notas de exame em {$semExame} aluno(s): lance-as antes de aprovar.";
         }
         if ($comPendentes > 0) {
             $bloqueios[] = "Faltam resultados em {$comPendentes} aluno(s): lance as notas em falta antes de aprovar.";
@@ -164,6 +170,7 @@ class PautaFinalService
 
         return [
             ...$base,
+            'com_exame' => $comExame,
             'disciplinas' => $disciplinas->map(fn (Disciplina $d) => ['id' => $d->id, 'nome' => (string) $d->nome])->all(),
             'alunos' => $alunos,
             'pode_aprovar' => $bloqueios === [],
@@ -205,7 +212,9 @@ class PautaFinalService
             $alunos[$m->id]['celulas'][$i->planoCurricularDisciplina->disciplina_id] = [
                 'inscricao_id' => $i->id,
                 'mt1' => $this->formatar($l->mt1, $casas), 'mt2' => $this->formatar($l->mt2, $casas), 'mt3' => $this->formatar($l->mt3, $casas),
-                'mfd_exacta' => $l->mfd_exacta, 'mfd' => $this->formatar($l->mfd, $casas), 'aprovado' => $l->aprovado, 'pendente' => $l->mfd === null,
+                'ne' => $this->formatar($l->ne, $casas),
+                'mfd_exacta' => $l->mfd_exacta, 'mfd' => $this->formatar($l->mfd, $casas), 'mf_exacta' => $l->mf_exacta, 'mf' => $this->formatar($l->mf, $casas),
+                'nota_final' => $this->formatar($l->mf ?? $l->mfd, $casas), 'aprovado' => $l->aprovado, 'pendente' => $l->mfd === null, 'exame_em_falta' => false,
             ];
         }
         $alunos = array_values($alunos);
@@ -213,6 +222,7 @@ class PautaFinalService
 
         return [
             'tipo' => 'quantitativa',
+            'com_exame' => $linhas->contains(fn (AvaliacaoPautaLinha $l) => $l->mf !== null),
             'turma_id' => $turma->id,
             'turma_rotulo' => $turma->rotulo(completo: true),
             'regra' => $regra === null ? null : $this->regraParaTela($regra),

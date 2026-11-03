@@ -36,7 +36,7 @@ class CopiarRegrasDoAnoAnteriorAction
                     AvaliacaoRegra::create([
                         ...$regra->only([
                             'nivel_academico_id', 'escala_maxima', 'nota_minima', 'peso_mac', 'peso_pt', 'peso_mt1', 'peso_mt2',
-                            'peso_mt3', 'casas_decimais', 'modo_arredondamento', 'reprova_por_aproveitamento',
+                            'peso_mt3', 'peso_mfd_exame', 'peso_exame', 'casas_decimais', 'modo_arredondamento', 'reprova_por_aproveitamento',
                         ]),
                         'ano_lectivo_id' => $destino->id,
                     ]);

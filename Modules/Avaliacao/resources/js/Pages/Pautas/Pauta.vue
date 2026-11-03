@@ -41,7 +41,7 @@ function reabrir() {
 }
 
 const imprimir = () => window.print();
-const textoDecisao = (a) => a.decisao?.rotulo ?? (a.estado_decisao === 'aguarda_exame' ? 'Aguarda exame' : 'Pendente');
+const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
 </script>
 
 <template>
@@ -109,11 +109,14 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.estado_decisao === 'aguarda_
                             <tr class="fw-bold text-uppercase">
                                 <th rowspan="2" style="width: 2.5rem">N.º</th>
                                 <th rowspan="2" class="text-start">Nome do aluno</th>
-                                <th v-for="d in pauta.disciplinas" :key="d.id" colspan="4">{{ d.nome }}</th>
+                                <th v-for="d in pauta.disciplinas" :key="d.id" :colspan="pauta.com_exame ? 3 : 4">{{ d.nome }}</th>
                                 <th rowspan="2">Resultado final</th>
                             </tr>
                             <tr class="text-muted">
-                                <template v-for="d in pauta.disciplinas" :key="d.id"><th>MT1</th><th>MT2</th><th>MT3</th><th>MFD</th></template>
+                                <template v-for="d in pauta.disciplinas" :key="d.id">
+                                    <template v-if="pauta.com_exame"><th>MFD</th><th>NE</th><th>MF</th></template>
+                                    <template v-else><th>MT1</th><th>MT2</th><th>MT3</th><th>MFD</th></template>
+                                </template>
                             </tr>
                         </thead>
                         <tbody>
@@ -121,10 +124,17 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.estado_decisao === 'aguarda_
                                 <td class="text-muted">{{ n + 1 }}</td>
                                 <td class="text-start fw-semibold text-nowrap">{{ a.nome }}</td>
                                 <template v-for="d in pauta.disciplinas" :key="d.id">
+                                    <template v-if="pauta.com_exame">
+                                        <td>{{ a.celulas[d.id]?.mfd ?? '—' }}</td>
+                                        <td>{{ a.celulas[d.id]?.ne ?? '—' }}</td>
+                                        <td class="fw-bold" :class="a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mf ?? '—' }}</td>
+                                    </template>
+                                    <template v-else>
                                     <td>{{ a.celulas[d.id]?.mt1 ?? '—' }}</td>
                                     <td>{{ a.celulas[d.id]?.mt2 ?? '—' }}</td>
                                     <td>{{ a.celulas[d.id]?.mt3 ?? '—' }}</td>
                                     <td class="fw-bold" :class="a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mfd ?? '—' }}</td>
+                                    </template>
                                 </template>
                                 <td class="fw-bold text-nowrap" :class="a.decisao?.valor === 1 || a.decisao?.valor === 3 ? 'text-danger' : (a.decisao ? 'text-success' : 'text-muted')">{{ textoDecisao(a) }}</td>
                             </tr>

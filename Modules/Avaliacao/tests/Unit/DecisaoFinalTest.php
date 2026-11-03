@@ -41,9 +41,11 @@ class DecisaoFinalTest extends TestCase
         $this->assertNull($this->decidir([]));
     }
 
-    public function test_classe_com_exame_aguarda_o_exame(): void
+    public function test_classe_com_exame_usa_os_termos_apto_e_nao_apto(): void
     {
-        $this->assertNull($this->decidir(['8.00', '9.00'], exame: true));
+        $this->assertSame(Decisao::APTO, $this->decidir(['8.00', '5.00'], exame: true));
+        $this->assertSame(Decisao::NAO_APTO, $this->decidir(['8.00', '4.99'], exame: true));
+        $this->assertNull($this->decidir(['8.00', null], exame: true));
     }
 
     public function test_o_enum_tem_os_quatro_termos(): void

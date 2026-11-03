@@ -19,6 +19,8 @@ readonly class RegraAvaliacaoDTO
         public int $casas_decimais = 2,
         public ModoArredondamento $modo_arredondamento = ModoArredondamento::HALF_UP,
         public bool $reprova_por_aproveitamento = true,
+        public string $peso_mfd_exame = '40',
+        public string $peso_exame = '60',
     ) {
     }
 }

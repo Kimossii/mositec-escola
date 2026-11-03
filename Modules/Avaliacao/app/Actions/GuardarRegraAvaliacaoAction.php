@@ -30,6 +30,8 @@ class GuardarRegraAvaliacaoAction
                     'peso_mt1' => $dto->peso_mt1,
                     'peso_mt2' => $dto->peso_mt2,
                     'peso_mt3' => $dto->peso_mt3,
+                    'peso_mfd_exame' => $dto->peso_mfd_exame,
+                    'peso_exame' => $dto->peso_exame,
                     'casas_decimais' => $dto->casas_decimais,
                     'modo_arredondamento' => $dto->modo_arredondamento,
                     'reprova_por_aproveitamento' => $dto->reprova_por_aproveitamento,
@@ -45,6 +47,10 @@ class GuardarRegraAvaliacaoAction
 
         if (bccomp(bcadd($dto->peso_mac, $dto->peso_pt, 2), '100', 2) !== 0) {
             throw ValidationException::withMessages(['peso_mac' => 'Os pesos da avaliação contínua e da prova trimestral têm de somar 100%.']);
+        }
+
+        if (bccomp(bcadd($dto->peso_mfd_exame, $dto->peso_exame, 2), '100', 2) !== 0) {
+            throw ValidationException::withMessages(['peso_exame' => 'Os pesos da média final e do exame têm de somar 100%.']);
         }
 
         $pesosMt = [$dto->peso_mt1, $dto->peso_mt2, $dto->peso_mt3];

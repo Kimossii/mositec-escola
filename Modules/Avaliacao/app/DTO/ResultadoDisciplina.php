@@ -22,7 +22,17 @@ readonly class ResultadoDisciplina
         public array $pendentes,
         public ?string $mfd,
         public ?string $mfdArredondada,
+        public ?string $ne = null,
+        public ?string $mf = null,
+        public ?string $mfArredondada = null,
+        public bool $temExame = false,
     ) {
+    }
+
+    /** A nota que vale no fim: a MF depois do exame, ou a MFD nas disciplinas sem exame. */
+    public function notaFinalArredondada(): ?string
+    {
+        return $this->temExame ? $this->mfArredondada : $this->mfdArredondada;
     }
 
     public function temPendentes(): bool

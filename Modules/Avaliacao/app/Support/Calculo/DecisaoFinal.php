@@ -5,9 +5,9 @@ namespace Modules\Avaliacao\Support\Calculo;
 use Modules\Avaliacao\Enums\Decisao;
 
 /**
- * Decisão do aluno a partir das MFD arredondadas (as impressas na pauta). Todas as disciplinas têm de atingir o mínimo,
- * sem compensação pela média global. `null` = ainda não se pode decidir (disciplina sem MFD, ou classe com exame próprio,
- * cuja decisão depende do exame).
+ * Decisão do aluno a partir das notas finais arredondadas (as impressas na pauta: a MFD, ou a MF nas disciplinas com
+ * exame). Todas as disciplinas têm de atingir o mínimo, sem compensação pela média global. `null` = ainda não se pode
+ * decidir (disciplina sem nota final). Nas classes com exame próprio (6.ª e 9.ª) os termos são Apto/Não apto.
  */
 class DecisaoFinal
 {
@@ -15,23 +15,25 @@ class DecisaoFinal
     {
     }
 
-    /** @param  array<int, ?string>  $mfdArredondadas */
-    public function decidir(array $mfdArredondadas, string $notaMinima, bool $reprovaPorAproveitamento, bool $classeComExame): ?Decisao
+    /** @param  array<int, ?string>  $notasFinais */
+    public function decidir(array $notasFinais, string $notaMinima, bool $reprovaPorAproveitamento, bool $termosApto): ?Decisao
     {
-        if ($classeComExame || $mfdArredondadas === [] || in_array(null, $mfdArredondadas, true)) {
+        if ($notasFinais === [] || in_array(null, $notasFinais, true)) {
             return null;
         }
 
+        [$positiva, $negativa] = $termosApto ? [Decisao::APTO, Decisao::NAO_APTO] : [Decisao::TRANSITA, Decisao::NAO_TRANSITA];
+
         if (! $reprovaPorAproveitamento) {
-            return Decisao::TRANSITA;
+            return $positiva;
         }
 
-        foreach ($mfdArredondadas as $mfd) {
-            if (! $this->calculadora->aprovadoNaDisciplina($mfd, $notaMinima)) {
-                return Decisao::NAO_TRANSITA;
+        foreach ($notasFinais as $nota) {
+            if (! $this->calculadora->aprovadoNaDisciplina($nota, $notaMinima)) {
+                return $negativa;
             }
         }
 
-        return Decisao::TRANSITA;
+        return $positiva;
     }
 }

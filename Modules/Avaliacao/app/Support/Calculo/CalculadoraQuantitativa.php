@@ -79,6 +79,19 @@ class CalculadoraQuantitativa
         return bcdiv($soma, '100', self::ESCALA);
     }
 
+    /**
+     * MF depois do exame próprio: `MFD × pesoMfd + NE × pesoNe` (pesos em percentagem, somam 100; por defeito 40/60).
+     * Já é uma média ponderada: não se divide por 2. 10 e 10 dão 10; 12 e 14 dão 13,2.
+     */
+    public function mfComExame(string $mfd, string $ne, string $pesoMfd, string $pesoNe): string
+    {
+        $this->exigirSoma100([$pesoMfd, $pesoNe]);
+
+        $soma = bcadd(bcmul($mfd, $pesoMfd, self::ESCALA), bcmul($ne, $pesoNe, self::ESCALA), self::ESCALA);
+
+        return bcdiv($soma, '100', self::ESCALA);
+    }
+
     public function arredondar(string $valor, int $casas, ModoArredondamento $modo): string
     {
         $fator = bcpow('10', (string) $casas, 0);

@@ -31,6 +31,7 @@ class ResultadoDisciplinaService
         private RegraAvaliacaoService $regras,
         private PrazoService $prazos,
         private DocenteDoUtilizadorService $docentes,
+        private RegraPadraoService $padrao,
     ) {
     }
 
@@ -53,7 +54,8 @@ class ResultadoDisciplinaService
      */
     public function calcularTurma(int $turmaId, int $disciplinaId, ?array $inscricaoIds = null): array
     {
-        $turma = Turma::query()->findOrFail($turmaId);
+        $turma = Turma::query()->with('nivelAcademico:id,codigo')->findOrFail($turmaId);
+        $comExame = $this->padrao->temExameProprio((string) $turma->nivelAcademico?->codigo);
         $regra = $this->regras->paraTurma($turma)
             ?? throw ValidationException::withMessages(['turma_id' => 'A escola ainda não configurou a regra de avaliação desta classe.']);
 
@@ -80,7 +82,7 @@ class ResultadoDisciplinaService
         $resultados = [];
         foreach ($inscricoes as $inscricaoId) {
             $doAluno = ($notas[$inscricaoId] ?? collect())->keyBy('instrumento_id');
-            $resultados[$inscricaoId] = $this->resultado($regra, $periodos, $instrumentos, $doAluno, $encerrado);
+            $resultados[$inscricaoId] = $this->resultado($regra, $periodos, $instrumentos, $doAluno, $encerrado, $comExame);
         }
 
         return $resultados;
@@ -101,7 +103,7 @@ class ResultadoDisciplinaService
         return $encerrado;
     }
 
-    private function resultado(AvaliacaoRegra $regra, Collection $periodos, Collection $instrumentos, Collection $notas, array $encerrado): ResultadoDisciplina
+    private function resultado(AvaliacaoRegra $regra, Collection $periodos, Collection $instrumentos, Collection $notas, array $encerrado, bool $comExame): ResultadoDisciplina
     {
         $mac = $pt = $mt = $pendentes = [];
 
@@ -140,7 +142,35 @@ class ResultadoDisciplinaService
         $mfd = $this->calculadora->mfd([$mt[1], $mt[2], $mt[3]], $regra->pesosDosTrimestres());
         $arredondada = $mfd === null ? null : $this->calculadora->arredondar($mfd, $regra->casas_decimais, $regra->modo_arredondamento);
 
-        return new ResultadoDisciplina($mac, $pt, $mt, $pendentes, $mfd, $arredondada);
+        [$ne, $mf, $mfArredondada] = $comExame ? $this->exame($regra, $instrumentos, $notas, $mfd) : [null, null, null];
+
+        return new ResultadoDisciplina($mac, $pt, $mt, $pendentes, $mfd, $arredondada, $ne, $mf, $mfArredondada, $comExame);
+    }
+
+    /**
+     * Exame próprio: NE lançada (ou anulada a contar como zero) com a MFD dá a MF. Sem exame criado, sem nota ou com a
+     * nota anulada o resultado fica pendente: um exame em falta não se transforma em zero por si.
+     *
+     * @return array{0: ?string, 1: ?string, 2: ?string} [NE, MF exacta, MF arredondada]
+     */
+    private function exame(AvaliacaoRegra $regra, Collection $instrumentos, Collection $notas, ?string $mfd): array
+    {
+        $exame = $instrumentos->firstWhere('tipo', TipoInstrumento::EXAME);
+        $nota = $exame === null ? null : ($notas[$exame->id] ?? null);
+
+        $ne = match ($nota?->estado) {
+            EstadoNota::LANCADA => (string) $nota->valor,
+            EstadoNota::ANULADA_CONTA_ZERO => '0',
+            default => null,
+        };
+
+        if ($ne === null || $mfd === null) {
+            return [$ne, null, null];
+        }
+
+        $mf = $this->calculadora->mfComExame($mfd, $ne, (string) $regra->peso_mfd_exame, (string) $regra->peso_exame);
+
+        return [$ne, $mf, $this->calculadora->arredondar($mf, $regra->casas_decimais, $regra->modo_arredondamento)];
     }
 
     /** Valor que a nota contribui para o cálculo, ou `null` se fica de fora; marca `$pendente` quando ainda falta lançar. */

@@ -34,6 +34,7 @@ class MiniPautaService
         private DocenteDoUtilizadorService $docentes,
         private RelogioDoTenant $relogio,
         private MiniPautaQualitativaService $qualitativa,
+        private RegraPadraoService $padrao,
     ) {
     }
 
@@ -86,7 +87,7 @@ class MiniPautaService
      */
     public function paraTurmaDisciplina(User $utilizador, int $turmaId, int $disciplinaId, ?int $periodoId = null): array
     {
-        $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome'])->findOrFail($turmaId);
+        $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,codigo'])->findOrFail($turmaId);
         $disciplina = Disciplina::query()->findOrFail($disciplinaId);
         $regra = $this->regras->paraTurma($turma);
 
@@ -110,16 +111,21 @@ class MiniPautaService
 
         $instrumentos = AvaliacaoInstrumento::query()
             ->where('turma_id', $turmaId)->where('disciplina_id', $disciplinaId)->where('periodo_id', $periodo->id)
+            ->where('tipo', '!=', TipoInstrumento::EXAME->value)
             ->orderBy('tipo')->orderBy('id')->get();
 
         $inscricoes = $this->inscricoes($turmaId, $disciplinaId);
         $notas = AvaliacaoNota::query()
             ->whereIn('instrumento_id', $instrumentos->pluck('id'))->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))
             ->get()->groupBy('inscricao_disciplina_id');
+        // O exame próprio mostra-se à parte, só no 3.º trimestre, e cria-se na primeira nota (LancarExameAction).
+        $comExame = $periodo->numero === 3 && $this->padrao->temExameProprio((string) $turma->nivelAcademico?->codigo);
+        $exame = $comExame ? AvaliacaoInstrumento::query()->where('turma_id', $turmaId)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::EXAME->value)->first() : null;
+        $notasExame = $exame === null ? collect() : AvaliacaoNota::query()->where('instrumento_id', $exame->id)->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))->get()->keyBy('inscricao_disciplina_id');
         $resultados = $this->resultados->calcularTurma($turmaId, $disciplinaId, $inscricoes->pluck('id')->all());
 
         $n = $periodo->numero;
-        $alunos = $inscricoes->map(function (InscricaoDisciplina $i) use ($notas, $resultados, $n, $regra) {
+        $alunos = $inscricoes->map(function (InscricaoDisciplina $i) use ($notas, $resultados, $n, $regra, $notasExame) {
             $r = $resultados[$i->id];
 
             return [
@@ -134,6 +140,10 @@ class MiniPautaService
                 'mt' => $this->apresentar($r->mt[$n], $regra),
                 'pendente' => $r->pendentes[$n],
                 'mfd' => $r->mfdArredondada,
+                'ne' => isset($notasExame[$i->id]) ? [
+                    'id' => $notasExame[$i->id]->id, 'valor' => $notasExame[$i->id]->valor, 'estado' => $notasExame[$i->id]->estado->value, 'estado_descricao' => $notasExame[$i->id]->estado_descricao,
+                ] : null,
+                'mf' => $r->mfArredondada,
             ];
         })->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values()->all();
 
@@ -154,8 +164,15 @@ class MiniPautaService
                 'id' => $i->id, 'nome' => $i->nome, 'tipo' => $i->tipo->value, 'tipo_descricao' => $i->tipo_descricao, 'obrigatorio' => $i->obrigatorio,
             ])->all(),
             'alunos' => $alunos,
+            'exame' => $comExame ? ['peso_mfd' => $this->semZeros($regra->peso_mfd_exame), 'peso_exame' => $this->semZeros($regra->peso_exame)] : null,
             'prazos' => $prazos,
         ];
+    }
+
+    /** 40.00 → 40, 33.50 → 33.5: para mostrar pesos sem zeros a mais. */
+    private function semZeros(mixed $valor): string
+    {
+        return rtrim(rtrim((string) $valor, '0'), '.');
     }
 
     private function temAcessoAmplo(User $utilizador): bool

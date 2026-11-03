@@ -11,6 +11,7 @@ use Inertia\Inertia;
 use Modules\Avaliacao\Actions\AnularNotaAction;
 use Modules\Avaliacao\Actions\CriarInstrumentoAction;
 use Modules\Avaliacao\Actions\EliminarInstrumentoAction;
+use Modules\Avaliacao\Actions\LancarExameAction;
 use Modules\Avaliacao\Actions\LancarNotaAction;
 use Modules\Avaliacao\Actions\LancarQualitativaAction;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
@@ -43,7 +44,7 @@ class MiniPautaController extends Controller
             'opcoes' => $this->miniPauta->opcoes($utilizador),
             'selecao' => ['turma' => $f['turma'] ?? null, 'disciplina' => $f['disciplina'] ?? null],
             'pauta' => $pauta,
-            'tipos' => array_map(fn (TipoInstrumento $t) => ['valor' => $t->value, 'nome' => $t->label()], TipoInstrumento::cases()),
+            'tipos' => array_map(fn (TipoInstrumento $t) => ['valor' => $t->value, 'nome' => $t->label()], array_values(array_filter(TipoInstrumento::cases(), fn (TipoInstrumento $t) => $t !== TipoInstrumento::EXAME))),
             'pode' => ['anular' => Gate::allows('nota.anular'), 'criar' => Gate::allows('nota.criar')],
         ]);
     }
@@ -56,6 +57,18 @@ class MiniPautaController extends Controller
         ]);
 
         $acao->executar(new LancarNotaDTO($d['instrumento_id'], $d['inscricao_disciplina_id'], $d['valor'], $d['motivo'] ?? null));
+
+        return back();
+    }
+
+    public function lancarExame(Request $request, LancarExameAction $acao): RedirectResponse
+    {
+        $d = $request->validate([
+            'turma_id' => ['required', 'integer'], 'disciplina_id' => ['required', 'integer'], 'inscricao_disciplina_id' => ['required', 'integer'],
+            'valor' => ['required', 'string', 'max:6'], 'motivo' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $acao->executar($d['turma_id'], $d['disciplina_id'], $d['inscricao_disciplina_id'], $d['valor'], $d['motivo'] ?? null);
 
         return back();
     }

@@ -9,6 +9,7 @@ use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Services\PautaFinalService;
+use Modules\Avaliacao\Services\RegraPadraoService;
 use Modules\Core\Traits\LogService;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\Turma\Models\Turma;
@@ -18,14 +19,14 @@ class CriarInstrumentoAction
 {
     use LogService;
 
-    public function __construct(private PautaFinalService $pautas)
+    public function __construct(private PautaFinalService $pautas, private RegraPadraoService $padrao)
     {
     }
 
     public function executar(InstrumentoDTO $dto): AvaliacaoInstrumento
     {
         return $this->comLog('Criar instrumento de avaliação', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => DB::transaction(function () use ($dto) {
-            $turma = Turma::query()->whereKey($dto->turma_id)->lockForUpdate()->firstOrFail();
+            $turma = Turma::query()->with('nivelAcademico:id,codigo')->whereKey($dto->turma_id)->lockForUpdate()->firstOrFail();
             $this->pautas->exigirAberta($turma->id);
             Disciplina::query()->findOrFail($dto->disciplina_id);
             $periodo = Periodo::query()->findOrFail($dto->periodo_id);
@@ -44,6 +45,10 @@ class CriarInstrumentoAction
                 throw ValidationException::withMessages(['tipo' => 'Já existe uma prova trimestral para esta turma, disciplina e trimestre.']);
             }
 
+            if ($dto->tipo === TipoInstrumento::EXAME) {
+                $this->validarExame($turma, $periodo, $dto->disciplina_id);
+            }
+
             return AvaliacaoInstrumento::create([
                 'turma_id' => $turma->id,
                 'disciplina_id' => $dto->disciplina_id,
@@ -53,5 +58,21 @@ class CriarInstrumentoAction
                 'obrigatorio' => $dto->obrigatorio,
             ]);
         }));
+    }
+
+    /** O exame próprio só existe nas classes que o têm, no 3.º trimestre, e é um por turma e disciplina. */
+    private function validarExame(Turma $turma, Periodo $periodo, int $disciplinaId): void
+    {
+        if (! $this->padrao->temExameProprio((string) $turma->nivelAcademico?->codigo)) {
+            throw ValidationException::withMessages(['tipo' => 'Esta classe não tem exame próprio.']);
+        }
+
+        if ($periodo->numero !== 3) {
+            throw ValidationException::withMessages(['periodo_id' => 'O exame próprio pertence ao 3.º trimestre.']);
+        }
+
+        if (AvaliacaoInstrumento::query()->where('turma_id', $turma->id)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::EXAME->value)->exists()) {
+            throw ValidationException::withMessages(['tipo' => 'Já existe um exame para esta turma e disciplina.']);
+        }
     }
 }

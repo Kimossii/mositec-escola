@@ -35,6 +35,7 @@ class ConfiguracaoAvaliacaoController extends Controller
             'escala_maxima' => ['required', 'integer', 'between:1,100'], 'nota_minima' => ['required', 'numeric', 'min:0'],
             'peso_mac' => ['required', 'numeric', 'between:0,100'], 'peso_pt' => ['required', 'numeric', 'between:0,100'],
             'peso_mt1' => ['nullable', 'numeric', 'between:0,100'], 'peso_mt2' => ['nullable', 'numeric', 'between:0,100'], 'peso_mt3' => ['nullable', 'numeric', 'between:0,100'],
+            'peso_mfd_exame' => ['nullable', 'numeric', 'between:0,100'], 'peso_exame' => ['nullable', 'numeric', 'between:0,100'],
             'casas_decimais' => ['required', 'integer', 'between:0,4'],
             'modo_arredondamento' => ['required', Rule::in(array_column(ModoArredondamento::cases(), 'value'))],
             'reprova_por_aproveitamento' => ['required', 'boolean'],
@@ -46,6 +47,7 @@ class ConfiguracaoAvaliacaoController extends Controller
             peso_mt1: isset($d['peso_mt1']) ? (string) $d['peso_mt1'] : null, peso_mt2: isset($d['peso_mt2']) ? (string) $d['peso_mt2'] : null,
             peso_mt3: isset($d['peso_mt3']) ? (string) $d['peso_mt3'] : null, casas_decimais: $d['casas_decimais'],
             modo_arredondamento: ModoArredondamento::from((int) $d['modo_arredondamento']), reprova_por_aproveitamento: (bool) $d['reprova_por_aproveitamento'],
+            peso_mfd_exame: (string) ($d['peso_mfd_exame'] ?? '40'), peso_exame: (string) ($d['peso_exame'] ?? '60'),
         ));
 
         return back();

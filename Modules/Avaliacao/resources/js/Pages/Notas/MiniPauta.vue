@@ -29,7 +29,7 @@ const novo = reactive({ nome: '', tipo: MAC, obrigatorio: true });
 const aoFalhar = (e) => toast.error(Object.values(e)[0]);
 const tipoDoInstrumento = (i) => (i.tipo === MAC ? 'MAC' : 'PT');
 const encerrado = (i) => props.pauta?.prazos?.[tipoDoInstrumento(i)]?.encerrado ?? false;
-const algumEncerrado = computed(() => (props.pauta?.instrumentos ?? []).some(encerrado));
+const algumEncerrado = computed(() => (props.pauta?.instrumentos ?? []).some(encerrado) || (props.pauta?.exame && props.pauta.prazos.EXAME.encerrado));
 
 function abrir(turmaId, disciplinaId, periodoId = null) {
     if (!turmaId || !disciplinaId) return;
@@ -41,6 +41,18 @@ function textoDaCelula(aluno, instrumento) {
     if (chave in valores) return valores[chave];
     const nota = aluno.notas[instrumento.id];
     return nota?.valor ?? '';
+}
+
+const exames = reactive({}); // inscricao -> texto da NE
+const textoExame = (a) => exames[a.inscricao_id] ?? a.ne?.valor ?? '';
+
+function guardarExame(a) {
+    const texto = (exames[a.inscricao_id] ?? '').trim().replace(',', '.');
+    if (!(a.inscricao_id in exames) || texto === '' || texto === a.ne?.valor) return;
+    router.post('/avaliacao/notas/exame', {
+        turma_id: turma.value, disciplina_id: disciplina.value, inscricao_disciplina_id: a.inscricao_id, valor: texto,
+        motivo: props.pauta.prazos.EXAME.encerrado ? motivoForaDoPrazo.value : null,
+    }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { delete exames[a.inscricao_id]; toast.success('Nota do exame guardada.'); } });
 }
 
 function guardar(aluno, instrumento) {
@@ -182,6 +194,7 @@ function eliminar(instrumento) {
                 <div class="d-flex flex-wrap gap-4 fs-7 text-muted mb-4">
                     <span>Prazo das avaliações contínuas: <strong :class="pauta.prazos.MAC.encerrado ? 'text-danger' : ''">{{ pauta.prazos.MAC.data_limite }}</strong></span>
                     <span>Prazo da prova: <strong :class="pauta.prazos.PT.encerrado ? 'text-danger' : ''">{{ pauta.prazos.PT.data_limite }}</strong></span>
+                    <span v-if="pauta.exame">Prazo do exame: <strong :class="pauta.prazos.EXAME.encerrado ? 'text-danger' : ''">{{ pauta.prazos.EXAME.data_limite }}</strong> · MF = MFD × {{ pauta.exame.peso_mfd }}% + NE × {{ pauta.exame.peso_exame }}%</span>
                 </div>
 
                 <div v-if="algumEncerrado" class="alert alert-warning py-3 d-flex flex-wrap align-items-center gap-3">
@@ -207,6 +220,7 @@ function eliminar(instrumento) {
                                 <th class="text-center">PT</th>
                                 <th class="text-center">MT</th>
                                 <th class="text-center">MFD</th>
+                                <template v-if="pauta.exame"><th class="text-center">Exame (NE)</th><th class="text-center">MF</th></template>
                             </tr>
                         </thead>
                         <tbody>
@@ -227,8 +241,20 @@ function eliminar(instrumento) {
                                 <td class="text-center">{{ a.pt ?? '—' }}</td>
                                 <td class="text-center fw-bold">{{ a.mt ?? '—' }}<span v-if="a.pendente" class="badge badge-light-warning ms-2">pendente</span></td>
                                 <td class="text-center">{{ a.mfd ?? '—' }}</td>
+                                <template v-if="pauta.exame">
+                                    <td class="text-center" style="min-width: 7rem">
+                                        <div class="d-flex align-items-center justify-content-center gap-1">
+                                            <input :value="textoExame(a)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px"
+                                                @input="exames[a.inscricao_id] = $event.target.value" @blur="guardarExame(a)" @keyup.enter="$event.target.blur()">
+                                            <a v-if="pode.anular && a.ne && a.ne.estado === 0" href="#" class="text-muted" title="Anular"
+                                                @click.prevent="aAnular = { nota_id: a.ne.id, aluno: a.nome, instrumento: 'Exame' }">⊘</a>
+                                        </div>
+                                        <div v-if="a.ne && a.ne.estado !== 0" class="fs-8 text-muted">{{ a.ne.estado_descricao }}</div>
+                                    </td>
+                                    <td class="text-center fw-bold">{{ a.mf ?? '—' }}</td>
+                                </template>
                             </tr>
-                            <tr v-if="!pauta.alunos.length"><td :colspan="pauta.instrumentos.length + 6" class="text-center text-muted py-6">Nenhum aluno inscrito nesta disciplina.</td></tr>
+                            <tr v-if="!pauta.alunos.length"><td :colspan="pauta.instrumentos.length + (pauta.exame ? 8 : 6)" class="text-center text-muted py-6">Nenhum aluno inscrito nesta disciplina.</td></tr>
                         </tbody>
                     </table>
                 </div>

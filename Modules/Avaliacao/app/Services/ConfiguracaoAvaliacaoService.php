@@ -47,6 +47,7 @@ class ConfiguracaoAvaliacaoService
                 'codigo' => $nivel->codigo,
                 'nome' => $nivel->nome,
                 'quantitativa' => $sugestao !== null,
+                'tem_exame' => $this->padrao->temExameProprio((string) $nivel->codigo),
                 // Creche e Pré-Escolar são qualitativos; as classes secundárias seguintes têm notas, mas ficam fora desta fase.
                 'ambito' => $sugestao !== null ? 'quantitativa' : (in_array($nivel->etapa_ensino, [EtapaEnsinoEnum::CRECHE, EtapaEnsinoEnum::PRE_ESCOLAR], true) ? 'qualitativa' : 'fora_de_ambito'),
                 'regra' => $regra === null ? null : [
@@ -58,6 +59,8 @@ class ConfiguracaoAvaliacaoService
                     'peso_mt1' => $regra->peso_mt1 === null ? null : (string) $regra->peso_mt1,
                     'peso_mt2' => $regra->peso_mt2 === null ? null : (string) $regra->peso_mt2,
                     'peso_mt3' => $regra->peso_mt3 === null ? null : (string) $regra->peso_mt3,
+                    'peso_mfd_exame' => (string) $regra->peso_mfd_exame,
+                    'peso_exame' => (string) $regra->peso_exame,
                     'casas_decimais' => $regra->casas_decimais,
                     'modo_arredondamento' => $regra->modo_arredondamento->value,
                     'reprova_por_aproveitamento' => $regra->reprova_por_aproveitamento,

@@ -64,7 +64,8 @@ class AprovarPautaAction
                     AvaliacaoPautaLinha::create([
                         'pauta_id' => $pauta->id, 'versao' => $versao, 'inscricao_disciplina_id' => $celula['inscricao_id'],
                         'mt1' => $celula['mt1'], 'mt2' => $celula['mt2'], 'mt3' => $celula['mt3'],
-                        'mfd_exacta' => $celula['mfd_exacta'], 'mfd' => $celula['mfd'], 'aprovado' => $celula['aprovado'],
+                        'ne' => $celula['ne'] ?? null, 'mfd_exacta' => $celula['mfd_exacta'], 'mfd' => $celula['mfd'],
+                        'mf_exacta' => $celula['mf_exacta'] ?? null, 'mf' => $celula['mf'] ?? null, 'aprovado' => $celula['aprovado'],
                     ]);
                 }
 

@@ -9,6 +9,7 @@ use Modules\Avaliacao\Http\Controllers\PautaController;
 Route::middleware(['auth'])->prefix('avaliacao/notas')->name('avaliacao.notas.')->group(function () {
     Route::get('/', [MiniPautaController::class, 'index'])->middleware('can:nota.ver')->name('index');
     Route::post('/', [MiniPautaController::class, 'lancar'])->middleware('can:nota.criar')->name('lancar');
+    Route::post('/exame', [MiniPautaController::class, 'lancarExame'])->middleware('can:nota.criar')->name('exame.lancar');
     Route::post('/qualitativas', [MiniPautaController::class, 'lancarQualitativa'])->middleware('can:nota.criar')->name('qualitativas.lancar');
     Route::post('/{nota}/anular', [MiniPautaController::class, 'anular'])->whereNumber('nota')->middleware('can:nota.anular')->name('anular');
     Route::post('/instrumentos', [MiniPautaController::class, 'criarInstrumento'])->name('instrumentos.store');

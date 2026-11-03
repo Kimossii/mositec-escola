@@ -91,4 +91,22 @@ class CalculadoraQuantitativaTest extends TestCase
         $this->assertTrue($this->calc()->aprovadoNaDisciplina('5', '5'));
         $this->assertFalse($this->calc()->aprovadoNaDisciplina('4.99', '5'));
     }
+
+    public function test_exame_10_e_10_dao_10_sem_dividir_por_2(): void
+    {
+        $this->assertSame('10.0000000000', $this->calc()->mfComExame('10', '10', '40', '60'));
+        $this->assertSame('20.0000000000', $this->calc()->mfComExame('20', '20', '40', '60'));
+    }
+
+    public function test_exame_12_e_14_dao_13_2_e_os_pesos_sao_configuraveis(): void
+    {
+        $this->assertSame('13.2000000000', $this->calc()->mfComExame('12', '14', '40', '60'));
+        $this->assertSame('13.0000000000', $this->calc()->mfComExame('12', '14', '50', '50'));
+    }
+
+    public function test_exame_rejeita_pesos_que_nao_somam_100(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->calc()->mfComExame('10', '10', '40', '50');
+    }
 }
