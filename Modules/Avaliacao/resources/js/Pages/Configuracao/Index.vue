@@ -12,6 +12,7 @@ const props = defineProps({
     periodos: { type: Array, required: true }, // [{ id, nome, numero, data_fim }]
     modos: { type: Array, required: true }, // [{ valor, nome }]
     tipos: { type: Array, required: true }, // [{ valor, nome }]
+    progressoes: { type: Array, default: () => [] }, // [{ valor, nome }]
     escalas: { type: Array, default: () => [] }, // [{ id, nome, niveis: [{ id, codigo, designacao }] }]
     competencias: { type: Array, default: () => [] }, // [{ id, disciplina_id, nivel_academico_id, descricao, ativa }]
     disciplinas: { type: Array, default: () => [] }, // [{ id, nome }]
@@ -28,7 +29,7 @@ const aoFalhar = (e) => toast.error(Object.values(e)[0]);
 const aoGuardar = (texto) => ({ preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => toast.success(texto) });
 
 function formulario(c) {
-    formularios[c.nivel_id] ??= { ...(c.regra ?? { ...c.sugestao, peso_mac: '50', peso_pt: '50', peso_mt1: null, peso_mt2: null, peso_mt3: null, peso_mfd_exame: '40', peso_exame: '60', casas_decimais: 2, modo_arredondamento: 0 }) };
+    formularios[c.nivel_id] ??= { ...(c.regra ?? { ...c.sugestao, peso_mac: '50', peso_pt: '50', peso_mt1: null, peso_mt2: null, peso_mt3: null, peso_mfd_exame: '40', peso_exame: '60', recurso_max_disciplinas: null, disciplinas_chave: [], casas_decimais: 2, modo_arredondamento: 0 }) };
     return formularios[c.nivel_id];
 }
 
@@ -59,9 +60,11 @@ const guardarDocumentos = () => router.post('/avaliacao/configuracao/documentos'
 
 const escolhas = reactive({}); // nivel_id -> escala escolhida e ainda não guardada
 const escolhaDe = (c) => escolhas[c.nivel_id] ?? c.regra_qualitativa?.escala_id ?? '';
+const progressaoEscolhas = reactive({});
+const progressaoDe = (c) => progressaoEscolhas[c.nivel_id] ?? c.regra_qualitativa?.progressao ?? 0;
 
 function guardarRegraQualitativa(c) {
-    router.post('/avaliacao/configuracao/regras-qualitativas', { ano_lectivo_id: props.ano_id, nivel_academico_id: c.nivel_id, escala_id: escolhaDe(c) }, aoGuardar('Escala da classe guardada.'));
+    router.post('/avaliacao/configuracao/regras-qualitativas', { ano_lectivo_id: props.ano_id, nivel_academico_id: c.nivel_id, escala_id: escolhaDe(c), progressao: progressaoDe(c) }, aoGuardar('Regra da classe guardada.'));
 }
 
 const compNivel = ref(''); // '' = todas as classes
@@ -237,6 +240,12 @@ function copiar() {
                             <option v-for="e in escalas" :key="e.id" :value="e.id">{{ e.nome }}</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="form-label fs-8 fw-bold text-muted text-uppercase">Progressão</label>
+                        <select class="form-select form-select-sm w-300px" :value="progressaoDe(c)" @change="progressaoEscolhas[c.nivel_id] = Number($event.target.value)">
+                            <option v-for="p in progressoes" :key="p.valor" :value="p.valor">{{ p.nome }}</option>
+                        </select>
+                    </div>
                     <button type="button" class="btn btn-sm btn-primary" :disabled="!escolhaDe(c)" @click="guardarRegraQualitativa(c)">Guardar</button>
                 </div>
             </div>
@@ -259,6 +268,18 @@ function copiar() {
                             <input v-model="formulario(c).peso_mfd_exame" type="text" class="form-control form-control-sm" placeholder="MFD">
                             <input v-model="formulario(c).peso_exame" type="text" class="form-control form-control-sm" placeholder="Exame">
                         </div>
+                    </div>
+                    <div v-if="c.tem_recurso" class="col-12 col-md-6">
+                        <label class="form-label fs-8 fw-bold text-muted text-uppercase">Recurso: máximo de disciplinas negativas (vazio = sem máximo)</label>
+                        <input v-model="formulario(c).recurso_max_disciplinas" type="number" min="0" class="form-control form-control-sm w-150px">
+                        <div class="text-muted fs-8 mt-1">Acima deste número o aluno reprova directamente, sem recurso.</div>
+                    </div>
+                    <div v-if="c.tem_recurso" class="col-12 col-md-6">
+                        <label class="form-label fs-8 fw-bold text-muted text-uppercase">Disciplinas-chave (negativa a uma delas = reprovação directa, sem recurso)</label>
+                        <select v-model="formulario(c).disciplinas_chave" multiple size="4" class="form-select form-select-sm">
+                            <option v-for="d in disciplinas" :key="d.id" :value="d.id">{{ d.nome }}</option>
+                        </select>
+                        <div class="text-muted fs-8 mt-1">Ctrl (ou Cmd) + clique para escolher várias. Sem nenhuma, qualquer negativa pode ir ao recurso.</div>
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="form-label fs-8 fw-bold text-muted text-uppercase">Pesos dos trimestres % (vazio = iguais)</label>

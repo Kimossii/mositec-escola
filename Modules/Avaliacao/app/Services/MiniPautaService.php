@@ -35,6 +35,7 @@ class MiniPautaService
         private RelogioDoTenant $relogio,
         private MiniPautaQualitativaService $qualitativa,
         private RegraPadraoService $padrao,
+        private ElegibilidadeRecursoService $elegibilidade,
     ) {
     }
 
@@ -126,10 +127,11 @@ class MiniPautaService
         $comRecurso = $periodo->numero === 3 && $this->padrao->temRecurso((string) $turma->nivelAcademico?->codigo);
         $recurso = $comRecurso ? AvaliacaoInstrumento::query()->where('turma_id', $turmaId)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::RECURSO->value)->first() : null;
         $notasRecurso = $recurso === null ? collect() : AvaliacaoNota::query()->where('instrumento_id', $recurso->id)->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))->get()->keyBy('inscricao_disciplina_id');
+        $elegibilidade = $comRecurso ? $this->elegibilidade->paraTurma($turma, $regra) : [];
         $resultados = $this->resultados->calcularTurma($turmaId, $disciplinaId, $inscricoes->pluck('id')->all());
 
         $n = $periodo->numero;
-        $alunos = $inscricoes->map(function (InscricaoDisciplina $i) use ($notas, $resultados, $n, $regra, $notasExame, $notasRecurso) {
+        $alunos = $inscricoes->map(function (InscricaoDisciplina $i) use ($notas, $resultados, $n, $regra, $notasExame, $notasRecurso, $elegibilidade) {
             $r = $resultados[$i->id];
 
             return [
@@ -148,7 +150,8 @@ class MiniPautaService
                     'id' => $notasExame[$i->id]->id, 'valor' => $notasExame[$i->id]->valor, 'estado' => $notasExame[$i->id]->estado->value, 'estado_descricao' => $notasExame[$i->id]->estado_descricao,
                 ] : null,
                 'mf' => $r->mfArredondada,
-                'recurso_necessario' => $r->recursoNecessario,
+                'recurso_necessario' => $r->recursoNecessario && ($elegibilidade[$i->matricula_id]['elegivel'] ?? false),
+                'recurso_motivo' => $r->recursoNecessario ? ($elegibilidade[$i->matricula_id]['texto'] ?? null) : null,
                 'ner' => isset($notasRecurso[$i->id]) ? [
                     'id' => $notasRecurso[$i->id]->id, 'valor' => $notasRecurso[$i->id]->valor, 'estado' => $notasRecurso[$i->id]->estado->value, 'estado_descricao' => $notasRecurso[$i->id]->estado_descricao,
                 ] : null,

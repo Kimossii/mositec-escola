@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -41,6 +41,18 @@ function reabrir() {
 }
 
 const imprimir = () => window.print();
+
+const escolhas = reactive({}); // matricula -> decisão escolhida (0 Transita, 1 Não transita) ainda por gravar
+const motivos = reactive({});
+
+function decidir(a, valor) {
+    valor = Number(valor);
+    escolhas[a.matricula_id] = valor;
+    if (valor === 1 && !(motivos[a.matricula_id] ?? a.motivo_progressao ?? '').trim()) return; // espera pelo motivo
+    router.post(`/avaliacao/pautas/${props.pauta.turma_id}/progressao`, {
+        matricula_id: a.matricula_id, decisao: valor, motivo: valor === 1 ? (motivos[a.matricula_id] ?? a.motivo_progressao) : null,
+    }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { delete escolhas[a.matricula_id]; toast.success('Progressão guardada.'); } });
+}
 const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
 </script>
 
@@ -75,6 +87,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                     <button type="button" class="btn btn-sm btn-light" @click="imprimir">Imprimir</button>
                     <a :href="`/avaliacao/pautas/${pauta.turma_id}/exportar?formato=pdf`" class="btn btn-sm btn-light">PDF</a>
                     <a :href="`/avaliacao/pautas/${pauta.turma_id}/exportar?formato=excel`" class="btn btn-sm btn-light">Excel</a>
+                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/boletins`" class="btn btn-sm btn-light" title="Um boletim por aluno, cada um na sua página">Boletins (PDF)</a>
                     <button v-if="pode.aprovar && pauta.estado !== 'definitiva'" type="button" class="btn btn-sm btn-primary" :disabled="!pauta.pode_aprovar" @click="aConfirmar = true">Aprovar pauta</button>
                     <button v-if="pode.reabrir && pauta.estado === 'definitiva'" type="button" class="btn btn-sm btn-light-danger" @click="aReabrir = true">Reabrir pauta</button>
                 </div>
@@ -84,6 +97,10 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                 <div v-if="pauta.estado !== 'definitiva' && pauta.bloqueios.length" class="alert alert-warning py-3 d-print-none">
                     <div class="fw-bold mb-1">Ainda não se pode aprovar:</div>
                     <div v-for="(b, i) in pauta.bloqueios" :key="i">• {{ b }}</div>
+                </div>
+
+                <div v-if="pauta.avisos?.length" class="alert alert-info py-3 d-print-none">
+                    <div v-for="(av, i) in pauta.avisos" :key="i">• {{ av }}</div>
                 </div>
 
                 <div v-if="aConfirmar" class="border rounded p-4 mb-5 bg-body-secondary d-print-none">
@@ -125,7 +142,8 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                         <tbody>
                             <tr v-for="(a, n) in pauta.alunos" :key="a.matricula_id">
                                 <td class="text-muted">{{ n + 1 }}</td>
-                                <td class="text-start fw-semibold text-nowrap">{{ a.nome }}</td>
+                                <td class="text-start fw-semibold text-nowrap">{{ a.nome }}
+                                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/boletins?matricula=${a.matricula_id}`" class="ms-2 fs-8 fw-normal d-print-none" title="Boletim deste aluno">Boletim</a></td>
                                 <template v-for="d in pauta.disciplinas" :key="d.id">
                                     <template v-if="pauta.com_exame">
                                         <td>{{ a.celulas[d.id]?.mfd ?? '—' }}</td>
@@ -143,7 +161,17 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                                         <td class="fw-bold" :class="a.celulas[d.id]?.mfr != null && a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mfr ?? '' }}</td>
                                     </template>
                                 </template>
-                                <td class="fw-bold text-nowrap" :class="a.decisao?.valor === 1 || a.decisao?.valor === 3 ? 'text-danger' : (a.decisao ? 'text-success' : 'text-muted')">{{ textoDecisao(a) }}</td>
+                                <td class="fw-bold text-nowrap" :title="a.recurso?.texto" :class="a.decisao?.valor === 1 || a.decisao?.valor === 3 ? 'text-danger' : (a.decisao ? 'text-success' : 'text-muted')"><template v-if="pauta.progressao_manual && pauta.estado !== 'definitiva' && pode.aprovar">
+                                        <select :value="escolhas[a.matricula_id] ?? a.decisao?.valor ?? ''" class="form-select form-select-sm w-150px d-print-none" @change="decidir(a, $event.target.value)">
+                                            <option value="" disabled>Decidir…</option>
+                                            <option :value="0">Transita</option>
+                                            <option :value="1">Não transita</option>
+                                        </select>
+                                        <input v-if="(escolhas[a.matricula_id] ?? a.decisao?.valor) === 1" v-model="motivos[a.matricula_id]" type="text" class="form-control form-control-sm mt-1 d-print-none"
+                                            placeholder="Motivo" :value="a.motivo_progressao" @blur="decidir(a, 1)">
+                                    </template>
+                                    <template v-else>{{ textoDecisao(a) }}</template>
+                                </td>
                             </tr>
                         </tbody>
                     </table>

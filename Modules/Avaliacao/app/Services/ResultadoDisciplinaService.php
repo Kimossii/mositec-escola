@@ -145,24 +145,24 @@ class ResultadoDisciplinaService
 
         [$ne, $mf, $mfArredondada] = $comExame ? $this->exame($regra, $instrumentos, $notas, $mfd) : [null, null, null];
 
-        [$ner, $mfr, $mfrArredondada, $recursoNecessario, $recursoEmFalta] = $comRecurso
-            ? $this->recurso($regra, $instrumentos, $notas, $comExame ? $mf : $mfd, $comExame ? $mfArredondada : $arredondada, $encerrado[3][TipoInstrumento::RECURSO->name] ?? false)
-            : [null, null, null, false, false];
+        [$ner, $mfr, $mfrArredondada, $recursoNecessario] = $comRecurso
+            ? $this->recurso($regra, $instrumentos, $notas, $comExame ? $mf : $mfd, $comExame ? $mfArredondada : $arredondada)
+            : [null, null, null, false];
 
-        return new ResultadoDisciplina($mac, $pt, $mt, $pendentes, $mfd, $arredondada, $ne, $mf, $mfArredondada, $comExame, $ner, $mfr, $mfrArredondada, $recursoNecessario, $recursoEmFalta);
+        return new ResultadoDisciplina($mac, $pt, $mt, $pendentes, $mfd, $arredondada, $ne, $mf, $mfArredondada, $comExame, $ner, $mfr, $mfrArredondada, $recursoNecessario);
     }
 
     /**
-     * Exame de recurso (6.ª a 9.ª): só a disciplina cuja nota final (MF, ou MFD sem exame próprio) ficou abaixo do mínimo precisa
-     * dele. Com NER lançada, `MFR = MF × peso + NER × peso` (os mesmos pesos do exame) e a MFR é que decide. Sem NER fica
-     * pendente até ao prazo do recurso; depois disso conta como não realizado e a nota final continua a ser a MF.
+     * Exame de recurso (6.ª a 9.ª): só a disciplina cuja nota final (MF, ou MFD sem exame próprio) ficou abaixo do mínimo pode
+     * ter recurso, e quem pode ir é decidido por aluno (RegraDoRecurso). Com NER lançada, `MFR = MF × peso + NER × peso` (os
+     * mesmos pesos do exame) e a MFR é que decide. O recurso não é obrigatório: sem NER vale a nota base.
      *
-     * @return array{0: ?string, 1: ?string, 2: ?string, 3: bool, 4: bool} [NER, MFR exacta, MFR arredondada, necessário, em falta]
+     * @return array{0: ?string, 1: ?string, 2: ?string, 3: bool} [NER, MFR exacta, MFR arredondada, abaixo do mínimo]
      */
-    private function recurso(AvaliacaoRegra $regra, Collection $instrumentos, Collection $notas, ?string $baseExacta, ?string $baseArredondada, bool $prazoEncerrado): array
+    private function recurso(AvaliacaoRegra $regra, Collection $instrumentos, Collection $notas, ?string $baseExacta, ?string $baseArredondada): array
     {
         if ($baseExacta === null || $baseArredondada === null || $this->calculadora->aprovadoNaDisciplina($baseArredondada, (string) $regra->nota_minima)) {
-            return [null, null, null, false, false];
+            return [null, null, null, false];
         }
 
         $recurso = $instrumentos->firstWhere('tipo', TipoInstrumento::RECURSO);
@@ -174,12 +174,12 @@ class ResultadoDisciplinaService
         };
 
         if ($ner === null) {
-            return [null, null, null, true, ! $prazoEncerrado];
+            return [null, null, null, true];
         }
 
         $mfr = $this->calculadora->mfComExame($baseExacta, $ner, (string) $regra->peso_mfd_exame, (string) $regra->peso_exame);
 
-        return [$ner, $mfr, $this->calculadora->arredondar($mfr, $regra->casas_decimais, $regra->modo_arredondamento), true, false];
+        return [$ner, $mfr, $this->calculadora->arredondar($mfr, $regra->casas_decimais, $regra->modo_arredondamento), true];
     }
 
     /**

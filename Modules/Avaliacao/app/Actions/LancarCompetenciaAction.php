@@ -75,7 +75,17 @@ class LancarCompetenciaAction
                 'inscricao_disciplina_id' => $inscricao->id, 'competencia_id' => $competencia->id, 'periodo_id' => $periodo->id,
             ]);
 
+        if ($registo->exists && $registo->escala_nivel_id === $nivel->id) {
+            return $registo;
+        }
+
+        $anterior = $registo->exists ? $registo->escala_nivel_id : null;
         $registo->fill(['escala_nivel_id' => $nivel->id])->save();
+
+        $registo->historico()->create([
+            'escala_nivel_anterior_id' => $anterior, 'escala_nivel_novo_id' => $nivel->id,
+            'fora_do_prazo' => $foraDoPrazo, 'motivo' => $dto->motivo, 'criado_por' => auth()->id(),
+        ]);
 
         return $registo;
     }

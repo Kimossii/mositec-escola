@@ -4,6 +4,8 @@ namespace Modules\Avaliacao\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Modules\Disciplina\Models\Disciplina;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Avaliacao\Enums\ModoArredondamento;
 use Modules\Core\Tenancy\PertenceAoTenant;
@@ -29,6 +31,7 @@ class AvaliacaoRegra extends Model
         'peso_mt3',
         'peso_mfd_exame',
         'peso_exame',
+        'recurso_max_disciplinas',
         'casas_decimais',
         'modo_arredondamento',
         'modo_arredondamento_descricao',
@@ -47,6 +50,7 @@ class AvaliacaoRegra extends Model
         'peso_mt3' => 'decimal:2',
         'peso_mfd_exame' => 'decimal:2',
         'peso_exame' => 'decimal:2',
+        'recurso_max_disciplinas' => 'integer',
         'casas_decimais' => 'integer',
         'modo_arredondamento' => ModoArredondamento::class,
         'reprova_por_aproveitamento' => 'boolean',
@@ -67,6 +71,12 @@ class AvaliacaoRegra extends Model
     public function nivelAcademico(): BelongsTo
     {
         return $this->belongsTo(NivelAcademico::class);
+    }
+
+    /** Disciplinas-chave: uma negativa a qualquer uma delas tira o direito ao recurso (reprovação directa). */
+    public function disciplinasChave(): BelongsToMany
+    {
+        return $this->belongsToMany(Disciplina::class, 'avaliacao_regra_disciplinas_chave', 'regra_id', 'disciplina_id')->withTimestamps();
     }
 
     /** Pesos dos três trimestres em percentagem, ou `null` quando pesam o mesmo. */

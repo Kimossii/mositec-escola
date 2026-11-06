@@ -9,8 +9,17 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 /** Gera o PDF ou o Excel de uma pauta e devolve a descarga; o ficheiro temporário apaga-se depois de enviado. */
 class ExportadorDePautas
 {
-    public function __construct(private EscritorPautaPdf $pdf, private EscritorPautaXlsx $xlsx)
+    public function __construct(private EscritorPautaPdf $pdf, private EscritorPautaXlsx $xlsx, private EscritorBoletimPdf $boletins)
     {
+    }
+
+    /** @param  list<DocumentoBoletim>  $boletins um por aluno, cada um na sua página */
+    public function responderBoletins(array $boletins, string $nomeBase): BinaryFileResponse
+    {
+        $caminho = tempnam(sys_get_temp_dir(), 'boletim');
+        $this->boletins->escrever($boletins, $caminho);
+
+        return response()->download($caminho, Str::slug($nomeBase).'-'.date('Y-m-d').'.pdf', ['Content-Type' => 'application/pdf'])->deleteFileAfterSend(true);
     }
 
     public function responder(DocumentoPauta $doc, ?string $formato, string $nomeBase): BinaryFileResponse

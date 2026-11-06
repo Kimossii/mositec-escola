@@ -8,6 +8,7 @@ use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
 use Modules\Core\Traits\LogService;
+use Modules\Disciplina\Models\Disciplina;
 use Modules\Turma\Models\NivelAcademico;
 
 /** Cria ou actualiza a regra de (ano lectivo, classe). Valida pesos e mínimo antes de gravar. */
@@ -20,7 +21,8 @@ class GuardarRegraAvaliacaoAction
         return $this->comLog('Guardar regra de avaliação', $this->contextoDeArgumentos(func_get_args(), 'executar'), function () use ($dto) {
             $this->validar($dto);
 
-            return DB::transaction(fn () => AvaliacaoRegra::updateOrCreate(
+            return DB::transaction(function () use ($dto) {
+                $regra = AvaliacaoRegra::updateOrCreate(
                 ['ano_lectivo_id' => $dto->ano_lectivo_id, 'nivel_academico_id' => $dto->nivel_academico_id],
                 [
                     'escala_maxima' => $dto->escala_maxima,
@@ -32,17 +34,25 @@ class GuardarRegraAvaliacaoAction
                     'peso_mt3' => $dto->peso_mt3,
                     'peso_mfd_exame' => $dto->peso_mfd_exame,
                     'peso_exame' => $dto->peso_exame,
+                    'recurso_max_disciplinas' => $dto->recurso_max_disciplinas,
                     'casas_decimais' => $dto->casas_decimais,
                     'modo_arredondamento' => $dto->modo_arredondamento,
                     'reprova_por_aproveitamento' => $dto->reprova_por_aproveitamento,
                 ],
-            ));
+                );
+                $regra->disciplinasChave()->syncWithPivotValues(array_values(array_unique($dto->disciplinas_chave)), ['tenant_id' => $regra->tenant_id]);
+
+                return $regra;
+            });
         });
     }
 
     private function validar(RegraAvaliacaoDTO $dto): void
     {
         AnoLectivo::query()->findOrFail($dto->ano_lectivo_id);
+        foreach ($dto->disciplinas_chave as $disciplinaId) {
+            Disciplina::query()->findOrFail($disciplinaId);
+        }
         NivelAcademico::query()->findOrFail($dto->nivel_academico_id);
 
         if (bccomp(bcadd($dto->peso_mac, $dto->peso_pt, 2), '100', 2) !== 0) {

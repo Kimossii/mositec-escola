@@ -4,6 +4,7 @@ namespace Modules\Avaliacao\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 
@@ -19,6 +20,11 @@ class AvaliacaoCompetenciaRegisto extends Model
     public function competencia(): BelongsTo
     {
         return $this->belongsTo(AvaliacaoCompetencia::class, 'competencia_id');
+    }
+
+    public function historico(): HasMany
+    {
+        return $this->hasMany(AvaliacaoCompetenciaRegistoHistorico::class, 'registo_id');
     }
 
     public function nivel(): BelongsTo

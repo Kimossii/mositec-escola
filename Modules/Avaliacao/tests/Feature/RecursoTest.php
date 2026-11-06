@@ -81,7 +81,7 @@ class RecursoTest extends TestCase
         return $this->pauta()['alunos'][0]['celulas'][$this->c['disciplina']->id];
     }
 
-    public function test_disciplina_abaixo_do_minimo_espera_o_recurso_e_bloqueia_a_aprovacao(): void
+    public function test_disciplina_abaixo_do_minimo_pode_ter_recurso_mas_ele_nao_bloqueia_a_aprovacao(): void
     {
         $this->mfd('8');
         $this->exame('2'); // MF = 4,4 < 5
@@ -90,11 +90,10 @@ class RecursoTest extends TestCase
         $p = $this->pauta();
 
         $this->assertTrue($r->recursoNecessario);
-        $this->assertTrue($r->recursoEmFalta);
-        $this->assertNull($r->notaFinalArredondada());
-        $this->assertNull($p['alunos'][0]['decisao']);
-        $this->assertFalse($p['pode_aprovar']);
-        $this->assertStringContainsString('exame de recurso em 1 aluno', implode(' ', $p['bloqueios']));
+        $this->assertSame('4.40', $r->notaFinalArredondada());
+        $this->assertSame('Não apto', $p['alunos'][0]['decisao']['rotulo']);
+        $this->assertTrue($p['pode_aprovar']);
+        $this->assertStringContainsString('têm direito a exame de recurso', implode(' ', $p['avisos']));
     }
 
     public function test_quem_esta_acima_do_minimo_nao_faz_recurso(): void
@@ -138,23 +137,20 @@ class RecursoTest extends TestCase
         $this->assertSame('Não apto', $this->pauta()['alunos'][0]['decisao']['rotulo']);
     }
 
-    public function test_depois_do_prazo_sem_recurso_a_disciplina_conta_como_nao_realizada(): void
+    public function test_sem_recurso_a_disciplina_fica_com_a_nota_que_tinha_e_a_pauta_aprova_se(): void
     {
         $this->mfd('8');
         $this->exame('2'); // MF = 4,4
-        $this->fecharORecurso();
 
-        $r = app(ResultadoDisciplinaService::class)->calcular($this->inscricao->id);
-        $p = $this->pauta();
+        $this->assertSame('4.40', $this->celula()['nota_final']);
+        $this->assertNull($this->celula()['mfr']);
 
-        $this->assertTrue($r->recursoNecessario);
-        $this->assertFalse($r->recursoEmFalta);
-        $this->assertSame('4.40', $r->notaFinalArredondada());
-        $this->assertSame('Não apto', $p['alunos'][0]['decisao']['rotulo']);
-        $this->assertTrue($p['pode_aprovar']);
+        app(AprovarPautaAction::class)->executar($this->c['turma']->id);
+
+        $this->assertSame(Decisao::NAO_APTO, AvaliacaoDecisao::firstOrFail()->decisao);
     }
 
-    public function test_recurso_anulado_volta_a_pendente_e_a_contar_como_zero_entra(): void
+    public function test_recurso_anulado_deixa_a_nota_base_e_a_contar_como_zero_entra(): void
     {
         $this->mfd('8');
         $this->exame('2');
@@ -162,7 +158,7 @@ class RecursoTest extends TestCase
 
         app(AnularNotaAction::class)->executar($nota->id, false, 'Prova repetida');
         $this->assertNull($this->celula()['mfr']);
-        $this->assertNull($this->pauta()['alunos'][0]['decisao']);
+        $this->assertSame('4.40', $this->celula()['nota_final']);
 
         $nota->refresh()->update(['estado' => \Modules\Avaliacao\Enums\EstadoNota::ANULADA_CONTA_ZERO]);
         $this->assertSame('1.76', $this->celula()['mfr']); // 4,4×0,4 + 0×0,6
@@ -261,5 +257,91 @@ class RecursoTest extends TestCase
         $this->preparar('PRI_5', '5', 'T');
         $this->get('/avaliacao/configuracao')->assertInertia(fn (Assert $p) => $p
             ->where('classes', fn ($cl) => collect($cl)->firstWhere('codigo', 'PRI_6')['tem_recurso'] === true && collect($cl)->firstWhere('codigo', 'PRI_5')['tem_recurso'] === false));
+    }
+
+    // ---- regras da escola: máximo de negativas e disciplinas-chave
+
+    /** Dois alunos-disciplina negativos na mesma matrícula: a 1.ª (a do cenário) e a «POR». */
+    private function duasNegativas(?int $maximo, array $chaveIndices = []): array
+    {
+        $c2 = $this->outraDisciplina($this->c, 'POR');
+        $inscricao2 = $this->inscreverNaDisciplina($this->inscricao, $c2);
+        $this->mfd('8');
+        $this->exame('2');
+        $this->notasCompletas($c2, $inscricao2, [1 => ['8', '8'], 2 => ['8', '8'], 3 => ['8', '8']]);
+        app(LancarExameAction::class)->executar($c2['turma']->id, $c2['disciplina']->id, $inscricao2->id, '2');
+        $ids = [$this->c['disciplina']->id, $c2['disciplina']->id];
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO(
+            $this->c['ano']->id, $this->c['nivel']->id, 10, '5', recurso_max_disciplinas: $maximo, disciplinas_chave: array_map(fn (int $i) => $ids[$i], $chaveIndices),
+        ));
+
+        return [$c2, $inscricao2];
+    }
+
+    public function test_acima_do_maximo_de_negativas_e_reprovacao_directa_sem_recurso(): void
+    {
+        [$c2, $inscricao2] = $this->duasNegativas(1);
+
+        $p = $this->pauta();
+
+        $this->assertFalse($p['alunos'][0]['recurso']['elegivel']);
+        $this->assertStringContainsString('2 disciplinas negativas (o máximo para recurso é 1)', $p['alunos'][0]['recurso']['texto']);
+        $this->assertFalse($p['alunos'][0]['celulas'][$this->c['disciplina']->id]['recurso_permitido']);
+        $this->assertStringContainsString('reprovam directamente', implode(' ', $p['avisos']));
+        $this->assertTrue($p['pode_aprovar']);
+
+        try {
+            $this->recurso('8');
+            $this->fail('Esperava ValidationException.');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('reprovação directa', $e->errors()['inscricao_disciplina_id'][0]);
+        }
+        $this->assertSame(0, AvaliacaoNota::whereHas('instrumento', fn ($q) => $q->where('tipo', TipoInstrumento::RECURSO->value))->count());
+    }
+
+    public function test_dentro_do_maximo_de_negativas_vai_ao_recurso(): void
+    {
+        $this->duasNegativas(2);
+
+        $this->assertTrue($this->pauta()['alunos'][0]['recurso']['elegivel']);
+        $this->assertSame('6.56', $this->recurso('8') ? $this->celula()['mfr'] : null);
+    }
+
+    public function test_negativa_a_disciplina_chave_e_reprovacao_directa_mas_a_outra_negativa_nao(): void
+    {
+        $this->duasNegativas(null, [0]); // a 1.ª disciplina é a chave
+
+        $p = $this->pauta();
+
+        $this->assertFalse($p['alunos'][0]['recurso']['elegivel']);
+        $this->assertStringContainsString('disciplina-chave', $p['alunos'][0]['recurso']['texto']);
+        $this->expectException(ValidationException::class);
+        $this->recurso('8');
+    }
+
+    public function test_negativa_so_fora_das_disciplinas_chave_mantem_o_direito_ao_recurso(): void
+    {
+        $this->duasNegativas(null, [1]); // a chave é a «POR»…
+        AvaliacaoNota::whereHas('instrumento', fn ($q) => $q->where('disciplina_id', $this->c['disciplina']->id + 1)->where('tipo', TipoInstrumento::EXAME->value))->update(['valor' => '10']); // …e passa no exame
+
+        $p = $this->pauta();
+
+        $this->assertTrue($p['alunos'][0]['recurso']['elegivel']);
+        $this->assertTrue($p['alunos'][0]['celulas'][$this->c['disciplina']->id]['recurso_permitido']);
+    }
+
+    public function test_a_configuracao_guarda_o_maximo_e_as_disciplinas_chave(): void
+    {
+        $outra = $this->outraDisciplina($this->c, 'POR')['disciplina'];
+        $base = ['ano_lectivo_id' => $this->c['ano']->id, 'nivel_academico_id' => $this->c['nivel']->id, 'escala_maxima' => 10, 'nota_minima' => '5', 'peso_mac' => '50', 'peso_pt' => '50',
+            'casas_decimais' => 2, 'modo_arredondamento' => 0, 'reprova_por_aproveitamento' => true];
+
+        $this->post('/avaliacao/configuracao/regras', [...$base, 'recurso_max_disciplinas' => 2, 'disciplinas_chave' => [$outra->id]])->assertRedirect();
+
+        $this->get('/avaliacao/configuracao')->assertInertia(fn (Assert $p) => $p
+            ->where('classes', fn ($cl) => collect($cl)->firstWhere('codigo', 'PRI_6')['regra']['recurso_max_disciplinas'] === 2
+                && collect($cl)->firstWhere('codigo', 'PRI_6')['regra']['disciplinas_chave'] === [$outra->id]));
+
+        $this->post('/avaliacao/configuracao/regras', [...$base, 'disciplinas_chave' => [999999]])->assertNotFound();
     }
 }

@@ -13,6 +13,7 @@ use Modules\Avaliacao\Models\AvaliacaoPautaLinhaQualitativa;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
 use Modules\Avaliacao\Support\Calculo\CalculadoraQuantitativa;
 use Modules\Avaliacao\Support\Calculo\DecisaoFinal;
+use Modules\Avaliacao\Support\Calculo\RegraDoRecurso;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
@@ -33,6 +34,7 @@ class PautaFinalService
         private DecisaoFinal $decisao,
         private CalculadoraQuantitativa $calculadora,
         private PautaQualitativaService $qualitativa,
+        private RegraDoRecurso $regraDoRecurso,
     ) {
     }
 
@@ -134,7 +136,8 @@ class PautaFinalService
                     'mfr_exacta' => $r->mfr,
                     'mfr' => $r->mfrArredondada,
                     'nota_final' => $r->notaFinalArredondada(),
-                    'recurso_em_falta' => $r->recursoEmFalta,
+                    'base' => $r->baseArredondada(),
+                    'recurso_permitido' => false,
                     'aprovado' => $r->notaFinalArredondada() === null ? null : $this->calculadora->aprovadoNaDisciplina($r->notaFinalArredondada(), (string) $regra->nota_minima),
                     'pendente' => $r->notaFinalArredondada() === null,
                     'exame_em_falta' => $comExame && $r->ne === null,
@@ -144,8 +147,18 @@ class PautaFinalService
 
         $alunos = [];
         $comPendentes = 0;
+        $chave = $comRecurso ? $regra->disciplinasChave()->pluck('disciplinas.id')->map(fn ($id) => (int) $id)->all() : [];
+        $nomes = $disciplinas->pluck('nome', 'id')->map(fn ($n) => (string) $n)->all();
         foreach ($matriculas as $m) {
             $doAluno = $celulas[$m->id] ?? [];
+            $recurso = null;
+            if ($comRecurso) {
+                $av = $this->regraDoRecurso->avaliar(array_map(fn (array $c) => $c['base'], $doAluno), (string) $regra->nota_minima, $regra->recurso_max_disciplinas, $chave, $this->calculadora);
+                foreach ($doAluno as $disciplinaId => $_) {
+                    $doAluno[$disciplinaId]['recurso_permitido'] = $av['elegivel'] && in_array($disciplinaId, $av['reprovadas'], true);
+                }
+                $recurso = ['elegivel' => $av['elegivel'], 'texto' => RegraDoRecurso::descrever($av, $regra->recurso_max_disciplinas, $nomes)];
+            }
             $decisao = $this->decisao->decidir(array_column($doAluno, 'nota_final'), (string) $regra->nota_minima, $regra->reprova_por_aproveitamento, $comExame);
             $pendente = in_array(true, array_column($doAluno, 'pendente'), true) || $doAluno === [];
             $comPendentes += $pendente ? 1 : 0;
@@ -156,6 +169,7 @@ class PautaFinalService
                 'numero_matricula' => $m->aluno?->numero_matricula,
                 'sexo' => $m->aluno?->dadosPessoa?->sexo,
                 'celulas' => $doAluno,
+                'recurso' => $recurso,
                 'decisao' => $this->decisaoParaTela($decisao),
                 'estado_decisao' => $decisao !== null ? 'definida' : 'pendente',
             ];
@@ -166,11 +180,6 @@ class PautaFinalService
         if ($alunos === []) {
             $bloqueios[] = 'A turma não tem alunos com matrícula activa.';
         }
-        $semRecurso = count(array_filter($alunos, fn (array $a) => in_array(true, array_column($a['celulas'], 'recurso_em_falta'), true)));
-        if ($semRecurso > 0) {
-            $bloqueios[] = "Faltam notas de exame de recurso em {$semRecurso} aluno(s) com disciplinas abaixo do mínimo: lance-as, ou aguarde o fim do prazo do recurso.";
-        }
-
         $semExame = count(array_filter($alunos, fn (array $a) => in_array(true, array_column($a['celulas'], 'exame_em_falta'), true)));
         if ($comExame && $semExame > 0) {
             $bloqueios[] = "Faltam notas de exame em {$semExame} aluno(s): lance-as antes de aprovar.";
@@ -179,8 +188,20 @@ class PautaFinalService
             $bloqueios[] = "Faltam resultados em {$comPendentes} aluno(s): lance as notas em falta antes de aprovar.";
         }
 
+        // O recurso não é obrigatório e nunca bloqueia a aprovação; avisa-se, para a escola decidir quando aprovar.
+        $avisos = [];
+        $aEspera = count(array_filter($alunos, fn (array $a) => collect($a['celulas'])->contains(fn (array $c) => $c['recurso_permitido'] && $c['ner'] === null)));
+        if ($aEspera > 0) {
+            $avisos[] = "{$aEspera} aluno(s) têm direito a exame de recurso e ainda sem nota. Se aprovar agora, ficam com a nota que têm.";
+        }
+        $diretos = count(array_filter($alunos, fn (array $a) => ($a['recurso']['texto'] ?? null) !== null));
+        if ($diretos > 0) {
+            $avisos[] = "{$diretos} aluno(s) reprovam directamente, sem recurso, pelas regras da escola (máximo de negativas ou disciplina-chave).";
+        }
+
         return [
             ...$base,
+            'avisos' => $avisos,
             'com_exame' => $comExame,
             'com_recurso' => $comRecurso,
             'disciplinas' => $disciplinas->map(fn (Disciplina $d) => ['id' => $d->id, 'nome' => (string) $d->nome])->all(),
@@ -227,7 +248,7 @@ class PautaFinalService
                 'mt1' => $this->formatar($l->mt1, $casas), 'mt2' => $this->formatar($l->mt2, $casas), 'mt3' => $this->formatar($l->mt3, $casas),
                 'ne' => $this->formatar($l->ne, $casas),
                 'mfd_exacta' => $l->mfd_exacta, 'mfd' => $this->formatar($l->mfd, $casas), 'mf_exacta' => $l->mf_exacta, 'mf' => $this->formatar($l->mf, $casas),
-                'ner' => $this->formatar($l->ner, $casas), 'mfr_exacta' => $l->mfr_exacta, 'mfr' => $this->formatar($l->mfr, $casas), 'recurso_em_falta' => false,
+                'ner' => $this->formatar($l->ner, $casas), 'mfr_exacta' => $l->mfr_exacta, 'mfr' => $this->formatar($l->mfr, $casas), 'recurso_permitido' => false,
                 'nota_final' => $this->formatar($l->mfr ?? $l->mf ?? $l->mfd, $casas), 'aprovado' => $l->aprovado, 'pendente' => $l->mfd === null, 'exame_em_falta' => false,
             ];
         }
@@ -249,6 +270,7 @@ class PautaFinalService
             'alunos' => $alunos,
             'pode_aprovar' => false,
             'bloqueios' => [],
+            'avisos' => [],
         ];
     }
 

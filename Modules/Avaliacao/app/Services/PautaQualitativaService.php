@@ -5,6 +5,8 @@ namespace Modules\Avaliacao\Services;
 use Modules\AnoLectivo\Enums\TipoPeriodo;
 use Modules\AnoLectivo\Models\Periodo;
 use Modules\Avaliacao\Enums\Decisao;
+use Modules\Avaliacao\Enums\Progressao;
+use Modules\Avaliacao\Models\AvaliacaoProgressao;
 use Modules\Avaliacao\Models\AvaliacaoDecisao;
 use Modules\Avaliacao\Models\AvaliacaoPauta;
 use Modules\Avaliacao\Models\AvaliacaoPautaLinhaQualitativa;
@@ -56,17 +58,26 @@ class PautaQualitativaService
             $celulas[$i->matricula_id][$i->planoCurricularDisciplina->disciplina_id] = $this->celula($i->id, $niveis);
         }
 
+        // Progressão: automática (todas transitam) ou decidida criança a criança por quem tem permissão.
+        $manual = $regra->progressao === Progressao::MANUAL;
+        $decididas = $manual ? AvaliacaoProgressao::query()->whereIn('matricula_id', $matriculas->pluck('id'))->get()->keyBy('matricula_id') : collect();
+
         $alunos = [];
         $comPendentes = 0;
+        $semDecisao = 0;
         foreach ($matriculas as $m) {
             $doAluno = $celulas[$m->id] ?? [];
             $pendente = $doAluno === [] || in_array(true, array_column($doAluno, 'pendente'), true);
             $comPendentes += $pendente ? 1 : 0;
+            $decisao = $manual ? ($decididas[$m->id]->decisao ?? null) : ($pendente ? null : Decisao::TRANSITA);
+            $semDecisao += $manual && $decisao === null ? 1 : 0;
+
             $alunos[] = [
                 'matricula_id' => $m->id, 'nome' => (string) $m->aluno?->dadosPessoa?->nome_completo, 'numero_matricula' => $m->aluno?->numero_matricula,
                 'celulas' => $doAluno,
-                'decisao' => $pendente ? null : ['valor' => Decisao::TRANSITA->value, 'rotulo' => Decisao::TRANSITA->label()],
-                'estado_decisao' => $pendente ? 'pendente' : 'definida',
+                'decisao' => $decisao === null ? null : ['valor' => $decisao->value, 'rotulo' => $decisao->label()],
+                'motivo_progressao' => $decididas[$m->id]->motivo ?? null,
+                'estado_decisao' => $decisao === null ? 'pendente' : 'definida',
             ];
         }
         usort($alunos, fn (array $x, array $y) => strnatcasecmp($x['nome'], $y['nome']));
@@ -79,7 +90,11 @@ class PautaQualitativaService
             $bloqueios[] = "Falta a avaliação do 3.º trimestre em {$comPendentes} aluno(s): lance-a antes de aprovar.";
         }
 
-        return [...$base, 'disciplinas' => $disciplinas->map(fn (Disciplina $d) => ['id' => $d->id, 'nome' => (string) $d->nome])->all(),
+        if ($semDecisao > 0) {
+            $bloqueios[] = "Falta decidir a progressão de {$semDecisao} criança(s).";
+        }
+
+        return [...$base, 'progressao_manual' => $manual, 'avisos' => [], 'disciplinas' => $disciplinas->map(fn (Disciplina $d) => ['id' => $d->id, 'nome' => (string) $d->nome])->all(),
             'alunos' => $alunos, 'pode_aprovar' => $bloqueios === [], 'bloqueios' => $bloqueios];
     }
 

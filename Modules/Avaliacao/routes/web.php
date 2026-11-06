@@ -36,6 +36,8 @@ Route::middleware(['auth', 'can:nota.configurar'])->prefix('avaliacao/configurac
 Route::middleware(['auth'])->prefix('avaliacao/pautas')->name('avaliacao.pautas.')->group(function () {
     Route::get('/', [PautaController::class, 'index'])->middleware('can:nota.exportar')->name('index');
     Route::get('/{turma}/exportar', [PautaController::class, 'exportar'])->whereNumber('turma')->middleware(['can:nota.exportar', 'throttle:operacao-pesada'])->name('exportar');
+    Route::get('/{turma}/boletins', [PautaController::class, 'boletins'])->whereNumber('turma')->middleware(['can:nota.exportar', 'throttle:operacao-pesada'])->name('boletins');
     Route::post('/{turma}/aprovar', [PautaController::class, 'aprovar'])->whereNumber('turma')->middleware('can:nota.aprovar')->name('aprovar');
+    Route::post('/{turma}/progressao', [PautaController::class, 'progressao'])->whereNumber('turma')->middleware('can:nota.aprovar')->name('progressao');
     Route::post('/{turma}/reabrir', [PautaController::class, 'reabrir'])->whereNumber('turma')->middleware('can:nota.reabrir')->name('reabrir');
 });

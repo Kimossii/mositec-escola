@@ -319,7 +319,8 @@ function eliminar(instrumento) {
                                             <a v-if="pode.anular && a.ner && a.ner.estado === 0" href="#" class="text-muted" title="Anular"
                                                 @click.prevent="aAnular = { nota_id: a.ner.id, aluno: a.nome, instrumento: 'Exame de recurso' }">⊘</a>
                                         </div>
-                                        <span v-else class="text-muted">—</span>
+                                        <span v-else class="text-muted" :title="a.recurso_motivo">—</span>
+                                        <div v-if="a.recurso_motivo" class="fs-8 text-danger" :title="a.recurso_motivo">Sem direito a recurso</div>
                                         <div v-if="a.ner && a.ner.estado !== 0" class="fs-8 text-muted">{{ a.ner.estado_descricao }}</div>
                                     </td>
                                     <td class="text-center fw-bold">{{ a.mfr ?? '—' }}</td>

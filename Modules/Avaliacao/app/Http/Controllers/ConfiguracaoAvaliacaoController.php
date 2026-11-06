@@ -17,6 +17,7 @@ use Modules\Avaliacao\Actions\GuardarRegraQualitativaAction;
 use Modules\Avaliacao\Actions\ProlongarPrazoAction;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Enums\ModoArredondamento;
+use Modules\Avaliacao\Enums\Progressao;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Services\ConfiguracaoAvaliacaoService;
 
@@ -38,6 +39,7 @@ class ConfiguracaoAvaliacaoController extends Controller
             'peso_mac' => ['required', 'numeric', 'between:0,100'], 'peso_pt' => ['required', 'numeric', 'between:0,100'],
             'peso_mt1' => ['nullable', 'numeric', 'between:0,100'], 'peso_mt2' => ['nullable', 'numeric', 'between:0,100'], 'peso_mt3' => ['nullable', 'numeric', 'between:0,100'],
             'peso_mfd_exame' => ['nullable', 'numeric', 'between:0,100'], 'peso_exame' => ['nullable', 'numeric', 'between:0,100'],
+            'recurso_max_disciplinas' => ['nullable', 'integer', 'between:0,30'], 'disciplinas_chave' => ['nullable', 'array', 'max:30'], 'disciplinas_chave.*' => ['integer'],
             'casas_decimais' => ['required', 'integer', 'between:0,4'],
             'modo_arredondamento' => ['required', Rule::in(array_column(ModoArredondamento::cases(), 'value'))],
             'reprova_por_aproveitamento' => ['required', 'boolean'],
@@ -50,6 +52,7 @@ class ConfiguracaoAvaliacaoController extends Controller
             peso_mt3: isset($d['peso_mt3']) ? (string) $d['peso_mt3'] : null, casas_decimais: $d['casas_decimais'],
             modo_arredondamento: ModoArredondamento::from((int) $d['modo_arredondamento']), reprova_por_aproveitamento: (bool) $d['reprova_por_aproveitamento'],
             peso_mfd_exame: (string) ($d['peso_mfd_exame'] ?? '40'), peso_exame: (string) ($d['peso_exame'] ?? '60'),
+            recurso_max_disciplinas: isset($d['recurso_max_disciplinas']) ? (int) $d['recurso_max_disciplinas'] : null, disciplinas_chave: array_map('intval', $d['disciplinas_chave'] ?? []),
         ));
 
         return back();
@@ -95,9 +98,12 @@ class ConfiguracaoAvaliacaoController extends Controller
 
     public function guardarRegraQualitativa(Request $request, GuardarRegraQualitativaAction $acao): RedirectResponse
     {
-        $d = $request->validate(['ano_lectivo_id' => ['required', 'integer'], 'nivel_academico_id' => ['required', 'integer'], 'escala_id' => ['required', 'integer']]);
+        $d = $request->validate([
+            'ano_lectivo_id' => ['required', 'integer'], 'nivel_academico_id' => ['required', 'integer'], 'escala_id' => ['required', 'integer'],
+            'progressao' => ['nullable', Rule::in(array_column(Progressao::cases(), 'value'))],
+        ]);
 
-        $acao->executar($d['ano_lectivo_id'], $d['nivel_academico_id'], $d['escala_id']);
+        $acao->executar($d['ano_lectivo_id'], $d['nivel_academico_id'], $d['escala_id'], Progressao::from((int) ($d['progressao'] ?? Progressao::AUTOMATICA->value)));
 
         return back();
     }

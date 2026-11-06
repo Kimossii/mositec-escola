@@ -21,6 +21,9 @@ readonly class RegraAvaliacaoDTO
         public bool $reprova_por_aproveitamento = true,
         public string $peso_mfd_exame = '40',
         public string $peso_exame = '60',
+        public ?int $recurso_max_disciplinas = null,
+        /** @var list<int> disciplinas-chave: negativa a uma delas = reprovação directa, sem recurso */
+        public array $disciplinas_chave = [],
     ) {
     }
 }

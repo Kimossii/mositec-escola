@@ -11,6 +11,8 @@ use Modules\Avaliacao\DTO\LancarNotaDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
+use Modules\Avaliacao\Services\ElegibilidadeRecursoService;
+use Modules\Avaliacao\Services\RegraAvaliacaoService;
 use Modules\Avaliacao\Services\ResultadoDisciplinaService;
 use Modules\Core\Traits\LogService;
 use Modules\Matricula\Models\InscricaoDisciplina;
@@ -25,8 +27,13 @@ class LancarRecursoAction
 {
     use LogService;
 
-    public function __construct(private CriarInstrumentoAction $criar, private LancarNotaAction $lancar, private ResultadoDisciplinaService $resultados)
-    {
+    public function __construct(
+        private CriarInstrumentoAction $criar,
+        private LancarNotaAction $lancar,
+        private ResultadoDisciplinaService $resultados,
+        private ElegibilidadeRecursoService $elegibilidade,
+        private RegraAvaliacaoService $regras,
+    ) {
     }
 
     public function executar(int $turmaId, int $disciplinaId, int $inscricaoDisciplinaId, string $valor, ?string $motivo = null): AvaliacaoNota
@@ -41,6 +48,13 @@ class LancarRecursoAction
 
             if (! $this->resultados->calcular($inscricao->id)->recursoNecessario) {
                 throw ValidationException::withMessages(['inscricao_disciplina_id' => 'Só faz exame de recurso quem tem a disciplina abaixo da nota mínima.']);
+            }
+
+            // As regras da escola: máximo de negativas e disciplinas-chave decidem se o aluno tem direito ao recurso.
+            $regra = $this->regras->paraTurma($turma);
+            $direito = $regra === null ? null : ($this->elegibilidade->paraTurma($turma, $regra)[$inscricao->matricula_id] ?? null);
+            if ($direito !== null && ! $direito['elegivel']) {
+                throw ValidationException::withMessages(['inscricao_disciplina_id' => $direito['texto'] ?? 'Este aluno não tem direito a exame de recurso.']);
             }
 
             $recurso = AvaliacaoInstrumento::query()->where('turma_id', $turma->id)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::RECURSO->value)->first()

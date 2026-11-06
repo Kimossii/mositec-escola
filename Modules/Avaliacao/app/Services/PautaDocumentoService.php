@@ -20,15 +20,7 @@ class PautaDocumentoService
 
         $qualitativa = ($pauta['tipo'] ?? 'quantitativa') === 'qualitativa';
         $comExame = (bool) ($pauta['com_exame'] ?? false);
-        [$campos, $rotulos] = match (true) {
-            $comExame => [['mfd', 'ne', 'mf'], ['MFD', 'NE', 'MF']],
-            default => [['mt1', 'mt2', 'mt3', 'mfd'], ['MT1', 'MT2', 'MT3', 'MFD']],
-        };
-
-        if (! $qualitativa && ($pauta['com_recurso'] ?? false)) {
-            $campos = [...$campos, 'ner', 'mfr'];
-            $rotulos = [...$rotulos, 'NER', 'MFR'];
-        }
+        [$campos, $rotulos] = $this->colunas($pauta);
 
         $linhas = [];
         foreach ($pauta['alunos'] as $i => $aluno) {
@@ -69,6 +61,27 @@ class PautaDocumentoService
             assinaturas: $this->assinaturas($cabecalho),
             nota: $estado === 'definitiva' ? null : 'Resultado sem validade até a pauta ser aprovada.',
         );
+    }
+
+    /**
+     * As colunas de cada disciplina, na nomenclatura da pauta: MT1, MT2, MT3 e MFD; nas classes com exame, MFD, NE e MF; e
+     * nas classes com recurso, também NER e MFR. Partilhado com o boletim, para os dois dizerem o mesmo.
+     *
+     * @return array{0: list<string>, 1: list<string>} [campos da célula, rótulos]
+     */
+    public function colunas(array $pauta): array
+    {
+        $qualitativa = ($pauta['tipo'] ?? 'quantitativa') === 'qualitativa';
+        [$campos, $rotulos] = ($pauta['com_exame'] ?? false)
+            ? [['mfd', 'ne', 'mf'], ['MFD', 'NE', 'MF']]
+            : [['mt1', 'mt2', 'mt3', 'mfd'], ['MT1', 'MT2', 'MT3', 'MFD']];
+
+        if (! $qualitativa && ($pauta['com_recurso'] ?? false)) {
+            $campos = [...$campos, 'ner', 'mfr'];
+            $rotulos = [...$rotulos, 'NER', 'MFR'];
+        }
+
+        return [$campos, $rotulos];
     }
 
     /** @return list<array{rotulo: string, nome: ?string, cargo: ?string}> */

@@ -5,6 +5,7 @@ namespace Modules\Avaliacao\Actions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Avaliacao\Enums\Progressao;
 use Modules\Avaliacao\Models\AvaliacaoEscala;
 use Modules\Avaliacao\Models\AvaliacaoRegraQualitativa;
 use Modules\Core\Traits\LogService;
@@ -16,9 +17,9 @@ class GuardarRegraQualitativaAction
 {
     use LogService;
 
-    public function executar(int $anoLectivoId, int $nivelAcademicoId, int $escalaId): AvaliacaoRegraQualitativa
+    public function executar(int $anoLectivoId, int $nivelAcademicoId, int $escalaId, Progressao $progressao = Progressao::AUTOMATICA): AvaliacaoRegraQualitativa
     {
-        return $this->comLog('Guardar regra qualitativa', $this->contextoDeArgumentos(func_get_args(), 'executar'), function () use ($anoLectivoId, $nivelAcademicoId, $escalaId) {
+        return $this->comLog('Guardar regra qualitativa', $this->contextoDeArgumentos(func_get_args(), 'executar'), function () use ($anoLectivoId, $nivelAcademicoId, $escalaId, $progressao) {
             AnoLectivo::query()->findOrFail($anoLectivoId);
             AvaliacaoEscala::query()->findOrFail($escalaId);
             $nivel = NivelAcademico::query()->findOrFail($nivelAcademicoId);
@@ -29,7 +30,7 @@ class GuardarRegraQualitativaAction
 
             return DB::transaction(fn () => AvaliacaoRegraQualitativa::updateOrCreate(
                 ['ano_lectivo_id' => $anoLectivoId, 'nivel_academico_id' => $nivelAcademicoId],
-                ['escala_id' => $escalaId],
+                ['escala_id' => $escalaId, 'progressao' => $progressao],
             ));
         });
     }

@@ -8,6 +8,7 @@ use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\AnoLectivo\Models\Periodo;
 use Modules\Avaliacao\Enums\ModoArredondamento;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
+use Modules\Avaliacao\Enums\Progressao;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoCompetencia;
 use Modules\Avaliacao\Models\AvaliacaoDocumentoConfig;
@@ -36,7 +37,7 @@ class ConfiguracaoAvaliacaoService
             return ['anos' => [], 'ano_id' => null, 'classes' => [], 'periodos' => [], 'modos' => $this->modos(), 'tipos' => $this->tipos(), 'escalas' => $this->escalas(), ...$this->competencias(), ...$this->documentos()];
         }
 
-        $regras = AvaliacaoRegra::query()->where('ano_lectivo_id', $ano->id)->get()->keyBy('nivel_academico_id');
+        $regras = AvaliacaoRegra::query()->where('ano_lectivo_id', $ano->id)->with('disciplinasChave:disciplinas.id')->get()->keyBy('nivel_academico_id');
         $regrasQ = AvaliacaoRegraQualitativa::query()->where('ano_lectivo_id', $ano->id)->get()->keyBy('nivel_academico_id');
         $prazos = AvaliacaoPrazo::query()
             ->where(fn ($q) => $q->whereIn('regra_id', $regras->pluck('id'))->orWhereIn('regra_qualitativa_id', $regrasQ->pluck('id')))
@@ -67,11 +68,13 @@ class ConfiguracaoAvaliacaoService
                     'peso_mt3' => $regra->peso_mt3 === null ? null : (string) $regra->peso_mt3,
                     'peso_mfd_exame' => (string) $regra->peso_mfd_exame,
                     'peso_exame' => (string) $regra->peso_exame,
+                    'recurso_max_disciplinas' => $regra->recurso_max_disciplinas,
+                    'disciplinas_chave' => $regra->disciplinasChave->pluck('id')->all(),
                     'casas_decimais' => $regra->casas_decimais,
                     'modo_arredondamento' => $regra->modo_arredondamento->value,
                     'reprova_por_aproveitamento' => $regra->reprova_por_aproveitamento,
                 ],
-                'regra_qualitativa' => isset($regrasQ[$nivel->id]) ? ['id' => $regrasQ[$nivel->id]->id, 'escala_id' => $regrasQ[$nivel->id]->escala_id] : null,
+                'regra_qualitativa' => isset($regrasQ[$nivel->id]) ? ['id' => $regrasQ[$nivel->id]->id, 'escala_id' => $regrasQ[$nivel->id]->escala_id, 'progressao' => $regrasQ[$nivel->id]->progressao->value] : null,
                 'sugestao' => $sugestao,
                 'prazos' => ($regra !== null ? $prazos->where('regra_id', $regra->id) : (isset($regrasQ[$nivel->id]) ? $prazos->where('regra_qualitativa_id', $regrasQ[$nivel->id]->id) : collect())->values())->map(fn (AvaliacaoPrazo $p) => [
                     'id' => $p->id,
@@ -96,6 +99,7 @@ class ConfiguracaoAvaliacaoService
             'modos' => $this->modos(),
             'tipos' => $this->tipos(),
             'escalas' => $this->escalas(),
+            'progressoes' => array_map(fn (Progressao $p) => ['valor' => $p->value, 'nome' => $p->label()], Progressao::cases()),
             ...$this->competencias(),
             ...$this->documentos(),
         ];
