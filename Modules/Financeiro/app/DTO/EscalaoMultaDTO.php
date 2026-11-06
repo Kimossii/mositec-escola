@@ -7,10 +7,10 @@ use Modules\Financeiro\Enums\TipoMulta;
 class EscalaoMultaDTO
 {
     public function __construct(
-        public int $ordem,
-        public int $dias_atraso,
-        public TipoMulta $tipo,
-        public int $valor,
+        public readonly int $ordem,
+        public readonly int $dias_atraso,
+        public readonly TipoMulta $tipo,
+        public readonly int $valor,
     ) {
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Modules\Financeiro\Services;
 
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Enums\EstadoPagamento;
 use Modules\Financeiro\Models\Credito;
 use Modules\Financeiro\Models\Pagamento;
@@ -13,8 +14,22 @@ use Modules\Financeiro\Support\CacheDeTotais;
 /** Relatório financeiro de um período: o que entrou (por origem, método e mês) e a dívida actual (por turma). */
 class RelatorioFinanceiroService
 {
-    public function __construct(private DividasConsultaService $dividas, private CacheDeTotais $cache)
+    public function __construct(private DividasConsultaService $dividas, private CacheDeTotais $cache, private RelogioDoTenant $relogio)
     {
+    }
+
+    /**
+     * O período do relatório: o pedido (AAAA-MM-DD), ou do início do mês corrente até hoje. Datas trocadas põem-se na ordem certa.
+     *
+     * @return array{0: string, 1: string}
+     */
+    public function periodo(mixed $de, mixed $ate): array
+    {
+        $hoje = $this->relogio->hoje();
+        $de = preg_match('/^\d{4}-\d{2}-\d{2}$/D', (string) $de) === 1 ? (string) $de : $hoje->startOfMonth()->toDateString();
+        $ate = preg_match('/^\d{4}-\d{2}-\d{2}$/D', (string) $ate) === 1 ? (string) $ate : $hoje->toDateString();
+
+        return $de <= $ate ? [$de, $ate] : [$ate, $de];
     }
 
     /** @return array<string, mixed> */

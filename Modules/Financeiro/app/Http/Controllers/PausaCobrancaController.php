@@ -5,7 +5,6 @@ namespace Modules\Financeiro\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Financeiro\DTO\PausaCobrancaDTO;
 use Modules\Financeiro\Http\Requests\AtualizarPausaCobrancaRequest;
 use Modules\Financeiro\Http\Requests\CriarPausaCobrancaRequest;
@@ -23,15 +22,7 @@ class PausaCobrancaController extends Controller
     {
         $this->authorize('pausa-cobranca.ver');
 
-        $anoLectivoId = $request->filled('ano_lectivo_id')
-            ? (int) $request->input('ano_lectivo_id')
-            : AnoLectivo::current()?->id;
-
-        return Inertia::render('Financeiro/PausasCobranca/Index', [
-            'pausas' => $this->service->listar($anoLectivoId),
-            'anosLectivos' => AnoLectivo::query()->orderByDesc('data_inicio')->get(['id', 'nome', 'data_inicio', 'data_fim']),
-            'anoLectivoActualId' => AnoLectivo::current()?->id,
-        ]);
+        return Inertia::render('Financeiro/PausasCobranca/Index', $this->service->pagina($request->filled('ano_lectivo_id') ? (int) $request->input('ano_lectivo_id') : null));
     }
 
     public function store(CriarPausaCobrancaRequest $request)

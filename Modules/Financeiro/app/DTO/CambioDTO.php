@@ -8,8 +8,8 @@ use Modules\Financeiro\Support\TaxaCambio;
 class CambioDTO
 {
     public function __construct(
-        public string $data,
-        public TaxaCambio $taxa,
+        public readonly string $data,
+        public readonly TaxaCambio $taxa,
     ) {
     }
 

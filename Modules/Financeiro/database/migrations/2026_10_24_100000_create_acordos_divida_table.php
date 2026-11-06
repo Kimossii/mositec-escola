@@ -29,37 +29,10 @@ return new class extends Migration
 
             $table->index(['tenant_id', 'matricula_id', 'estado']);
         });
-
-        Schema::create('acordo_propinas', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
-            $table->foreignId('acordo_id')->constrained('acordos_divida')->restrictOnDelete();
-            $table->foreignId('propina_id')->constrained('propinas')->restrictOnDelete();
-            $table->unsignedBigInteger('capital_inicial');
-            $table->unsignedBigInteger('multa_inicial');
-            $table->timestamps();
-
-            $table->unique(['acordo_id', 'propina_id']);
-            $table->index(['tenant_id', 'propina_id']);
-        });
-
-        Schema::create('acordo_prestacoes', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->restrictOnDelete();
-            $table->foreignId('acordo_id')->constrained('acordos_divida')->restrictOnDelete();
-            $table->unsignedSmallInteger('ordem');
-            $table->date('data_vencimento');
-            $table->unsignedBigInteger('valor');
-            $table->timestamps();
-
-            $table->unique(['acordo_id', 'ordem']);
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('acordo_prestacoes');
-        Schema::dropIfExists('acordo_propinas');
         Schema::dropIfExists('acordos_divida');
     }
 };

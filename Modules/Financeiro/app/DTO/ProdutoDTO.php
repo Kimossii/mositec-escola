@@ -10,12 +10,12 @@ use Modules\Financeiro\Support\Dinheiro;
 class ProdutoDTO
 {
     public function __construct(
-        public string $nome,
-        public Dinheiro $preco,
-        public ?string $codigo = null,
-        public ?string $descricao = null,
+        public readonly string $nome,
+        public readonly Dinheiro $preco,
+        public readonly ?string $codigo = null,
+        public readonly ?string $descricao = null,
         /** @var array{atributos: array<string, mixed>, niveis: list<int>, cursos: list<int>, variantes: list<array>} */
-        public array $extras = ['atributos' => [], 'niveis' => [], 'cursos' => [], 'variantes' => []],
+        public readonly array $extras = ['atributos' => [], 'niveis' => [], 'cursos' => [], 'variantes' => []],
     ) {
     }
 

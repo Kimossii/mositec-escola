@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 use Modules\Financeiro\Actions\CriarAcordoAction;
+use Modules\Financeiro\DTO\CriarAcordoDTO;
 use Modules\Financeiro\Actions\EncerrarAcordoAction;
 use Modules\Financeiro\Enums\EstadoAcordo;
 use Modules\Financeiro\Models\Propina;
@@ -57,7 +58,7 @@ class AcordosTest extends TestCase
 
     private function acordo($matricula, array $ids, int $desconto = 50, int $prestacoes = 4)
     {
-        return app(CriarAcordoAction::class)->executar($matricula, $ids, $desconto, $prestacoes, '2026-11-01', 'Pais sem rendimento este mês', $this->adminEscola()->id);
+        return app(CriarAcordoAction::class)->executar($matricula, new CriarAcordoDTO($ids, $desconto, $prestacoes, '2026-11-01', 'Pais sem rendimento este mês', $this->adminEscola()->id));
     }
 
     public function test_cria_acordo_com_desconto_nas_multas_e_prestacoes_que_somam_o_total(): void

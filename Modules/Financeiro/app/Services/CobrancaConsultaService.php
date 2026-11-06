@@ -159,6 +159,14 @@ class CobrancaConsultaService
             ->all();
     }
 
+    /** O resumo da matrícula escolhida no ecrã (ex.: vinda da ficha do aluno), ou `null` se não foi escolhida ou não existe nesta escola. @return array<string, mixed>|null */
+    public function resumoDaMatriculaPorId(?int $matriculaId): ?array
+    {
+        $matricula = $matriculaId === null ? null : Matricula::query()->find($matriculaId);
+
+        return $matricula === null ? null : $this->resumoDaMatricula($matricula);
+    }
+
     /** @return array<string, mixed> */
     public function resumoDaMatricula(Matricula $m): array
     {

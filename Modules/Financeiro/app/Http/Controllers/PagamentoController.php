@@ -154,16 +154,7 @@ class PagamentoController extends Controller
         $this->authorize('pagamento.ver');
 
         $recibo = $this->consulta->recibo($pagamento);
-        $posicao = null;
-
-        foreach ($recibo['periodos'] as $indice => $periodo) {
-            if ($periodo['propina_id'] === (int) $propina->getKey()) {
-                $posicao = $indice + 1;
-                break;
-            }
-        }
-
-        abort_if($posicao === null, 404);
+        $posicao = $this->consulta->posicaoDaPropinaNoRecibo($recibo, (int) $propina->getKey());
 
         return $this->reciboDoPagamento($pagamento, $recibo, $posicao);
     }

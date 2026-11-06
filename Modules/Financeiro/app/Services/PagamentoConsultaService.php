@@ -5,6 +5,7 @@ namespace Modules\Financeiro\Services;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Modules\Aluno\Models\Aluno;
 use Modules\Estabelecimento\Models\Estabelecimento;
@@ -43,6 +44,23 @@ use Modules\Matricula\Models\Matricula;
 class PagamentoConsultaService
 {
     public const POR_PAGINA = 15;
+
+    /**
+     * A posição (a partir de 1) de uma propina entre os períodos de um recibo.
+     *
+     * @param  array<string, mixed>  $recibo  o recibo do pagamento (`recibo()`)
+     * @throws ModelNotFoundException se a propina não faz parte deste pagamento
+     */
+    public function posicaoDaPropinaNoRecibo(array $recibo, int $propinaId): int
+    {
+        foreach ($recibo['periodos'] as $indice => $periodo) {
+            if ($periodo['propina_id'] === $propinaId) {
+                return $indice + 1;
+            }
+        }
+
+        throw new ModelNotFoundException('A propina não faz parte deste pagamento.');
+    }
 
     public function __construct(
         private RelogioDoTenant $relogio,

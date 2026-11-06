@@ -15,15 +15,15 @@ class PlanoPropinaDTO
      * @param  list<array{nivel_academico_id: ?int, curso_id: ?int, turno_id: ?int, turma_id: ?int}>  $alvos
      */
     public function __construct(
-        public string $nome,
-        public Periodicidade $periodicidade,
-        public int $intervalo_meses,
-        public Dinheiro $valor,
-        public CarbonImmutable $data_inicio,
-        public CarbonImmutable $data_fim,
-        public array $alvos,
-        public ?int $ano_lectivo_id = null,
-        public ?string $descricao = null,
+        public readonly string $nome,
+        public readonly Periodicidade $periodicidade,
+        public readonly int $intervalo_meses,
+        public readonly Dinheiro $valor,
+        public readonly CarbonImmutable $data_inicio,
+        public readonly CarbonImmutable $data_fim,
+        public readonly array $alvos,
+        public readonly ?int $ano_lectivo_id = null,
+        public readonly ?string $descricao = null,
     ) {
     }
 

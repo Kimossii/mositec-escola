@@ -11,12 +11,12 @@ class PausaCobrancaDTO
      * @param  list<array{ano: int, mes: int, isento: bool}>  $meses  escolhas do utilizador (só meses parciais)
      */
     public function __construct(
-        public int $ano_lectivo_id,
-        public string $descricao,
-        public CarbonImmutable $data_inicio,
-        public CarbonImmutable $data_fim,
-        public bool $cobra_propina,
-        public array $meses,
+        public readonly int $ano_lectivo_id,
+        public readonly string $descricao,
+        public readonly CarbonImmutable $data_inicio,
+        public readonly CarbonImmutable $data_fim,
+        public readonly bool $cobra_propina,
+        public readonly array $meses,
     ) {
     }
 
