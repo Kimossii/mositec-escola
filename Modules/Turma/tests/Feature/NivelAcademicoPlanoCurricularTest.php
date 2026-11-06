@@ -5,6 +5,7 @@ namespace Modules\Turma\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Enums\TipoEstabelecimentoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
@@ -75,5 +76,20 @@ class NivelAcademicoPlanoCurricularTest extends TestCase
             ->has('nivelAcademico.planos_curriculares', 1)
             ->where('nivelAcademico.planos_curriculares.0.codigo', 'PLN')
         );
+    }
+
+    public function test_7_a_9_classe_aceita_plano_directo_e_10_classe_em_diante_exige_curso(): void
+    {
+        $this->actingAsStaff();
+        $estabelecimento = $this->criarEstabelecimento();
+        $nona = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'SEC_9', 'nome' => '9.ª Classe', 'ordem' => 14, 'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO]);
+        $decima = NivelAcademico::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'SEC_10', 'nome' => '10.ª Classe', 'ordem' => 15, 'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO]);
+
+        $this->post(route('planos-curriculares.store'), ['nivel_academico_id' => $nona->id, 'codigo' => 'P9', 'nome' => 'Plano 9'])
+            ->assertSessionHasNoErrors();
+        $this->assertNotNull(PlanoCurricular::firstWhere('codigo', 'P9'));
+
+        $this->post(route('planos-curriculares.store'), ['nivel_academico_id' => $decima->id, 'codigo' => 'P10', 'nome' => 'Plano 10'])
+            ->assertSessionHasErrors('curso_id');
     }
 }
