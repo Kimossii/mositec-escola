@@ -8,9 +8,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Avaliacao\Actions\AprovarPautaAction;
-use Modules\Avaliacao\Actions\DefinirPrazoAction;
-use Modules\Avaliacao\Actions\GuardarCompetenciasAction;
-use Modules\Avaliacao\Actions\GuardarEscalaQualitativaAction;
 use Modules\Avaliacao\Actions\LancarCompetenciaAction;
 use Modules\Avaliacao\Actions\LancarQualitativaAction;
 use Modules\Avaliacao\DTO\LancarCompetenciaDTO;
@@ -48,7 +45,7 @@ class CompetenciasTest extends TestCase
 
     private function definir(array $itens, ?int $nivelId = null, ?int $disciplinaId = null): void
     {
-        app(GuardarCompetenciasAction::class)->executar($disciplinaId ?? $this->c['disciplina']->id, $nivelId, $itens);
+        $this->guardarCompetencias($disciplinaId ?? $this->c['disciplina']->id, $nivelId, $itens);
     }
 
     /** @return Collection<int, AvaliacaoCompetencia> */
@@ -171,7 +168,7 @@ class CompetenciasTest extends TestCase
         $this->definir([['descricao' => 'Só da outra sala']], $outraClasse->id);
         $daOutraSala = AvaliacaoCompetencia::where('nivel_academico_id', $outraClasse->id)->firstOrFail();
         $this->competencias()->first()->update(['ativa' => false]);
-        $outraEscala = app(GuardarEscalaQualitativaAction::class)->executar(null, 'Outra', [['codigo' => 'X', 'designacao' => 'Xis'], ['codigo' => 'Y', 'designacao' => 'Ipsilon']]);
+        $outraEscala = $this->guardarEscala(null, 'Outra', [['codigo' => 'X', 'designacao' => 'Xis'], ['codigo' => 'Y', 'designacao' => 'Ipsilon']]);
 
         $tentar = fn (int $competenciaId, ?int $nivelId = null) => app(LancarCompetenciaAction::class)->executar(new LancarCompetenciaDTO(
             $this->inscricao->id, $competenciaId, $this->c['periodos'][1]->id, $nivelId ?? $this->nivel('B'),
@@ -190,7 +187,7 @@ class CompetenciasTest extends TestCase
 
     public function test_o_prazo_qualitativo_tambem_manda_nas_competencias(): void
     {
-        app(DefinirPrazoAction::class)->executar(AvaliacaoRegraQualitativa::firstOrFail()->id, $this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, '2026-03-01');
+        $this->definirPrazo(AvaliacaoRegraQualitativa::firstOrFail()->id, $this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, '2026-03-01');
         $this->actingAs($this->professorAtribuido($this->c));
 
         try {
@@ -345,7 +342,7 @@ class CompetenciasTest extends TestCase
         $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
         $b = $this->noTenant($outro, function () {
             [$c, $escala] = $this->cenarioQualitativo('B');
-            app(GuardarCompetenciasAction::class)->executar($c['disciplina']->id, null, [['descricao' => 'Só da escola B']]);
+            $this->guardarCompetencias($c['disciplina']->id, null, [['descricao' => 'Só da escola B']]);
 
             return ['c' => $c, 'escala' => $escala, 'inscricao' => $this->inscreverAluno($c), 'competencia' => AvaliacaoCompetencia::firstOrFail()];
         });

@@ -10,6 +10,7 @@ use Modules\Avaliacao\DTO\LancarNotaDTO;
 use Modules\Avaliacao\Enums\EstadoNota;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
+use Modules\Avaliacao\Services\AcessoAMiniPautaService;
 use Modules\Avaliacao\Services\DocenteDoUtilizadorService;
 use Modules\Avaliacao\Services\PautaFinalService;
 use Modules\Avaliacao\Services\PrazoService;
@@ -34,6 +35,7 @@ class LancarNotaAction
         private DocenteDoUtilizadorService $docentes,
         private VerificaAtribuicaoDocente $atribuicoes,
         private PautaFinalService $pautas,
+        private AcessoAMiniPautaService $acesso,
     ) {
     }
 
@@ -45,6 +47,7 @@ class LancarNotaAction
     private function gravar(LancarNotaDTO $dto): AvaliacaoNota
     {
         $instrumento = AvaliacaoInstrumento::query()->findOrFail($dto->instrumento_id);
+        $this->acesso->exigirDoUtilizadorActual($instrumento->turma_id, $instrumento->disciplina_id);
         $this->pautas->exigirAberta($instrumento->turma_id);
         $turma = Turma::query()->findOrFail($instrumento->turma_id);
         $regra = $this->regras->paraTurma($turma)

@@ -6,9 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Modules\Avaliacao\Actions\AprovarPautaAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
-use Modules\Avaliacao\Actions\LancarExameAction;
 use Modules\Avaliacao\Actions\LancarQualitativaAction;
-use Modules\Avaliacao\Actions\LancarRecursoAction;
 use Modules\Avaliacao\DTO\LancarQualitativaDTO;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Services\BoletimDocumentoService;
@@ -83,8 +81,8 @@ class BoletimTest extends TestCase
         $this->regra($c);
         $inscricao = $this->inscreverAluno($c);
         $this->notasCompletas($c, $inscricao, [1 => ['8', '8'], 2 => ['8', '8'], 3 => ['8', '8']]);
-        app(LancarExameAction::class)->executar($c['turma']->id, $c['disciplina']->id, $inscricao->id, '2');
-        app(LancarRecursoAction::class)->executar($c['turma']->id, $c['disciplina']->id, $inscricao->id, '8');
+        $this->lancarExame($c['turma']->id, $c['disciplina']->id, $inscricao->id, '2');
+        $this->lancarRecurso($c['turma']->id, $c['disciplina']->id, $inscricao->id, '8');
         app(AprovarPautaAction::class)->executar($c['turma']->id);
 
         [$b] = $this->boletins($c);

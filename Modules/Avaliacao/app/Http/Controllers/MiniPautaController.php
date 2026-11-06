@@ -4,163 +4,99 @@ namespace Modules\Avaliacao\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
-use Modules\Avaliacao\Actions\AnularNotaAction;
-use Modules\Avaliacao\Actions\CriarInstrumentoAction;
-use Modules\Avaliacao\Actions\EliminarInstrumentoAction;
-use Modules\Avaliacao\Actions\LancarCompetenciaAction;
-use Modules\Avaliacao\Actions\LancarExameAction;
-use Modules\Avaliacao\Actions\LancarNotaAction;
-use Modules\Avaliacao\Actions\LancarQualitativaAction;
-use Modules\Avaliacao\Actions\LancarRecursoAction;
-use Modules\Avaliacao\DTO\InstrumentoDTO;
-use Modules\Avaliacao\DTO\LancarCompetenciaDTO;
-use Modules\Avaliacao\DTO\LancarNotaDTO;
-use Modules\Avaliacao\DTO\LancarQualitativaDTO;
-use Modules\Avaliacao\Enums\TipoInstrumento;
-use Modules\Avaliacao\Documentos\ExportadorDePautas;
-use Modules\Avaliacao\Models\AvaliacaoInstrumento;
-use Modules\Avaliacao\Models\AvaliacaoNota;
-use Modules\Avaliacao\Services\MiniPautaDocumentoService;
+use Modules\Avaliacao\Http\Requests\AnularNotaRequest;
+use Modules\Avaliacao\Http\Requests\CriarInstrumentoRequest;
+use Modules\Avaliacao\Http\Requests\EliminarInstrumentoRequest;
+use Modules\Avaliacao\Http\Requests\ExportarMiniPautaRequest;
+use Modules\Avaliacao\Http\Requests\LancarCompetenciaRequest;
+use Modules\Avaliacao\Http\Requests\LancarExameRequest;
+use Modules\Avaliacao\Http\Requests\LancarNotaRequest;
+use Modules\Avaliacao\Http\Requests\LancarQualitativaRequest;
+use Modules\Avaliacao\Http\Requests\VerMiniPautaRequest;
+use Modules\Avaliacao\Services\ExportacaoDePautasService;
+use Modules\Avaliacao\Services\GestaoMiniPautaService;
 use Modules\Avaliacao\Services\MiniPautaService;
 
 class MiniPautaController extends Controller
 {
-    public function __construct(private MiniPautaService $miniPauta)
-    {
+    public function __construct(
+        private MiniPautaService $miniPauta,
+        private GestaoMiniPautaService $gestao,
+        private ExportacaoDePautasService $exportacao,
+    ) {
     }
 
-    public function index(Request $request)
+    public function index(VerMiniPautaRequest $request)
     {
-        $this->authorize('nota.ver');
-        $f = $request->validate(['turma' => ['nullable', 'integer'], 'disciplina' => ['nullable', 'integer'], 'periodo' => ['nullable', 'integer']]);
-        $utilizador = $request->user();
+        $f = $request->validated();
 
-        $pauta = null;
-        if (! empty($f['turma']) && ! empty($f['disciplina'])) {
-            abort_unless($this->miniPauta->podeAceder($utilizador, (int) $f['turma'], (int) $f['disciplina']), 403);
-            $pauta = $this->miniPauta->paraTurmaDisciplina($utilizador, (int) $f['turma'], (int) $f['disciplina'], isset($f['periodo']) ? (int) $f['periodo'] : null);
-        }
-
-        return Inertia::render('Avaliacao/Notas/MiniPauta', [
-            'opcoes' => $this->miniPauta->opcoes($utilizador),
-            'selecao' => ['turma' => $f['turma'] ?? null, 'disciplina' => $f['disciplina'] ?? null],
-            'pauta' => $pauta,
-            'tipos' => array_map(fn (TipoInstrumento $t) => ['valor' => $t->value, 'nome' => $t->label()], array_values(array_filter(TipoInstrumento::cases(), fn (TipoInstrumento $t) => ! in_array($t, [TipoInstrumento::EXAME, TipoInstrumento::RECURSO, TipoInstrumento::QUALITATIVA], true)))),
-            'pode' => ['anular' => Gate::allows('nota.anular'), 'criar' => Gate::allows('nota.criar')],
-        ]);
+        return Inertia::render('Avaliacao/Notas/MiniPauta', $this->miniPauta->pagina(
+            $request->user(), isset($f['turma']) ? (int) $f['turma'] : null, isset($f['disciplina']) ? (int) $f['disciplina'] : null, isset($f['periodo']) ? (int) $f['periodo'] : null,
+        ));
     }
 
-    public function exportar(Request $request, MiniPautaDocumentoService $documento, ExportadorDePautas $exportador)
+    public function exportar(ExportarMiniPautaRequest $request)
     {
-        $f = $request->validate([
-            'turma' => ['required', 'integer'], 'disciplina' => ['required', 'integer'], 'formato' => ['required', 'string', 'in:pdf,excel'],
-            'detalhe' => ['nullable', 'string', 'in:competencias'], 'periodo' => ['nullable', 'integer'],
-        ]);
-        abort_unless($this->miniPauta->podeAceder($request->user(), (int) $f['turma'], (int) $f['disciplina']), 403);
+        $f = $request->validated();
 
-        $competencias = ($f['detalhe'] ?? null) === 'competencias';
-        $doc = $competencias
-            ? $documento->competenciasParaTurmaDisciplina((int) $f['turma'], (int) $f['disciplina'], isset($f['periodo']) ? (int) $f['periodo'] : null)
-            : $documento->paraTurmaDisciplina((int) $f['turma'], (int) $f['disciplina']);
-
-        return $exportador->responder($doc, $f['formato'], $competencias ? 'competencias' : 'mini-pauta');
+        return $this->exportacao->miniPauta(
+            $request->user(), (int) $f['turma'], (int) $f['disciplina'], $f['formato'], $f['detalhe'] ?? null, isset($f['periodo']) ? (int) $f['periodo'] : null,
+        );
     }
 
-    public function lancar(Request $request, LancarNotaAction $acao): RedirectResponse
+    public function lancar(LancarNotaRequest $request): RedirectResponse
     {
-        $d = $request->validate([
-            'instrumento_id' => ['required', 'integer'], 'inscricao_disciplina_id' => ['required', 'integer'],
-            'valor' => ['required', 'string', 'max:6'], 'motivo' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $acao->executar(new LancarNotaDTO($d['instrumento_id'], $d['inscricao_disciplina_id'], $d['valor'], $d['motivo'] ?? null));
+        $this->gestao->lancar($request);
 
         return back();
     }
 
-    public function lancarExame(Request $request, LancarExameAction $acao): RedirectResponse
+    public function lancarExame(LancarExameRequest $request): RedirectResponse
     {
-        $d = $request->validate([
-            'turma_id' => ['required', 'integer'], 'disciplina_id' => ['required', 'integer'], 'inscricao_disciplina_id' => ['required', 'integer'],
-            'valor' => ['required', 'string', 'max:6'], 'motivo' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $acao->executar($d['turma_id'], $d['disciplina_id'], $d['inscricao_disciplina_id'], $d['valor'], $d['motivo'] ?? null);
+        $this->gestao->lancarExame($request);
 
         return back();
     }
 
-    public function lancarRecurso(Request $request, LancarRecursoAction $acao): RedirectResponse
+    public function lancarRecurso(LancarExameRequest $request): RedirectResponse
     {
-        $d = $request->validate([
-            'turma_id' => ['required', 'integer'], 'disciplina_id' => ['required', 'integer'], 'inscricao_disciplina_id' => ['required', 'integer'],
-            'valor' => ['required', 'string', 'max:6'], 'motivo' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $acao->executar($d['turma_id'], $d['disciplina_id'], $d['inscricao_disciplina_id'], $d['valor'], $d['motivo'] ?? null);
+        $this->gestao->lancarRecurso($request);
 
         return back();
     }
 
-    public function lancarCompetencia(Request $request, LancarCompetenciaAction $acao): RedirectResponse
+    public function lancarCompetencia(LancarCompetenciaRequest $request): RedirectResponse
     {
-        $d = $request->validate([
-            'inscricao_disciplina_id' => ['required', 'integer'], 'competencia_id' => ['required', 'integer'], 'periodo_id' => ['required', 'integer'],
-            'escala_nivel_id' => ['required', 'integer'], 'motivo' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $acao->executar(new LancarCompetenciaDTO($d['inscricao_disciplina_id'], $d['competencia_id'], $d['periodo_id'], $d['escala_nivel_id'], $d['motivo'] ?? null));
+        $this->gestao->lancarCompetencia($request);
 
         return back();
     }
 
-    public function lancarQualitativa(Request $request, LancarQualitativaAction $acao): RedirectResponse
+    public function lancarQualitativa(LancarQualitativaRequest $request): RedirectResponse
     {
-        $d = $request->validate([
-            'inscricao_disciplina_id' => ['required', 'integer'], 'periodo_id' => ['required', 'integer'], 'escala_nivel_id' => ['required', 'integer'],
-            'observacao' => ['nullable', 'string', 'max:1000'], 'motivo' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $acao->executar(new LancarQualitativaDTO($d['inscricao_disciplina_id'], $d['periodo_id'], $d['escala_nivel_id'], $d['observacao'] ?? null, $d['motivo'] ?? null));
+        $this->gestao->lancarQualitativa($request);
 
         return back();
     }
 
-    public function anular(Request $request, int $nota, AnularNotaAction $acao): RedirectResponse
+    public function anular(AnularNotaRequest $request, int $nota): RedirectResponse
     {
-        $d = $request->validate(['conta_como_zero' => ['required', 'boolean'], 'motivo' => ['required', 'string', 'max:500']]);
-
-        $acao->executar(AvaliacaoNota::query()->findOrFail($nota)->id, (bool) $d['conta_como_zero'], $d['motivo']);
+        $this->gestao->anular($nota, $request);
 
         return back();
     }
 
-    public function criarInstrumento(Request $request, CriarInstrumentoAction $acao): RedirectResponse
+    public function criarInstrumento(CriarInstrumentoRequest $request): RedirectResponse
     {
-        $d = $request->validate([
-            'turma_id' => ['required', 'integer'], 'disciplina_id' => ['required', 'integer'], 'periodo_id' => ['required', 'integer'],
-            'tipo' => ['required', Rule::in(array_column(TipoInstrumento::cases(), 'value'))],
-            'nome' => ['required', 'string', 'max:120'], 'obrigatorio' => ['required', 'boolean'],
-        ]);
-        $this->authorize('nota.criar');
-        abort_unless($this->miniPauta->podeAceder($request->user(), $d['turma_id'], $d['disciplina_id']), 403);
-
-        $acao->executar(new InstrumentoDTO($d['turma_id'], $d['disciplina_id'], $d['periodo_id'], TipoInstrumento::from((int) $d['tipo']), $d['nome'], (bool) $d['obrigatorio']));
+        $this->gestao->criarInstrumento($request);
 
         return back();
     }
 
-    public function eliminarInstrumento(Request $request, int $instrumento, EliminarInstrumentoAction $acao): RedirectResponse
+    public function eliminarInstrumento(EliminarInstrumentoRequest $request, int $instrumento): RedirectResponse
     {
-        $this->authorize('nota.editar');
-        $i = AvaliacaoInstrumento::query()->findOrFail($instrumento);
-        abort_unless($this->miniPauta->podeAceder($request->user(), $i->turma_id, $i->disciplina_id), 403);
-
-        $acao->executar($i->id);
+        $this->gestao->eliminarInstrumento($request->user(), $instrumento);
 
         return back();
     }

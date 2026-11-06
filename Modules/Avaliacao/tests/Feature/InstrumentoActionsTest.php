@@ -8,6 +8,7 @@ use Illuminate\Validation\ValidationException;
 use Modules\Avaliacao\Actions\AtualizarInstrumentoAction;
 use Modules\Avaliacao\Actions\CriarInstrumentoAction;
 use Modules\Avaliacao\Actions\EliminarInstrumentoAction;
+use Modules\Avaliacao\DTO\AtualizarInstrumentoDTO;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\Enums\EstadoNota;
 use Modules\Avaliacao\Enums\TipoInstrumento;
@@ -67,7 +68,7 @@ class InstrumentoActionsTest extends TestCase
         $c = $this->cenarioDeAvaliacao();
         $i = app(CriarInstrumentoAction::class)->executar($this->dto($c, TipoInstrumento::MAC, 'A1'));
 
-        $i = app(AtualizarInstrumentoAction::class)->executar($i->id, 'Teste 1', false);
+        $i = app(AtualizarInstrumentoAction::class)->executar(new AtualizarInstrumentoDTO($i->id, 'Teste 1', false));
 
         $this->assertSame('Teste 1', $i->nome);
         $this->assertFalse($i->obrigatorio);

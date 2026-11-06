@@ -6,12 +6,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
-use Modules\Avaliacao\Actions\AnularNotaAction;
 use Modules\Avaliacao\Actions\AprovarPautaAction;
-use Modules\Avaliacao\Actions\DefinirPrazoAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
-use Modules\Avaliacao\Actions\LancarExameAction;
-use Modules\Avaliacao\Actions\LancarRecursoAction;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Enums\Decisao;
 use Modules\Avaliacao\Enums\TipoInstrumento;
@@ -58,17 +54,17 @@ class RecursoTest extends TestCase
 
     private function exame(string $v): void
     {
-        app(LancarExameAction::class)->executar($this->c['turma']->id, $this->c['disciplina']->id, $this->inscricao->id, $v);
+        $this->lancarExame($this->c['turma']->id, $this->c['disciplina']->id, $this->inscricao->id, $v);
     }
 
     private function recurso(string $v): AvaliacaoNota
     {
-        return app(LancarRecursoAction::class)->executar($this->c['turma']->id, $this->c['disciplina']->id, $this->inscricao->id, $v);
+        return $this->lancarRecurso($this->c['turma']->id, $this->c['disciplina']->id, $this->inscricao->id, $v);
     }
 
     private function fecharORecurso(): void
     {
-        app(DefinirPrazoAction::class)->executar(AvaliacaoRegra::firstOrFail()->id, $this->c['periodos'][3]->id, TipoInstrumento::RECURSO, '2026-03-01');
+        $this->definirPrazo(AvaliacaoRegra::firstOrFail()->id, $this->c['periodos'][3]->id, TipoInstrumento::RECURSO, '2026-03-01');
     }
 
     private function pauta(): array
@@ -156,7 +152,7 @@ class RecursoTest extends TestCase
         $this->exame('2');
         $nota = $this->recurso('8');
 
-        app(AnularNotaAction::class)->executar($nota->id, false, 'Prova repetida');
+        $this->anularNota($nota->id, false, 'Prova repetida');
         $this->assertNull($this->celula()['mfr']);
         $this->assertSame('4.40', $this->celula()['nota_final']);
 
@@ -269,7 +265,7 @@ class RecursoTest extends TestCase
         $this->mfd('8');
         $this->exame('2');
         $this->notasCompletas($c2, $inscricao2, [1 => ['8', '8'], 2 => ['8', '8'], 3 => ['8', '8']]);
-        app(LancarExameAction::class)->executar($c2['turma']->id, $c2['disciplina']->id, $inscricao2->id, '2');
+        $this->lancarExame($c2['turma']->id, $c2['disciplina']->id, $inscricao2->id, '2');
         $ids = [$this->c['disciplina']->id, $c2['disciplina']->id];
         app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO(
             $this->c['ano']->id, $this->c['nivel']->id, 10, '5', recurso_max_disciplinas: $maximo, disciplinas_chave: array_map(fn (int $i) => $ids[$i], $chaveIndices),

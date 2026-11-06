@@ -2,6 +2,7 @@
 
 namespace Modules\Avaliacao\Services;
 
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\Avaliacao\Enums\Decisao;
@@ -20,6 +21,7 @@ use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\InscricaoDisciplina;
 use Modules\Matricula\Models\Matricula;
 use Modules\Turma\Models\Turma;
+use Modules\Usuario\Models\User;
 
 /**
  * Pauta final de uma turma. Provisória (e reaberta) calcula-se em leitura a partir das notas; definitiva lê o
@@ -55,6 +57,24 @@ class PautaFinalService
                 EstadoPauta::DEFINITIVA => 'definitiva', EstadoPauta::REABERTA => 'reaberta', default => 'provisoria',
             }])
             ->sortBy('rotulo', SORT_NATURAL | SORT_FLAG_CASE)->values()->all();
+    }
+
+    /**
+     * Tudo o que o ecrã das pautas precisa: as turmas, a selecção, a pauta da turma escolhida e o que o utilizador pode fazer.
+     *
+     * @return array<string, mixed>
+     */
+    public function pagina(User $utilizador, ?int $turmaId): array
+    {
+        $turma = $turmaId === null ? null : Turma::query()->findOrFail($turmaId);
+        $gate = Gate::forUser($utilizador);
+
+        return [
+            'turmas' => $this->turmas(),
+            'selecao' => ['turma' => $turma?->id],
+            'pauta' => $turma === null ? null : $this->paraTurma($turma->id),
+            'pode' => ['aprovar' => $gate->allows('nota.aprovar'), 'reabrir' => $gate->allows('nota.reabrir')],
+        ];
     }
 
     /** Há pauta definitiva para a turma? Enquanto houver, as notas dessa turma não se alteram. */

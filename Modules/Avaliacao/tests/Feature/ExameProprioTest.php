@@ -5,10 +5,8 @@ namespace Modules\Avaliacao\Tests\Feature;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
-use Modules\Avaliacao\Actions\AnularNotaAction;
 use Modules\Avaliacao\Actions\AprovarPautaAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
-use Modules\Avaliacao\Actions\LancarExameAction;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Enums\Decisao;
 use Modules\Avaliacao\Enums\TipoInstrumento;
@@ -45,7 +43,7 @@ class ExameProprioTest extends TestCase
     /** Dá o prazo do recurso por terminado (antes de «hoje»): uma disciplina abaixo do mínimo sem NER passa a «não realizou». */
     private function fecharORecurso(): void
     {
-        app(\Modules\Avaliacao\Actions\DefinirPrazoAction::class)->executar(
+        $this->definirPrazo(
             \Modules\Avaliacao\Models\AvaliacaoRegra::firstOrFail()->id, $this->c['periodos'][3]->id, TipoInstrumento::RECURSO, '2026-03-01',
         );
     }
@@ -57,7 +55,7 @@ class ExameProprioTest extends TestCase
 
     private function exame(string $valor, ?string $motivo = null): AvaliacaoNota
     {
-        return app(LancarExameAction::class)->executar($this->c['turma']->id, $this->c['disciplina']->id, $this->inscricao->id, $valor, $motivo);
+        return $this->lancarExame($this->c['turma']->id, $this->c['disciplina']->id, $this->inscricao->id, $valor, $motivo);
     }
 
     private function pauta(): array
@@ -125,7 +123,7 @@ class ExameProprioTest extends TestCase
         $this->mfd('8');
         $nota = $this->exame('10');
 
-        app(AnularNotaAction::class)->executar($nota->id, false, 'Prova repetida');
+        $this->anularNota($nota->id, false, 'Prova repetida');
         $this->assertNull($this->celula()['mf']);
         $this->assertNull($this->pauta()['alunos'][0]['decisao']);
 
@@ -152,7 +150,7 @@ class ExameProprioTest extends TestCase
         $inscricao = $this->inscreverAluno($c);
 
         $this->expectException(ValidationException::class);
-        app(LancarExameAction::class)->executar($c['turma']->id, $c['disciplina']->id, $inscricao->id, '8');
+        $this->lancarExame($c['turma']->id, $c['disciplina']->id, $inscricao->id, '8');
     }
 
     public function test_sem_permissao_nao_lanca_e_nao_deixa_exame_criado(): void

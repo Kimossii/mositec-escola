@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Avaliacao\Actions\AprovarPautaAction;
 use Modules\Avaliacao\Actions\CriarInstrumentoAction;
-use Modules\Avaliacao\Actions\DefinirPrazoAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
 use Modules\Avaliacao\Actions\LancarNotaAction;
 use Modules\Avaliacao\Actions\LancarQualitativaAction;
@@ -54,7 +53,7 @@ class AvaliacaoTenancyTest extends TestCase
         return $this->noTenant($this->outro, function () {
             $c = $this->cenarioDeAvaliacao('PRI_3', 'B');
             $regra = app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, '5'));
-            $prazo = app(DefinirPrazoAction::class)->executar($regra->id, $c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
+            $prazo = $this->definirPrazo($regra->id, $c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
             $instrumento = app(CriarInstrumentoAction::class)->executar(new InstrumentoDTO($c['turma']->id, $c['disciplina']->id, $c['periodos'][1]->id, TipoInstrumento::MAC, 'A1'));
             $inscricao = $this->inscreverAluno($c);
             $nota = AvaliacaoNota::create(['instrumento_id' => $instrumento->id, 'inscricao_disciplina_id' => $inscricao->id, 'valor' => '7', 'estado' => EstadoNota::LANCADA]);

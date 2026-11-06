@@ -10,6 +10,7 @@ use Modules\Avaliacao\Enums\EstadoPauta;
 use Modules\Avaliacao\Models\AvaliacaoPauta;
 use Modules\Core\Traits\LogService;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
+use Modules\Turma\Models\Turma;
 
 /** Reabre uma pauta definitiva para alterações excepcionais. Só com `nota.reabrir` e motivo; a versão aprovada fica guardada. */
 class ReabrirPautaAction
@@ -31,6 +32,7 @@ class ReabrirPautaAction
                 throw ValidationException::withMessages(['motivo' => 'Indique o motivo da reabertura.']);
             }
 
+            Turma::query()->findOrFail($turmaId);
             $pauta = AvaliacaoPauta::query()->where('turma_id', $turmaId)->lockForUpdate()->first();
 
             if ($pauta?->estado !== EstadoPauta::DEFINITIVA) {

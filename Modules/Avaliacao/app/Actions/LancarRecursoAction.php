@@ -7,10 +7,12 @@ use Illuminate\Validation\ValidationException;
 use Modules\AnoLectivo\Enums\TipoPeriodo;
 use Modules\AnoLectivo\Models\Periodo;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
+use Modules\Avaliacao\DTO\LancarExameDTO;
 use Modules\Avaliacao\DTO\LancarNotaDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
+use Modules\Avaliacao\Services\AcessoAMiniPautaService;
 use Modules\Avaliacao\Services\ElegibilidadeRecursoService;
 use Modules\Avaliacao\Services\RegraAvaliacaoService;
 use Modules\Avaliacao\Services\ResultadoDisciplinaService;
@@ -33,16 +35,18 @@ class LancarRecursoAction
         private ResultadoDisciplinaService $resultados,
         private ElegibilidadeRecursoService $elegibilidade,
         private RegraAvaliacaoService $regras,
+        private AcessoAMiniPautaService $acesso,
     ) {
     }
 
-    public function executar(int $turmaId, int $disciplinaId, int $inscricaoDisciplinaId, string $valor, ?string $motivo = null): AvaliacaoNota
+    public function executar(LancarExameDTO $dto): AvaliacaoNota
     {
-        return $this->comLog('Lançar nota de recurso', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => DB::transaction(function () use ($turmaId, $disciplinaId, $inscricaoDisciplinaId, $valor, $motivo) {
-            $turma = Turma::query()->findOrFail($turmaId);
-            $inscricao = InscricaoDisciplina::query()->with(['matricula', 'planoCurricularDisciplina'])->findOrFail($inscricaoDisciplinaId);
+        return $this->comLog('Lançar nota de recurso', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => DB::transaction(function () use ($dto) {
+            $this->acesso->exigirDoUtilizadorActual($dto->turma_id, $dto->disciplina_id);
+            $turma = Turma::query()->findOrFail($dto->turma_id);
+            $inscricao = InscricaoDisciplina::query()->with(['matricula', 'planoCurricularDisciplina'])->findOrFail($dto->inscricao_disciplina_id);
 
-            if ($inscricao->matricula->turma_id !== $turma->id || $inscricao->planoCurricularDisciplina->disciplina_id !== $disciplinaId) {
+            if ($inscricao->matricula->turma_id !== $turma->id || $inscricao->planoCurricularDisciplina->disciplina_id !== $dto->disciplina_id) {
                 throw ValidationException::withMessages(['inscricao_disciplina_id' => 'O aluno não está inscrito nesta disciplina e turma.']);
             }
 
@@ -57,10 +61,10 @@ class LancarRecursoAction
                 throw ValidationException::withMessages(['inscricao_disciplina_id' => $direito['texto'] ?? 'Este aluno não tem direito a exame de recurso.']);
             }
 
-            $recurso = AvaliacaoInstrumento::query()->where('turma_id', $turma->id)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::RECURSO->value)->first()
-                ?? $this->criar->executar(new InstrumentoDTO($turma->id, $disciplinaId, $this->terceiroTrimestre($turma)->id, TipoInstrumento::RECURSO, 'Exame de recurso'));
+            $recurso = AvaliacaoInstrumento::query()->where('turma_id', $turma->id)->where('disciplina_id', $dto->disciplina_id)->where('tipo', TipoInstrumento::RECURSO->value)->first()
+                ?? $this->criar->executar(new InstrumentoDTO($turma->id, $dto->disciplina_id, $this->terceiroTrimestre($turma)->id, TipoInstrumento::RECURSO, 'Exame de recurso'));
 
-            return $this->lancar->executar(new LancarNotaDTO($recurso->id, $inscricaoDisciplinaId, $valor, $motivo));
+            return $this->lancar->executar(new LancarNotaDTO($recurso->id, $dto->inscricao_disciplina_id, $dto->valor, $dto->motivo));
         }));
     }
 

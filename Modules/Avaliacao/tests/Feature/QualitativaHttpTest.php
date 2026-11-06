@@ -8,7 +8,6 @@ use Modules\Avaliacao\Models\AvaliacaoEscala;
 use Modules\Avaliacao\Models\AvaliacaoQualitativa;
 use Modules\Avaliacao\Models\AvaliacaoRegraQualitativa;
 use Modules\Avaliacao\Tests\Support\CenarioDeAvaliacao;
-use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Matricula\Models\InscricaoDisciplina;
 use Modules\Permissao\Enums\Perfil;
 use Tests\TestCase;
@@ -68,7 +67,7 @@ class QualitativaHttpTest extends TestCase
 
     public function test_nivel_de_outra_escala_volta_com_erro(): void
     {
-        $outra = app(\Modules\Avaliacao\Actions\GuardarEscalaQualitativaAction::class)->executar(null, 'Outra', [['codigo' => 'X', 'designacao' => 'Xis'], ['codigo' => 'Y', 'designacao' => 'Ipsilon']]);
+        $outra = $this->guardarEscala(null, 'Outra', [['codigo' => 'X', 'designacao' => 'Xis'], ['codigo' => 'Y', 'designacao' => 'Ipsilon']]);
 
         $this->actingAs($this->professorAtribuido($this->c))->post('/avaliacao/notas/qualitativas', $this->payload('B', ['escala_nivel_id' => $outra->niveis[0]->id]))
             ->assertSessionHasErrors('escala_nivel_id');

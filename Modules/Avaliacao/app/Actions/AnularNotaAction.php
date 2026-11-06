@@ -6,6 +6,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use Modules\Avaliacao\DTO\AnularNotaDTO;
 use Modules\Avaliacao\Enums\EstadoNota;
 use Modules\Avaliacao\Models\AvaliacaoNota;
 use Modules\Avaliacao\Services\DocenteDoUtilizadorService;
@@ -31,25 +32,25 @@ class AnularNotaAction
     ) {
     }
 
-    public function executar(int $notaId, bool $contaComoZero, string $motivo): AvaliacaoNota
+    public function executar(AnularNotaDTO $dto): AvaliacaoNota
     {
-        return $this->comLog('Anular nota', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => DB::transaction(function () use ($notaId, $contaComoZero, $motivo) {
+        return $this->comLog('Anular nota', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => DB::transaction(function () use ($dto) {
             if (! Gate::allows('nota.anular')) {
                 throw new AuthorizationException('Sem permissão para anular avaliações.');
             }
 
-            if (trim($motivo) === '') {
+            if (trim($dto->motivo) === '') {
                 throw ValidationException::withMessages(['motivo' => 'Indique o motivo da anulação.']);
             }
 
-            $nota = AvaliacaoNota::query()->with('instrumento')->whereKey($notaId)->lockForUpdate()->firstOrFail();
+            $nota = AvaliacaoNota::query()->with('instrumento')->whereKey($dto->nota_id)->lockForUpdate()->firstOrFail();
             $instrumento = $nota->instrumento;
             $this->pautas->exigirAberta($instrumento->turma_id);
             $regra = $this->regras->paraTurma(Turma::query()->findOrFail($instrumento->turma_id));
             $foraDoPrazo = $regra !== null && $this->prazos->instrumentoEncerrado($instrumento, $regra, $this->docentes->idDe(auth()->user()));
 
             $anterior = ['valor' => $nota->valor, 'estado' => $nota->estado];
-            $estado = $contaComoZero ? EstadoNota::ANULADA_CONTA_ZERO : EstadoNota::ANULADA;
+            $estado = $dto->conta_como_zero ? EstadoNota::ANULADA_CONTA_ZERO : EstadoNota::ANULADA;
 
             $nota->update(['valor' => null, 'estado' => $estado]);
 
@@ -59,7 +60,7 @@ class AnularNotaAction
                 'estado_anterior' => $anterior['estado'],
                 'estado_novo' => $estado,
                 'fora_do_prazo' => $foraDoPrazo,
-                'motivo' => $motivo,
+                'motivo' => $dto->motivo,
                 'criado_por' => auth()->id(),
             ]);
 

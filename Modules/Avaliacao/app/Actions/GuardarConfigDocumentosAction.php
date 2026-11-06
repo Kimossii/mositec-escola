@@ -4,6 +4,7 @@ namespace Modules\Avaliacao\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Modules\Avaliacao\DTO\ConfigDocumentosDTO;
 use Modules\Avaliacao\Models\AvaliacaoDocumentoConfig;
 use Modules\Core\Traits\LogService;
 
@@ -14,10 +15,10 @@ class GuardarConfigDocumentosAction
 
     private const MAXIMO_LINHAS = 6;
 
-    public function executar(?string $linhasExtra, ?string $lema, ?string $vistoCargo, ?string $vistoNome): AvaliacaoDocumentoConfig
+    public function executar(ConfigDocumentosDTO $dto): AvaliacaoDocumentoConfig
     {
-        return $this->comLog('Guardar configuração dos documentos', $this->contextoDeArgumentos(func_get_args(), 'executar'), function () use ($linhasExtra, $lema, $vistoCargo, $vistoNome) {
-            $linhas = array_values(array_filter(array_map('trim', preg_split('/\R/u', (string) $linhasExtra) ?: [])));
+        return $this->comLog('Guardar configuração dos documentos', $this->contextoDeArgumentos(func_get_args(), 'executar'), function () use ($dto) {
+            $linhas = array_values(array_filter(array_map('trim', preg_split('/\R/u', (string) $dto->linhas_extra) ?: [])));
 
             if (count($linhas) > self::MAXIMO_LINHAS) {
                 throw ValidationException::withMessages(['linhas_extra' => 'O cabeçalho aceita até '.self::MAXIMO_LINHAS.' linhas adicionais.']);
@@ -31,8 +32,8 @@ class GuardarConfigDocumentosAction
 
             $vazio = fn (?string $v) => ($v = trim((string) $v)) === '' ? null : $v;
 
-            return DB::transaction(function () use ($linhas, $lema, $vistoCargo, $vistoNome, $vazio) {
-                $campos = $this->campos($linhas, $lema, $vistoCargo, $vistoNome, $vazio);
+            return DB::transaction(function () use ($linhas, $dto, $vazio) {
+                $campos = $this->campos($linhas, $dto, $vazio);
                 $config = AvaliacaoDocumentoConfig::query()->first();
 
                 if ($config === null) {
@@ -47,11 +48,11 @@ class GuardarConfigDocumentosAction
     }
 
     /** @param  list<string>  $linhas */
-    private function campos(array $linhas, ?string $lema, ?string $vistoCargo, ?string $vistoNome, callable $vazio): array
+    private function campos(array $linhas, ConfigDocumentosDTO $dto, callable $vazio): array
     {
         return [
             'linhas_extra' => $linhas === [] ? null : implode("\n", $linhas),
-            'lema' => $vazio($lema), 'visto_cargo' => $vazio($vistoCargo), 'visto_nome' => $vazio($vistoNome),
+            'lema' => $vazio($dto->lema), 'visto_cargo' => $vazio($dto->visto_cargo), 'visto_nome' => $vazio($dto->visto_nome),
         ];
     }
 }

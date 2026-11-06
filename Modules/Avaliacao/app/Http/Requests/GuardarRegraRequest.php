@@ -1,0 +1,43 @@
+<?php
+
+namespace Modules\Avaliacao\Http\Requests;
+
+use App\Http\Requests\BaseRequest;
+use Illuminate\Validation\Rule;
+use Modules\Avaliacao\Enums\ModoArredondamento;
+
+class GuardarRegraRequest extends BaseRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()?->can('nota.configurar') ?? false;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'ano_lectivo_id' => ['required', 'integer'],
+            'nivel_academico_id' => ['required', 'integer'],
+            'escala_maxima' => ['required', 'integer', 'between:1,100'],
+            'nota_minima' => ['required', 'numeric', 'min:0'],
+            'peso_mac' => ['required', 'numeric', 'between:0,100'],
+            'peso_pt' => ['required', 'numeric', 'between:0,100'],
+            'peso_mt1' => ['nullable', 'numeric', 'between:0,100'],
+            'peso_mt2' => ['nullable', 'numeric', 'between:0,100'],
+            'peso_mt3' => ['nullable', 'numeric', 'between:0,100'],
+            'peso_mfd_exame' => ['nullable', 'numeric', 'between:0,100'],
+            'peso_exame' => ['nullable', 'numeric', 'between:0,100'],
+            'recurso_max_disciplinas' => ['nullable', 'integer', 'between:0,30'],
+            'disciplinas_chave' => ['nullable', 'array', 'max:30'],
+            'disciplinas_chave.*' => ['integer'],
+            'casas_decimais' => ['required', 'integer', 'between:0,4'],
+            'modo_arredondamento' => ['required', Rule::in(array_column(ModoArredondamento::cases(), 'value'))],
+            'reprova_por_aproveitamento' => ['required', 'boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return MensagensDeAvaliacao::todas();
+    }
+}

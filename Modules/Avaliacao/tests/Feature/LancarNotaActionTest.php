@@ -5,9 +5,7 @@ namespace Modules\Avaliacao\Tests\Feature;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
-use Modules\Avaliacao\Actions\AnularNotaAction;
 use Modules\Avaliacao\Actions\CriarInstrumentoAction;
-use Modules\Avaliacao\Actions\DefinirPrazoAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
 use Modules\Avaliacao\Actions\LancarNotaAction;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
@@ -42,7 +40,7 @@ class LancarNotaActionTest extends TestCase
         $regra = app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO(
             ano_lectivo_id: $this->c['ano']->id, nivel_academico_id: $this->c['nivel']->id, escala_maxima: 10, nota_minima: '5',
         ));
-        app(DefinirPrazoAction::class)->executar($regra->id, $this->c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
+        $this->definirPrazo($regra->id, $this->c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
 
         $this->instrumento = app(CriarInstrumentoAction::class)->executar(
             new InstrumentoDTO($this->c['turma']->id, $this->c['disciplina']->id, $this->c['periodos'][1]->id, TipoInstrumento::MAC, 'Avaliação 1'),
@@ -150,13 +148,13 @@ class LancarNotaActionTest extends TestCase
         $nota = $this->lancar('7');
 
         try {
-            app(AnularNotaAction::class)->executar($nota->id, false, 'Prova repetida');
+            $this->anularNota($nota->id, false, 'Prova repetida');
             $this->fail('O professor não pode anular.');
         } catch (AuthorizationException) {
         }
 
         $this->actingAs($this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com'));
-        $anulada = app(AnularNotaAction::class)->executar($nota->id, false, 'Prova repetida');
+        $anulada = $this->anularNota($nota->id, false, 'Prova repetida');
 
         $this->assertNull($anulada->valor);
         $this->assertSame(EstadoNota::ANULADA, $anulada->estado);
@@ -169,7 +167,7 @@ class LancarNotaActionTest extends TestCase
         $nota = $this->lancar('7');
         $this->actingAs($this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com'));
 
-        $anulada = app(AnularNotaAction::class)->executar($nota->id, true, 'Decisão da direcção');
+        $anulada = $this->anularNota($nota->id, true, 'Decisão da direcção');
 
         $this->assertSame(EstadoNota::ANULADA_CONTA_ZERO, $anulada->estado);
         $this->assertNull($anulada->valor);

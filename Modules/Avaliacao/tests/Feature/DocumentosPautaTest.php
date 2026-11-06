@@ -5,9 +5,7 @@ namespace Modules\Avaliacao\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Modules\Avaliacao\Actions\AprovarPautaAction;
-use Modules\Avaliacao\Actions\GuardarConfigDocumentosAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
-use Modules\Avaliacao\Actions\LancarExameAction;
 use Modules\Avaliacao\Actions\LancarQualitativaAction;
 use Modules\Avaliacao\DTO\LancarQualitativaDTO;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
@@ -55,7 +53,7 @@ class DocumentosPautaTest extends TestCase
         $this->assertSame(['REPÚBLICA DE ANGOLA', 'MINISTÉRIO DA EDUCAÇÃO', 'GOVERNO DA PROVÍNCIA DE LUANDA', 'ADMINISTRAÇÃO MUNICIPAL DE CAMAMA', 'COMPLEXO ESCOLAR PRIVADO VLADMIR EDSON'], $sem['linhas']);
         $this->assertNull($sem['visto']);
 
-        app(GuardarConfigDocumentosAction::class)->executar("Direcção Municipal da Educação\n\n  Secção de Educação e Ensino ", 'Linguagem do amor', 'Directora Municipal', 'Yolande Maurício');
+        $this->guardarConfigDocumentos("Direcção Municipal da Educação\n\n  Secção de Educação e Ensino ", 'Linguagem do amor', 'Directora Municipal', 'Yolande Maurício');
         $com = app(CabecalhoDocumentoService::class)->dados();
 
         $this->assertSame(['ADMINISTRAÇÃO MUNICIPAL DE CAMAMA', 'DIRECÇÃO MUNICIPAL DA EDUCAÇÃO', 'SECÇÃO DE EDUCAÇÃO E ENSINO', 'COMPLEXO ESCOLAR PRIVADO VLADMIR EDSON'], array_slice($com['linhas'], 3));
@@ -66,15 +64,13 @@ class DocumentosPautaTest extends TestCase
 
     public function test_config_de_documentos_limita_linhas_e_tamanho_e_actualiza_a_mesma_linha(): void
     {
-        $acao = app(GuardarConfigDocumentosAction::class);
-
-        $acao->executar('A', null, null, null);
-        $acao->executar('B', null, null, null);
+        $this->guardarConfigDocumentos('A', null, null, null);
+        $this->guardarConfigDocumentos('B', null, null, null);
         $this->assertSame(1, \Modules\Avaliacao\Models\AvaliacaoDocumentoConfig::count());
 
         foreach ([implode("\n", range(1, 7)), str_repeat('x', 121)] as $invalido) {
             try {
-                $acao->executar($invalido, null, null, null);
+                $this->guardarConfigDocumentos($invalido, null, null, null);
                 $this->fail('Esperava ValidationException.');
             } catch (ValidationException) {
             }
@@ -123,7 +119,7 @@ class DocumentosPautaTest extends TestCase
         $this->regra($c);
         $inscricao = $this->inscreverAluno($c);
         $this->notasCompletas($c, $inscricao, [1 => ['8', '8'], 2 => ['8', '8'], 3 => ['8', '8']]);
-        app(LancarExameAction::class)->executar($c['turma']->id, $c['disciplina']->id, $inscricao->id, '10');
+        $this->lancarExame($c['turma']->id, $c['disciplina']->id, $inscricao->id, '10');
 
         $d = $this->pautaDe($c);
 
@@ -168,7 +164,7 @@ class DocumentosPautaTest extends TestCase
         $this->regra($c);
         $inscricao = $this->inscreverAluno($c);
         $this->notasCompletas($c, $inscricao, [1 => ['8', '8'], 2 => ['8', '8'], 3 => ['8', '8']]);
-        app(LancarExameAction::class)->executar($c['turma']->id, $c['disciplina']->id, $inscricao->id, '10');
+        $this->lancarExame($c['turma']->id, $c['disciplina']->id, $inscricao->id, '10');
 
         $d = app(MiniPautaDocumentoService::class)->paraTurmaDisciplina($c['turma']->id, $c['disciplina']->id);
         $this->assertSame(['MFD', 'NE', 'MF', 'NER', 'MFR'], $d->grupos[3]['colunas']);

@@ -2,29 +2,56 @@
 
 namespace Modules\Avaliacao\Tests\Support;
 
+use Illuminate\Support\Facades\Hash;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Enums\TipoPeriodo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\AnoLectivo\Models\Periodo;
+use Modules\Avaliacao\Actions\AnularNotaAction;
+use Modules\Avaliacao\Actions\DecidirProgressaoAction;
+use Modules\Avaliacao\Actions\DefinirPrazoAction;
+use Modules\Avaliacao\Actions\GuardarCompetenciasAction;
+use Modules\Avaliacao\Actions\GuardarConfigDocumentosAction;
+use Modules\Avaliacao\Actions\GuardarEscalaQualitativaAction;
+use Modules\Avaliacao\Actions\GuardarRegraQualitativaAction;
+use Modules\Avaliacao\Actions\LancarExameAction;
+use Modules\Avaliacao\Actions\LancarRecursoAction;
+use Modules\Avaliacao\Actions\ProlongarPrazoAction;
+use Modules\Avaliacao\DTO\AnularNotaDTO;
+use Modules\Avaliacao\DTO\CompetenciaDTO;
+use Modules\Avaliacao\DTO\CompetenciasDaAreaDTO;
+use Modules\Avaliacao\DTO\ConfigDocumentosDTO;
+use Modules\Avaliacao\DTO\DecidirProgressaoDTO;
+use Modules\Avaliacao\DTO\DefinirPrazoDTO;
+use Modules\Avaliacao\DTO\EscalaQualitativaDTO;
+use Modules\Avaliacao\DTO\LancarExameDTO;
+use Modules\Avaliacao\DTO\NivelDaEscalaDTO;
+use Modules\Avaliacao\DTO\ProlongarPrazoDTO;
+use Modules\Avaliacao\DTO\RegraQualitativaDTO;
+use Modules\Avaliacao\Enums\Decisao;
+use Modules\Avaliacao\Enums\EstadoNota;
+use Modules\Avaliacao\Enums\Progressao;
+use Modules\Avaliacao\Enums\TipoInstrumento;
+use Modules\Avaliacao\Models\AvaliacaoEscala;
+use Modules\Avaliacao\Models\AvaliacaoInstrumento;
+use Modules\Avaliacao\Models\AvaliacaoNota;
+use Modules\Avaliacao\Models\AvaliacaoPrazo;
+use Modules\Avaliacao\Models\AvaliacaoPrazoExcepcao;
+use Modules\Avaliacao\Models\AvaliacaoProgressao;
+use Modules\Avaliacao\Models\AvaliacaoRegraQualitativa;
 use Modules\Curso\Models\Curso;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\Docente\Enums\PapelDocente;
 use Modules\Docente\Models\AtribuicaoDocente;
 use Modules\Docente\Models\Docente;
+use Modules\Estabelecimento\Enums\EtapaEnsinoEnum as EtapaQualitativa;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Enums\EstadoInscricaoDisciplinaEnum;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
-use Modules\Avaliacao\Actions\GuardarEscalaQualitativaAction;
-use Modules\Avaliacao\Actions\GuardarRegraQualitativaAction;
-use Modules\Avaliacao\Enums\EstadoNota;
-use Modules\Avaliacao\Models\AvaliacaoEscala;
-use Modules\Estabelecimento\Enums\EtapaEnsinoEnum as EtapaQualitativa;
-use Modules\Avaliacao\Enums\TipoInstrumento;
-use Modules\Avaliacao\Models\AvaliacaoInstrumento;
-use Modules\Avaliacao\Models\AvaliacaoNota;
 use Modules\Matricula\Models\InscricaoDisciplina;
+use Modules\Matricula\Models\Matricula as MatriculaDoCenario;
 use Modules\Matricula\Models\Matricula;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
@@ -36,7 +63,6 @@ use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
 use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
-use Illuminate\Support\Facades\Hash;
 
 /**
  * Cenário base da avaliação no tenant do contexto (corre-se dentro de `noTenant()` para outro tenant):
@@ -188,12 +214,72 @@ trait CenarioDeAvaliacao
     {
         $c = $this->cenarioDeAvaliacao('PRE_I', $marca);
         $c['nivel']->update(['etapa_ensino' => EtapaQualitativa::PRE_ESCOLAR]);
-        $escala = app(GuardarEscalaQualitativaAction::class)->executar(null, "Escala {$marca}", [
+        $escala = $this->guardarEscala(null, "Escala {$marca}", [
             ['codigo' => 'INS', 'designacao' => 'Insuficiente'], ['codigo' => 'SUF', 'designacao' => 'Suficiente'],
             ['codigo' => 'B', 'designacao' => 'Bom'], ['codigo' => 'MB', 'designacao' => 'Muito Bom'],
         ]);
-        app(GuardarRegraQualitativaAction::class)->executar($c['ano']->id, $c['nivel']->id, $escala->id);
+        $this->guardarRegraQualitativa($c['ano']->id, $c['nivel']->id, $escala->id);
 
         return [$c, $escala];
+    }
+
+    // ---- atalhos para as Actions, que recebem DTOs (os testes continuam a ler-se numa linha)
+
+    protected function definirPrazo(int $regraId, int $periodoId, TipoInstrumento $tipo, string $dataLimite): AvaliacaoPrazo
+    {
+        return app(DefinirPrazoAction::class)->executar(new DefinirPrazoDTO($regraId, $periodoId, $tipo, $dataLimite));
+    }
+
+    protected function prolongarPrazo(int $prazoId, string $dataLimite, string $motivo, ?int $turmaId = null, ?int $disciplinaId = null, ?int $docenteId = null): AvaliacaoPrazoExcepcao
+    {
+        return app(ProlongarPrazoAction::class)->executar(new ProlongarPrazoDTO($prazoId, $dataLimite, $motivo, $turmaId, $disciplinaId, $docenteId));
+    }
+
+    /** @param  list<array{codigo: string, designacao: string, id?: int}>  $niveis */
+    protected function guardarEscala(?int $id, string $nome, array $niveis): AvaliacaoEscala
+    {
+        return app(GuardarEscalaQualitativaAction::class)->executar(new EscalaQualitativaDTO(
+            $nome, array_map(fn (array $n) => new NivelDaEscalaDTO($n['codigo'], $n['designacao'], $n['id'] ?? null), $niveis), $id,
+        ));
+    }
+
+    protected function guardarRegraQualitativa(int $anoLectivoId, int $nivelAcademicoId, int $escalaId, Progressao $progressao = Progressao::AUTOMATICA): AvaliacaoRegraQualitativa
+    {
+        return app(GuardarRegraQualitativaAction::class)->executar(new RegraQualitativaDTO($anoLectivoId, $nivelAcademicoId, $escalaId, $progressao));
+    }
+
+    /** @param  list<array{descricao: string, ativa?: bool, id?: int}>  $itens */
+    protected function guardarCompetencias(int $disciplinaId, ?int $nivelId, array $itens): void
+    {
+        app(GuardarCompetenciasAction::class)->executar(new CompetenciasDaAreaDTO(
+            $disciplinaId, $nivelId, array_map(fn (array $c) => new CompetenciaDTO($c['descricao'], $c['ativa'] ?? true, $c['id'] ?? null), $itens),
+        ));
+    }
+
+    protected function guardarConfigDocumentos(?string $linhasExtra, ?string $lema, ?string $vistoCargo, ?string $vistoNome): void
+    {
+        app(GuardarConfigDocumentosAction::class)->executar(new ConfigDocumentosDTO($linhasExtra, $lema, $vistoCargo, $vistoNome));
+    }
+
+    protected function lancarExame(int $turmaId, int $disciplinaId, int $inscricaoId, string $valor, ?string $motivo = null): AvaliacaoNota
+    {
+        return app(LancarExameAction::class)->executar(new LancarExameDTO($turmaId, $disciplinaId, $inscricaoId, $valor, $motivo));
+    }
+
+    protected function lancarRecurso(int $turmaId, int $disciplinaId, int $inscricaoId, string $valor, ?string $motivo = null): AvaliacaoNota
+    {
+        return app(LancarRecursoAction::class)->executar(new LancarExameDTO($turmaId, $disciplinaId, $inscricaoId, $valor, $motivo));
+    }
+
+    protected function anularNota(int $notaId, bool $contaComoZero, string $motivo): AvaliacaoNota
+    {
+        return app(AnularNotaAction::class)->executar(new AnularNotaDTO($notaId, $contaComoZero, $motivo));
+    }
+
+    protected function decidirProgressao(int $matriculaId, Decisao $decisao, ?string $motivo = null): AvaliacaoProgressao
+    {
+        $turmaId = MatriculaDoCenario::query()->findOrFail($matriculaId)->turma_id;
+
+        return app(DecidirProgressaoAction::class)->executar(new DecidirProgressaoDTO($turmaId, $matriculaId, $decisao, $motivo));
     }
 }

@@ -11,6 +11,7 @@ use Modules\Avaliacao\Models\AvaliacaoEscalaNivel;
 use Modules\Avaliacao\Models\AvaliacaoQualitativa;
 use Modules\Avaliacao\Models\AvaliacaoRegraQualitativa;
 use Modules\Avaliacao\Enums\TipoInstrumento;
+use Modules\Avaliacao\Services\AcessoAMiniPautaService;
 use Modules\Avaliacao\Services\AutorizaLancamentoService;
 use Modules\Avaliacao\Services\DocenteDoUtilizadorService;
 use Modules\Avaliacao\Services\PautaFinalService;
@@ -31,6 +32,7 @@ class LancarQualitativaAction
     public function __construct(
         private PautaFinalService $pautas,
         private AutorizaLancamentoService $autorizacao,
+        private AcessoAMiniPautaService $acesso,
         private PrazoService $prazos,
         private DocenteDoUtilizadorService $docentes,
     ) {
@@ -45,6 +47,7 @@ class LancarQualitativaAction
     {
         $inscricao = InscricaoDisciplina::query()->with(['matricula', 'planoCurricularDisciplina'])->findOrFail($dto->inscricao_disciplina_id);
         $turma = Turma::query()->findOrFail($inscricao->matricula->turma_id);
+        $this->acesso->exigirDoUtilizadorActual($turma->id, $inscricao->planoCurricularDisciplina->disciplina_id);
         $this->pautas->exigirAberta($turma->id);
 
         $regra = AvaliacaoRegraQualitativa::query()->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('nivel_academico_id', $turma->nivel_academico_id)->first()

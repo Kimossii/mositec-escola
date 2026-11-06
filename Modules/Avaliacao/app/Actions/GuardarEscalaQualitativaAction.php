@@ -4,6 +4,8 @@ namespace Modules\Avaliacao\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Modules\Avaliacao\DTO\EscalaQualitativaDTO;
+use Modules\Avaliacao\DTO\NivelDaEscalaDTO;
 use Modules\Avaliacao\Models\AvaliacaoEscala;
 use Modules\Avaliacao\Models\AvaliacaoEscalaNivel;
 use Modules\Avaliacao\Models\AvaliacaoQualitativa;
@@ -17,17 +19,16 @@ class GuardarEscalaQualitativaAction
 {
     use LogService;
 
-    /** @param  list<array{id?: int|null, codigo: string, designacao: string}>  $niveis */
-    public function executar(?int $escalaId, string $nome, array $niveis): AvaliacaoEscala
+    public function executar(EscalaQualitativaDTO $dto): AvaliacaoEscala
     {
-        return $this->comLog('Guardar escala qualitativa', $this->contextoDeArgumentos(func_get_args(), 'executar'), function () use ($escalaId, $nome, $niveis) {
-            $this->validar($escalaId, $nome, $niveis);
+        return $this->comLog('Guardar escala qualitativa', $this->contextoDeArgumentos(func_get_args(), 'executar'), function () use ($dto) {
+            $this->validar($dto);
 
-            return DB::transaction(function () use ($escalaId, $nome, $niveis) {
-                $escala = $escalaId === null ? AvaliacaoEscala::create(['nome' => $nome]) : tap(AvaliacaoEscala::query()->findOrFail($escalaId))->update(['nome' => $nome]);
+            return DB::transaction(function () use ($dto) {
+                $escala = $dto->id === null ? AvaliacaoEscala::create(['nome' => $dto->nome]) : tap(AvaliacaoEscala::query()->findOrFail($dto->id))->update(['nome' => $dto->nome]);
 
                 $existentes = $escala->niveis()->get()->keyBy('id');
-                $manter = array_filter(array_column($niveis, 'id'));
+                $manter = array_filter(array_map(fn (NivelDaEscalaDTO $n) => $n->id, $dto->niveis));
 
                 foreach ($existentes->except($manter) as $removido) {
                     if (AvaliacaoQualitativa::query()->where('escala_nivel_id', $removido->id)->exists()) {
@@ -41,9 +42,9 @@ class GuardarEscalaQualitativaAction
                     $nivel->update(['ordem' => 1000 + $nivel->id]);
                 }
 
-                foreach (array_values($niveis) as $i => $dados) {
-                    $campos = ['codigo' => trim($dados['codigo']), 'designacao' => trim($dados['designacao']), 'ordem' => $i + 1];
-                    ! empty($dados['id']) ? $existentes[$dados['id']]->update($campos) : $escala->niveis()->create($campos);
+                foreach ($dto->niveis as $i => $nivel) {
+                    $campos = ['codigo' => trim($nivel->codigo), 'designacao' => trim($nivel->designacao), 'ordem' => $i + 1];
+                    $nivel->id !== null ? $existentes[$nivel->id]->update($campos) : $escala->niveis()->create($campos);
                 }
 
                 return $escala->load('niveis');
@@ -51,28 +52,28 @@ class GuardarEscalaQualitativaAction
         });
     }
 
-    private function validar(?int $escalaId, string $nome, array $niveis): void
+    private function validar(EscalaQualitativaDTO $dto): void
     {
-        if (trim($nome) === '') {
+        if (trim($dto->nome) === '') {
             throw ValidationException::withMessages(['nome' => 'Indique o nome da escala.']);
         }
 
-        if (AvaliacaoEscala::query()->where('nome', trim($nome))->when($escalaId, fn ($q) => $q->whereKeyNot($escalaId))->exists()) {
+        if (AvaliacaoEscala::query()->where('nome', trim($dto->nome))->when($dto->id, fn ($q) => $q->whereKeyNot($dto->id))->exists()) {
             throw ValidationException::withMessages(['nome' => 'Já existe uma escala com este nome.']);
         }
 
-        if (count($niveis) < 2 || count($niveis) > 12) {
+        if (count($dto->niveis) < 2 || count($dto->niveis) > 12) {
             throw ValidationException::withMessages(['niveis' => 'Uma escala tem entre 2 e 12 níveis.']);
         }
 
         $codigos = [];
-        foreach ($niveis as $n) {
-            if (trim($n['codigo'] ?? '') === '' || trim($n['designacao'] ?? '') === '') {
+        foreach ($dto->niveis as $nivel) {
+            if (trim($nivel->codigo) === '' || trim($nivel->designacao) === '') {
                 throw ValidationException::withMessages(['niveis' => 'Cada nível precisa de código e designação.']);
             }
-            $codigos[] = mb_strtolower(trim($n['codigo']));
+            $codigos[] = mb_strtolower(trim($nivel->codigo));
 
-            if (! empty($n['id']) && $escalaId !== null && ! AvaliacaoEscalaNivel::query()->whereKey($n['id'])->where('escala_id', $escalaId)->exists()) {
+            if ($nivel->id !== null && $dto->id !== null && ! AvaliacaoEscalaNivel::query()->whereKey($nivel->id)->where('escala_id', $dto->id)->exists()) {
                 throw ValidationException::withMessages(['niveis' => 'Nível inválido para esta escala.']);
             }
         }

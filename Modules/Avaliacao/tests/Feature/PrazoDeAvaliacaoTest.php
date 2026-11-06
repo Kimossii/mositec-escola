@@ -7,9 +7,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
-use Modules\Avaliacao\Actions\DefinirPrazoAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
-use Modules\Avaliacao\Actions\ProlongarPrazoAction;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoPrazo;
@@ -47,7 +45,7 @@ class PrazoDeAvaliacaoTest extends TestCase
 
     private function prazo(string $data = '2026-04-10'): AvaliacaoPrazo
     {
-        return app(DefinirPrazoAction::class)->executar($this->regra->id, $this->c['periodos'][1]->id, TipoInstrumento::MAC, $data);
+        return $this->definirPrazo($this->regra->id, $this->c['periodos'][1]->id, TipoInstrumento::MAC, $data);
     }
 
     public function test_sem_prazo_nem_excepcao_vale_o_fim_do_periodo(): void
@@ -67,7 +65,7 @@ class PrazoDeAvaliacaoTest extends TestCase
         $prazo = $this->prazo('2026-04-10');
         $this->actingAs($this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com'));
 
-        app(ProlongarPrazoAction::class)->executar($prazo->id, '2026-04-20', 'Greve', turmaId: $this->c['turma']->id);
+        $this->prolongarPrazo($prazo->id, '2026-04-20', 'Greve', turmaId: $this->c['turma']->id);
 
         $this->assertSame('2026-04-20', $this->limite());
     }
@@ -82,7 +80,7 @@ class PrazoDeAvaliacaoTest extends TestCase
             'curso_id' => $this->c['turma']->curso_id, 'codigo' => 'TUB', 'nome' => 'TurmaB',
         ]);
 
-        app(ProlongarPrazoAction::class)->executar($prazo->id, '2026-04-20', 'Greve', turmaId: $outraTurma->id);
+        $this->prolongarPrazo($prazo->id, '2026-04-20', 'Greve', turmaId: $outraTurma->id);
 
         $this->assertSame('2026-04-10', $this->limite());
     }
@@ -93,9 +91,8 @@ class PrazoDeAvaliacaoTest extends TestCase
         $docente = $this->criarDocenteDeAvaliacao();
         $this->actingAs($this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com'));
 
-        $acao = app(ProlongarPrazoAction::class);
-        $acao->executar($prazo->id, '2026-04-25', 'Turma', turmaId: $this->c['turma']->id);
-        $acao->executar($prazo->id, '2026-04-15', 'Doença', docenteId: $docente->id);
+        $this->prolongarPrazo($prazo->id, '2026-04-25', 'Turma', turmaId: $this->c['turma']->id);
+        $this->prolongarPrazo($prazo->id, '2026-04-15', 'Doença', docenteId: $docente->id);
 
         $this->assertSame('2026-04-15', $this->limite($docente->id));
         $this->assertSame('2026-04-25', $this->limite());
@@ -117,23 +114,22 @@ class PrazoDeAvaliacaoTest extends TestCase
         $this->actingAs($this->criarUtilizadorComPerfil(Perfil::PROFESSOR, 'prof@example.com'));
 
         $this->expectException(AuthorizationException::class);
-        app(ProlongarPrazoAction::class)->executar($prazo->id, '2026-04-20', 'Motivo');
+        $this->prolongarPrazo($prazo->id, '2026-04-20', 'Motivo');
     }
 
     public function test_prolongar_exige_motivo_e_data_posterior(): void
     {
         $prazo = $this->prazo('2026-04-10');
         $this->actingAs($this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com'));
-        $acao = app(ProlongarPrazoAction::class);
 
         try {
-            $acao->executar($prazo->id, '2026-04-20', '  ');
+            $this->prolongarPrazo($prazo->id, '2026-04-20', '  ');
             $this->fail('Esperava ValidationException (motivo).');
         } catch (ValidationException) {
         }
 
         $this->expectException(ValidationException::class);
-        $acao->executar($prazo->id, '2026-04-05', 'Motivo');
+        $this->prolongarPrazo($prazo->id, '2026-04-05', 'Motivo');
     }
 
     public function test_prazo_duplicado_para_regra_periodo_tipo_e_rejeitado_pela_bd(): void
@@ -149,6 +145,6 @@ class PrazoDeAvaliacaoTest extends TestCase
         $outro = $this->cenarioDeAvaliacao('PRI_4', 'Z');
 
         $this->expectException(ValidationException::class);
-        app(DefinirPrazoAction::class)->executar($this->regra->id, $outro['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
+        $this->definirPrazo($this->regra->id, $outro['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
     }
 }

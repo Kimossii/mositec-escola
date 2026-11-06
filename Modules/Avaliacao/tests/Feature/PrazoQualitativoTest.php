@@ -7,9 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Avaliacao\Actions\CriarInstrumentoAction;
-use Modules\Avaliacao\Actions\DefinirPrazoAction;
 use Modules\Avaliacao\Actions\LancarQualitativaAction;
-use Modules\Avaliacao\Actions\ProlongarPrazoAction;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\DTO\LancarQualitativaDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
@@ -47,7 +45,7 @@ class PrazoQualitativoTest extends TestCase
 
     private function prazo(string $data): AvaliacaoPrazo
     {
-        return app(DefinirPrazoAction::class)->executar($this->regra->id, $this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, $data);
+        return $this->definirPrazo($this->regra->id, $this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, $data);
     }
 
     private function lancar(string $codigo = 'B', ?string $motivo = null): AvaliacaoQualitativa
@@ -101,7 +99,7 @@ class PrazoQualitativoTest extends TestCase
     {
         $prazo = $this->prazo('2026-03-01');
         $this->actingAs($this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com'));
-        app(ProlongarPrazoAction::class)->executar($prazo->id, '2026-03-31', 'Educadora de baixa', turmaId: $this->c['turma']->id);
+        $this->prolongarPrazo($prazo->id, '2026-03-31', 'Educadora de baixa', turmaId: $this->c['turma']->id);
 
         $this->assertSame('2026-03-31', $this->limite());
 
@@ -114,7 +112,7 @@ class PrazoQualitativoTest extends TestCase
         $outro = $this->cenarioDeAvaliacao('PRI_3', 'Z');
 
         $this->expectException(ValidationException::class);
-        app(DefinirPrazoAction::class)->executar($this->regra->id, $outro['periodos'][1]->id, TipoInstrumento::QUALITATIVA, '2026-04-10');
+        $this->definirPrazo($this->regra->id, $outro['periodos'][1]->id, TipoInstrumento::QUALITATIVA, '2026-04-10');
     }
 
     public function test_a_avaliacao_qualitativa_nao_se_cria_como_avaliacao_manual(): void

@@ -2,6 +2,7 @@
 
 namespace Modules\Avaliacao\Services;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Enums\TipoPeriodo;
@@ -27,6 +28,7 @@ class MiniPautaService
 {
     public function __construct(
         private VerificaAtribuicaoDocente $docencia,
+        private AcessoAMiniPautaService $acesso,
         private RegraAvaliacaoService $regras,
         private PrazoService $prazos,
         private ResultadoDisciplinaService $resultados,
@@ -39,10 +41,45 @@ class MiniPautaService
     ) {
     }
 
-    /** Docente atribuído à turma e disciplina, ou quem tem permissão de excepção (lançar fora do prazo ou anular). */
-    public function podeAceder(User $utilizador, int $turmaId, int $disciplinaId): bool
+    /**
+     * Tudo o que o ecrã da mini-pauta precisa: as turmas e disciplinas que o utilizador pode abrir, a selecção, a mini-pauta
+     * (só se houver turma e disciplina, e o utilizador puder aceder-lhe) e o que ele pode fazer.
+     *
+     * @return array<string, mixed>
+     * @throws AuthorizationException se o utilizador não lecciona essa disciplina nessa turma
+     */
+    public function pagina(User $utilizador, ?int $turmaId, ?int $disciplinaId, ?int $periodoId): array
     {
-        return $this->docencia->podeGerir($utilizador->id, $turmaId, $disciplinaId) || $this->temAcessoAmplo($utilizador);
+        $pauta = null;
+        if ($turmaId && $disciplinaId) {
+            $this->acesso->exigir($utilizador, $turmaId, $disciplinaId);
+            $pauta = $this->paraTurmaDisciplina($utilizador, $turmaId, $disciplinaId, $periodoId);
+        }
+
+        $gate = Gate::forUser($utilizador);
+
+        return [
+            'opcoes' => $this->opcoes($utilizador),
+            'selecao' => ['turma' => $turmaId, 'disciplina' => $disciplinaId],
+            'pauta' => $pauta,
+            'tipos' => $this->tiposDeAvaliacao(),
+            'pode' => ['anular' => $gate->allows('nota.anular'), 'criar' => $gate->allows('nota.criar')],
+        ];
+    }
+
+    /**
+     * Os tipos que se criam à mão. O exame, o recurso e a avaliação qualitativa criam-se pelos seus próprios ecrãs.
+     *
+     * @return list<array{valor: int, nome: string}>
+     */
+    private function tiposDeAvaliacao(): array
+    {
+        $excluidos = [TipoInstrumento::EXAME, TipoInstrumento::RECURSO, TipoInstrumento::QUALITATIVA];
+
+        return array_values(array_map(
+            fn (TipoInstrumento $t) => ['valor' => $t->value, 'nome' => $t->label()],
+            array_filter(TipoInstrumento::cases(), fn (TipoInstrumento $t) => ! in_array($t, $excluidos, true)),
+        ));
     }
 
     /**
@@ -58,7 +95,7 @@ class MiniPautaService
             $pares[$a['turma_id'].'-'.$a['disciplina_id']] = [$a['turma_id'], $a['disciplina_id']];
         }
 
-        if ($this->temAcessoAmplo($utilizador)) {
+        if ($this->acesso->temAcessoAmplo($utilizador)) {
             foreach ($this->paresDoAnoActivo() as [$turmaId, $disciplinaId]) {
                 $pares["{$turmaId}-{$disciplinaId}"] = [$turmaId, $disciplinaId];
             }
@@ -186,13 +223,6 @@ class MiniPautaService
     private function semZeros(mixed $valor): string
     {
         return rtrim(rtrim((string) $valor, '0'), '.');
-    }
-
-    private function temAcessoAmplo(User $utilizador): bool
-    {
-        $gate = Gate::forUser($utilizador);
-
-        return $gate->allows('nota.lancar-fora-prazo') || $gate->allows('nota.anular');
     }
 
     /** Valor para mostrar: o arredondamento só acontece aqui, na apresentação. */

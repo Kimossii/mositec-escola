@@ -4,6 +4,8 @@ namespace Modules\Avaliacao\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Modules\Avaliacao\DTO\CompetenciaDTO;
+use Modules\Avaliacao\DTO\CompetenciasDaAreaDTO;
 use Modules\Avaliacao\Models\AvaliacaoCompetencia;
 use Modules\Avaliacao\Models\AvaliacaoCompetenciaRegisto;
 use Modules\Core\Traits\LogService;
@@ -22,16 +24,15 @@ class GuardarCompetenciasAction
 
     private const MAXIMO = 30;
 
-    /** @param  list<array{id?: int|null, descricao: string, ativa?: bool}>  $itens */
-    public function executar(int $disciplinaId, ?int $nivelId, array $itens): void
+    public function executar(CompetenciasDaAreaDTO $dto): void
     {
-        $this->comLog('Guardar competências', $this->contextoDeArgumentos(func_get_args(), 'executar'), function () use ($disciplinaId, $nivelId, $itens) {
-            Disciplina::query()->findOrFail($disciplinaId);
-            $this->validar($nivelId, $itens);
+        $this->comLog('Guardar competências', $this->contextoDeArgumentos(func_get_args(), 'executar'), function () use ($dto) {
+            Disciplina::query()->findOrFail($dto->disciplina_id);
+            $this->validar($dto);
 
-            DB::transaction(function () use ($disciplinaId, $nivelId, $itens) {
-                $existentes = AvaliacaoCompetencia::query()->where('disciplina_id', $disciplinaId)->where('nivel_academico_id', $nivelId)->get()->keyBy('id');
-                $manter = array_filter(array_column($itens, 'id'));
+            DB::transaction(function () use ($dto) {
+                $existentes = AvaliacaoCompetencia::query()->where('disciplina_id', $dto->disciplina_id)->where('nivel_academico_id', $dto->nivel_academico_id)->get()->keyBy('id');
+                $manter = array_filter(array_map(fn (CompetenciaDTO $c) => $c->id, $dto->competencias));
 
                 foreach ($existentes->except($manter) as $removida) {
                     if (AvaliacaoCompetenciaRegisto::query()->where('competencia_id', $removida->id)->exists()) {
@@ -40,36 +41,36 @@ class GuardarCompetenciasAction
                     $removida->delete();
                 }
 
-                foreach (array_values($itens) as $i => $dados) {
-                    $campos = ['descricao' => trim($dados['descricao']), 'ordem' => $i + 1, 'ativa' => (bool) ($dados['ativa'] ?? true)];
+                foreach ($dto->competencias as $i => $competencia) {
+                    $campos = ['descricao' => trim($competencia->descricao), 'ordem' => $i + 1, 'ativa' => $competencia->ativa];
 
-                    if (! empty($dados['id'])) {
-                        $existentes[$dados['id']]->update($campos);
+                    if ($competencia->id !== null) {
+                        $existentes[$competencia->id]->update($campos);
                     } else {
-                        AvaliacaoCompetencia::create([...$campos, 'disciplina_id' => $disciplinaId, 'nivel_academico_id' => $nivelId]);
+                        AvaliacaoCompetencia::create([...$campos, 'disciplina_id' => $dto->disciplina_id, 'nivel_academico_id' => $dto->nivel_academico_id]);
                     }
                 }
             });
         });
     }
 
-    private function validar(?int $nivelId, array $itens): void
+    private function validar(CompetenciasDaAreaDTO $dto): void
     {
-        if ($nivelId !== null) {
-            $nivel = NivelAcademico::query()->findOrFail($nivelId);
+        if ($dto->nivel_academico_id !== null) {
+            $nivel = NivelAcademico::query()->findOrFail($dto->nivel_academico_id);
 
             if (! in_array($nivel->etapa_ensino, [EtapaEnsinoEnum::CRECHE, EtapaEnsinoEnum::PRE_ESCOLAR], true)) {
                 throw ValidationException::withMessages(['nivel_academico_id' => 'As competências só se aplicam à Creche e ao Pré-Escolar.']);
             }
         }
 
-        if (count($itens) > self::MAXIMO) {
+        if (count($dto->competencias) > self::MAXIMO) {
             throw ValidationException::withMessages(['competencias' => 'Uma área tem no máximo '.self::MAXIMO.' competências.']);
         }
 
         $vistas = [];
-        foreach ($itens as $item) {
-            $descricao = trim($item['descricao'] ?? '');
+        foreach ($dto->competencias as $competencia) {
+            $descricao = trim($competencia->descricao);
 
             if ($descricao === '' || mb_strlen($descricao) > 200) {
                 throw ValidationException::withMessages(['competencias' => 'Cada competência precisa de uma descrição até 200 caracteres.']);

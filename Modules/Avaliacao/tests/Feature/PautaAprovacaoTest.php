@@ -5,7 +5,6 @@ namespace Modules\Avaliacao\Tests\Feature;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
-use Modules\Avaliacao\Actions\AnularNotaAction;
 use Modules\Avaliacao\Actions\AprovarPautaAction;
 use Modules\Avaliacao\Actions\CriarInstrumentoAction;
 use Modules\Avaliacao\Actions\EliminarInstrumentoAction;
@@ -135,7 +134,7 @@ class PautaAprovacaoTest extends TestCase
         };
 
         $verificar(fn () => app(LancarNotaAction::class)->executar(new LancarNotaDTO($instrumento->id, $this->inscricao->id, '9', 'x')), 'lançar');
-        $verificar(fn () => app(AnularNotaAction::class)->executar($nota->id, false, 'x'), 'anular');
+        $verificar(fn () => $this->anularNota($nota->id, false, 'x'), 'anular');
         $verificar(fn () => app(CriarInstrumentoAction::class)->executar(new InstrumentoDTO($this->c['turma']->id, $this->c['disciplina']->id, $this->c['periodos'][1]->id, TipoInstrumento::MAC, 'Nova')), 'criar avaliação');
         $verificar(fn () => app(EliminarInstrumentoAction::class)->executar($instrumento->id), 'eliminar avaliação');
     }

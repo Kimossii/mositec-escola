@@ -7,10 +7,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Avaliacao\Actions\AprovarPautaAction;
-use Modules\Avaliacao\Actions\DecidirProgressaoAction;
-use Modules\Avaliacao\Actions\DefinirPrazoAction;
-use Modules\Avaliacao\Actions\GuardarCompetenciasAction;
-use Modules\Avaliacao\Actions\GuardarRegraQualitativaAction;
 use Modules\Avaliacao\Actions\LancarCompetenciaAction;
 use Modules\Avaliacao\Actions\LancarQualitativaAction;
 use Modules\Avaliacao\DTO\LancarCompetenciaDTO;
@@ -51,7 +47,7 @@ class ProgressaoEHistoricoTest extends TestCase
 
     private function manual(): void
     {
-        app(GuardarRegraQualitativaAction::class)->executar($this->c['ano']->id, $this->c['nivel']->id, $this->escala->id, Progressao::MANUAL);
+        $this->guardarRegraQualitativa($this->c['ano']->id, $this->c['nivel']->id, $this->escala->id, Progressao::MANUAL);
     }
 
     private function avaliarTrimestres(): void
@@ -68,7 +64,7 @@ class ProgressaoEHistoricoTest extends TestCase
 
     private function decidir(Decisao $d, ?string $motivo = null): AvaliacaoProgressao
     {
-        return app(DecidirProgressaoAction::class)->executar($this->inscricao->matricula_id, $d, $motivo);
+        return $this->decidirProgressao($this->inscricao->matricula_id, $d, $motivo);
     }
 
     // ---- progressão
@@ -189,7 +185,7 @@ class ProgressaoEHistoricoTest extends TestCase
         $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
         $b = $this->noTenant($outro, function () {
             [$c, $escala] = $this->cenarioQualitativo('B');
-            app(GuardarRegraQualitativaAction::class)->executar($c['ano']->id, $c['nivel']->id, $escala->id, Progressao::MANUAL);
+            $this->guardarRegraQualitativa($c['ano']->id, $c['nivel']->id, $escala->id, Progressao::MANUAL);
 
             return ['c' => $c, 'inscricao' => $this->inscreverAluno($c)];
         });
@@ -202,7 +198,7 @@ class ProgressaoEHistoricoTest extends TestCase
 
     public function test_cada_alteracao_de_competencia_fica_no_historico_e_repetir_nao_acrescenta(): void
     {
-        app(GuardarCompetenciasAction::class)->executar($this->c['disciplina']->id, null, [['descricao' => 'Conta até 5']]);
+        $this->guardarCompetencias($this->c['disciplina']->id, null, [['descricao' => 'Conta até 5']]);
         $competencia = AvaliacaoCompetencia::firstOrFail();
         $lancar = fn (string $codigo, ?string $motivo = null) => app(LancarCompetenciaAction::class)->executar(new LancarCompetenciaDTO(
             $this->inscricao->id, $competencia->id, $this->c['periodos'][1]->id, $this->escala->niveis->firstWhere('codigo', $codigo)->id, $motivo,
@@ -222,8 +218,8 @@ class ProgressaoEHistoricoTest extends TestCase
 
     public function test_o_historico_marca_o_que_foi_feito_fora_do_prazo(): void
     {
-        app(GuardarCompetenciasAction::class)->executar($this->c['disciplina']->id, null, [['descricao' => 'Conta até 5']]);
-        app(DefinirPrazoAction::class)->executar(AvaliacaoRegraQualitativa::firstOrFail()->id, $this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, '2026-03-01');
+        $this->guardarCompetencias($this->c['disciplina']->id, null, [['descricao' => 'Conta até 5']]);
+        $this->definirPrazo(AvaliacaoRegraQualitativa::firstOrFail()->id, $this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, '2026-03-01');
 
         $registo = app(LancarCompetenciaAction::class)->executar(new LancarCompetenciaDTO(
             $this->inscricao->id, AvaliacaoCompetencia::firstOrFail()->id, $this->c['periodos'][1]->id, $this->escala->niveis[0]->id, 'Entregue em atraso',

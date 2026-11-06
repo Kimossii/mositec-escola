@@ -16,7 +16,7 @@ Route::middleware(['auth'])->prefix('avaliacao/notas')->name('avaliacao.notas.')
     Route::post('/qualitativas', [MiniPautaController::class, 'lancarQualitativa'])->middleware('can:nota.criar')->name('qualitativas.lancar');
     Route::post('/{nota}/anular', [MiniPautaController::class, 'anular'])->whereNumber('nota')->middleware('can:nota.anular')->name('anular');
     Route::post('/instrumentos', [MiniPautaController::class, 'criarInstrumento'])->name('instrumentos.store');
-    Route::delete('/instrumentos/{instrumento}', [MiniPautaController::class, 'eliminarInstrumento'])->whereNumber('instrumento')->name('instrumentos.destroy');
+    Route::delete('/instrumentos/{instrumento}', [MiniPautaController::class, 'eliminarInstrumento'])->whereNumber('instrumento')->middleware('can:nota.editar')->name('instrumentos.destroy');
 });
 
 // Configuração: regra por classe, prazos e excepções. Só quem tem `nota.configurar` (prolongar exige também `nota.prolongar-prazo`).

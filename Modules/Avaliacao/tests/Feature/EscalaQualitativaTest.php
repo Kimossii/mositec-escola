@@ -5,8 +5,6 @@ namespace Modules\Avaliacao\Tests\Feature;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
-use Modules\Avaliacao\Actions\GuardarEscalaQualitativaAction;
-use Modules\Avaliacao\Actions\GuardarRegraQualitativaAction;
 use Modules\Avaliacao\Models\AvaliacaoEscala;
 use Modules\Avaliacao\Models\AvaliacaoEscalaNivel;
 use Modules\Avaliacao\Models\AvaliacaoQualitativa;
@@ -23,7 +21,7 @@ class EscalaQualitativaTest extends TestCase
 
     private function guardar(?int $id = null, string $nome = 'Escala A', array $niveis = self::NIVEIS): AvaliacaoEscala
     {
-        return app(GuardarEscalaQualitativaAction::class)->executar($id, $nome, $niveis);
+        return $this->guardarEscala($id, $nome, $niveis);
     }
 
     public function test_cria_escala_com_niveis_pela_ordem_recebida(): void
@@ -92,15 +90,13 @@ class EscalaQualitativaTest extends TestCase
         $pre = $this->cenarioDeAvaliacao('PRE_I', 'P');
         $pre['nivel']->update(['etapa_ensino' => \Modules\Estabelecimento\Enums\EtapaEnsinoEnum::PRE_ESCOLAR]);
         $primario = $this->cenarioDeAvaliacao('PRI_3', 'Q');
-        $acao = app(GuardarRegraQualitativaAction::class);
-
-        $regra = $acao->executar($pre['ano']->id, $pre['nivel']->id, $escala->id);
+        $regra = $this->guardarRegraQualitativa($pre['ano']->id, $pre['nivel']->id, $escala->id);
         $this->assertSame($escala->id, $regra->escala_id);
-        $acao->executar($pre['ano']->id, $pre['nivel']->id, $escala->id);
+        $this->guardarRegraQualitativa($pre['ano']->id, $pre['nivel']->id, $escala->id);
         $this->assertSame(1, AvaliacaoRegraQualitativa::count());
 
         $this->expectException(ValidationException::class);
-        $acao->executar($primario['ano']->id, $primario['nivel']->id, $escala->id);
+        $this->guardarRegraQualitativa($primario['ano']->id, $primario['nivel']->id, $escala->id);
     }
 
     public function test_escala_de_outro_tenant_nao_se_usa(): void
@@ -112,6 +108,6 @@ class EscalaQualitativaTest extends TestCase
 
         $this->assertSame(0, AvaliacaoEscala::count());
         $this->expectException(ModelNotFoundException::class);
-        app(GuardarRegraQualitativaAction::class)->executar($c['ano']->id, $c['nivel']->id, $idB);
+        $this->guardarRegraQualitativa($c['ano']->id, $c['nivel']->id, $idB);
     }
 }

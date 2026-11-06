@@ -4,7 +4,6 @@ namespace Modules\Avaliacao\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
-use Modules\Avaliacao\Actions\GuardarConfigDocumentosAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Models\AvaliacaoDocumentoConfig;
@@ -128,7 +127,7 @@ class DocumentosHttpTest extends TestCase
         $b = $this->noTenant($outro, function () {
             $c = $this->cenarioDeAvaliacao('PRI_3', 'B');
             app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, '5'));
-            app(GuardarConfigDocumentosAction::class)->executar('Linha só da escola B', 'Lema B', null, null);
+            $this->guardarConfigDocumentos('Linha só da escola B', 'Lema B', null, null);
 
             return $c;
         });

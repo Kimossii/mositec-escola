@@ -6,7 +6,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Modules\Avaliacao\Actions\AprovarPautaAction;
-use Modules\Avaliacao\Actions\GuardarEscalaQualitativaAction;
 use Modules\Avaliacao\Actions\LancarQualitativaAction;
 use Modules\Avaliacao\DTO\LancarQualitativaDTO;
 use Modules\Avaliacao\Models\AvaliacaoEscala;
@@ -109,7 +108,7 @@ class AvaliacaoQualitativaTest extends TestCase
     public function test_nivel_de_outra_escala_e_rejeitado(): void
     {
         $this->admin();
-        $outra = app(GuardarEscalaQualitativaAction::class)->executar(null, 'Outra', [['codigo' => 'X', 'designacao' => 'Xis'], ['codigo' => 'Y', 'designacao' => 'Ipsilon']]);
+        $outra = $this->guardarEscala(null, 'Outra', [['codigo' => 'X', 'designacao' => 'Xis'], ['codigo' => 'Y', 'designacao' => 'Ipsilon']]);
 
         $this->expectException(ValidationException::class);
         app(LancarQualitativaAction::class)->executar(new LancarQualitativaDTO($this->inscricao->id, $this->c['periodos'][1]->id, $outra->niveis[0]->id));

@@ -5,7 +5,6 @@ namespace Modules\Avaliacao\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Avaliacao\Actions\CriarInstrumentoAction;
-use Modules\Avaliacao\Actions\DefinirPrazoAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
@@ -34,7 +33,7 @@ class MiniPautaHttpTest extends TestCase
         $this->regra = app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO(
             ano_lectivo_id: $this->c['ano']->id, nivel_academico_id: $this->c['nivel']->id, escala_maxima: 10, nota_minima: '5',
         ));
-        app(DefinirPrazoAction::class)->executar($this->regra->id, $this->c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
+        $this->definirPrazo($this->regra->id, $this->c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
         $this->travelTo('2026-03-15 10:00:00');
     }
 
