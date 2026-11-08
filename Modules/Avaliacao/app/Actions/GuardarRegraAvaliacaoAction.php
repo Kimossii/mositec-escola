@@ -5,16 +5,23 @@ namespace Modules\Avaliacao\Actions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Avaliacao\DTO\LigacaoDeClassesDTO;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
+use Modules\Avaliacao\Models\AvaliacaoRegraNivel;
+use Modules\Avaliacao\Services\RegraPadraoService;
 use Modules\Core\Traits\LogService;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\Turma\Models\NivelAcademico;
 
-/** Cria ou actualiza a regra de (ano lectivo, classe). Valida pesos e mínimo antes de gravar. */
+/** Cria ou actualiza uma regra de avaliação de um ano lectivo e liga-lhe as classes. Valida pesos e mínimo antes de gravar. */
 class GuardarRegraAvaliacaoAction
 {
     use LogService;
+
+    public function __construct(private LigarClassesARegraAction $ligar, private RegraPadraoService $padrao)
+    {
+    }
 
     public function executar(RegraAvaliacaoDTO $dto): AvaliacaoRegra
     {
@@ -22,9 +29,13 @@ class GuardarRegraAvaliacaoAction
             $this->validar($dto);
 
             return DB::transaction(function () use ($dto) {
-                $regra = AvaliacaoRegra::updateOrCreate(
-                ['ano_lectivo_id' => $dto->ano_lectivo_id, 'nivel_academico_id' => $dto->nivel_academico_id],
-                [
+                $classes = NivelAcademico::query()->whereIn('id', $dto->nivel_ids)->orderBy('ordem')->get();
+                $regra = $this->regraExistente($dto);
+                $padrao = $classes->map(fn (NivelAcademico $n) => $this->padrao->regraDe((string) $n->codigo))->filter();
+
+                $campos = [
+                    'ano_lectivo_id' => $dto->ano_lectivo_id,
+                    'nome' => trim($dto->nome) !== '' ? trim($dto->nome) : ($regra?->nome ?: (string) ($classes->first()?->nome ?? 'Nova regra')),
                     'escala_maxima' => $dto->escala_maxima,
                     'nota_minima' => $dto->nota_minima,
                     'peso_mac' => $dto->peso_mac,
@@ -38,13 +49,40 @@ class GuardarRegraAvaliacaoAction
                     'casas_decimais' => $dto->casas_decimais,
                     'modo_arredondamento' => $dto->modo_arredondamento,
                     'reprova_por_aproveitamento' => $dto->reprova_por_aproveitamento,
-                ],
-                );
+                    // Sem indicação expressa, valem as opções por defeito das classes da regra.
+                    'com_exame' => $dto->com_exame ?? $padrao->contains(fn (array $p) => $p['com_exame']),
+                    'com_recurso' => $dto->com_recurso ?? $padrao->contains(fn (array $p) => $p['com_recurso']),
+                ];
+
+                $regra = $regra === null ? AvaliacaoRegra::create($campos) : tap($regra)->update($campos);
                 $regra->disciplinasChave()->syncWithPivotValues(array_values(array_unique($dto->disciplinas_chave)), ['tenant_id' => $regra->tenant_id]);
+                $this->ligar->executar(new LigacaoDeClassesDTO($dto->ano_lectivo_id, $dto->nivel_ids, false, $regra->id));
 
                 return $regra;
             });
         });
+    }
+
+    /** A regra indicada ou, sem indicação, a que a primeira classe já segue neste ano. */
+    private function regraExistente(RegraAvaliacaoDTO $dto): ?AvaliacaoRegra
+    {
+        if ($dto->regra_id !== null) {
+            $regra = AvaliacaoRegra::query()->findOrFail($dto->regra_id);
+
+            if ($regra->ano_lectivo_id !== $dto->ano_lectivo_id) {
+                throw ValidationException::withMessages(['regra_id' => 'A regra não pertence a este ano lectivo.']);
+            }
+
+            return $regra;
+        }
+
+        if ($dto->nova) {
+            return null;
+        }
+
+        $ligacao = AvaliacaoRegraNivel::query()->where('ano_lectivo_id', $dto->ano_lectivo_id)->whereIn('nivel_academico_id', $dto->nivel_ids)->whereNotNull('regra_id')->first();
+
+        return $ligacao?->regra;
     }
 
     private function validar(RegraAvaliacaoDTO $dto): void
@@ -53,7 +91,6 @@ class GuardarRegraAvaliacaoAction
         foreach ($dto->disciplinas_chave as $disciplinaId) {
             Disciplina::query()->findOrFail($disciplinaId);
         }
-        NivelAcademico::query()->findOrFail($dto->nivel_academico_id);
 
         if (bccomp(bcadd($dto->peso_mac, $dto->peso_pt, 2), '100', 2) !== 0) {
             throw ValidationException::withMessages(['peso_mac' => 'Os pesos da avaliação contínua e da prova trimestral têm de somar 100%.']);

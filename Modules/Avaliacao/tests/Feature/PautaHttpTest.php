@@ -23,7 +23,7 @@ class PautaHttpTest extends TestCase
     {
         parent::setUp();
         $this->c = $this->cenarioDeAvaliacao();
-        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($this->c['ano']->id, $this->c['nivel']->id, 10, '5'));
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($this->c['ano']->id, [$this->c['nivel']->id], 10, '5'));
         $this->notasCompletas($this->c, $this->inscreverAluno($this->c, 'Ana'), [1 => ['5.33', '7'], 2 => ['6', '7'], 3 => ['8', '9']]);
     }
 

@@ -17,7 +17,13 @@ class GuardarRegraRequest extends BaseRequest
     {
         return [
             'ano_lectivo_id' => ['required', 'integer'],
-            'nivel_academico_id' => ['required', 'integer'],
+            'regra_id' => ['nullable', 'integer'],
+            'nova' => ['nullable', 'boolean'],
+            'nome' => ['required', 'string', 'max:120'],
+            'nivel_ids' => ['present', 'array', 'max:60'],
+            'nivel_ids.*' => ['integer'],
+            'com_exame' => ['required', 'boolean'],
+            'com_recurso' => ['required', 'boolean'],
             'escala_maxima' => ['required', 'integer', 'between:1,100'],
             'nota_minima' => ['required', 'numeric', 'min:0'],
             'peso_mac' => ['required', 'numeric', 'between:0,100'],

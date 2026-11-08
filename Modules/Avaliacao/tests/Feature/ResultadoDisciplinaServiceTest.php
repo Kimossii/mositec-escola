@@ -29,7 +29,7 @@ class ResultadoDisciplinaServiceTest extends TestCase
         parent::setUp();
         $this->c = $this->cenarioDeAvaliacao();
         app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO(
-            ano_lectivo_id: $this->c['ano']->id, nivel_academico_id: $this->c['nivel']->id, escala_maxima: 10, nota_minima: '5',
+            ano_lectivo_id: $this->c['ano']->id, nivel_ids: [$this->c['nivel']->id], escala_maxima: 10, nota_minima: '5',
         ));
         $this->inscricao = $this->inscreverAluno($this->c);
         $this->travelTo('2026-03-15 10:00:00');

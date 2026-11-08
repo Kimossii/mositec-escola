@@ -187,7 +187,7 @@ class CompetenciasTest extends TestCase
 
     public function test_o_prazo_qualitativo_tambem_manda_nas_competencias(): void
     {
-        $this->definirPrazo(AvaliacaoRegraQualitativa::firstOrFail()->id, $this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, '2026-03-01');
+        $this->definirPrazo($this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, '2026-03-01');
         $this->actingAs($this->professorAtribuido($this->c));
 
         try {

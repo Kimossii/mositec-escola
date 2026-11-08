@@ -30,7 +30,7 @@ class ConfiguracaoAvaliacaoHttpTest extends TestCase
     private function regraPayload(array $o = []): array
     {
         return [
-            'ano_lectivo_id' => $this->c['ano']->id, 'nivel_academico_id' => $this->c['nivel']->id, 'escala_maxima' => 10, 'nota_minima' => '5',
+            'ano_lectivo_id' => $this->c['ano']->id, 'nome' => 'Regra', 'nivel_ids' => [$this->c['nivel']->id], 'com_exame' => false, 'com_recurso' => false, 'escala_maxima' => 10, 'nota_minima' => '5',
             'peso_mac' => '50', 'peso_pt' => '50', 'casas_decimais' => 2, 'modo_arredondamento' => 0, 'reprova_por_aproveitamento' => true, ...$o,
         ];
     }
@@ -44,7 +44,7 @@ class ConfiguracaoAvaliacaoHttpTest extends TestCase
         $this->assertSame(0, AvaliacaoRegra::count());
     }
 
-    public function test_admin_ve_as_classes_com_a_sugestao_por_defeito(): void
+    public function test_admin_ve_as_regras_do_ano_ja_criadas_com_as_classes_ligadas(): void
     {
         $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
 
@@ -52,22 +52,27 @@ class ConfiguracaoAvaliacaoHttpTest extends TestCase
             ->component('Avaliacao/Configuracao/Index')
             ->where('ano_id', $this->c['ano']->id)
             ->has('periodos', 3)
-            ->where('classes.0.codigo', 'PRI_3')
-            ->where('classes.0.regra', null)
-            ->where('classes.0.sugestao.nota_minima', '5'));
+            ->has('regras', 1)
+            ->where('regras.0.nome', '3.ª a 5.ª classe')
+            ->where('regras.0.nivel_ids', [$this->c['nivel']->id])
+            ->where('regras.0.escala_maxima', 10)
+            ->where('regras.0.peso_mac', '50.00')
+            ->where('regras.0.com_exame', false)
+            ->where('niveis.0.sem_regra', false));
     }
 
-    public function test_o_ambito_distingue_qualitativa_de_fora_de_ambito(): void
+    public function test_as_classes_sem_regra_aparecem_como_tal_e_a_creche_e_o_pre_escolar_como_qualitativos(): void
     {
+        $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
+        $this->actingAs($admin)->get('/avaliacao/configuracao')->assertOk(); // o ano arranca com as suas regras
         foreach ([['PRE_I', EtapaEnsinoEnum::PRE_ESCOLAR, 2], ['SEC_10', EtapaEnsinoEnum::SECUNDARIO, 3]] as [$codigo, $etapa, $ordem]) {
             NivelAcademico::create(['estabelecimento_id' => Estabelecimento::current()->id, 'codigo' => $codigo, 'nome' => $codigo, 'etapa_ensino' => $etapa, 'ordem' => $ordem]);
         }
-        $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
 
         $this->actingAs($admin)->get('/avaliacao/configuracao')->assertInertia(fn (Assert $p) => $p
-            ->where('classes.0.ambito', 'quantitativa')
-            ->where('classes.1.ambito', 'qualitativa')
-            ->where('classes.2.ambito', 'fora_de_ambito'));
+            ->where('niveis.0.sem_regra', false)
+            ->where('niveis.1.qualitativo', true)->where('niveis.1.sem_regra', true)
+            ->where('niveis.2.qualitativo', false)->where('niveis.2.sem_regra', true));
     }
 
     public function test_admin_guarda_regra_define_prazo_e_prolonga(): void
@@ -79,7 +84,7 @@ class ConfiguracaoAvaliacaoHttpTest extends TestCase
         $this->assertSame('60.00', $regra->peso_mac);
 
         $this->actingAs($admin)->post('/avaliacao/configuracao/prazos', [
-            'regra_id' => $regra->id, 'periodo_id' => $this->c['periodos'][1]->id, 'tipo' => TipoInstrumento::MAC->value, 'data_limite' => '2026-04-10',
+            'periodo_id' => $this->c['periodos'][1]->id, 'tipo' => TipoInstrumento::MAC->value, 'data_limite' => '2026-04-10',
         ])->assertRedirect();
         $prazo = AvaliacaoPrazo::firstOrFail();
 

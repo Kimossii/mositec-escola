@@ -5,12 +5,12 @@ namespace Modules\Avaliacao\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Avaliacao\Enums\ModoArredondamento;
 use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
-use Modules\Turma\Models\NivelAcademico;
 
 class AvaliacaoRegra extends Model
 {
@@ -21,7 +21,7 @@ class AvaliacaoRegra extends Model
 
     protected $fillable = [
         'ano_lectivo_id',
-        'nivel_academico_id',
+        'nome',
         'escala_maxima',
         'nota_minima',
         'peso_mac',
@@ -36,6 +36,8 @@ class AvaliacaoRegra extends Model
         'modo_arredondamento',
         'modo_arredondamento_descricao',
         'reprova_por_aproveitamento',
+        'com_exame',
+        'com_recurso',
         'criado_por',
         'editado_por',
     ];
@@ -54,6 +56,8 @@ class AvaliacaoRegra extends Model
         'casas_decimais' => 'integer',
         'modo_arredondamento' => ModoArredondamento::class,
         'reprova_por_aproveitamento' => 'boolean',
+        'com_exame' => 'boolean',
+        'com_recurso' => 'boolean',
     ];
 
     protected static function booted(): void
@@ -68,9 +72,10 @@ class AvaliacaoRegra extends Model
         return $this->belongsTo(AnoLectivo::class);
     }
 
-    public function nivelAcademico(): BelongsTo
+    /** As classes ligadas a esta regra. */
+    public function niveis(): HasMany
     {
-        return $this->belongsTo(NivelAcademico::class);
+        return $this->hasMany(AvaliacaoRegraNivel::class, 'regra_id');
     }
 
     /** Disciplinas-chave: uma negativa a qualquer uma delas tira o direito ao recurso (reprovação directa). */

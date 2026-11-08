@@ -12,6 +12,7 @@ use Modules\Avaliacao\Http\Requests\ExportarMiniPautaRequest;
 use Modules\Avaliacao\Http\Requests\LancarCompetenciaRequest;
 use Modules\Avaliacao\Http\Requests\LancarExameRequest;
 use Modules\Avaliacao\Http\Requests\LancarNotaRequest;
+use Modules\Avaliacao\Http\Requests\LancarNotasEmLoteRequest;
 use Modules\Avaliacao\Http\Requests\LancarQualitativaRequest;
 use Modules\Avaliacao\Http\Requests\VerMiniPautaRequest;
 use Modules\Avaliacao\Services\ExportacaoDePautasService;
@@ -50,6 +51,13 @@ class MiniPautaController extends Controller
         $this->gestao->lancar($request);
 
         return back();
+    }
+
+    public function lancarEmLote(LancarNotasEmLoteRequest $request): RedirectResponse
+    {
+        $gravadas = $this->gestao->lancarEmLote($request);
+
+        return back()->with('success', $gravadas === 1 ? '1 nota guardada.' : "{$gravadas} notas guardadas.");
     }
 
     public function lancarExame(LancarExameRequest $request): RedirectResponse

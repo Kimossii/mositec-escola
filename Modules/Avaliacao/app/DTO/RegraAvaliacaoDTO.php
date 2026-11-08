@@ -4,11 +4,20 @@ namespace Modules\Avaliacao\DTO;
 
 use Modules\Avaliacao\Enums\ModoArredondamento;
 
+/** Uma regra de avaliação numérica de um ano lectivo e as classes que a seguem. */
 readonly class RegraAvaliacaoDTO
 {
+    /**
+     * @param  list<int>  $nivel_ids  as classes ligadas a esta regra (saem de qualquer outra regra do ano)
+     * @param  list<int>  $disciplinas_chave  negativa a uma delas = reprovação directa, sem recurso
+     * @param  ?bool  $com_exame  nulo = o que as classes têm por defeito
+     * @param  ?bool  $com_recurso  nulo = o que as classes têm por defeito
+     * @param  ?int  $regra_id  nulo = a regra que a primeira classe já segue, ou uma regra nova se ela não segue nenhuma
+     * @param  bool  $nova  cria sempre uma regra nova, mesmo que as classes já sigam outra
+     */
     public function __construct(
         public int $ano_lectivo_id,
-        public int $nivel_academico_id,
+        public array $nivel_ids,
         public int $escala_maxima,
         public string $nota_minima,
         public string $peso_mac = '50',
@@ -22,8 +31,12 @@ readonly class RegraAvaliacaoDTO
         public string $peso_mfd_exame = '40',
         public string $peso_exame = '60',
         public ?int $recurso_max_disciplinas = null,
-        /** @var list<int> disciplinas-chave: negativa a uma delas = reprovação directa, sem recurso */
         public array $disciplinas_chave = [],
+        public ?int $regra_id = null,
+        public string $nome = '',
+        public ?bool $com_exame = null,
+        public ?bool $com_recurso = null,
+        public bool $nova = false,
     ) {
     }
 }

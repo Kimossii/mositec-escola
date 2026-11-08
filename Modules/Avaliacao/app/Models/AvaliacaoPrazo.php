@@ -10,6 +10,7 @@ use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 
+/** O prazo de lançamento da escola, por trimestre e tipo. */
 class AvaliacaoPrazo extends Model
 {
     use PertenceAoTenant;
@@ -17,7 +18,7 @@ class AvaliacaoPrazo extends Model
 
     protected $table = 'avaliacao_prazos';
 
-    protected $fillable = ['regra_id', 'regra_qualitativa_id', 'periodo_id', 'tipo', 'tipo_descricao', 'data_limite', 'criado_por', 'editado_por'];
+    protected $fillable = ['periodo_id', 'tipo', 'tipo_descricao', 'data_limite', 'criado_por', 'editado_por'];
 
     protected $casts = [
         'tipo' => TipoInstrumento::class,
@@ -29,16 +30,6 @@ class AvaliacaoPrazo extends Model
         static::saving(function (self $prazo) {
             $prazo->tipo_descricao = $prazo->tipo?->label();
         });
-    }
-
-    public function regra(): BelongsTo
-    {
-        return $this->belongsTo(AvaliacaoRegra::class, 'regra_id');
-    }
-
-    public function regraQualitativa(): BelongsTo
-    {
-        return $this->belongsTo(AvaliacaoRegraQualitativa::class, 'regra_qualitativa_id');
     }
 
     public function periodo(): BelongsTo

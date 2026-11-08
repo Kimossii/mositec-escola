@@ -2,10 +2,13 @@
 
 namespace Modules\Avaliacao\Services;
 
-use Modules\Avaliacao\Actions\CopiarRegrasDoAnoAnteriorAction;
+use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Avaliacao\Actions\EliminarRegraAvaliacaoAction;
 use Modules\Avaliacao\Actions\DefinirPrazoAction;
+use Modules\Avaliacao\Actions\GarantirRegrasDoAnoAction;
 use Modules\Avaliacao\Actions\GuardarCompetenciasAction;
 use Modules\Avaliacao\Actions\GuardarConfigDocumentosAction;
+use Modules\Avaliacao\Actions\GuardarDefinicoesDeAvaliacaoAction;
 use Modules\Avaliacao\Actions\GuardarEscalaQualitativaAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
 use Modules\Avaliacao\Actions\GuardarRegraQualitativaAction;
@@ -13,6 +16,7 @@ use Modules\Avaliacao\Actions\ProlongarPrazoAction;
 use Modules\Avaliacao\DTO\CompetenciaDTO;
 use Modules\Avaliacao\DTO\CompetenciasDaAreaDTO;
 use Modules\Avaliacao\DTO\ConfigDocumentosDTO;
+use Modules\Avaliacao\DTO\DefinicoesDeAvaliacaoDTO;
 use Modules\Avaliacao\DTO\DefinirPrazoDTO;
 use Modules\Avaliacao\DTO\EscalaQualitativaDTO;
 use Modules\Avaliacao\DTO\NivelDaEscalaDTO;
@@ -22,10 +26,11 @@ use Modules\Avaliacao\DTO\RegraQualitativaDTO;
 use Modules\Avaliacao\Enums\ModoArredondamento;
 use Modules\Avaliacao\Enums\Progressao;
 use Modules\Avaliacao\Enums\TipoInstrumento;
-use Modules\Avaliacao\Http\Requests\CopiarRegrasRequest;
+use Modules\Avaliacao\Http\Requests\CriarRegrasPorDefeitoRequest;
 use Modules\Avaliacao\Http\Requests\DefinirPrazoRequest;
 use Modules\Avaliacao\Http\Requests\GuardarCompetenciasRequest;
 use Modules\Avaliacao\Http\Requests\GuardarConfigDocumentosRequest;
+use Modules\Avaliacao\Http\Requests\GuardarDefinicoesDeAvaliacaoRequest;
 use Modules\Avaliacao\Http\Requests\GuardarEscalaRequest;
 use Modules\Avaliacao\Http\Requests\GuardarRegraQualitativaRequest;
 use Modules\Avaliacao\Http\Requests\GuardarRegraRequest;
@@ -35,15 +40,28 @@ use Modules\Avaliacao\Http\Requests\ProlongarPrazoRequest;
 class GestaoConfiguracaoAvaliacaoService
 {
     public function __construct(
+        private ConfiguracaoAvaliacaoService $configuracao,
+        private GarantirRegrasDoAnoAction $garantirRegras,
         private GuardarRegraAvaliacaoAction $guardarRegra,
-        private CopiarRegrasDoAnoAnteriorAction $copiarRegras,
+        private EliminarRegraAvaliacaoAction $eliminarRegra,
         private DefinirPrazoAction $definirPrazo,
         private ProlongarPrazoAction $prolongarPrazo,
         private GuardarEscalaQualitativaAction $guardarEscala,
         private GuardarRegraQualitativaAction $guardarRegraQualitativa,
         private GuardarCompetenciasAction $guardarCompetencias,
         private GuardarConfigDocumentosAction $guardarDocumentos,
+        private GuardarDefinicoesDeAvaliacaoAction $guardarDefinicoes,
     ) {
+    }
+
+    /** Ao abrir a configuração, o ano lectivo já tem as suas regras (as do ano anterior, ou as por defeito), prontas a editar. */
+    public function garantirRegrasDoAno(?int $anoLectivoId): void
+    {
+        $ano = $this->configuracao->anoSelecionado($anoLectivoId);
+
+        if ($ano !== null) {
+            $this->garantirRegras->executar($ano->id);
+        }
     }
 
     public function guardarRegra(GuardarRegraRequest $request): void
@@ -53,7 +71,7 @@ class GestaoConfiguracaoAvaliacaoService
 
         $this->guardarRegra->executar(new RegraAvaliacaoDTO(
             ano_lectivo_id: (int) $d['ano_lectivo_id'],
-            nivel_academico_id: (int) $d['nivel_academico_id'],
+            nivel_ids: array_map('intval', $d['nivel_ids']),
             escala_maxima: (int) $d['escala_maxima'],
             nota_minima: (string) $d['nota_minima'],
             peso_mac: (string) $d['peso_mac'],
@@ -68,20 +86,33 @@ class GestaoConfiguracaoAvaliacaoService
             peso_exame: $texto('peso_exame') ?? '60',
             recurso_max_disciplinas: isset($d['recurso_max_disciplinas']) ? (int) $d['recurso_max_disciplinas'] : null,
             disciplinas_chave: array_map('intval', $d['disciplinas_chave'] ?? []),
+            regra_id: isset($d['regra_id']) ? (int) $d['regra_id'] : null,
+            nome: (string) $d['nome'],
+            com_exame: (bool) $d['com_exame'],
+            com_recurso: (bool) $d['com_recurso'],
+            nova: (bool) ($d['nova'] ?? false),
         ));
     }
 
-    /** @return int quantas regras se copiaram */
-    public function copiarRegras(CopiarRegrasRequest $request): int
+    /** @return int quantas classes ficaram ligadas a uma regra */
+    public function criarRegrasPorDefeito(CriarRegrasPorDefeitoRequest $request): int
     {
-        return $this->copiarRegras->executar((int) $request->validated()['ano_lectivo_id']);
+        $anoId = (int) $request->validated()['ano_lectivo_id'];
+        AnoLectivo::query()->findOrFail($anoId);
+
+        return $this->garantirRegras->completarPorDefeito($anoId);
+    }
+
+    public function eliminarRegra(int $regraId, bool $qualitativa): void
+    {
+        $this->eliminarRegra->executar($regraId, $qualitativa);
     }
 
     public function definirPrazo(DefinirPrazoRequest $request): void
     {
         $d = $request->validated();
 
-        $this->definirPrazo->executar(new DefinirPrazoDTO((int) $d['regra_id'], (int) $d['periodo_id'], TipoInstrumento::from((int) $d['tipo']), $d['data_limite']));
+        $this->definirPrazo->executar(new DefinirPrazoDTO((int) $d['periodo_id'], TipoInstrumento::from((int) $d['tipo']), $d['data_limite']));
     }
 
     public function prolongarPrazo(int $prazoId, ProlongarPrazoRequest $request): void
@@ -110,7 +141,8 @@ class GestaoConfiguracaoAvaliacaoService
         $d = $request->validated();
 
         $this->guardarRegraQualitativa->executar(new RegraQualitativaDTO(
-            (int) $d['ano_lectivo_id'], (int) $d['nivel_academico_id'], (int) $d['escala_id'], Progressao::from((int) ($d['progressao'] ?? Progressao::AUTOMATICA->value)),
+            (int) $d['ano_lectivo_id'], array_map('intval', $d['nivel_ids']), isset($d['escala_id']) ? (int) $d['escala_id'] : null, Progressao::from((int) ($d['progressao'] ?? Progressao::AUTOMATICA->value)),
+            isset($d['regra_id']) ? (int) $d['regra_id'] : null, (string) $d['nome'], (bool) ($d['nova'] ?? false),
         ));
     }
 
@@ -130,5 +162,15 @@ class GestaoConfiguracaoAvaliacaoService
         $d = $request->validated();
 
         $this->guardarDocumentos->executar(new ConfigDocumentosDTO($d['linhas_extra'] ?? null, $d['lema'] ?? null, $d['visto_cargo'] ?? null, $d['visto_nome'] ?? null));
+    }
+
+    public function guardarDefinicoes(GuardarDefinicoesDeAvaliacaoRequest $request): void
+    {
+        $d = $request->validated();
+
+        $this->guardarDefinicoes->executar(new DefinicoesDeAvaliacaoDTO(
+            (int) $d['max_avaliacoes'],
+            (int) $d['min_avaliacoes'],
+        ));
     }
 }

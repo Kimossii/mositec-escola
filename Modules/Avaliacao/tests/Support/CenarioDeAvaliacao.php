@@ -109,6 +109,9 @@ trait CenarioDeAvaliacao
         PlanoCurricularAnoLectivo::create(['plano_curricular_id' => $plano->id, 'ano_lectivo_id' => $ano->id]);
         $planoDisciplina = PlanoCurricularDisciplina::create(['plano_curricular_id' => $plano->id, 'disciplina_id' => $disciplina->id]);
 
+        // Os cenários trabalham com uma avaliação contínua por trimestre: o mínimo a lançar é 1 (por defeito, na escola, é 5).
+        \Modules\Avaliacao\Models\AvaliacaoDefinicoes::query()->firstOrCreate([], ['max_avaliacoes' => 10, 'min_avaliacoes' => 1]);
+
         return compact('ano', 'periodos', 'nivel', 'turma', 'disciplina', 'planoDisciplina');
     }
 
@@ -225,9 +228,9 @@ trait CenarioDeAvaliacao
 
     // ---- atalhos para as Actions, que recebem DTOs (os testes continuam a ler-se numa linha)
 
-    protected function definirPrazo(int $regraId, int $periodoId, TipoInstrumento $tipo, string $dataLimite): AvaliacaoPrazo
+    protected function definirPrazo(int $periodoId, TipoInstrumento $tipo, string $dataLimite): AvaliacaoPrazo
     {
-        return app(DefinirPrazoAction::class)->executar(new DefinirPrazoDTO($regraId, $periodoId, $tipo, $dataLimite));
+        return app(DefinirPrazoAction::class)->executar(new DefinirPrazoDTO($periodoId, $tipo, $dataLimite));
     }
 
     protected function prolongarPrazo(int $prazoId, string $dataLimite, string $motivo, ?int $turmaId = null, ?int $disciplinaId = null, ?int $docenteId = null): AvaliacaoPrazoExcepcao
@@ -245,7 +248,7 @@ trait CenarioDeAvaliacao
 
     protected function guardarRegraQualitativa(int $anoLectivoId, int $nivelAcademicoId, int $escalaId, Progressao $progressao = Progressao::AUTOMATICA): AvaliacaoRegraQualitativa
     {
-        return app(GuardarRegraQualitativaAction::class)->executar(new RegraQualitativaDTO($anoLectivoId, $nivelAcademicoId, $escalaId, $progressao));
+        return app(GuardarRegraQualitativaAction::class)->executar(new RegraQualitativaDTO($anoLectivoId, [$nivelAcademicoId], $escalaId, $progressao));
     }
 
     /** @param  list<array{descricao: string, ativa?: bool, id?: int}>  $itens */

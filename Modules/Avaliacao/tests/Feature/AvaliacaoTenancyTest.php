@@ -52,8 +52,8 @@ class AvaliacaoTenancyTest extends TestCase
     {
         return $this->noTenant($this->outro, function () {
             $c = $this->cenarioDeAvaliacao('PRI_3', 'B');
-            $regra = app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, '5'));
-            $prazo = $this->definirPrazo($regra->id, $c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
+            $regra = app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5'));
+            $prazo = $this->definirPrazo($c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
             $instrumento = app(CriarInstrumentoAction::class)->executar(new InstrumentoDTO($c['turma']->id, $c['disciplina']->id, $c['periodos'][1]->id, TipoInstrumento::MAC, 'A1'));
             $inscricao = $this->inscreverAluno($c);
             $nota = AvaliacaoNota::create(['instrumento_id' => $instrumento->id, 'inscricao_disciplina_id' => $inscricao->id, 'valor' => '7', 'estado' => EstadoNota::LANCADA]);
@@ -151,7 +151,7 @@ class AvaliacaoTenancyTest extends TestCase
         ])->assertNotFound();
         $this->actingAs($admin)->post('/avaliacao/configuracao/escalas', ['id' => $b['escala']->id, 'nome' => 'Sequestrada', 'niveis' => [['codigo' => 'A', 'designacao' => 'Um'], ['codigo' => 'B', 'designacao' => 'Dois']]])->assertNotFound();
         $this->actingAs($admin)->post('/avaliacao/configuracao/regras-qualitativas', [
-            'ano_lectivo_id' => $b['c']['ano']->id, 'nivel_academico_id' => $b['c']['nivel']->id, 'escala_id' => $b['escala']->id,
+            'ano_lectivo_id' => $b['c']['ano']->id, 'nome' => 'Regra', 'nivel_ids' => [$b['c']['nivel']->id], 'escala_id' => $b['escala']->id,
         ])->assertNotFound();
         $this->assertSame('Escala B', $this->noTenant($this->outro, fn () => AvaliacaoEscala::findOrFail($b['escala']->id)->nome));
     }
@@ -160,7 +160,7 @@ class AvaliacaoTenancyTest extends TestCase
     {
         $b = $this->noTenant($this->outro, function () {
             $c = $this->cenarioDeAvaliacao('PRI_6', 'B');
-            app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, '5'));
+            app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5'));
 
             return ['c' => $c, 'inscricao' => $this->inscreverAluno($c)];
         });
@@ -177,7 +177,7 @@ class AvaliacaoTenancyTest extends TestCase
     {
         $b = $this->noTenant($this->outro, function () {
             $c = $this->cenarioDeAvaliacao('PRI_6', 'B');
-            app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, '5'));
+            app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5'));
 
             return ['c' => $c, 'inscricao' => $this->inscreverAluno($c)];
         });

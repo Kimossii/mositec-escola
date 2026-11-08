@@ -16,7 +16,6 @@ class DefinirPrazoRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'regra_id' => ['required', 'integer'],
             'periodo_id' => ['required', 'integer'],
             'tipo' => ['required', Rule::in(array_column(TipoInstrumento::cases(), 'value'))],
             'data_limite' => ['required', 'date_format:Y-m-d'],

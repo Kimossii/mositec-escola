@@ -38,9 +38,9 @@ class LancarNotaActionTest extends TestCase
         $this->c = $this->cenarioDeAvaliacao();
 
         $regra = app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO(
-            ano_lectivo_id: $this->c['ano']->id, nivel_academico_id: $this->c['nivel']->id, escala_maxima: 10, nota_minima: '5',
+            ano_lectivo_id: $this->c['ano']->id, nivel_ids: [$this->c['nivel']->id], escala_maxima: 10, nota_minima: '5',
         ));
-        $this->definirPrazo($regra->id, $this->c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
+        $this->definirPrazo($this->c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
 
         $this->instrumento = app(CriarInstrumentoAction::class)->executar(
             new InstrumentoDTO($this->c['turma']->id, $this->c['disciplina']->id, $this->c['periodos'][1]->id, TipoInstrumento::MAC, 'Avaliação 1'),
@@ -186,10 +186,23 @@ class LancarNotaActionTest extends TestCase
         $this->lancar('7', null, $deOutraTurma);
     }
 
-    public function test_sem_regra_configurada_nao_se_lanca(): void
+    public function test_sem_regra_guardada_assume_a_do_nivel_por_defeito_e_lanca(): void
     {
         $this->actingAs($this->professorAtribuido($this->c));
         \Modules\Avaliacao\Models\AvaliacaoRegra::query()->delete();
+
+        $this->lancar('7');
+
+        $regra = \Modules\Avaliacao\Models\AvaliacaoRegra::query()->sole();
+        $this->assertSame(10, $regra->escala_maxima);
+        $this->assertSame('5.00', (string) $regra->nota_minima);
+    }
+
+    public function test_classe_sem_valores_por_defeito_e_sem_regra_guardada_nao_se_lanca(): void
+    {
+        $this->actingAs($this->professorAtribuido($this->c));
+        \Modules\Avaliacao\Models\AvaliacaoRegra::query()->delete();
+        $this->c['nivel']->update(['codigo' => 'OUTRO']);
 
         $this->expectException(ValidationException::class);
         $this->lancar('7');

@@ -30,7 +30,7 @@ class BoletimTest extends TestCase
 
     private function regra(array $c, string $minima = '5'): void
     {
-        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, $minima));
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, $minima));
     }
 
     private function boletins(array $c, ?int $matricula = null): array

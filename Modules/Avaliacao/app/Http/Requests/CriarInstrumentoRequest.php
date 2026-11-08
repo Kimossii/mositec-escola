@@ -20,7 +20,7 @@ class CriarInstrumentoRequest extends BaseRequest
             'disciplina_id' => ['required', 'integer'],
             'periodo_id' => ['required', 'integer'],
             'tipo' => ['required', Rule::in(array_column(TipoInstrumento::cases(), 'value'))],
-            'nome' => ['required', 'string', 'max:120'],
+            'nome' => ['nullable', 'string', 'max:120'],
             'obrigatorio' => ['required', 'boolean'],
         ];
     }

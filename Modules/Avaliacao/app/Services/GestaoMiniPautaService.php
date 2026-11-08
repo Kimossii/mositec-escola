@@ -7,6 +7,7 @@ use Modules\Avaliacao\Actions\CriarInstrumentoAction;
 use Modules\Avaliacao\Actions\EliminarInstrumentoAction;
 use Modules\Avaliacao\Actions\LancarCompetenciaAction;
 use Modules\Avaliacao\Actions\LancarExameAction;
+use Modules\Avaliacao\Actions\LancarNotasEmLoteAction;
 use Modules\Avaliacao\Actions\LancarNotaAction;
 use Modules\Avaliacao\Actions\LancarQualitativaAction;
 use Modules\Avaliacao\Actions\LancarRecursoAction;
@@ -15,6 +16,7 @@ use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\DTO\LancarCompetenciaDTO;
 use Modules\Avaliacao\DTO\LancarExameDTO;
 use Modules\Avaliacao\DTO\LancarNotaDTO;
+use Modules\Avaliacao\DTO\LancarNotasEmLoteDTO;
 use Modules\Avaliacao\DTO\LancarQualitativaDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Http\Requests\AnularNotaRequest;
@@ -22,6 +24,7 @@ use Modules\Avaliacao\Http\Requests\CriarInstrumentoRequest;
 use Modules\Avaliacao\Http\Requests\LancarCompetenciaRequest;
 use Modules\Avaliacao\Http\Requests\LancarExameRequest;
 use Modules\Avaliacao\Http\Requests\LancarNotaRequest;
+use Modules\Avaliacao\Http\Requests\LancarNotasEmLoteRequest;
 use Modules\Avaliacao\Http\Requests\LancarQualitativaRequest;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Usuario\Models\User;
@@ -37,6 +40,7 @@ class GestaoMiniPautaService
         private LancarQualitativaAction $lancarQualitativa,
         private LancarCompetenciaAction $lancarCompetencia,
         private AnularNotaAction $anularNota,
+        private LancarNotasEmLoteAction $lancarEmLote,
         private CriarInstrumentoAction $criarInstrumento,
         private EliminarInstrumentoAction $eliminarInstrumento,
     ) {
@@ -47,6 +51,23 @@ class GestaoMiniPautaService
         $d = $request->validated();
 
         $this->lancarNota->executar(new LancarNotaDTO((int) $d['instrumento_id'], (int) $d['inscricao_disciplina_id'], $d['valor'], $d['motivo'] ?? null));
+    }
+
+    /** @return int quantas notas se gravaram */
+    public function lancarEmLote(LancarNotasEmLoteRequest $request): int
+    {
+        $d = $request->validated();
+        $turmaId = (int) $d['turma_id'];
+        $disciplinaId = (int) $d['disciplina_id'];
+        $this->acesso->exigir($request->user(), $turmaId, $disciplinaId);
+
+        $exame = fn (array $n) => new LancarExameDTO($turmaId, $disciplinaId, (int) $n['inscricao_disciplina_id'], $n['valor'], $n['motivo'] ?? null);
+
+        return $this->lancarEmLote->executar(new LancarNotasEmLoteDTO(
+            notas: array_map(fn (array $n) => new LancarNotaDTO((int) $n['instrumento_id'], (int) $n['inscricao_disciplina_id'], $n['valor'], $n['motivo'] ?? null), $d['notas'] ?? []),
+            exames: array_map($exame, $d['exames'] ?? []),
+            recursos: array_map($exame, $d['recursos'] ?? []),
+        ));
     }
 
     public function lancarExame(LancarExameRequest $request): void
@@ -90,7 +111,7 @@ class GestaoMiniPautaService
         $this->acesso->exigir($request->user(), (int) $d['turma_id'], (int) $d['disciplina_id']);
 
         $this->criarInstrumento->executar(new InstrumentoDTO(
-            (int) $d['turma_id'], (int) $d['disciplina_id'], (int) $d['periodo_id'], TipoInstrumento::from((int) $d['tipo']), $d['nome'], (bool) $d['obrigatorio'],
+            (int) $d['turma_id'], (int) $d['disciplina_id'], (int) $d['periodo_id'], TipoInstrumento::from((int) $d['tipo']), (string) ($d['nome'] ?? ''), (bool) ($d['obrigatorio'] ?? true),
         ));
     }
 

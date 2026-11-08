@@ -12,6 +12,7 @@ use Modules\Avaliacao\Enums\Progressao;
 use Modules\Avaliacao\Models\AvaliacaoProgressao;
 use Modules\Avaliacao\Models\AvaliacaoRegraQualitativa;
 use Modules\Avaliacao\Services\PautaFinalService;
+use Modules\Avaliacao\Services\RegraAvaliacaoService;
 use Modules\Core\Traits\LogService;
 use Modules\Matricula\Models\Matricula;
 use Modules\Turma\Models\Turma;
@@ -24,7 +25,7 @@ class DecidirProgressaoAction
 {
     use LogService;
 
-    public function __construct(private PautaFinalService $pautas)
+    public function __construct(private PautaFinalService $pautas, private RegraAvaliacaoService $regras)
     {
     }
 
@@ -47,7 +48,7 @@ class DecidirProgressaoAction
             $matricula = Matricula::query()->where('turma_id', $turma->id)->findOrFail($dto->matricula_id);
             $this->pautas->exigirAberta($turma->id);
 
-            $regra = AvaliacaoRegraQualitativa::query()->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('nivel_academico_id', $turma->nivel_academico_id)->first();
+            $regra = $this->regras->qualitativaParaTurma($turma);
             if ($regra === null || $regra->progressao !== Progressao::MANUAL) {
                 throw ValidationException::withMessages(['matricula_id' => 'A progressão desta classe é automática: não se decide criança a criança.']);
             }

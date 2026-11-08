@@ -63,7 +63,7 @@ class LancarNotaAction
             ->first();
 
         $utilizador = auth()->user();
-        $foraDoPrazo = $this->prazos->instrumentoEncerrado($instrumento, $regra, $this->docentes->idDe($utilizador));
+        $foraDoPrazo = $this->prazos->instrumentoEncerrado($instrumento, $this->docentes->idDe($utilizador));
         $this->autorizar($instrumento, $nota !== null, $foraDoPrazo, $dto->motivo);
 
         $anterior = $nota?->only(['valor', 'estado']);

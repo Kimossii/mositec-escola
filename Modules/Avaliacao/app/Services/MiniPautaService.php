@@ -30,13 +30,13 @@ class MiniPautaService
         private VerificaAtribuicaoDocente $docencia,
         private AcessoAMiniPautaService $acesso,
         private RegraAvaliacaoService $regras,
+        private DefinicoesDeAvaliacaoService $definicoes,
         private PrazoService $prazos,
         private ResultadoDisciplinaService $resultados,
         private CalculadoraQuantitativa $calculadora,
         private DocenteDoUtilizadorService $docentes,
         private RelogioDoTenant $relogio,
         private MiniPautaQualitativaService $qualitativa,
-        private RegraPadraoService $padrao,
         private ElegibilidadeRecursoService $elegibilidade,
     ) {
     }
@@ -131,20 +131,25 @@ class MiniPautaService
 
         $base = ['tipo' => 'quantitativa', 'rotulo_pt' => MiniPautaDocumentoService::rotuloDaProva($turma->nivelAcademico?->codigo), 'turma_rotulo' => $turma->rotulo(completo: true), 'disciplina_nome' => (string) $disciplina->nome, 'regra' => null];
 
+        // Sem trimestres definidos no ano lectivo não há onde lançar: o ecrã explica-o em vez de abrir vazio.
+        if (! Periodo::query()->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('tipo', TipoPeriodo::TRIMESTRE)->exists()) {
+            return [...$base, 'sem_periodos' => true, 'periodos' => [], 'periodo_id' => null, 'instrumentos' => [], 'alunos' => [], 'prazos' => []];
+        }
+
         $qualitativa = $this->qualitativa->paraTurmaDisciplina($turma, $disciplinaId, $periodoId, $this->docentes->idDe($utilizador));
         if ($qualitativa !== null) {
             return [...$base, ...$qualitativa];
         }
 
         if ($regra === null) {
-            return $base + ['periodos' => [], 'periodo_id' => null, 'instrumentos' => [], 'alunos' => [], 'prazos' => []];
+            return [...$base, 'periodos' => [], 'periodo_id' => null, 'instrumentos' => [], 'alunos' => [], 'prazos' => []];
         }
 
         $periodos = Periodo::query()->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('tipo', TipoPeriodo::TRIMESTRE)->orderBy('numero')->get();
         $periodo = $periodos->firstWhere('id', $periodoId) ?? $this->periodoEmCurso($periodos);
 
         if ($periodo === null) {
-            return $base + ['periodos' => [], 'periodo_id' => null, 'instrumentos' => [], 'alunos' => [], 'prazos' => []];
+            return [...$base, 'sem_periodos' => true, 'periodos' => [], 'periodo_id' => null, 'instrumentos' => [], 'alunos' => [], 'prazos' => []];
         }
 
         $instrumentos = AvaliacaoInstrumento::query()
@@ -157,11 +162,11 @@ class MiniPautaService
             ->whereIn('instrumento_id', $instrumentos->pluck('id'))->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))
             ->get()->groupBy('inscricao_disciplina_id');
         // O exame próprio mostra-se à parte, só no 3.º trimestre, e cria-se na primeira nota (LancarExameAction).
-        $comExame = $periodo->numero === 3 && $this->padrao->temExameProprio((string) $turma->nivelAcademico?->codigo);
+        $comExame = $periodo->numero === 3 && $regra->com_exame;
         $exame = $comExame ? AvaliacaoInstrumento::query()->where('turma_id', $turmaId)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::EXAME->value)->first() : null;
         $notasExame = $exame === null ? collect() : AvaliacaoNota::query()->where('instrumento_id', $exame->id)->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))->get()->keyBy('inscricao_disciplina_id');
         // O exame de recurso mostra-se à parte, só no 3.º trimestre, e cria-se na primeira nota (LancarRecursoAction).
-        $comRecurso = $periodo->numero === 3 && $this->padrao->temRecurso((string) $turma->nivelAcademico?->codigo);
+        $comRecurso = $periodo->numero === 3 && $regra->com_recurso;
         $recurso = $comRecurso ? AvaliacaoInstrumento::query()->where('turma_id', $turmaId)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::RECURSO->value)->first() : null;
         $notasRecurso = $recurso === null ? collect() : AvaliacaoNota::query()->where('instrumento_id', $recurso->id)->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))->get()->keyBy('inscricao_disciplina_id');
         $elegibilidade = $comRecurso ? $this->elegibilidade->paraTurma($turma, $regra) : [];
@@ -200,13 +205,14 @@ class MiniPautaService
         $prazos = [];
         foreach (TipoInstrumento::cases() as $tipo) {
             $prazos[$tipo->name] = [
-                'data_limite' => $this->prazos->dataLimite($regra, $periodo->id, $tipo, $turmaId, $disciplinaId, $docenteId)->toDateString(),
-                'encerrado' => $this->prazos->prazoEncerrado($regra, $periodo->id, $tipo, $turmaId, $disciplinaId, $docenteId),
+                'data_limite' => $this->prazos->dataLimite($periodo->id, $tipo, $turmaId, $disciplinaId, $docenteId)->toDateString(),
+                'encerrado' => $this->prazos->prazoEncerrado($periodo->id, $tipo, $turmaId, $disciplinaId, $docenteId),
             ];
         }
 
-        return $base + [
-            'regra' => ['escala_maxima' => $regra->escala_maxima, 'nota_minima' => (string) $regra->nota_minima, 'casas_decimais' => $regra->casas_decimais],
+        // array_merge, não `+`: o `$base` já traz `regra => null` e o `+` manteria esse valor.
+        return array_merge($base, [
+            'regra' => ['escala_maxima' => $regra->escala_maxima, 'nota_minima' => (string) $regra->nota_minima, 'casas_decimais' => $regra->casas_decimais, ...$this->definicoes->paraTela()],
             'periodos' => $periodos->map(fn (Periodo $p) => ['id' => $p->id, 'nome' => $p->nome, 'numero' => $p->numero])->all(),
             'periodo_id' => $periodo->id,
             'instrumentos' => $instrumentos->map(fn (AvaliacaoInstrumento $i) => [
@@ -216,7 +222,7 @@ class MiniPautaService
             'exame' => $comExame ? ['peso_mfd' => $this->semZeros($regra->peso_mfd_exame), 'peso_exame' => $this->semZeros($regra->peso_exame)] : null,
             'recurso' => $comRecurso ? ['peso_mf' => $this->semZeros($regra->peso_mfd_exame), 'peso_recurso' => $this->semZeros($regra->peso_exame)] : null,
             'prazos' => $prazos,
-        ];
+        ]);
     }
 
     /** 40.00 → 40, 33.50 → 33.5: para mostrar pesos sem zeros a mais. */

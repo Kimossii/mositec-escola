@@ -81,8 +81,9 @@ class QualitativaHttpTest extends TestCase
         $this->actingAs($admin)->get('/avaliacao/configuracao')->assertInertia(fn (Assert $p) => $p
             ->has('escalas', 1)
             ->where('escalas.0.niveis.0.codigo', 'INS')
-            ->where('classes.0.ambito', 'qualitativa')
-            ->where('classes.0.regra_qualitativa.escala_id', $this->escala->id));
+            ->where('regras.0.qualitativa', true)
+            ->where('regras.0.escala_id', $this->escala->id)
+            ->where('regras.0.nivel_ids', [$this->c['nivel']->id]));
     }
 
     public function test_admin_cria_escala_e_escolhe_a_da_classe_via_http(): void
@@ -94,7 +95,7 @@ class QualitativaHttpTest extends TestCase
         $nova = AvaliacaoEscala::where('nome', 'Escala B')->firstOrFail();
 
         $this->actingAs($admin)->post('/avaliacao/configuracao/regras-qualitativas', [
-            'ano_lectivo_id' => $this->c['ano']->id, 'nivel_academico_id' => $this->c['nivel']->id, 'escala_id' => $nova->id,
+            'ano_lectivo_id' => $this->c['ano']->id, 'nome' => 'Creche e Pré-Escolar', 'nivel_ids' => [$this->c['nivel']->id], 'escala_id' => $nova->id,
         ])->assertRedirect();
         $this->assertSame($nova->id, AvaliacaoRegraQualitativa::firstOrFail()->escala_id);
     }

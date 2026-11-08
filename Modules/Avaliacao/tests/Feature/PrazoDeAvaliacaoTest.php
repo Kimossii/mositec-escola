@@ -32,20 +32,20 @@ class PrazoDeAvaliacaoTest extends TestCase
         parent::setUp();
         $this->c = $this->cenarioDeAvaliacao();
         $this->regra = app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO(
-            ano_lectivo_id: $this->c['ano']->id, nivel_academico_id: $this->c['nivel']->id, escala_maxima: 10, nota_minima: '5',
+            ano_lectivo_id: $this->c['ano']->id, nivel_ids: [$this->c['nivel']->id], escala_maxima: 10, nota_minima: '5',
         ));
     }
 
     private function limite(?int $docenteId = null): string
     {
         return app(PrazoService::class)->dataLimite(
-            $this->regra, $this->c['periodos'][1]->id, TipoInstrumento::MAC, $this->c['turma']->id, $this->c['disciplina']->id, $docenteId,
+            $this->c['periodos'][1]->id, TipoInstrumento::MAC, $this->c['turma']->id, $this->c['disciplina']->id, $docenteId,
         )->toDateString();
     }
 
     private function prazo(string $data = '2026-04-10'): AvaliacaoPrazo
     {
-        return $this->definirPrazo($this->regra->id, $this->c['periodos'][1]->id, TipoInstrumento::MAC, $data);
+        return $this->definirPrazo($this->c['periodos'][1]->id, TipoInstrumento::MAC, $data);
     }
 
     public function test_sem_prazo_nem_excepcao_vale_o_fim_do_periodo(): void
@@ -102,7 +102,7 @@ class PrazoDeAvaliacaoTest extends TestCase
     {
         $this->prazo('2026-04-10');
         $servico = app(PrazoService::class);
-        $args = [$this->regra, $this->c['periodos'][1]->id, TipoInstrumento::MAC, $this->c['turma']->id, $this->c['disciplina']->id];
+        $args = [$this->c['periodos'][1]->id, TipoInstrumento::MAC, $this->c['turma']->id, $this->c['disciplina']->id];
 
         $this->assertFalse($servico->prazoEncerrado(...$args, docenteId: null, hoje: CarbonImmutable::parse('2026-04-10 23:59')));
         $this->assertTrue($servico->prazoEncerrado(...$args, docenteId: null, hoje: CarbonImmutable::parse('2026-04-11 00:01')));
@@ -140,11 +140,14 @@ class PrazoDeAvaliacaoTest extends TestCase
         AvaliacaoPrazo::create(['regra_id' => $this->regra->id, 'periodo_id' => $this->c['periodos'][1]->id, 'tipo' => TipoInstrumento::MAC, 'data_limite' => '2026-04-12']);
     }
 
-    public function test_definir_prazo_de_periodo_de_outro_ano_e_rejeitado(): void
+    public function test_o_prazo_e_da_escola_por_trimestre_e_tipo_e_vale_para_todas_as_classes(): void
     {
-        $outro = $this->cenarioDeAvaliacao('PRI_4', 'Z');
+        $this->prazo('2026-04-10');
+        $outraClasse = $this->cenarioDeAvaliacao('PRI_4', 'Y');
+        $this->definirPrazo($this->c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-12');
 
-        $this->expectException(ValidationException::class);
-        $this->definirPrazo($this->regra->id, $outro['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
+        $this->assertSame(1, AvaliacaoPrazo::where('periodo_id', $this->c['periodos'][1]->id)->where('tipo', TipoInstrumento::MAC->value)->count(), 'um só por trimestre e tipo');
+        $this->assertSame('2026-04-12', $this->limite());
+        $this->assertSame('2026-12-31', app(PrazoService::class)->dataLimite($outraClasse['periodos'][3]->id, TipoInstrumento::MAC, $outraClasse['turma']->id, $outraClasse['disciplina']->id)->toDateString(), 'sem prazo vale o fim do trimestre');
     }
 }

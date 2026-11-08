@@ -26,6 +26,10 @@ use Modules\Turma\Models\Turma;
  */
 class PautaQualitativaService
 {
+    public function __construct(private RegraAvaliacaoService $regras)
+    {
+    }
+
     public function aplica(Turma $turma): bool
     {
         return $this->regra($turma) !== null;
@@ -129,7 +133,7 @@ class PautaQualitativaService
 
     private function regra(Turma $turma): ?AvaliacaoRegraQualitativa
     {
-        return AvaliacaoRegraQualitativa::query()->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('nivel_academico_id', $turma->nivel_academico_id)->first();
+        return $this->regras->qualitativaParaTurma($turma);
     }
 
     /** @param  array<int, ?array{codigo: string, designacao: string}>  $niveis */

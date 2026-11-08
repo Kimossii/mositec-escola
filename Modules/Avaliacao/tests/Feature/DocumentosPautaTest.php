@@ -39,7 +39,7 @@ class DocumentosPautaTest extends TestCase
 
     private function regra(array $c): void
     {
-        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, '5'));
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5'));
     }
 
     private function pautaDe(array $c): DocumentoPauta

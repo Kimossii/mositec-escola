@@ -34,8 +34,8 @@ class ProlongarPrazoAction
                 throw ValidationException::withMessages(['motivo' => 'Indique o motivo do prolongamento.']);
             }
 
-            $prazo = AvaliacaoPrazo::query()->with(['regra', 'regraQualitativa'])->findOrFail($dto->prazo_id);
-            $actual = $this->prazos->dataLimite($prazo->regra ?? $prazo->regraQualitativa, $prazo->periodo_id, $prazo->tipo, $dto->turma_id ?? 0, $dto->disciplina_id ?? 0, $dto->docente_id);
+            $prazo = AvaliacaoPrazo::query()->findOrFail($dto->prazo_id);
+            $actual = $this->prazos->dataLimite($prazo->periodo_id, $prazo->tipo, $dto->turma_id ?? 0, $dto->disciplina_id ?? 0, $dto->docente_id);
 
             if ($actual->greaterThanOrEqualTo($dto->data_limite)) {
                 throw ValidationException::withMessages(['data_limite' => 'A nova data tem de ser posterior ao prazo em vigor.']);

@@ -20,89 +20,120 @@ use Modules\Avaliacao\Models\AvaliacaoRegraQualitativa;
 use Modules\Turma\Models\NivelAcademico;
 use Modules\Turma\Models\Turma;
 
-/** Leitura da página de configuração: regras por classe, prazos por trimestre e tipo, e excepções. Só consulta. */
+/** Leitura da página de configuração: as regras do ano e as classes ligadas a cada uma, prazos por trimestre e tipo, e excepções. Só consulta. */
 class ConfiguracaoAvaliacaoService
 {
-    public function __construct(private RegraPadraoService $padrao, private CabecalhoDocumentoService $cabecalho)
+    public function __construct(private CabecalhoDocumentoService $cabecalho, private DefinicoesDeAvaliacaoService $definicoes, private RegraPadraoService $padrao)
     {
+    }
+
+    /** O ano lectivo que a página mostra: o pedido, senão o activo, senão o mais recente. */
+    public function anoSelecionado(?int $anoLectivoId = null): ?AnoLectivo
+    {
+        $anos = AnoLectivo::query()->orderByDesc('data_inicio')->get();
+
+        return $anos->firstWhere('id', $anoLectivoId) ?? $anos->firstWhere('estado', EstadoAnoLectivo::ATIVO) ?? $anos->first();
     }
 
     /** @return array<string, mixed> */
     public function pagina(?int $anoLectivoId = null): array
     {
         $anos = AnoLectivo::query()->orderByDesc('data_inicio')->get();
-        $ano = $anos->firstWhere('id', $anoLectivoId) ?? $anos->firstWhere('estado', EstadoAnoLectivo::ATIVO) ?? $anos->first();
+        $ano = $this->anoSelecionado($anoLectivoId);
+
+        $comum = ['modos' => $this->modos(), 'tipos' => $this->tipos(), 'escalas' => $this->escalas(), 'progressoes' => array_map(fn (Progressao $p) => ['valor' => $p->value, 'nome' => $p->label()], Progressao::cases()),
+            ...$this->competencias(), ...$this->documentos(), 'definicoes' => $this->definicoes->paraTela()];
 
         if ($ano === null) {
-            return ['anos' => [], 'ano_id' => null, 'classes' => [], 'periodos' => [], 'modos' => $this->modos(), 'tipos' => $this->tipos(), 'escalas' => $this->escalas(), ...$this->competencias(), ...$this->documentos()];
+            return ['anos' => [], 'ano_id' => null, 'regras' => [], 'niveis' => [], 'periodos' => [], 'prazos' => [], 'tipos_de_prazo' => [], 'turmas' => [], ...$comum];
         }
 
-        $regras = AvaliacaoRegra::query()->where('ano_lectivo_id', $ano->id)->with('disciplinasChave:disciplinas.id')->get()->keyBy('nivel_academico_id');
-        $regrasQ = AvaliacaoRegraQualitativa::query()->where('ano_lectivo_id', $ano->id)->get()->keyBy('nivel_academico_id');
-        $prazos = AvaliacaoPrazo::query()
-            ->where(fn ($q) => $q->whereIn('regra_id', $regras->pluck('id'))->orWhereIn('regra_qualitativa_id', $regrasQ->pluck('id')))
-            ->with('excepcoes')->get();
-        $turmas = Turma::query()->where('ano_lectivo_id', $ano->id)->with(['turno:id,nome', 'anoLectivo:id,nome'])->get()->groupBy('nivel_academico_id');
+        $regras = AvaliacaoRegra::query()->where('ano_lectivo_id', $ano->id)->with(['disciplinasChave:disciplinas.id', 'niveis'])->orderBy('id')->get();
+        $regrasQ = AvaliacaoRegraQualitativa::query()->where('ano_lectivo_id', $ano->id)->with('niveis')->orderBy('id')->get();
+        $periodos = Periodo::query()->where('ano_lectivo_id', $ano->id)->where('tipo', TipoPeriodo::TRIMESTRE)->orderBy('numero')->get();
+        $prazos = AvaliacaoPrazo::query()->whereIn('periodo_id', $periodos->pluck('id'))->with('excepcoes')->get();
+        $turmas = Turma::query()->where('ano_lectivo_id', $ano->id)->with(['turno:id,nome', 'anoLectivo:id,nome'])->get();
 
-        $classes = NivelAcademico::query()->orderBy('ordem')->get()->map(function (NivelAcademico $nivel) use ($regras, $regrasQ, $prazos, $turmas) {
-            $regra = $regras->get($nivel->id);
-            $sugestao = $this->padrao->paraNivel((string) $nivel->codigo);
+        $prazosDe = fn ($lista) => $lista->map(fn (AvaliacaoPrazo $p) => [
+            'id' => $p->id,
+            'periodo_id' => $p->periodo_id,
+            'tipo' => $p->tipo->value,
+            'data_limite' => $p->data_limite->toDateString(),
+            'excepcoes' => $p->excepcoes->map(fn ($e) => [
+                'id' => $e->id, 'turma_id' => $e->turma_id, 'disciplina_id' => $e->disciplina_id, 'docente_id' => $e->docente_id,
+                'data_limite' => $e->data_limite->toDateString(), 'motivo' => $e->motivo,
+            ])->values()->all(),
+        ])->values()->all();
 
-            return [
-                'nivel_id' => $nivel->id,
-                'codigo' => $nivel->codigo,
-                'nome' => $nivel->nome,
-                'quantitativa' => $sugestao !== null,
-                'tem_exame' => $this->padrao->temExameProprio((string) $nivel->codigo),
-                'tem_recurso' => $this->padrao->temRecurso((string) $nivel->codigo),
-                // Creche e Pré-Escolar são qualitativos; as classes secundárias seguintes têm notas, mas ficam fora desta fase.
-                'ambito' => $sugestao !== null ? 'quantitativa' : (in_array($nivel->etapa_ensino, [EtapaEnsinoEnum::CRECHE, EtapaEnsinoEnum::PRE_ESCOLAR], true) ? 'qualitativa' : 'fora_de_ambito'),
-                'regra' => $regra === null ? null : [
-                    'id' => $regra->id,
-                    'escala_maxima' => $regra->escala_maxima,
-                    'nota_minima' => (string) $regra->nota_minima,
-                    'peso_mac' => (string) $regra->peso_mac,
-                    'peso_pt' => (string) $regra->peso_pt,
-                    'peso_mt1' => $regra->peso_mt1 === null ? null : (string) $regra->peso_mt1,
-                    'peso_mt2' => $regra->peso_mt2 === null ? null : (string) $regra->peso_mt2,
-                    'peso_mt3' => $regra->peso_mt3 === null ? null : (string) $regra->peso_mt3,
-                    'peso_mfd_exame' => (string) $regra->peso_mfd_exame,
-                    'peso_exame' => (string) $regra->peso_exame,
-                    'recurso_max_disciplinas' => $regra->recurso_max_disciplinas,
-                    'disciplinas_chave' => $regra->disciplinasChave->pluck('id')->all(),
-                    'casas_decimais' => $regra->casas_decimais,
-                    'modo_arredondamento' => $regra->modo_arredondamento->value,
-                    'reprova_por_aproveitamento' => $regra->reprova_por_aproveitamento,
-                ],
-                'regra_qualitativa' => isset($regrasQ[$nivel->id]) ? ['id' => $regrasQ[$nivel->id]->id, 'escala_id' => $regrasQ[$nivel->id]->escala_id, 'progressao' => $regrasQ[$nivel->id]->progressao->value] : null,
-                'sugestao' => $sugestao,
-                'prazos' => ($regra !== null ? $prazos->where('regra_id', $regra->id) : (isset($regrasQ[$nivel->id]) ? $prazos->where('regra_qualitativa_id', $regrasQ[$nivel->id]->id) : collect())->values())->map(fn (AvaliacaoPrazo $p) => [
-                    'id' => $p->id,
-                    'periodo_id' => $p->periodo_id,
-                    'tipo' => $p->tipo->value,
-                    'data_limite' => $p->data_limite->toDateString(),
-                    'excepcoes' => $p->excepcoes->map(fn ($e) => [
-                        'id' => $e->id, 'turma_id' => $e->turma_id, 'disciplina_id' => $e->disciplina_id, 'docente_id' => $e->docente_id,
-                        'data_limite' => $e->data_limite->toDateString(), 'motivo' => $e->motivo,
-                    ])->values()->all(),
-                ])->values()->all(),
-                'turmas' => ($turmas[$nivel->id] ?? collect())->map(fn (Turma $t) => ['id' => $t->id, 'rotulo' => $t->rotulo(completo: true)])->values()->all(),
-            ];
-        })->all();
+        $numericas = $regras->map(fn (AvaliacaoRegra $r) => [
+            'id' => $r->id,
+            'qualitativa' => false,
+            'nome' => $r->nome,
+            'nivel_ids' => $r->niveis->pluck('nivel_academico_id')->all(),
+            'escala_maxima' => $r->escala_maxima,
+            'nota_minima' => (string) $r->nota_minima,
+            'peso_mac' => (string) $r->peso_mac,
+            'peso_pt' => (string) $r->peso_pt,
+            'peso_mt1' => $r->peso_mt1 === null ? null : (string) $r->peso_mt1,
+            'peso_mt2' => $r->peso_mt2 === null ? null : (string) $r->peso_mt2,
+            'peso_mt3' => $r->peso_mt3 === null ? null : (string) $r->peso_mt3,
+            'peso_mfd_exame' => (string) $r->peso_mfd_exame,
+            'peso_exame' => (string) $r->peso_exame,
+            'com_exame' => $r->com_exame,
+            'com_recurso' => $r->com_recurso,
+            'recurso_max_disciplinas' => $r->recurso_max_disciplinas,
+            'disciplinas_chave' => $r->disciplinasChave->pluck('id')->all(),
+            'casas_decimais' => $r->casas_decimais,
+            'modo_arredondamento' => $r->modo_arredondamento->value,
+            'reprova_por_aproveitamento' => $r->reprova_por_aproveitamento,
+        ]);
+
+        $qualitativas = $regrasQ->map(fn (AvaliacaoRegraQualitativa $r) => [
+            'id' => $r->id,
+            'qualitativa' => true,
+            'nome' => $r->nome,
+            'nivel_ids' => $r->niveis->pluck('nivel_academico_id')->all(),
+            'escala_id' => $r->escala_id,
+            'progressao' => $r->progressao->value,
+        ]);
+
+        $ligadas = $regras->flatMap->niveis->merge($regrasQ->flatMap->niveis)->pluck('nivel_academico_id')->all();
 
         return [
             'anos' => $anos->map(fn (AnoLectivo $a) => ['id' => $a->id, 'nome' => $a->nome])->all(),
             'ano_id' => $ano->id,
-            'classes' => $classes,
-            'periodos' => Periodo::query()->where('ano_lectivo_id', $ano->id)->where('tipo', TipoPeriodo::TRIMESTRE)->orderBy('numero')->get()
-                ->map(fn (Periodo $p) => ['id' => $p->id, 'nome' => $p->nome, 'numero' => $p->numero, 'data_fim' => $p->data_fim->toDateString()])->all(),
-            'modos' => $this->modos(),
-            'tipos' => $this->tipos(),
-            'escalas' => $this->escalas(),
-            'progressoes' => array_map(fn (Progressao $p) => ['valor' => $p->value, 'nome' => $p->label()], Progressao::cases()),
-            ...$this->competencias(),
-            ...$this->documentos(),
+            'regras' => $qualitativas->concat($numericas)->values()->all(),
+            // Todas as classes, para as ligar a uma regra; as que não seguem nenhuma aparecem à parte.
+            'niveis' => NivelAcademico::query()->orderBy('ordem')->get()->map(fn (NivelAcademico $n) => [
+                'id' => $n->id, 'codigo' => $n->codigo, 'nome' => $n->nome,
+                'qualitativo' => in_array($n->etapa_ensino, [EtapaEnsinoEnum::CRECHE, EtapaEnsinoEnum::PRE_ESCOLAR], true),
+                'tem_regra_padrao' => $this->padrao->regraDe((string) $n->codigo) !== null,
+                'sem_regra' => ! in_array($n->id, $ligadas, true),
+            ])->all(),
+            'periodos' => $periodos->map(fn (Periodo $p) => ['id' => $p->id, 'nome' => $p->nome, 'numero' => $p->numero, 'data_fim' => $p->data_fim->toDateString()])->all(),
+            // Os prazos são da escola, por trimestre e tipo, e valem para todas as regras.
+            'prazos' => $prazosDe($prazos),
+            'tipos_de_prazo' => $this->tiposDePrazo($regras, $regrasQ),
+            'turmas' => $turmas->map(fn (Turma $t) => ['id' => $t->id, 'rotulo' => $t->rotulo(completo: true)])->values()->all(),
+            ...$comum,
         ];
+    }
+
+    /**
+     * Os tipos de prazo que a escola usa: contínuas e prova sempre; exame e recurso se alguma regra os tem; a avaliação
+     * qualitativa se há regras qualitativas.
+     *
+     * @return list<int>
+     */
+    private function tiposDePrazo($regras, $regrasQ): array
+    {
+        return array_values(array_filter([
+            TipoInstrumento::MAC->value,
+            TipoInstrumento::PT->value,
+            $regras->contains('com_exame', true) ? TipoInstrumento::EXAME->value : null,
+            $regras->contains('com_recurso', true) ? TipoInstrumento::RECURSO->value : null,
+            $regrasQ->isNotEmpty() ? TipoInstrumento::QUALITATIVA->value : null,
+        ], fn ($t) => $t !== null));
     }
 
     /** @return array{competencias: list<array<string, mixed>>, disciplinas: list<array<string, mixed>>} */

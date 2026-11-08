@@ -31,7 +31,6 @@ class ResultadoDisciplinaService
         private RegraAvaliacaoService $regras,
         private PrazoService $prazos,
         private DocenteDoUtilizadorService $docentes,
-        private RegraPadraoService $padrao,
     ) {
     }
 
@@ -55,10 +54,10 @@ class ResultadoDisciplinaService
     public function calcularTurma(int $turmaId, int $disciplinaId, ?array $inscricaoIds = null): array
     {
         $turma = Turma::query()->with('nivelAcademico:id,codigo')->findOrFail($turmaId);
-        $comExame = $this->padrao->temExameProprio((string) $turma->nivelAcademico?->codigo);
-        $comRecurso = $this->padrao->temRecurso((string) $turma->nivelAcademico?->codigo);
         $regra = $this->regras->paraTurma($turma)
             ?? throw ValidationException::withMessages(['turma_id' => 'A escola ainda não configurou a regra de avaliação desta classe.']);
+        $comExame = $regra->com_exame;
+        $comRecurso = $regra->com_recurso;
 
         $inscricoes = InscricaoDisciplina::query()
             ->whereHas('matricula', fn ($q) => $q->where('turma_id', $turmaId))
@@ -97,7 +96,7 @@ class ResultadoDisciplinaService
         foreach (self::TRIMESTRES as $n) {
             foreach (TipoInstrumento::cases() as $tipo) {
                 $encerrado[$n][$tipo->name] = isset($periodos[$n])
-                    && $this->prazos->prazoEncerrado($regra, $periodos[$n]->id, $tipo, $turmaId, $disciplinaId, $docenteId);
+                    && $this->prazos->prazoEncerrado($periodos[$n]->id, $tipo, $turmaId, $disciplinaId, $docenteId);
             }
         }
 

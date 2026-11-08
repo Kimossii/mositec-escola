@@ -19,17 +19,17 @@ use Modules\Turma\Models\Turma;
 /** Mini-pauta de uma classe qualitativa: por criança, o nível da escala e a observação do trimestre. Só consulta. */
 class MiniPautaQualitativaService
 {
-    public function __construct(private RelogioDoTenant $relogio, private PrazoService $prazos)
+    public function __construct(private RelogioDoTenant $relogio, private PrazoService $prazos, private RegraAvaliacaoService $regras)
     {
     }
 
     /** @return array<string, mixed>|null `null` quando a classe não é qualitativa (ou ainda não tem escala escolhida) */
     public function paraTurmaDisciplina(Turma $turma, int $disciplinaId, ?int $periodoId, ?int $docenteId = null): ?array
     {
-        $regra = AvaliacaoRegraQualitativa::query()->where('ano_lectivo_id', $turma->ano_lectivo_id)
-            ->where('nivel_academico_id', $turma->nivel_academico_id)->with('escala.niveis')->first();
+        $regra = $this->regras->qualitativaParaTurma($turma);
+        $regra?->load('escala.niveis');
 
-        if ($regra === null) {
+        if ($regra === null || $regra->escala === null) {
             return null;
         }
 
@@ -76,8 +76,8 @@ class MiniPautaQualitativaService
                 'sugestao' => $this->sugestao($registos[$i->id] ?? collect(), $niveis, $competencias->count()),
             ])->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values()->all(),
             'prazo' => $periodo === null ? null : [
-                'data_limite' => $this->prazos->dataLimite($regra, $periodo->id, TipoInstrumento::QUALITATIVA, $turma->id, $disciplinaId, $docenteId)->toDateString(),
-                'encerrado' => $this->prazos->prazoEncerrado($regra, $periodo->id, TipoInstrumento::QUALITATIVA, $turma->id, $disciplinaId, $docenteId),
+                'data_limite' => $this->prazos->dataLimite($periodo->id, TipoInstrumento::QUALITATIVA, $turma->id, $disciplinaId, $docenteId)->toDateString(),
+                'encerrado' => $this->prazos->prazoEncerrado($periodo->id, TipoInstrumento::QUALITATIVA, $turma->id, $disciplinaId, $docenteId),
             ],
         ];
     }

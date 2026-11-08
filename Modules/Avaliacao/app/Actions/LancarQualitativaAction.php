@@ -15,6 +15,7 @@ use Modules\Avaliacao\Services\AcessoAMiniPautaService;
 use Modules\Avaliacao\Services\AutorizaLancamentoService;
 use Modules\Avaliacao\Services\DocenteDoUtilizadorService;
 use Modules\Avaliacao\Services\PautaFinalService;
+use Modules\Avaliacao\Services\RegraAvaliacaoService;
 use Modules\Avaliacao\Services\PrazoService;
 use Modules\Core\Traits\LogService;
 use Modules\Matricula\Models\InscricaoDisciplina;
@@ -31,6 +32,7 @@ class LancarQualitativaAction
 
     public function __construct(
         private PautaFinalService $pautas,
+        private RegraAvaliacaoService $regras,
         private AutorizaLancamentoService $autorizacao,
         private AcessoAMiniPautaService $acesso,
         private PrazoService $prazos,
@@ -50,8 +52,11 @@ class LancarQualitativaAction
         $this->acesso->exigirDoUtilizadorActual($turma->id, $inscricao->planoCurricularDisciplina->disciplina_id);
         $this->pautas->exigirAberta($turma->id);
 
-        $regra = AvaliacaoRegraQualitativa::query()->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('nivel_academico_id', $turma->nivel_academico_id)->first()
+        $regra = $this->regras->qualitativaParaTurma($turma)
             ?? throw ValidationException::withMessages(['inscricao_disciplina_id' => 'A escola ainda não escolheu a escala de avaliação desta classe.']);
+        if ($regra->escala_id === null) {
+            throw ValidationException::withMessages(['inscricao_disciplina_id' => 'A escola ainda não escolheu a escala de avaliação desta classe.']);
+        }
 
         $periodo = Periodo::query()->findOrFail($dto->periodo_id);
         if ($periodo->ano_lectivo_id !== $turma->ano_lectivo_id || $periodo->tipo !== TipoPeriodo::TRIMESTRE) {
@@ -64,7 +69,7 @@ class LancarQualitativaAction
         }
 
         $disciplinaId = $inscricao->planoCurricularDisciplina->disciplina_id;
-        $foraDoPrazo = $this->prazos->prazoEncerrado($regra, $periodo->id, TipoInstrumento::QUALITATIVA, $turma->id, $disciplinaId, $this->docentes->idDe(auth()->user()));
+        $foraDoPrazo = $this->prazos->prazoEncerrado($periodo->id, TipoInstrumento::QUALITATIVA, $turma->id, $disciplinaId, $this->docentes->idDe(auth()->user()));
         $this->autorizacao->exigir($turma->id, $disciplinaId, $foraDoPrazo, $dto->motivo);
 
         $actual = AvaliacaoQualitativa::query()->where('inscricao_disciplina_id', $inscricao->id)->where('periodo_id', $periodo->id)->lockForUpdate()->first();

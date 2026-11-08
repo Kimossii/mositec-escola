@@ -28,7 +28,6 @@ class MiniPautaDocumentoService
         private RegraAvaliacaoService $regras,
         private CabecalhoDocumentoService $cabecalho,
         private CalculadoraQuantitativa $calculadora,
-        private RegraPadraoService $padrao,
     ) {
     }
 
@@ -54,8 +53,8 @@ class MiniPautaDocumentoService
         $inscricoes = $this->miniPauta->inscricoes($turmaId, $disciplinaId)
             ->sortBy(fn (InscricaoDisciplina $i) => mb_strtolower((string) $i->matricula->aluno?->dadosPessoa?->nome_completo))->values();
         $resultados = $this->resultados->calcularTurma($turmaId, $disciplinaId, $inscricoes->pluck('id')->all());
-        $comExame = $this->padrao->temExameProprio((string) $turma->nivelAcademico?->codigo);
-        $comRecurso = $this->padrao->temRecurso((string) $turma->nivelAcademico?->codigo);
+        $comExame = $regra->com_exame;
+        $comRecurso = $regra->com_recurso;
         $prova = self::rotuloDaProva($turma->nivelAcademico?->codigo);
         $cabecalho = $this->cabecalho->dados();
 
@@ -102,7 +101,7 @@ class MiniPautaDocumentoService
 
     private function regraQualitativa(Turma $turma): ?AvaliacaoRegraQualitativa
     {
-        return AvaliacaoRegraQualitativa::query()->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('nivel_academico_id', $turma->nivel_academico_id)->with('escala')->first();
+        return $this->regras->qualitativaParaTurma($turma);
     }
 
     /**

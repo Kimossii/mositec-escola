@@ -10,6 +10,7 @@ Route::middleware(['auth'])->prefix('avaliacao/notas')->name('avaliacao.notas.')
     Route::get('/', [MiniPautaController::class, 'index'])->middleware('can:nota.ver')->name('index');
     Route::get('/exportar', [MiniPautaController::class, 'exportar'])->middleware(['can:nota.ver', 'throttle:operacao-pesada'])->name('exportar');
     Route::post('/', [MiniPautaController::class, 'lancar'])->middleware('can:nota.criar')->name('lancar');
+    Route::post('/lote', [MiniPautaController::class, 'lancarEmLote'])->middleware('can:nota.criar')->name('lote.lancar');
     Route::post('/exame', [MiniPautaController::class, 'lancarExame'])->middleware('can:nota.criar')->name('exame.lancar');
     Route::post('/recurso', [MiniPautaController::class, 'lancarRecurso'])->middleware('can:nota.criar')->name('recurso.lancar');
     Route::post('/competencias', [MiniPautaController::class, 'lancarCompetencia'])->middleware('can:nota.criar')->name('competencias.lancar');
@@ -23,7 +24,10 @@ Route::middleware(['auth'])->prefix('avaliacao/notas')->name('avaliacao.notas.')
 Route::middleware(['auth', 'can:nota.configurar'])->prefix('avaliacao/configuracao')->name('avaliacao.configuracao.')->group(function () {
     Route::get('/', [ConfiguracaoAvaliacaoController::class, 'index'])->name('index');
     Route::post('/regras', [ConfiguracaoAvaliacaoController::class, 'guardarRegra'])->name('regras.guardar');
-    Route::post('/regras/copiar', [ConfiguracaoAvaliacaoController::class, 'copiar'])->name('regras.copiar');
+    Route::post('/regras/defeito', [ConfiguracaoAvaliacaoController::class, 'criarRegrasPorDefeito'])->name('regras.defeito');
+    Route::delete('/regras/{regra}', [ConfiguracaoAvaliacaoController::class, 'eliminarRegra'])->whereNumber('regra')->name('regras.eliminar');
+    Route::delete('/regras-qualitativas/{regra}', [ConfiguracaoAvaliacaoController::class, 'eliminarRegraQualitativa'])->whereNumber('regra')->name('regras-qualitativas.eliminar');
+    Route::post('/definicoes', [ConfiguracaoAvaliacaoController::class, 'guardarDefinicoes'])->name('definicoes.guardar');
     Route::post('/documentos', [ConfiguracaoAvaliacaoController::class, 'guardarDocumentos'])->name('documentos.guardar');
     Route::post('/competencias', [ConfiguracaoAvaliacaoController::class, 'guardarCompetencias'])->name('competencias.guardar');
     Route::post('/escalas', [ConfiguracaoAvaliacaoController::class, 'guardarEscala'])->name('escalas.guardar');

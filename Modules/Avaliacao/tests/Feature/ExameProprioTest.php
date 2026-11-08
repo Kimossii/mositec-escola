@@ -34,7 +34,7 @@ class ExameProprioTest extends TestCase
     {
         parent::setUp();
         $this->c = $this->cenarioDeAvaliacao('PRI_6');
-        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($this->c['ano']->id, $this->c['nivel']->id, 10, '5'));
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($this->c['ano']->id, [$this->c['nivel']->id], 10, '5'));
         $this->inscricao = $this->inscreverAluno($this->c, 'Ana');
         $this->travelTo('2026-03-15 10:00:00');
         $this->actingAs($this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com'));
@@ -43,9 +43,7 @@ class ExameProprioTest extends TestCase
     /** Dá o prazo do recurso por terminado (antes de «hoje»): uma disciplina abaixo do mínimo sem NER passa a «não realizou». */
     private function fecharORecurso(): void
     {
-        $this->definirPrazo(
-            \Modules\Avaliacao\Models\AvaliacaoRegra::firstOrFail()->id, $this->c['periodos'][3]->id, TipoInstrumento::RECURSO, '2026-03-01',
-        );
+        $this->definirPrazo($this->c['periodos'][3]->id, TipoInstrumento::RECURSO, '2026-03-01');
     }
 
     private function mfd(string $nota): void
@@ -146,7 +144,7 @@ class ExameProprioTest extends TestCase
     public function test_classe_sem_exame_recusa_lancar_exame(): void
     {
         $c = $this->cenarioDeAvaliacao('PRI_5', 'Z');
-        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, '5'));
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5'));
         $inscricao = $this->inscreverAluno($c);
 
         $this->expectException(ValidationException::class);
@@ -234,7 +232,7 @@ class ExameProprioTest extends TestCase
 
     public function test_configuracao_guarda_os_pesos_do_exame_e_recusa_pesos_que_nao_somam_100(): void
     {
-        $base = ['ano_lectivo_id' => $this->c['ano']->id, 'nivel_academico_id' => $this->c['nivel']->id, 'escala_maxima' => 10, 'nota_minima' => '5', 'peso_mac' => '50', 'peso_pt' => '50',
+        $base = ['ano_lectivo_id' => $this->c['ano']->id, 'nome' => 'Regra', 'nivel_ids' => [$this->c['nivel']->id], 'com_exame' => true, 'com_recurso' => true, 'escala_maxima' => 10, 'nota_minima' => '5', 'peso_mac' => '50', 'peso_pt' => '50',
             'casas_decimais' => 2, 'modo_arredondamento' => 0, 'reprova_por_aproveitamento' => true];
 
         $this->post('/avaliacao/configuracao/regras', [...$base, 'peso_mfd_exame' => '30', 'peso_exame' => '70'])->assertRedirect();
@@ -242,6 +240,6 @@ class ExameProprioTest extends TestCase
 
         $this->post('/avaliacao/configuracao/regras', [...$base, 'peso_mfd_exame' => '30', 'peso_exame' => '60'])->assertSessionHasErrors('peso_exame');
 
-        $this->get('/avaliacao/configuracao')->assertInertia(fn ($p) => $p->where('classes.0.tem_exame', true)->where('classes.0.regra.peso_exame', '70.00'));
+        $this->get('/avaliacao/configuracao')->assertInertia(fn ($p) => $p->where('regras.0.com_exame', true)->where('regras.0.peso_exame', '70.00'));
     }
 }

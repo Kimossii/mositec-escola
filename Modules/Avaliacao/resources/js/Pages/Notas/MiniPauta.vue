@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watchEffect } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -14,6 +14,7 @@ const props = defineProps({
 defineOptions({ layout: AppLayout });
 
 const MAC = 0;
+const PT = 1;
 const ESTADO_ANULADA = 1;
 
 const turma = ref(props.selecao.turma);
@@ -26,6 +27,15 @@ const aAnular = ref(null); // { nota_id, aluno, instrumento }
 const anulacao = reactive({ motivo: '', conta_como_zero: false });
 const novo = reactive({ nome: '', tipo: MAC, obrigatorio: true });
 
+// Só há uma prova trimestral por trimestre: depois de criada, deixa de se oferecer.
+const macsCriadas = computed(() => (props.pauta?.instrumentos ?? []).filter((i) => i.tipo === MAC).length);
+const maxAvaliacoes = computed(() => props.pauta?.regra?.max_avaliacoes ?? 10);
+const minAvaliacoes = computed(() => props.pauta?.regra?.min_avaliacoes ?? 5);
+const limiteAtingido = computed(() => macsCriadas.value >= maxAvaliacoes.value);
+const tiposPossiveis = computed(() => props.tipos.filter((t) => (t.valor !== PT || !(props.pauta?.instrumentos ?? []).some((i) => i.tipo === PT)) && (t.valor !== MAC || !limiteAtingido.value)));
+// Se o tipo escolhido deixou de se poder criar (limite atingido, prova já criada), passa ao primeiro possível.
+watchEffect(() => { if (tiposPossiveis.value.length && !tiposPossiveis.value.some((t) => t.valor === novo.tipo)) novo.tipo = tiposPossiveis.value[0].valor; });
+
 const aoFalhar = (e) => toast.error(Object.values(e)[0]);
 const tipoDoInstrumento = (i) => (i.tipo === MAC ? 'MAC' : 'PT');
 const encerrado = (i) => props.pauta?.prazos?.[tipoDoInstrumento(i)]?.encerrado ?? false;
@@ -33,6 +43,7 @@ const algumEncerrado = computed(() => (props.pauta?.instrumentos ?? []).some(enc
 
 function abrir(turmaId, disciplinaId, periodoId = null) {
     if (!turmaId || !disciplinaId) return;
+    if (alteracoes.value.total > 0 && !window.confirm('Tem notas por guardar. Sair sem guardar?')) return;
     router.get('/avaliacao/notas', { turma: turmaId, disciplina: disciplinaId, periodo: periodoId ?? undefined }, { preserveState: true });
 }
 
@@ -46,39 +57,47 @@ function textoDaCelula(aluno, instrumento) {
 const recursos = reactive({}); // inscricao -> texto da NER
 const textoRecurso = (a) => recursos[a.inscricao_id] ?? a.ner?.valor ?? '';
 
-function guardarRecurso(a) {
-    const texto = (recursos[a.inscricao_id] ?? '').trim().replace(',', '.');
-    if (!(a.inscricao_id in recursos) || texto === '' || texto === a.ner?.valor) return;
-    router.post('/avaliacao/notas/recurso', {
-        turma_id: turma.value, disciplina_id: disciplina.value, inscricao_disciplina_id: a.inscricao_id, valor: texto,
-        motivo: props.pauta.prazos.RECURSO.encerrado ? motivoForaDoPrazo.value : null,
-    }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { delete recursos[a.inscricao_id]; toast.success('Nota do recurso guardada.'); } });
-}
-
 const exames = reactive({}); // inscricao -> texto da NE
 const textoExame = (a) => exames[a.inscricao_id] ?? a.ne?.valor ?? '';
 
-function guardarExame(a) {
-    const texto = (exames[a.inscricao_id] ?? '').trim().replace(',', '.');
-    if (!(a.inscricao_id in exames) || texto === '' || texto === a.ne?.valor) return;
-    router.post('/avaliacao/notas/exame', {
-        turma_id: turma.value, disciplina_id: disciplina.value, inscricao_disciplina_id: a.inscricao_id, valor: texto,
-        motivo: props.pauta.prazos.EXAME.encerrado ? motivoForaDoPrazo.value : null,
-    }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { delete exames[a.inscricao_id]; toast.success('Nota do exame guardada.'); } });
-}
+const limpar = (texto) => (texto ?? '').trim().replace(',', '.');
 
-function guardar(aluno, instrumento) {
-    const chave = `${aluno.inscricao_id}-${instrumento.id}`;
-    const texto = (valores[chave] ?? '').trim().replace(',', '.');
-    const actual = aluno.notas[instrumento.id]?.valor;
-    if (!(chave in valores) || texto === '' || texto === actual) return;
+// O que o professor alterou e ainda não gravou: nada se grava até carregar em «Guardar notas» (ou Enter).
+const alteracoes = computed(() => {
+    const notas = []; const examesNovos = []; const recursosNovos = [];
+    for (const a of props.pauta?.alunos ?? []) {
+        for (const i of props.pauta.instrumentos) {
+            const chave = `${a.inscricao_id}-${i.id}`;
+            const texto = limpar(valores[chave]);
+            if (chave in valores && texto !== '' && texto !== a.notas[i.id]?.valor) {
+                notas.push({ instrumento_id: i.id, inscricao_disciplina_id: a.inscricao_id, valor: texto, motivo: encerrado(i) ? motivoForaDoPrazo.value : null });
+            }
+        }
+        const ne = limpar(exames[a.inscricao_id]);
+        if (a.inscricao_id in exames && ne !== '' && ne !== a.ne?.valor) {
+            examesNovos.push({ inscricao_disciplina_id: a.inscricao_id, valor: ne, motivo: props.pauta.prazos.EXAME?.encerrado ? motivoForaDoPrazo.value : null });
+        }
+        const ner = limpar(recursos[a.inscricao_id]);
+        if (a.inscricao_id in recursos && ner !== '' && ner !== a.ner?.valor) {
+            recursosNovos.push({ inscricao_disciplina_id: a.inscricao_id, valor: ner, motivo: props.pauta.prazos.RECURSO?.encerrado ? motivoForaDoPrazo.value : null });
+        }
+    }
+    return { notas, exames: examesNovos, recursos: recursosNovos, total: notas.length + examesNovos.length + recursosNovos.length };
+});
 
-    router.post('/avaliacao/notas', {
-        instrumento_id: instrumento.id,
-        inscricao_disciplina_id: aluno.inscricao_id,
-        valor: texto,
-        motivo: encerrado(instrumento) ? motivoForaDoPrazo.value : null,
-    }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { delete valores[chave]; toast.success('Nota guardada.'); } });
+const pendente = (chave, original, tabela) => chave in tabela && limpar(tabela[chave]) !== '' && limpar(tabela[chave]) !== (original ?? '');
+const aGuardar = ref(false);
+
+function guardarTudo() {
+    if (aGuardar.value || alteracoes.value.total === 0) return;
+    const { notas, exames: ex, recursos: rec } = alteracoes.value;
+    aGuardar.value = true;
+    router.post('/avaliacao/notas/lote', { turma_id: turma.value, disciplina_id: disciplina.value, notas, exames: ex, recursos: rec }, {
+        preserveScroll: true, preserveState: true,
+        onError: aoFalhar,
+        onSuccess: () => { for (const k of Object.keys(valores)) delete valores[k]; for (const k of Object.keys(exames)) delete exames[k]; for (const k of Object.keys(recursos)) delete recursos[k]; },
+        onFinish: () => { aGuardar.value = false; },
+    });
 }
 
 function confirmarAnulacao() {
@@ -93,7 +112,7 @@ function confirmarAnulacao() {
 function criarAvaliacao() {
     router.post('/avaliacao/notas/instrumentos', {
         turma_id: turma.value, disciplina_id: disciplina.value, periodo_id: props.pauta.periodo_id, ...novo,
-    }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { novo.nome = ''; toast.success('Avaliação criada.'); } });
+    }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { novo.nome = ''; novo.tipo = MAC; toast.success('Avaliação criada.'); } });
 }
 
 const qual = reactive({}); // inscricao -> { nivel, obs } editados e ainda não guardados
@@ -130,7 +149,7 @@ function eliminar(instrumento) {
 </script>
 
 <template>
-    <div class="app-container container-fluid">
+    <div class="app-container container-fluid py-6">
         <div class="mb-6">
             <h1 class="fs-2 fw-bold mb-1">Avaliações / Notas</h1>
             <div class="text-muted">Lançamento de notas e cálculo da média trimestral.</div>
@@ -158,7 +177,11 @@ function eliminar(instrumento) {
             </div>
         </div>
 
-        <div v-if="pauta && !pauta.regra" class="alert alert-warning">
+        <div v-if="pauta?.sem_periodos" class="alert alert-warning">
+            O ano lectivo desta turma ainda não tem trimestres definidos. Defina-os no ano lectivo para poder lançar notas.
+        </div>
+
+        <div v-else-if="pauta && !pauta.regra" class="alert alert-warning">
             A escola ainda não configurou a regra de avaliação desta classe. Peça a quem administra a avaliação para a definir em Configuração da avaliação.
         </div>
 
@@ -261,6 +284,15 @@ function eliminar(instrumento) {
 
                 <div v-if="!pauta.instrumentos.length" class="text-muted py-6">Ainda não há avaliações neste trimestre. Crie a primeira abaixo.</div>
 
+                <div v-if="pauta.instrumentos.length && pode.criar" class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                    <span class="fs-7" :class="alteracoes.total ? 'text-warning fw-bold' : 'text-muted'">
+                        {{ alteracoes.total ? `${alteracoes.total} nota(s) por guardar` : 'Escreva as notas e carregue em «Guardar notas» (ou Enter).' }}
+                    </span>
+                    <button type="button" class="btn btn-sm btn-primary" :disabled="!alteracoes.total || aGuardar" @click="guardarTudo">
+                        {{ aGuardar ? 'A guardar…' : 'Guardar notas' }}
+                    </button>
+                </div>
+
                 <div v-if="pauta.instrumentos.length" class="table-responsive">
                     <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
                         <thead>
@@ -288,8 +320,7 @@ function eliminar(instrumento) {
                                 <td v-for="i in pauta.instrumentos" :key="i.id" class="text-center" style="min-width: 7rem">
                                     <div class="d-flex align-items-center justify-content-center gap-1">
                                         <input :value="textoDaCelula(a, i)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px"
-                                            :class="a.notas[i.id]?.estado === ESTADO_ANULADA ? 'text-muted' : ''" @input="valores[`${a.inscricao_id}-${i.id}`] = $event.target.value"
-                                            @blur="guardar(a, i)" @keyup.enter="$event.target.blur()">
+                                            :class="[a.notas[i.id]?.estado === ESTADO_ANULADA ? 'text-muted' : '', pendente(`${a.inscricao_id}-${i.id}`, a.notas[i.id]?.valor, valores) ? 'border-warning bg-light-warning' : '']" @input="valores[`${a.inscricao_id}-${i.id}`] = $event.target.value" @keyup.enter="guardarTudo">
                                         <a v-if="pode.anular && a.notas[i.id] && a.notas[i.id].estado !== 1 && a.notas[i.id].estado !== 2" href="#" class="text-muted" title="Anular"
                                             @click.prevent="aAnular = { nota_id: a.notas[i.id].id, aluno: a.nome, instrumento: i.nome }">⊘</a>
                                     </div>
@@ -303,7 +334,7 @@ function eliminar(instrumento) {
                                     <td class="text-center" style="min-width: 7rem">
                                         <div class="d-flex align-items-center justify-content-center gap-1">
                                             <input :value="textoExame(a)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px"
-                                                @input="exames[a.inscricao_id] = $event.target.value" @blur="guardarExame(a)" @keyup.enter="$event.target.blur()">
+                                                :class="pendente(a.inscricao_id, a.ne?.valor, exames) ? 'border-warning bg-light-warning' : ''" @input="exames[a.inscricao_id] = $event.target.value" @keyup.enter="guardarTudo">
                                             <a v-if="pode.anular && a.ne && a.ne.estado === 0" href="#" class="text-muted" title="Anular"
                                                 @click.prevent="aAnular = { nota_id: a.ne.id, aluno: a.nome, instrumento: 'Exame' }">⊘</a>
                                         </div>
@@ -315,7 +346,7 @@ function eliminar(instrumento) {
                                     <td class="text-center" style="min-width: 7rem">
                                         <div v-if="a.recurso_necessario" class="d-flex align-items-center justify-content-center gap-1">
                                             <input :value="textoRecurso(a)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px"
-                                                @input="recursos[a.inscricao_id] = $event.target.value" @blur="guardarRecurso(a)" @keyup.enter="$event.target.blur()">
+                                                :class="pendente(a.inscricao_id, a.ner?.valor, recursos) ? 'border-warning bg-light-warning' : ''" @input="recursos[a.inscricao_id] = $event.target.value" @keyup.enter="guardarTudo">
                                             <a v-if="pode.anular && a.ner && a.ner.estado === 0" href="#" class="text-muted" title="Anular"
                                                 @click.prevent="aAnular = { nota_id: a.ner.id, aluno: a.nome, instrumento: 'Exame de recurso' }">⊘</a>
                                         </div>
@@ -345,17 +376,19 @@ function eliminar(instrumento) {
                 </div>
 
                 <div v-if="pode.criar" class="border-top mt-6 pt-5">
-                    <div class="fw-bold mb-3">Nova avaliação neste trimestre</div>
-                    <div class="d-flex flex-wrap align-items-center gap-3">
-                        <input v-model="novo.nome" type="text" class="form-control form-control-sm w-250px" placeholder="Nome (ex.: Avaliação 1)">
+                    <div class="fw-bold mb-1">Nova avaliação neste trimestre</div>
+                    <div class="fs-7 text-muted mb-3">
+                        Avaliações contínuas: <strong>{{ macsCriadas }}</strong> de {{ maxAvaliacoes }} · a escola pede pelo menos {{ minAvaliacoes }} por trimestre
+                        <span v-if="limiteAtingido" class="ms-2 text-warning">Limite da escola atingido.</span>
+                        <span v-else-if="macsCriadas < minAvaliacoes" class="ms-2 text-warning">Falta(m) {{ minAvaliacoes - macsCriadas }} para o mínimo da escola.</span>
+                    </div>
+                    <div v-if="!tiposPossiveis.length" class="text-muted fs-7">Não há mais avaliações a criar neste trimestre.</div>
+                    <div v-else class="d-flex flex-wrap align-items-center gap-3">
                         <select v-model="novo.tipo" class="form-select form-select-sm w-200px">
-                            <option v-for="t in tipos" :key="t.valor" :value="t.valor">{{ t.nome }}</option>
+                            <option v-for="t in tiposPossiveis" :key="t.valor" :value="t.valor">{{ t.nome }}</option>
                         </select>
-                        <label class="form-check form-check-sm form-check-custom form-check-solid">
-                            <input v-model="novo.obrigatorio" type="checkbox" class="form-check-input">
-                            <span class="form-check-label">Obrigatória</span>
-                        </label>
-                        <button type="button" class="btn btn-sm btn-primary" :disabled="!novo.nome.trim()" @click="criarAvaliacao">Adicionar</button>
+                        <input v-model="novo.nome" type="text" class="form-control form-control-sm w-250px" placeholder="Nome (opcional — senão, automático)">
+                        <button type="button" class="btn btn-sm btn-primary" @click="criarAvaliacao">Adicionar</button>
                     </div>
                 </div>
             </div>

@@ -17,8 +17,12 @@ class GuardarRegraQualitativaRequest extends BaseRequest
     {
         return [
             'ano_lectivo_id' => ['required', 'integer'],
-            'nivel_academico_id' => ['required', 'integer'],
-            'escala_id' => ['required', 'integer'],
+            'regra_id' => ['nullable', 'integer'],
+            'nova' => ['nullable', 'boolean'],
+            'nome' => ['required', 'string', 'max:120'],
+            'nivel_ids' => ['present', 'array', 'max:60'],
+            'nivel_ids.*' => ['integer'],
+            'escala_id' => ['nullable', 'integer'],
             'progressao' => ['nullable', Rule::in(array_column(Progressao::cases(), 'value'))],
         ];
     }

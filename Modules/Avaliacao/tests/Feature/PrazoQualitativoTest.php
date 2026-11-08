@@ -45,7 +45,7 @@ class PrazoQualitativoTest extends TestCase
 
     private function prazo(string $data): AvaliacaoPrazo
     {
-        return $this->definirPrazo($this->regra->id, $this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, $data);
+        return $this->definirPrazo($this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, $data);
     }
 
     private function lancar(string $codigo = 'B', ?string $motivo = null): AvaliacaoQualitativa
@@ -55,17 +55,16 @@ class PrazoQualitativoTest extends TestCase
 
     private function limite(?int $docenteId = null): string
     {
-        return app(PrazoService::class)->dataLimite($this->regra, $this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, $this->c['turma']->id, $this->c['disciplina']->id, $docenteId)->toDateString();
+        return app(PrazoService::class)->dataLimite($this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, $this->c['turma']->id, $this->c['disciplina']->id, $docenteId)->toDateString();
     }
 
-    public function test_o_prazo_fica_na_regra_qualitativa_e_vence_o_fim_do_trimestre(): void
+    public function test_o_prazo_qualitativo_e_da_escola_e_vence_o_fim_do_trimestre(): void
     {
         $this->assertSame('2026-04-30', $this->limite());
 
         $p = $this->prazo('2026-04-10');
 
-        $this->assertSame($this->regra->id, $p->regra_qualitativa_id);
-        $this->assertNull($p->regra_id);
+        $this->assertSame(TipoInstrumento::QUALITATIVA, $p->tipo);
         $this->assertSame('2026-04-10', $this->limite());
 
         $this->prazo('2026-04-12');
@@ -107,14 +106,6 @@ class PrazoQualitativoTest extends TestCase
         $this->assertSame('Bom', $this->lancar('B')->nivel->designacao);
     }
 
-    public function test_prazo_so_aceita_trimestres_do_ano_da_regra(): void
-    {
-        $outro = $this->cenarioDeAvaliacao('PRI_3', 'Z');
-
-        $this->expectException(ValidationException::class);
-        $this->definirPrazo($this->regra->id, $outro['periodos'][1]->id, TipoInstrumento::QUALITATIVA, '2026-04-10');
-    }
-
     public function test_a_avaliacao_qualitativa_nao_se_cria_como_avaliacao_manual(): void
     {
         $this->expectException(ValidationException::class);
@@ -126,13 +117,14 @@ class PrazoQualitativoTest extends TestCase
         $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
 
         $this->actingAs($admin)->post('/avaliacao/configuracao/prazos', [
-            'regra_id' => $this->regra->id, 'periodo_id' => $this->c['periodos'][1]->id, 'tipo' => TipoInstrumento::QUALITATIVA->value, 'data_limite' => '2026-04-10',
+            'periodo_id' => $this->c['periodos'][1]->id, 'tipo' => TipoInstrumento::QUALITATIVA->value, 'data_limite' => '2026-04-10',
         ])->assertRedirect();
 
         $this->actingAs($admin)->get('/avaliacao/configuracao')->assertInertia(fn (Assert $p) => $p
-            ->where('classes.0.regra_qualitativa.id', $this->regra->id)
-            ->where('classes.0.prazos.0.tipo', TipoInstrumento::QUALITATIVA->value)
-            ->where('classes.0.prazos.0.data_limite', '2026-04-10'));
+            ->where('regras.0.qualitativa', true)
+            ->where('prazos.0.tipo', TipoInstrumento::QUALITATIVA->value)
+            ->where('prazos.0.data_limite', '2026-04-10')
+            ->where('tipos_de_prazo', [TipoInstrumento::MAC->value, TipoInstrumento::PT->value, TipoInstrumento::QUALITATIVA->value]));
 
         $prazoId = AvaliacaoPrazo::firstOrFail()->id;
         $this->actingAs($admin)->post("/avaliacao/configuracao/prazos/{$prazoId}/excepcoes", ['data_limite' => '2026-04-20', 'motivo' => 'Greve', 'turma_id' => $this->c['turma']->id])->assertRedirect();

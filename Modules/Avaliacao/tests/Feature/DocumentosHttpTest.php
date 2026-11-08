@@ -24,7 +24,7 @@ class DocumentosHttpTest extends TestCase
         parent::setUp();
         Estabelecimento::current()->update(['provincia' => 'Luanda', 'municipio' => 'Camama']);
         $this->c = $this->cenarioDeAvaliacao();
-        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($this->c['ano']->id, $this->c['nivel']->id, 10, '5'));
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($this->c['ano']->id, [$this->c['nivel']->id], 10, '5'));
         $this->notasCompletas($this->c, $this->inscreverAluno($this->c, 'Ana'), [1 => ['8', '8'], 2 => ['8', '8'], 3 => ['8', '8']]);
     }
 
@@ -113,7 +113,7 @@ class DocumentosHttpTest extends TestCase
     public function test_a_mini_pauta_mostra_npt_so_na_7_a_9_classe(): void
     {
         $c7 = $this->cenarioDeAvaliacao('SEC_7', 'S');
-        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c7['ano']->id, $c7['nivel']->id, 20, '10'));
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c7['ano']->id, [$c7['nivel']->id], 20, '10'));
         $admin = $this->admin();
         $url = fn (array $c) => '/avaliacao/notas?'.http_build_query(['turma' => $c['turma']->id, 'disciplina' => $c['disciplina']->id]);
 
@@ -126,7 +126,7 @@ class DocumentosHttpTest extends TestCase
         $outro = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
         $b = $this->noTenant($outro, function () {
             $c = $this->cenarioDeAvaliacao('PRI_3', 'B');
-            app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, '5'));
+            app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5'));
             $this->guardarConfigDocumentos('Linha só da escola B', 'Lema B', null, null);
 
             return $c;

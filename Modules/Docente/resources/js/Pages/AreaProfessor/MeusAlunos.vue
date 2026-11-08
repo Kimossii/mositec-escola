@@ -21,7 +21,7 @@ function filtrar() {
 </script>
 
 <template>
-    <div class="app-container container-fluid">
+    <div class="app-container container-fluid py-6">
         <div class="mb-6">
             <h1 class="fs-2 fw-bold mb-1">Os meus alunos</h1>
             <div class="text-muted">Os alunos das turmas e disciplinas que lecciona hoje · {{ alunos.length }} {{ alunos.length === 1 ? 'aluno' : 'alunos' }}</div>

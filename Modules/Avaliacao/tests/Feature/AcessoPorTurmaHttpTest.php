@@ -37,7 +37,7 @@ class AcessoPorTurmaHttpTest extends TestCase
         $this->minha = $this->cenarioDeAvaliacao('PRI_5', 'M');
         $this->alheia = $this->cenarioDeAvaliacao('PRI_6', 'X');
         foreach ([$this->minha, $this->alheia] as $c) {
-            app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, '5'));
+            app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5'));
         }
     }
 

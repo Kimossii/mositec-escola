@@ -31,9 +31,9 @@ class MiniPautaHttpTest extends TestCase
         parent::setUp();
         $this->c = $this->cenarioDeAvaliacao();
         $this->regra = app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO(
-            ano_lectivo_id: $this->c['ano']->id, nivel_academico_id: $this->c['nivel']->id, escala_maxima: 10, nota_minima: '5',
+            ano_lectivo_id: $this->c['ano']->id, nivel_ids: [$this->c['nivel']->id], escala_maxima: 10, nota_minima: '5',
         ));
-        $this->definirPrazo($this->regra->id, $this->c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
+        $this->definirPrazo($this->c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-10');
         $this->travelTo('2026-03-15 10:00:00');
     }
 
@@ -61,6 +61,7 @@ class MiniPautaHttpTest extends TestCase
 
         $this->actingAs($professor)->get($this->url())->assertOk()->assertInertia(fn (Assert $p) => $p
             ->component('Avaliacao/Notas/MiniPauta')
+            ->where('pauta.regra.escala_maxima', 10)
             ->has('pauta.alunos', 1)
             ->where('pauta.alunos.0.nome', fn ($nome) => str_starts_with($nome, 'Ana'))
             ->where('pauta.periodo_id', $this->c['periodos'][1]->id)
@@ -85,9 +86,20 @@ class MiniPautaHttpTest extends TestCase
             ->has('opcoes.0.disciplinas', 1));
     }
 
-    public function test_sem_regra_a_pagina_abre_com_aviso(): void
+    public function test_sem_regra_guardada_a_pagina_abre_com_a_regra_por_defeito(): void
     {
         AvaliacaoRegra::query()->delete();
+        $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
+
+        $this->actingAs($admin)->get($this->url())->assertOk()->assertInertia(fn (Assert $p) => $p
+            ->where('pauta.regra.escala_maxima', 10)
+            ->where('pauta.regra.nota_minima', '5.00'));
+    }
+
+    public function test_classe_sem_valores_por_defeito_e_sem_regra_abre_com_aviso(): void
+    {
+        AvaliacaoRegra::query()->delete();
+        $this->c['nivel']->update(['codigo' => 'OUTRO']);
         $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
 
         $this->actingAs($admin)->get($this->url())->assertOk()->assertInertia(fn (Assert $p) => $p->where('pauta.regra', null)->has('pauta.alunos', 0));

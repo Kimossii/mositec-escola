@@ -57,7 +57,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
 </script>
 
 <template>
-    <div class="app-container container-fluid">
+    <div class="app-container container-fluid py-6">
         <div class="mb-6 d-print-none">
             <h1 class="fs-2 fw-bold mb-1">Pautas finais</h1>
             <div class="text-muted">Resultado final de cada turma. A pauta só é formal depois de aprovada.</div>
@@ -167,8 +167,8 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                                             <option :value="0">Transita</option>
                                             <option :value="1">Não transita</option>
                                         </select>
-                                        <input v-if="(escolhas[a.matricula_id] ?? a.decisao?.valor) === 1" v-model="motivos[a.matricula_id]" type="text" class="form-control form-control-sm mt-1 d-print-none"
-                                            placeholder="Motivo" :value="a.motivo_progressao" @blur="decidir(a, 1)">
+                                        <input v-if="(escolhas[a.matricula_id] ?? a.decisao?.valor) === 1" type="text" class="form-control form-control-sm mt-1 d-print-none"
+                                            placeholder="Motivo" :value="motivos[a.matricula_id] ?? a.motivo_progressao" @input="motivos[a.matricula_id] = $event.target.value" @blur="decidir(a, 1)">
                                     </template>
                                     <template v-else>{{ textoDecisao(a) }}</template>
                                 </td>

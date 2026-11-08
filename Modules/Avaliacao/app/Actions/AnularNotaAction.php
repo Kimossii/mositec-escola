@@ -47,7 +47,7 @@ class AnularNotaAction
             $instrumento = $nota->instrumento;
             $this->pautas->exigirAberta($instrumento->turma_id);
             $regra = $this->regras->paraTurma(Turma::query()->findOrFail($instrumento->turma_id));
-            $foraDoPrazo = $regra !== null && $this->prazos->instrumentoEncerrado($instrumento, $regra, $this->docentes->idDe(auth()->user()));
+            $foraDoPrazo = $regra !== null && $this->prazos->instrumentoEncerrado($instrumento, $this->docentes->idDe(auth()->user()));
 
             $anterior = ['valor' => $nota->valor, 'estado' => $nota->estado];
             $estado = $dto->conta_como_zero ? EstadoNota::ANULADA_CONTA_ZERO : EstadoNota::ANULADA;

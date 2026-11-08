@@ -173,11 +173,11 @@ class ProgressaoEHistoricoTest extends TestCase
     public function test_a_configuracao_guarda_a_progressao_da_classe(): void
     {
         $this->post('/avaliacao/configuracao/regras-qualitativas', [
-            'ano_lectivo_id' => $this->c['ano']->id, 'nivel_academico_id' => $this->c['nivel']->id, 'escala_id' => $this->escala->id, 'progressao' => Progressao::MANUAL->value,
+            'ano_lectivo_id' => $this->c['ano']->id, 'nome' => 'Pré-Escolar', 'nivel_ids' => [$this->c['nivel']->id], 'escala_id' => $this->escala->id, 'progressao' => Progressao::MANUAL->value,
         ])->assertRedirect();
 
         $this->get('/avaliacao/configuracao')->assertInertia(fn (Assert $p) => $p
-            ->where('classes.0.regra_qualitativa.progressao', 1)->has('progressoes', 2));
+            ->where('regras.0.progressao', 1)->has('progressoes', 2));
     }
 
     public function test_a_progressao_do_tenant_b_e_inalcancavel(): void
@@ -219,7 +219,7 @@ class ProgressaoEHistoricoTest extends TestCase
     public function test_o_historico_marca_o_que_foi_feito_fora_do_prazo(): void
     {
         $this->guardarCompetencias($this->c['disciplina']->id, null, [['descricao' => 'Conta até 5']]);
-        $this->definirPrazo(AvaliacaoRegraQualitativa::firstOrFail()->id, $this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, '2026-03-01');
+        $this->definirPrazo($this->c['periodos'][1]->id, TipoInstrumento::QUALITATIVA, '2026-03-01');
 
         $registo = app(LancarCompetenciaAction::class)->executar(new LancarCompetenciaDTO(
             $this->inscricao->id, AvaliacaoCompetencia::firstOrFail()->id, $this->c['periodos'][1]->id, $this->escala->niveis[0]->id, 'Entregue em atraso',

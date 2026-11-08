@@ -4,7 +4,7 @@ namespace Modules\Avaliacao\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
 
-class CopiarRegrasRequest extends BaseRequest
+class CriarRegrasPorDefeitoRequest extends BaseRequest
 {
     public function authorize(): bool
     {

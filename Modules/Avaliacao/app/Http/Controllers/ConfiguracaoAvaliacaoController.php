@@ -5,10 +5,11 @@ namespace Modules\Avaliacao\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
-use Modules\Avaliacao\Http\Requests\CopiarRegrasRequest;
+use Modules\Avaliacao\Http\Requests\CriarRegrasPorDefeitoRequest;
 use Modules\Avaliacao\Http\Requests\DefinirPrazoRequest;
 use Modules\Avaliacao\Http\Requests\GuardarCompetenciasRequest;
 use Modules\Avaliacao\Http\Requests\GuardarConfigDocumentosRequest;
+use Modules\Avaliacao\Http\Requests\GuardarDefinicoesDeAvaliacaoRequest;
 use Modules\Avaliacao\Http\Requests\GuardarEscalaRequest;
 use Modules\Avaliacao\Http\Requests\GuardarRegraQualitativaRequest;
 use Modules\Avaliacao\Http\Requests\GuardarRegraRequest;
@@ -27,9 +28,11 @@ class ConfiguracaoAvaliacaoController extends Controller
 
     public function index(VerConfiguracaoRequest $request)
     {
-        $ano = $request->validated()['ano'] ?? null;
+        $ano = isset($request->validated()['ano']) ? (int) $request->validated()['ano'] : null;
 
-        return Inertia::render('Avaliacao/Configuracao/Index', $this->configuracao->pagina($ano === null ? null : (int) $ano));
+        $this->gestao->garantirRegrasDoAno($ano);
+
+        return Inertia::render('Avaliacao/Configuracao/Index', $this->configuracao->pagina($ano));
     }
 
     public function guardarRegra(GuardarRegraRequest $request): RedirectResponse
@@ -39,11 +42,25 @@ class ConfiguracaoAvaliacaoController extends Controller
         return back();
     }
 
-    public function copiar(CopiarRegrasRequest $request): RedirectResponse
+    public function criarRegrasPorDefeito(CriarRegrasPorDefeitoRequest $request): RedirectResponse
     {
-        $copiadas = $this->gestao->copiarRegras($request);
+        $ligadas = $this->gestao->criarRegrasPorDefeito($request);
 
-        return back()->with('success', $copiadas === 0 ? 'Não havia regras para copiar.' : "{$copiadas} regra(s) copiada(s) do ano anterior.");
+        return back()->with('success', $ligadas === 0 ? 'Não havia classes sem regra por defeito.' : "{$ligadas} classe(s) ligada(s) a uma regra.");
+    }
+
+    public function eliminarRegra(int $regra): RedirectResponse
+    {
+        $this->gestao->eliminarRegra($regra, false);
+
+        return back();
+    }
+
+    public function eliminarRegraQualitativa(int $regra): RedirectResponse
+    {
+        $this->gestao->eliminarRegra($regra, true);
+
+        return back();
     }
 
     public function definirPrazo(DefinirPrazoRequest $request): RedirectResponse
@@ -84,6 +101,13 @@ class ConfiguracaoAvaliacaoController extends Controller
     public function guardarDocumentos(GuardarConfigDocumentosRequest $request): RedirectResponse
     {
         $this->gestao->guardarDocumentos($request);
+
+        return back();
+    }
+
+    public function guardarDefinicoes(GuardarDefinicoesDeAvaliacaoRequest $request): RedirectResponse
+    {
+        $this->gestao->guardarDefinicoes($request);
 
         return back();
     }

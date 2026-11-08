@@ -16,7 +16,7 @@ class PautaFinalServiceTest extends TestCase
 
     private function regra(array $c, string $minima = '5'): void
     {
-        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, $minima));
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, $minima));
     }
 
     private function pauta(array $c): array
@@ -83,12 +83,9 @@ class PautaFinalServiceTest extends TestCase
         $this->assertNull($p['alunos'][0]['celulas'][$c['disciplina']->id]['mfd']);
     }
 
-    public function test_sem_regra_ou_sem_alunos_nao_se_aprova(): void
+    public function test_sem_alunos_nao_se_aprova(): void
     {
         $c = $this->cenarioDeAvaliacao();
-
-        $this->assertNull($this->pauta($c)['regra']);
-        $this->assertFalse($this->pauta($c)['pode_aprovar']);
 
         $this->regra($c);
         $p = $this->pauta($c);
@@ -99,7 +96,7 @@ class PautaFinalServiceTest extends TestCase
     public function test_1_e_2_classes_transitam_mesmo_com_notas_baixas(): void
     {
         $c = $this->cenarioDeAvaliacao('PRI_1');
-        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, $c['nivel']->id, 10, '5', reprova_por_aproveitamento: false));
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5', reprova_por_aproveitamento: false));
         $this->notasCompletas($c, $this->inscreverAluno($c), [1 => ['1', '1'], 2 => ['1', '1'], 3 => ['1', '1']]);
 
         $this->assertSame('Transita', $this->pauta($c)['alunos'][0]['decisao']['rotulo']);

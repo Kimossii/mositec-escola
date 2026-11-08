@@ -43,7 +43,7 @@ class RecursoTest extends TestCase
     private function preparar(string $classe, string $minima, string $marca = 'R'): void
     {
         $this->c = $this->cenarioDeAvaliacao($classe, $marca);
-        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($this->c['ano']->id, $this->c['nivel']->id, 10, $minima));
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($this->c['ano']->id, [$this->c['nivel']->id], 10, $minima));
         $this->inscricao = $this->inscreverAluno($this->c, 'Ana');
     }
 
@@ -64,7 +64,7 @@ class RecursoTest extends TestCase
 
     private function fecharORecurso(): void
     {
-        $this->definirPrazo(AvaliacaoRegra::firstOrFail()->id, $this->c['periodos'][3]->id, TipoInstrumento::RECURSO, '2026-03-01');
+        $this->definirPrazo($this->c['periodos'][3]->id, TipoInstrumento::RECURSO, '2026-03-01');
     }
 
     private function pauta(): array
@@ -251,8 +251,9 @@ class RecursoTest extends TestCase
     public function test_configuracao_so_oferece_prazo_de_recurso_nas_classes_que_o_tem(): void
     {
         $this->preparar('PRI_5', '5', 'T');
-        $this->get('/avaliacao/configuracao')->assertInertia(fn (Assert $p) => $p
-            ->where('classes', fn ($cl) => collect($cl)->firstWhere('codigo', 'PRI_6')['tem_recurso'] === true && collect($cl)->firstWhere('codigo', 'PRI_5')['tem_recurso'] === false));
+        // A regra da 5.ª não tem recurso (e por isso o ecrã não lhe oferece prazo de recurso); a da 6.ª, do ano do cenário, tem-no.
+        $this->get('/avaliacao/configuracao?ano='.$this->c['ano']->id)->assertInertia(fn (Assert $p) => $p->where('regras.0.com_recurso', false));
+        $this->get('/avaliacao/configuracao')->assertInertia(fn (Assert $p) => $p->where('regras.0.com_recurso', true));
     }
 
     // ---- regras da escola: máximo de negativas e disciplinas-chave
@@ -268,7 +269,7 @@ class RecursoTest extends TestCase
         $this->lancarExame($c2['turma']->id, $c2['disciplina']->id, $inscricao2->id, '2');
         $ids = [$this->c['disciplina']->id, $c2['disciplina']->id];
         app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO(
-            $this->c['ano']->id, $this->c['nivel']->id, 10, '5', recurso_max_disciplinas: $maximo, disciplinas_chave: array_map(fn (int $i) => $ids[$i], $chaveIndices),
+            $this->c['ano']->id, [$this->c['nivel']->id], 10, '5', recurso_max_disciplinas: $maximo, disciplinas_chave: array_map(fn (int $i) => $ids[$i], $chaveIndices),
         ));
 
         return [$c2, $inscricao2];
@@ -329,14 +330,14 @@ class RecursoTest extends TestCase
     public function test_a_configuracao_guarda_o_maximo_e_as_disciplinas_chave(): void
     {
         $outra = $this->outraDisciplina($this->c, 'POR')['disciplina'];
-        $base = ['ano_lectivo_id' => $this->c['ano']->id, 'nivel_academico_id' => $this->c['nivel']->id, 'escala_maxima' => 10, 'nota_minima' => '5', 'peso_mac' => '50', 'peso_pt' => '50',
+        $base = ['ano_lectivo_id' => $this->c['ano']->id, 'nome' => 'Regra', 'nivel_ids' => [$this->c['nivel']->id], 'com_exame' => true, 'com_recurso' => true, 'escala_maxima' => 10, 'nota_minima' => '5', 'peso_mac' => '50', 'peso_pt' => '50',
             'casas_decimais' => 2, 'modo_arredondamento' => 0, 'reprova_por_aproveitamento' => true];
 
         $this->post('/avaliacao/configuracao/regras', [...$base, 'recurso_max_disciplinas' => 2, 'disciplinas_chave' => [$outra->id]])->assertRedirect();
 
         $this->get('/avaliacao/configuracao')->assertInertia(fn (Assert $p) => $p
-            ->where('classes', fn ($cl) => collect($cl)->firstWhere('codigo', 'PRI_6')['regra']['recurso_max_disciplinas'] === 2
-                && collect($cl)->firstWhere('codigo', 'PRI_6')['regra']['disciplinas_chave'] === [$outra->id]));
+            ->where('regras', fn ($rs) => collect($rs)->firstWhere('nome', 'Regra')['recurso_max_disciplinas'] === 2
+                && collect($rs)->firstWhere('nome', 'Regra')['disciplinas_chave'] === [$outra->id]));
 
         $this->post('/avaliacao/configuracao/regras', [...$base, 'disciplinas_chave' => [999999]])->assertNotFound();
     }

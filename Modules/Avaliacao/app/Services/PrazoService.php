@@ -9,12 +9,10 @@ use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoPrazo;
 use Modules\Avaliacao\Models\AvaliacaoPrazoExcepcao;
-use Modules\Avaliacao\Models\AvaliacaoRegra;
-use Modules\Avaliacao\Models\AvaliacaoRegraQualitativa;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 
 /**
- * Resolve o prazo de lançamento. Ordem: excepção mais específica > prazo da regra por (trimestre, tipo) >
+ * Resolve o prazo de lançamento. Ordem: excepção mais específica > prazo da escola por (trimestre, tipo) >
  * `periodos.data_fim`. Numa excepção, o docente pesa mais que a disciplina, e esta mais que a turma; o dia do
  * prazo ainda é válido (extremo inclusivo).
  */
@@ -24,10 +22,9 @@ class PrazoService
     {
     }
 
-    public function dataLimite(AvaliacaoRegra|AvaliacaoRegraQualitativa $regra, int $periodoId, TipoInstrumento $tipo, int $turmaId, int $disciplinaId, ?int $docenteId = null): CarbonImmutable
+    public function dataLimite(int $periodoId, TipoInstrumento $tipo, int $turmaId, int $disciplinaId, ?int $docenteId = null): CarbonImmutable
     {
         $prazo = AvaliacaoPrazo::query()
-            ->where($regra instanceof AvaliacaoRegraQualitativa ? 'regra_qualitativa_id' : 'regra_id', $regra->id)
             ->where('periodo_id', $periodoId)
             ->where('tipo', $tipo->value)
             ->first();
@@ -47,17 +44,17 @@ class PrazoService
         return CarbonImmutable::parse($excepcao?->data_limite ?? $prazo->data_limite);
     }
 
-    public function prazoEncerrado(AvaliacaoRegra|AvaliacaoRegraQualitativa $regra, int $periodoId, TipoInstrumento $tipo, int $turmaId, int $disciplinaId, ?int $docenteId = null, ?CarbonInterface $hoje = null): bool
+    public function prazoEncerrado(int $periodoId, TipoInstrumento $tipo, int $turmaId, int $disciplinaId, ?int $docenteId = null, ?CarbonInterface $hoje = null): bool
     {
         $hoje = CarbonImmutable::parse(($hoje ?? $this->relogio->hoje())->toDateString());
 
-        return $hoje->greaterThan($this->dataLimite($regra, $periodoId, $tipo, $turmaId, $disciplinaId, $docenteId)->startOfDay());
+        return $hoje->greaterThan($this->dataLimite($periodoId, $tipo, $turmaId, $disciplinaId, $docenteId)->startOfDay());
     }
 
     /** O prazo do instrumento (para a sua turma, disciplina e trimestre) já passou? */
-    public function instrumentoEncerrado(AvaliacaoInstrumento $instrumento, AvaliacaoRegra $regra, ?int $docenteId = null, ?CarbonInterface $hoje = null): bool
+    public function instrumentoEncerrado(AvaliacaoInstrumento $instrumento, ?int $docenteId = null, ?CarbonInterface $hoje = null): bool
     {
-        return $this->prazoEncerrado($regra, $instrumento->periodo_id, $instrumento->tipo, $instrumento->turma_id, $instrumento->disciplina_id, $docenteId, $hoje);
+        return $this->prazoEncerrado($instrumento->periodo_id, $instrumento->tipo, $instrumento->turma_id, $instrumento->disciplina_id, $docenteId, $hoje);
     }
 
     private function especificidade(AvaliacaoPrazoExcepcao $e): int

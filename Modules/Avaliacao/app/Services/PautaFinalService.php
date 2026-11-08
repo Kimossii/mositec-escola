@@ -32,7 +32,6 @@ class PautaFinalService
     public function __construct(
         private ResultadoDisciplinaService $resultados,
         private RegraAvaliacaoService $regras,
-        private RegraPadraoService $padrao,
         private DecisaoFinal $decisao,
         private CalculadoraQuantitativa $calculadora,
         private PautaQualitativaService $qualitativa,
@@ -128,8 +127,8 @@ class PautaFinalService
         }
 
         $base['regra'] = $this->regraParaTela($regra);
-        $comExame = $this->padrao->temExameProprio((string) $turma->nivelAcademico?->codigo);
-        $comRecurso = $this->padrao->temRecurso((string) $turma->nivelAcademico?->codigo);
+        $comExame = $regra->com_exame;
+        $comRecurso = $regra->com_recurso;
 
         $matriculas = Matricula::query()->where('turma_id', $turmaId)->where('estado', EstadoMatriculaEnum::ACTIVA)
             ->with('aluno.dadosPessoa:id,nome_completo,sexo')->get();
@@ -278,7 +277,7 @@ class PautaFinalService
         return [
             'tipo' => 'quantitativa',
             'com_exame' => $linhas->contains(fn (AvaliacaoPautaLinha $l) => $l->mf !== null),
-            'com_recurso' => $this->padrao->temRecurso((string) $turma->nivelAcademico?->codigo),
+            'com_recurso' => (bool) $regra?->com_recurso,
             'turma_id' => $turma->id,
             'turma_rotulo' => $turma->rotulo(completo: true),
             'regra' => $regra === null ? null : $this->regraParaTela($regra),
