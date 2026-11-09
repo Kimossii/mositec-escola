@@ -27,7 +27,7 @@ final class MensagensDeAvaliacao
         'competencias.*.id' => ['A competência', 'a'], 'competencias.*.descricao' => ['A descrição da competência', 'a'], 'competencias.*.ativa' => ['A opção «activa»', 'a'],
         'id' => ['A escala', 'a'], 'niveis' => ['Os níveis da escala', 'o'], 'niveis.*.id' => ['O nível', 'o'], 'niveis.*.codigo' => ['O código do nível', 'o'],
         'niveis.*.designacao' => ['A designação do nível', 'a'],
-        'nova' => ['A opção «regra nova»', 'a'], 'nivel_ids' => ['As classes da regra', 'a'], 'nivel_ids.*' => ['A classe', 'a'], 'com_exame' => ['A opção «exame próprio»', 'a'], 'com_recurso' => ['A opção «recurso»', 'a'],
+        'nova' => ['A opção «regra nova»', 'a'], 'sigla_prova' => ['A sigla da prova', 'a'], 'nivel_ids' => ['As classes da regra', 'a'], 'nivel_ids.*' => ['A classe', 'a'], 'com_exame' => ['A opção «exame próprio»', 'a'], 'com_recurso' => ['A opção «recurso»', 'a'],
     ];
 
     /** @return array<string, string> */

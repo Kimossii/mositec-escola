@@ -74,6 +74,7 @@ class ConfiguracaoAvaliacaoService
             'nota_minima' => (string) $r->nota_minima,
             'peso_mac' => (string) $r->peso_mac,
             'peso_pt' => (string) $r->peso_pt,
+            'sigla_prova' => $r->sigla_prova,
             'peso_mt1' => $r->peso_mt1 === null ? null : (string) $r->peso_mt1,
             'peso_mt2' => $r->peso_mt2 === null ? null : (string) $r->peso_mt2,
             'peso_mt3' => $r->peso_mt3 === null ? null : (string) $r->peso_mt3,

@@ -110,10 +110,10 @@ class DocumentosHttpTest extends TestCase
         $this->assertSame(0, AvaliacaoDocumentoConfig::count());
     }
 
-    public function test_a_mini_pauta_mostra_npt_so_na_7_a_9_classe(): void
+    public function test_a_sigla_da_prova_e_a_que_a_regra_diz_e_nao_a_que_o_codigo_da_classe_sugere(): void
     {
         $c7 = $this->cenarioDeAvaliacao('SEC_7', 'S');
-        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c7['ano']->id, [$c7['nivel']->id], 20, '10'));
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c7['ano']->id, [$c7['nivel']->id], 20, '10', sigla_prova: 'NPT'));
         $admin = $this->admin();
         $url = fn (array $c) => '/avaliacao/notas?'.http_build_query(['turma' => $c['turma']->id, 'disciplina' => $c['disciplina']->id]);
 

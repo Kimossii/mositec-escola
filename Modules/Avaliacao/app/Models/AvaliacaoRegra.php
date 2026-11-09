@@ -26,6 +26,7 @@ class AvaliacaoRegra extends Model
         'nota_minima',
         'peso_mac',
         'peso_pt',
+        'sigla_prova',
         'peso_mt1',
         'peso_mt2',
         'peso_mt3',

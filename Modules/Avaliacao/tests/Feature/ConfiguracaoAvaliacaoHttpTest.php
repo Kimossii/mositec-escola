@@ -30,7 +30,7 @@ class ConfiguracaoAvaliacaoHttpTest extends TestCase
     private function regraPayload(array $o = []): array
     {
         return [
-            'ano_lectivo_id' => $this->c['ano']->id, 'nome' => 'Regra', 'nivel_ids' => [$this->c['nivel']->id], 'com_exame' => false, 'com_recurso' => false, 'escala_maxima' => 10, 'nota_minima' => '5',
+            'ano_lectivo_id' => $this->c['ano']->id, 'nome' => 'Regra', 'nivel_ids' => [$this->c['nivel']->id], 'com_exame' => false, 'com_recurso' => false, 'sigla_prova' => 'PT', 'escala_maxima' => 10, 'nota_minima' => '5',
             'peso_mac' => '50', 'peso_pt' => '50', 'casas_decimais' => 2, 'modo_arredondamento' => 0, 'reprova_por_aproveitamento' => true, ...$o,
         ];
     }

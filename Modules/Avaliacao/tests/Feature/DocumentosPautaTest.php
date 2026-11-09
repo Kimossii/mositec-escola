@@ -142,10 +142,10 @@ class DocumentosPautaTest extends TestCase
         $this->assertSame(['1', $inscricao->matricula->aluno->dadosPessoa->nome_completo, 'Bom', 'Bom', 'Muito Bom', 'Muito Bom', 'TRANSITA'], $d->linhas[0]);
     }
 
-    public function test_mini_pauta_tem_trimestres_mfd_e_a_prova_chama_se_npt_so_na_7_a_9(): void
+    public function test_mini_pauta_tem_trimestres_mfd_e_a_prova_usa_a_sigla_da_regra(): void
     {
         $c = $this->cenarioDeAvaliacao('SEC_7');
-        $this->regra($c);
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5', sigla_prova: 'NPT'));
         $ana = $this->inscreverAluno($c, 'Ana');
         $this->notasCompletas($c, $ana, [1 => ['5.33', '7'], 2 => ['6', '7'], 3 => ['8', '9']]);
 
@@ -155,7 +155,6 @@ class DocumentosPautaTest extends TestCase
         $this->assertSame(['MAC', 'NPT', 'MT1'], $d->grupos[0]['colunas']);
         $this->assertSame(['MFD', 'NER', 'MFR'], $d->grupos[3]['colunas']); // a 7.ª tem recurso, mas não exame próprio
         $this->assertSame(['1', $ana->matricula->aluno->dadosPessoa->nome_completo, '5.33', '7.00', '6.17', '6.00', '7.00', '6.50', '8.00', '9.00', '8.50', '7.06', '', '', ''], $d->linhas[0]);
-        $this->assertSame('PT', MiniPautaDocumentoService::rotuloDaProva('PRI_3'));
     }
 
     public function test_mini_pauta_do_exame_traz_ne_e_mf(): void

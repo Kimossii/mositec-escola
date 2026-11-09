@@ -129,7 +129,7 @@ class MiniPautaService
         $disciplina = Disciplina::query()->findOrFail($disciplinaId);
         $regra = $this->regras->paraTurma($turma);
 
-        $base = ['tipo' => 'quantitativa', 'rotulo_pt' => MiniPautaDocumentoService::rotuloDaProva($turma->nivelAcademico?->codigo), 'turma_rotulo' => $turma->rotulo(completo: true), 'disciplina_nome' => (string) $disciplina->nome, 'regra' => null];
+        $base = ['tipo' => 'quantitativa', 'rotulo_pt' => $regra?->sigla_prova ?? 'PT', 'turma_rotulo' => $turma->rotulo(completo: true), 'disciplina_nome' => (string) $disciplina->nome, 'regra' => null];
 
         // Sem trimestres definidos no ano lectivo não há onde lançar: o ecrã explica-o em vez de abrir vazio.
         if (! Periodo::query()->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('tipo', TipoPeriodo::TRIMESTRE)->exists()) {

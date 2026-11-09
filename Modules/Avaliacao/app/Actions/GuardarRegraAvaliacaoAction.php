@@ -40,6 +40,7 @@ class GuardarRegraAvaliacaoAction
                     'nota_minima' => $dto->nota_minima,
                     'peso_mac' => $dto->peso_mac,
                     'peso_pt' => $dto->peso_pt,
+                    'sigla_prova' => $dto->sigla_prova,
                     'peso_mt1' => $dto->peso_mt1,
                     'peso_mt2' => $dto->peso_mt2,
                     'peso_mt3' => $dto->peso_mt3,

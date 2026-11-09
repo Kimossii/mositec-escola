@@ -31,12 +31,6 @@ class MiniPautaDocumentoService
     ) {
     }
 
-    /** Sigla da prova trimestral: NPT na 7.ª a 9.ª classes, PT nas restantes. */
-    public static function rotuloDaProva(?string $codigoNivel): string
-    {
-        return in_array($codigoNivel, ['SEC_7', 'SEC_8', 'SEC_9'], true) ? 'NPT' : 'PT';
-    }
-
     public function paraTurmaDisciplina(int $turmaId, int $disciplinaId): DocumentoPauta
     {
         $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,nome,codigo'])->findOrFail($turmaId);
@@ -55,7 +49,7 @@ class MiniPautaDocumentoService
         $resultados = $this->resultados->calcularTurma($turmaId, $disciplinaId, $inscricoes->pluck('id')->all());
         $comExame = $regra->com_exame;
         $comRecurso = $regra->com_recurso;
-        $prova = self::rotuloDaProva($turma->nivelAcademico?->codigo);
+        $prova = $regra->sigla_prova;
         $cabecalho = $this->cabecalho->dados();
 
         $mostrar = fn (?string $v) => $v === null ? '' : $this->calculadora->arredondar($v, $regra->casas_decimais, $regra->modo_arredondamento);
