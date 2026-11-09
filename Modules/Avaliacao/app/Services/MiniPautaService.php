@@ -63,7 +63,7 @@ class MiniPautaService
             'selecao' => ['turma' => $turmaId, 'disciplina' => $disciplinaId],
             'pauta' => $pauta,
             'tipos' => $this->tiposDeAvaliacao(),
-            'pode' => ['anular' => $gate->allows('nota.anular'), 'criar' => $gate->allows('nota.criar')],
+            'pode' => ['anular' => $gate->allows('nota.anular'), 'criar' => $gate->allows('nota.criar'), 'fora_prazo' => $gate->allows('nota.lancar-fora-prazo')],
         ];
     }
 
@@ -124,7 +124,7 @@ class MiniPautaService
             }
         }
 
-        $turmas = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome'])->findMany(array_unique(array_column($pares, 0)))->keyBy('id');
+        $turmas = Turma::query()->with(['nivelAcademico:id,nome', 'turno:id,nome', 'anoLectivo:id,nome'])->findMany(array_unique(array_column($pares, 0)))->keyBy('id');
         $disciplinas = Disciplina::query()->findMany(array_unique(array_column($pares, 1)))->keyBy('id');
 
         $porTurma = [];
@@ -148,7 +148,7 @@ class MiniPautaService
      */
     public function paraTurmaDisciplina(User $utilizador, int $turmaId, int $disciplinaId, ?int $periodoId = null): array
     {
-        $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,codigo'])->findOrFail($turmaId);
+        $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,nome,codigo'])->findOrFail($turmaId);
         $disciplina = Disciplina::query()->findOrFail($disciplinaId);
         $regra = $this->regras->paraTurma($turma);
 

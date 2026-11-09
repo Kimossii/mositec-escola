@@ -10,7 +10,7 @@ const props = defineProps({
     selecao: { type: Object, required: true }, // { turma, disciplina }
     pauta: { type: Object, default: null },
     tipos: { type: Array, required: true }, // [{ valor, nome }]
-    pode: { type: Object, required: true }, // { anular, criar }
+    pode: { type: Object, required: true }, // { anular, criar, fora_prazo }
 });
 defineOptions({ layout: AppLayout });
 
@@ -72,7 +72,7 @@ const limpar = (texto) => (texto ?? '').trim().replace(',', '.');
 const alteracoes = computed(() => {
     const notas = []; const examesNovos = []; const recursosNovos = [];
     for (const a of props.pauta?.alunos ?? []) {
-        for (const i of props.pauta.instrumentos) {
+        for (const i of props.pauta.instrumentos ?? []) {
             const chave = `${a.inscricao_id}-${i.id}`;
             const texto = limpar(valores[chave]);
             if (chave in valores && texto !== '' && texto !== a.notas[i.id]?.valor) {
@@ -81,11 +81,11 @@ const alteracoes = computed(() => {
         }
         const ne = limpar(exames[a.inscricao_id]);
         if (a.inscricao_id in exames && ne !== '' && ne !== a.ne?.valor) {
-            examesNovos.push({ inscricao_disciplina_id: a.inscricao_id, valor: ne, motivo: props.pauta.prazos.EXAME?.encerrado ? motivoForaDoPrazo.value : null });
+            examesNovos.push({ inscricao_disciplina_id: a.inscricao_id, valor: ne, motivo: props.pauta.prazos?.EXAME?.encerrado ? motivoForaDoPrazo.value : null });
         }
         const ner = limpar(recursos[a.inscricao_id]);
         if (a.inscricao_id in recursos && ner !== '' && ner !== a.ner?.valor) {
-            recursosNovos.push({ inscricao_disciplina_id: a.inscricao_id, valor: ner, motivo: props.pauta.prazos.RECURSO?.encerrado ? motivoForaDoPrazo.value : null });
+            recursosNovos.push({ inscricao_disciplina_id: a.inscricao_id, valor: ner, motivo: props.pauta.prazos?.RECURSO?.encerrado ? motivoForaDoPrazo.value : null });
         }
     }
     return { notas, exames: examesNovos, recursos: recursosNovos, total: notas.length + examesNovos.length + recursosNovos.length };
@@ -204,11 +204,12 @@ function eliminar(instrumento) {
             <div class="card-body pt-3">
                 <div v-if="pauta.prazo" class="fs-7 text-body-secondary mb-4">Prazo de lançamento: <strong :class="pauta.prazo.encerrado ? 'text-danger' : ''">{{ pauta.prazo.data_limite }}</strong></div>
                 <div v-if="pauta.prazo?.encerrado" class="alert alert-warning py-3 d-flex flex-wrap align-items-center gap-3">
-                    <span>O prazo terminou. Só quem tem permissão pode lançar, e tem de indicar o motivo:</span>
-                    <input v-model="motivoForaDoPrazo" type="text" class="form-control form-control-sm w-300px" placeholder="Motivo do lançamento fora do prazo">
+                    <span v-if="pode.fora_prazo">O prazo terminou. Para lançar fora do prazo, indique o motivo:</span>
+                    <span v-else>O prazo terminou. Já não é possível lançar notas.</span>
+                    <input v-if="pode.fora_prazo" v-model="motivoForaDoPrazo" type="text" class="form-control form-control-sm w-300px" placeholder="Motivo do lançamento fora do prazo">
                 </div>
                 <div v-if="!pauta.alunos.length" class="text-center text-body-secondary py-6">Nenhuma criança inscrita nesta área.</div>
-                <div v-else class="table-responsive">
+                <div v-else class="table-responsive tabela-com-selects">
                     <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
                         <thead>
                             <tr class="text-start text-body-secondary fw-bold fs-7 text-uppercase"><th style="width: 3rem">#</th><th>Criança</th><th style="width: 16rem">Avaliação</th><th>Observação</th><th v-if="pauta.competencias.length" class="text-center" style="width: 7rem">Competências</th></tr>
@@ -272,8 +273,9 @@ function eliminar(instrumento) {
                 </div>
 
                 <div v-if="algumEncerrado" class="alert alert-warning py-3 d-flex flex-wrap align-items-center gap-3">
-                    <span>O prazo terminou para parte das avaliações. Só quem tem permissão pode lançar, e tem de indicar o motivo:</span>
-                    <input v-model="motivoForaDoPrazo" type="text" class="form-control form-control-sm w-300px" placeholder="Motivo do lançamento fora do prazo">
+                    <span v-if="pode.fora_prazo">O prazo terminou para parte das avaliações. Para lançar fora do prazo, indique o motivo:</span>
+                    <span v-else>O prazo terminou para parte das avaliações. Nessas já não é possível lançar notas.</span>
+                    <input v-if="pode.fora_prazo" v-model="motivoForaDoPrazo" type="text" class="form-control form-control-sm w-300px" placeholder="Motivo do lançamento fora do prazo">
                 </div>
 
                 <div v-if="!pauta.instrumentos.length" class="text-body-secondary py-6">Ainda não há avaliações neste trimestre. Crie a primeira em «Nova avaliação».</div>
@@ -411,3 +413,10 @@ function eliminar(instrumento) {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Os selects estão dentro da tabela: o contentor com scroll horizontal cortava a lista de opções (com poucas linhas parecia que o select não abria). */
+@media (min-width: 768px) {
+    .tabela-com-selects { overflow: visible !important; }
+}
+</style>

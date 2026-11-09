@@ -151,7 +151,7 @@ class AtribuicaoDocenteConsultaService
         $dia = $hoje->toDateString();
 
         return AtribuicaoDocente::query()
-            ->with(['turma:id,nome,codigo,turno_id,ano_lectivo_id', 'turma.turno:id,nome', 'turma.anoLectivo:id,nome', 'disciplina:id,nome', 'docente.dadosPessoa:id,nome_completo'])
+            ->with(['turma:id,nome,codigo,turno_id,ano_lectivo_id,nivel_academico_id', 'turma.nivelAcademico:id,nome', 'turma.turno:id,nome', 'turma.anoLectivo:id,nome', 'disciplina:id,nome', 'docente.dadosPessoa:id,nome_completo'])
             ->when($filtros['ano_lectivo_id'] ?? null, fn ($q, $v) => $q->where('ano_lectivo_id', (int) $v))
             ->when($filtros['turma_id'] ?? null, fn ($q, $v) => $q->where('turma_id', (int) $v))
             ->when($filtros['docente_id'] ?? null, fn ($q, $v) => $q->where('docente_id', (int) $v))
@@ -231,7 +231,7 @@ class AtribuicaoDocenteConsultaService
             'anosLectivos' => AnoLectivo::query()->orderByDesc('data_inicio')->get()
                 ->map(fn (AnoLectivo $a) => ['id' => $a->id, 'nome' => $a->nome, 'estado' => $a->estado->value, 'activo' => $a->estado->value === 1])
                 ->all(),
-            'turmas' => Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome'])->where('ano_lectivo_id', $anoLectivoId)->where('estado', 1)->orderBy('nome')->get(['id', 'nome', 'codigo', 'turno_id', 'ano_lectivo_id'])
+            'turmas' => Turma::query()->with(['nivelAcademico:id,nome', 'turno:id,nome', 'anoLectivo:id,nome'])->where('ano_lectivo_id', $anoLectivoId)->where('estado', 1)->orderBy('nome')->get(['id', 'nome', 'codigo', 'turno_id', 'ano_lectivo_id', 'nivel_academico_id'])
                 ->map(fn (Turma $t) => ['id' => $t->id, 'nome' => $t->nome, 'codigo' => $t->codigo, 'rotulo' => $t->rotulo(completo: true)])
                 ->all(),
             'docentes' => $this->docentesActivos(),

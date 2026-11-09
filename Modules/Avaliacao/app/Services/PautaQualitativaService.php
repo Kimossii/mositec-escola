@@ -151,7 +151,7 @@ class PautaQualitativaService
 
     private function base(Turma $turma, array $regra): array
     {
-        $turma->loadMissing(['turno:id,nome', 'anoLectivo:id,nome']);
+        $turma->loadMissing(['nivelAcademico:id,nome', 'turno:id,nome', 'anoLectivo:id,nome']);
 
         return ['tipo' => 'qualitativa', 'turma_id' => $turma->id, 'turma_rotulo' => $turma->rotulo(completo: true), 'regra' => $regra, 'estado' => 'provisoria',
             'versao' => null, 'aprovada_em' => null, 'aprovada_por' => null, 'disciplinas' => [], 'alunos' => [], 'pode_aprovar' => false, 'bloqueios' => []];

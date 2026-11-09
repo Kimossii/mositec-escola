@@ -52,7 +52,7 @@ class ConfiguracaoAvaliacaoService
         $regrasQ = AvaliacaoRegraQualitativa::query()->where('ano_lectivo_id', $ano->id)->with('niveis')->orderBy('id')->get();
         $periodos = Periodo::query()->where('ano_lectivo_id', $ano->id)->where('tipo', TipoPeriodo::TRIMESTRE)->orderBy('numero')->get();
         $prazos = AvaliacaoPrazo::query()->whereIn('periodo_id', $periodos->pluck('id'))->with('excepcoes')->get();
-        $turmas = Turma::query()->where('ano_lectivo_id', $ano->id)->with(['turno:id,nome', 'anoLectivo:id,nome'])->get();
+        $turmas = Turma::query()->where('ano_lectivo_id', $ano->id)->with(['nivelAcademico:id,nome', 'turno:id,nome', 'anoLectivo:id,nome'])->get();
 
         $prazosDe = fn ($lista) => $lista->map(fn (AvaliacaoPrazo $p) => [
             'id' => $p->id,

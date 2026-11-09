@@ -49,7 +49,7 @@ class PautaFinalService
         $pautas = AvaliacaoPauta::query()->get()->keyBy('turma_id');
 
         return Turma::query()
-            ->with(['turno:id,nome', 'anoLectivo:id,nome'])
+            ->with(['nivelAcademico:id,nome', 'turno:id,nome', 'anoLectivo:id,nome'])
             ->where(fn ($q) => $q->whereHas('anoLectivo', fn ($a) => $a->where('estado', EstadoAnoLectivo::ATIVO))->orWhereIn('id', $pautas->keys()))
             ->get()
             ->map(fn (Turma $t) => ['id' => $t->id, 'rotulo' => $t->rotulo(completo: true), 'estado' => match ($pautas[$t->id]->estado ?? null) {
@@ -113,7 +113,7 @@ class PautaFinalService
      */
     public function montar(int $turmaId): array
     {
-        $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,codigo'])->findOrFail($turmaId);
+        $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,nome,codigo'])->findOrFail($turmaId);
         if ($this->qualitativa->aplica($turma)) {
             return $this->qualitativa->montar($turma);
         }
@@ -233,7 +233,7 @@ class PautaFinalService
     /** @return array<string, mixed> */
     private function instantaneo(int $turmaId, AvaliacaoPauta $pauta): array
     {
-        $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,codigo'])->findOrFail($turmaId);
+        $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,nome,codigo'])->findOrFail($turmaId);
 
         if (AvaliacaoPautaLinhaQualitativa::query()->where('pauta_id', $pauta->id)->where('versao', $pauta->versao)->exists()) {
             return $this->qualitativa->instantaneo($turma, $pauta);

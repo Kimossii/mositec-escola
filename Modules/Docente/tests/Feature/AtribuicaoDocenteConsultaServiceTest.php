@@ -308,6 +308,6 @@ class AtribuicaoDocenteConsultaServiceTest extends TestCase
         $opcao = $this->servico()->opcoes($c['ano']->id)['turmas'][0];
 
         $this->assertSame('Turma 10A', $linha['turma_rotulo']);
-        $this->assertSame('Turma 10A · Manhã · 2026', $opcao['rotulo']);
+        $this->assertSame('Turma 10A · 10ª Classe · Manhã · 2026', $opcao['rotulo']);
     }
 }

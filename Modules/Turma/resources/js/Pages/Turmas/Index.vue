@@ -215,6 +215,7 @@ function confirmarEliminacao() {
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th class="min-w-100px">Código</th>
                             <th class="min-w-200px">Nome</th>
+                            <th class="min-w-125px">Classe</th>
                             <th v-if="usaCursos" class="min-w-150px">Curso</th>
                             <th class="min-w-100px">Ano Lectivo</th>
                             <th class="min-w-125px">Estado</th>
@@ -223,11 +224,12 @@ function confirmarEliminacao() {
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="turmas.data.length === 0">
-                            <td :colspan="usaCursos ? 6 : 5"><EstadoVazio titulo="Nenhuma turma encontrada." /></td>
+                            <td :colspan="usaCursos ? 7 : 6"><EstadoVazio titulo="Nenhuma turma encontrada." /></td>
                         </tr>
                         <tr v-for="turma in turmas.data" :key="turma.id">
                             <td>{{ turma.codigo }}</td>
                             <td>{{ turma.nome }}</td>
+                            <td>{{ turma.nivel_academico?.nome ?? '—' }}</td>
                             <td v-if="usaCursos">{{ turma.curso?.nome ?? '—' }}</td>
                             <td>{{ turma.ano_lectivo?.nome ?? '—' }}</td>
                             <td>
