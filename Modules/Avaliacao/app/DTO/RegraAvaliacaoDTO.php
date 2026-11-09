@@ -36,6 +36,8 @@ readonly class RegraAvaliacaoDTO
         public string $nome = '',
         public ?bool $com_exame = null,
         public ?bool $com_recurso = null,
+        /** o exame e o recurso partem da nota final arredondada (a que aparece na pauta) em vez da exacta */
+        public bool $exame_usa_mfd_arredondada = true,
         public bool $nova = false,
         /** como a escola chama à prova trimestral nos documentos (PT, NPT…) */
         public string $sigla_prova = 'PT',

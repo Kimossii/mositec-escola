@@ -69,7 +69,7 @@ class GarantirRegrasDoAnoAction
         foreach (AvaliacaoRegra::query()->where('ano_lectivo_id', $anteriorId)->with(['niveis', 'disciplinasChave:disciplinas.id'])->get() as $regra) {
             $nova = AvaliacaoRegra::create([...$regra->only([
                 'nome', 'escala_maxima', 'nota_minima', 'peso_mac', 'peso_pt', 'sigla_prova', 'peso_mt1', 'peso_mt2', 'peso_mt3', 'peso_mfd_exame', 'peso_exame',
-                'recurso_max_disciplinas', 'casas_decimais', 'modo_arredondamento', 'reprova_por_aproveitamento', 'com_exame', 'com_recurso',
+                'recurso_max_disciplinas', 'casas_decimais', 'modo_arredondamento', 'reprova_por_aproveitamento', 'com_exame', 'com_recurso', 'exame_usa_mfd_arredondada',
             ]), 'ano_lectivo_id' => $destinoId]);
             $nova->disciplinasChave()->syncWithPivotValues($regra->disciplinasChave->pluck('id')->all(), ['tenant_id' => $nova->tenant_id]);
 

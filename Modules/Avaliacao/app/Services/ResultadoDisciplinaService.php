@@ -142,10 +142,10 @@ class ResultadoDisciplinaService
         $mfd = $this->calculadora->mfd([$mt[1], $mt[2], $mt[3]], $regra->pesosDosTrimestres());
         $arredondada = $mfd === null ? null : $this->calculadora->arredondar($mfd, $regra->casas_decimais, $regra->modo_arredondamento);
 
-        [$ne, $mf, $mfArredondada] = $comExame ? $this->exame($regra, $instrumentos, $notas, $mfd) : [null, null, null];
+        [$ne, $mf, $mfArredondada] = $comExame ? $this->exame($regra, $instrumentos, $notas, $this->baseDoExame($regra, $mfd, $arredondada)) : [null, null, null];
 
         [$ner, $mfr, $mfrArredondada, $recursoNecessario] = $comRecurso
-            ? $this->recurso($regra, $instrumentos, $notas, $comExame ? $mf : $mfd, $comExame ? $mfArredondada : $arredondada)
+            ? $this->recurso($regra, $instrumentos, $notas, $this->baseDoExame($regra, $comExame ? $mf : $mfd, $comExame ? $mfArredondada : $arredondada), $comExame ? $mfArredondada : $arredondada)
             : [null, null, null, false];
 
         return new ResultadoDisciplina($mac, $pt, $mt, $pendentes, $mfd, $arredondada, $ne, $mf, $mfArredondada, $comExame, $ner, $mfr, $mfrArredondada, $recursoNecessario);
@@ -205,6 +205,12 @@ class ResultadoDisciplinaService
         $mf = $this->calculadora->mfComExame($mfd, $ne, (string) $regra->peso_mfd_exame, (string) $regra->peso_exame);
 
         return [$ne, $mf, $this->calculadora->arredondar($mf, $regra->casas_decimais, $regra->modo_arredondamento)];
+    }
+
+    /** Nota de partida do exame e do recurso: a arredondada, como aparece na pauta, ou a exacta, conforme a regra da escola. */
+    private function baseDoExame(AvaliacaoRegra $regra, ?string $exacta, ?string $arredondada): ?string
+    {
+        return $regra->exame_usa_mfd_arredondada ? $arredondada : $exacta;
     }
 
     /** Valor que a nota contribui para o cálculo, ou `null` se fica de fora; marca `$pendente` quando ainda falta lançar. */

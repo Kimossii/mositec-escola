@@ -33,8 +33,8 @@ class DividasConsultaService
     {
         return [
             'anosLectivos' => AnoLectivo::query()->orderByDesc('data_inicio')->get(['id', 'nome']),
-            'turmas' => Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome'])->orderBy('nome')->get(['id', 'nome', 'ano_lectivo_id', 'turno_id'])
-                ->each(fn (Turma $turma) => $turma->setAttribute('rotulo', $turma->rotulo(completo: true))->makeHidden(['turno', 'ano_lectivo'])),
+            'turmas' => Turma::query()->with(['nivelAcademico:id,nome', 'turno:id,nome', 'anoLectivo:id,nome'])->orderBy('nome')->get(['id', 'nome', 'ano_lectivo_id', 'turno_id', 'nivel_academico_id'])
+                ->each(fn (Turma $turma) => $turma->setAttribute('rotulo', $turma->rotulo(completo: true))->makeHidden(['nivel_academico', 'turno', 'ano_lectivo'])),
         ];
     }
 
@@ -116,7 +116,7 @@ class DividasConsultaService
         $pesquisa = is_string($filtros['pesquisa'] ?? null) ? trim($filtros['pesquisa']) : '';
 
         $matriculas = Matricula::withTrashed()
-            ->with(['aluno.dadosPessoa', 'turma:id,nome,turno_id,ano_lectivo_id', 'turma.turno:id,nome', 'turma.anoLectivo:id,nome', 'anoLectivo:id,nome'])
+            ->with(['aluno.dadosPessoa', 'turma:id,nome,turno_id,ano_lectivo_id,nivel_academico_id', 'turma.nivelAcademico:id,nome', 'turma.turno:id,nome', 'turma.anoLectivo:id,nome', 'anoLectivo:id,nome'])
             ->whereIn('id', $ids)
             ->when(is_numeric($filtros['ano_lectivo_id'] ?? null), fn ($q) => $q->where('ano_lectivo_id', (int) $filtros['ano_lectivo_id']))
             ->when(is_numeric($filtros['turma_id'] ?? null), fn ($q) => $q->where('turma_id', (int) $filtros['turma_id']))

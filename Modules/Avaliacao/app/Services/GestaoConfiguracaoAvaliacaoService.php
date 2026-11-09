@@ -90,6 +90,7 @@ class GestaoConfiguracaoAvaliacaoService
             nome: (string) $d['nome'],
             com_exame: (bool) $d['com_exame'],
             com_recurso: (bool) $d['com_recurso'],
+            exame_usa_mfd_arredondada: (bool) ($d['exame_usa_mfd_arredondada'] ?? true),
             nova: (bool) ($d['nova'] ?? false),
             sigla_prova: trim((string) ($d['sigla_prova'] ?? '')) ?: 'PT',
         ));

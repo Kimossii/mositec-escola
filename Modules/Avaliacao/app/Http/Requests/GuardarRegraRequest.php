@@ -25,6 +25,7 @@ class GuardarRegraRequest extends BaseRequest
             'nivel_ids.*' => ['integer'],
             'com_exame' => ['required', 'boolean'],
             'com_recurso' => ['required', 'boolean'],
+            'exame_usa_mfd_arredondada' => ['sometimes', 'boolean'],
             'escala_maxima' => ['required', 'integer', 'between:1,100'],
             'nota_minima' => ['required', 'numeric', 'min:0'],
             'peso_mac' => ['required', 'numeric', 'between:0,100'],

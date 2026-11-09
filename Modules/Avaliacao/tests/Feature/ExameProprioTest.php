@@ -14,6 +14,7 @@ use Modules\Avaliacao\Models\AvaliacaoDecisao;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
 use Modules\Avaliacao\Models\AvaliacaoPautaLinha;
+use Modules\Avaliacao\Models\AvaliacaoRegra;
 use Modules\Avaliacao\Services\PautaFinalService;
 use Modules\Avaliacao\Services\ResultadoDisciplinaService;
 use Modules\Avaliacao\Tests\Support\CenarioDeAvaliacao;
@@ -94,6 +95,20 @@ class ExameProprioTest extends TestCase
         $this->assertSame('9.20', $this->celula()['nota_final']);
         $this->assertSame('Apto', $this->pauta()['alunos'][0]['decisao']['rotulo']);
         $this->assertTrue($this->pauta()['pode_aprovar']);
+    }
+
+    public function test_a_escola_escolhe_se_o_exame_parte_da_nota_final_arredondada_ou_da_exacta(): void
+    {
+        // Sem casas decimais: MFD exacta 7.49 aparece como 7 na pauta. Com NE 4.3 a conta decide entre 6 (exacta) e 5 (arredondada).
+        AvaliacaoRegra::query()->update(['casas_decimais' => 0]);
+        $this->mfd('7.49');
+        $this->exame('4.3');
+
+        AvaliacaoRegra::query()->update(['exame_usa_mfd_arredondada' => true]);
+        $this->assertSame('5', app(ResultadoDisciplinaService::class)->calcular($this->inscricao->id)->mfArredondada); // 7×0,4 + 4,3×0,6 = 5,38
+
+        AvaliacaoRegra::query()->update(['exame_usa_mfd_arredondada' => false]);
+        $this->assertSame('6', app(ResultadoDisciplinaService::class)->calcular($this->inscricao->id)->mfArredondada); // 7,49×0,4 + 4,3×0,6 = 5,576
     }
 
     public function test_o_exame_decide_nao_a_mfd_sozinha(): void

@@ -39,6 +39,7 @@ class AvaliacaoRegra extends Model
         'reprova_por_aproveitamento',
         'com_exame',
         'com_recurso',
+        'exame_usa_mfd_arredondada',
         'criado_por',
         'editado_por',
     ];
@@ -59,6 +60,7 @@ class AvaliacaoRegra extends Model
         'reprova_por_aproveitamento' => 'boolean',
         'com_exame' => 'boolean',
         'com_recurso' => 'boolean',
+        'exame_usa_mfd_arredondada' => 'boolean',
     ];
 
     protected static function booted(): void

@@ -43,16 +43,23 @@ const opcoesModo = computed(() => props.modos.map((m) => ({ value: m.valor, labe
                     <div class="row g-3">
                         <div v-if="!ocultarEssenciais" class="col-6"><label class="form-label fs-8 fw-bold text-muted text-uppercase">Escala máxima</label><input v-model="f.escala_maxima" type="number" class="form-control"></div>
                         <div v-if="!ocultarEssenciais" class="col-6"><label class="form-label fs-8 fw-bold text-muted text-uppercase">Nota mínima</label><input v-model="f.nota_minima" type="text" class="form-control"></div>
-                        <div class="col-6"><label class="form-label fs-8 fw-bold text-muted text-uppercase">Casas decimais</label><input v-model="f.casas_decimais" type="number" min="0" max="4" class="form-control"></div>
-                        <div class="col-6">
+                        <div class="col-12"><label class="form-label fs-8 fw-bold text-muted text-uppercase">Casas decimais</label><input v-model="f.casas_decimais" type="number" min="0" max="4" class="form-control w-150px"></div>
+                        <div class="col-12">
                             <label class="form-label fs-8 fw-bold text-muted text-uppercase">Arredondamento</label>
                             <SelectSolid v-model="f.modo_arredondamento" :options="opcoesModo" />
                         </div>
-                        <div class="col-12">
+                        <div v-if="!ocultarEssenciais" class="col-12">
                             <label class="form-check form-switch form-check-custom">
                                 <input v-model="f.reprova_por_aproveitamento" type="checkbox" class="form-check-input">
                                 <span class="form-check-label">Reprova por aproveitamento</span>
                             </label>
+                        </div>
+                        <div v-if="f.com_exame || f.com_recurso" class="col-12">
+                            <label class="form-check form-switch form-check-custom">
+                                <input v-model="f.exame_usa_mfd_arredondada" type="checkbox" class="form-check-input">
+                                <span class="form-check-label">Exame e recurso partem da nota final arredondada</span>
+                            </label>
+                            <div class="text-muted fs-8 mt-1">Ligado: usa a nota final como aparece na pauta. Desligado: usa o valor exacto, antes de arredondar.</div>
                         </div>
                     </div>
                 </div>

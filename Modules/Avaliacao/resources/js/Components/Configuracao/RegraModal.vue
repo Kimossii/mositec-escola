@@ -20,7 +20,7 @@ const props = defineProps({
 const emit = defineEmits(['guardar', 'eliminar', 'fechar']);
 
 const BASE_NOTAS = () => ({ nome: '', escala_maxima: 10, nota_minima: '5', peso_mac: '50', peso_pt: '50', sigla_prova: 'PT', peso_mt1: null, peso_mt2: null, peso_mt3: null, peso_mfd_exame: '40', peso_exame: '60',
-    com_exame: false, com_recurso: false, recurso_max_disciplinas: null, disciplinas_chave: [], casas_decimais: 2, modo_arredondamento: 0, reprova_por_aproveitamento: true, nivel_ids: [] });
+    com_exame: false, com_recurso: false, exame_usa_mfd_arredondada: true, recurso_max_disciplinas: null, disciplinas_chave: [], casas_decimais: 2, modo_arredondamento: 0, reprova_por_aproveitamento: true, nivel_ids: [] });
 const BASE_QUALITATIVA = () => ({ nome: '', escala_id: '', progressao: 0, nivel_ids: [] });
 
 const aberta = computed(() => props.regra !== null || props.nova);

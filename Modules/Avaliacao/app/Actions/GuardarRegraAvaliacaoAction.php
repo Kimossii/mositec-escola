@@ -53,6 +53,7 @@ class GuardarRegraAvaliacaoAction
                     // Sem indicação expressa, valem as opções por defeito das classes da regra.
                     'com_exame' => $dto->com_exame ?? $padrao->contains(fn (array $p) => $p['com_exame']),
                     'com_recurso' => $dto->com_recurso ?? $padrao->contains(fn (array $p) => $p['com_recurso']),
+                    'exame_usa_mfd_arredondada' => $dto->exame_usa_mfd_arredondada,
                 ];
 
                 $regra = $regra === null ? AvaliacaoRegra::create($campos) : tap($regra)->update($campos);

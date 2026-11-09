@@ -50,7 +50,7 @@ class PesquisaGlobalService
 
         if ($user->can('matricula.ver')) {
             $grupos['Matrículas'] = Matricula::query()
-                ->with(['aluno.dadosPessoa', 'turma:id,nome,turno_id', 'turma.turno:id,nome', 'anoLectivo:id,nome'])
+                ->with(['aluno.dadosPessoa', 'turma:id,nome,turno_id,nivel_academico_id', 'turma.nivelAcademico:id,nome', 'turma.turno:id,nome', 'anoLectivo:id,nome'])
                 ->whereContem('numero_registo_matricula', $termo)
                 ->orderByDesc('data_matricula')->limit(self::POR_GRUPO)->get()
                 ->map(fn (Matricula $m) => [

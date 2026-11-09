@@ -7,6 +7,7 @@ import { can } from '@/Composables/usePermissoes';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import RegraCartao from '../../Components/Configuracao/RegraCartao.vue';
 import RegraModal from '../../Components/Configuracao/RegraModal.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 
 const props = defineProps({
     anos: { type: Array, required: true }, // [{ id, nome }]
@@ -76,22 +77,33 @@ function guardarRegra(f, qualitativaNova) {
     });
 }
 
-// Eliminar a partir do cartão: só as regras que ainda não foram usadas (por exemplo, criadas por engano).
+// Eliminar (do cartão ou de dentro do modal): só as regras que ainda não foram usadas. Pede sempre confirmação.
+const paraEliminar = ref(null);
+const aEliminar = ref(false);
+const mensagemEliminar = computed(() => {
+    const r = paraEliminar.value;
+    if (!r) return '';
+    const classes = r.nivel_ids?.length ? ` As ${r.nivel_ids.length} classe(s) ligada(s) ficam sem regra.` : '';
+    return `Tem a certeza de que quer eliminar a regra «${r.nome}»?${classes} Esta acção não pode ser desfeita.`;
+});
+
 function eliminarDaLista(r) {
-    const classes = r.nivel_ids.length ? ` As ${r.nivel_ids.length} classe(s) ligada(s) ficam sem regra.` : '';
-    if (!window.confirm(`Eliminar a regra «${r.nome}»?${classes}`)) return;
-    router.delete(`/avaliacao/configuracao/${r.qualitativa ? 'regras-qualitativas' : 'regras'}/${r.id}`, aoGuardar('Regra eliminada.'));
+    paraEliminar.value = r;
 }
 
 function eliminarRegra() {
-    const r = modal.regra;
-    modal.processando = true;
+    paraEliminar.value = modal.regra;
+}
+
+function confirmarEliminar() {
+    const r = paraEliminar.value;
+    aEliminar.value = true;
     router.delete(`/avaliacao/configuracao/${r.qualitativa ? 'regras-qualitativas' : 'regras'}/${r.id}`, {
         preserveScroll: true,
         preserveState: true,
-        onError: (e) => { modal.erros = e; },
+        onError: (e) => { modal.erros = e; toast.error(Object.values(e)[0] ?? 'Não foi possível eliminar a regra.'); },
         onSuccess: () => { fecharModal(); toast.success('Regra eliminada.'); },
-        onFinish: () => { modal.processando = false; },
+        onFinish: () => { aEliminar.value = false; paraEliminar.value = null; },
     });
 }
 
@@ -361,6 +373,15 @@ function mover(i, delta) {
         <RegraModal
             :regra="modal.regra" :nova="modal.nova" :editar="modal.editar" :niveis="niveis" :regras="regras" :escalas="escalas" :progressoes="progressoes" :modos="modos" :disciplinas="disciplinas"
             :processando="modal.processando" :erros="modal.erros" @guardar="guardarRegra" @eliminar="eliminarRegra" @fechar="fecharModal"
+        />
+
+        <ConfirmModal
+            :show="!!paraEliminar"
+            titulo="Eliminar regra"
+            :mensagem="mensagemEliminar"
+            :processando="aEliminar"
+            @confirmar="confirmarEliminar"
+            @cancelar="paraEliminar = null"
         />
     </div>
 </template>

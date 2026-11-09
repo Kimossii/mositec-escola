@@ -419,4 +419,8 @@ function eliminar(instrumento) {
 @media (min-width: 768px) {
     .tabela-com-selects { overflow: visible !important; }
 }
+/* Em ecrãs estreitos o scroll horizontal tem de ficar: dá-se altura para a lista de opções caber. */
+@media (max-width: 767.98px) {
+    .tabela-com-selects { min-height: 18rem; }
+}
 </style>

@@ -83,6 +83,7 @@ class ConfiguracaoAvaliacaoService
             'peso_exame' => (string) $r->peso_exame,
             'com_exame' => $r->com_exame,
             'com_recurso' => $r->com_recurso,
+            'exame_usa_mfd_arredondada' => $r->exame_usa_mfd_arredondada,
             'recurso_max_disciplinas' => $r->recurso_max_disciplinas,
             'disciplinas_chave' => $r->disciplinasChave->pluck('id')->all(),
             'casas_decimais' => $r->casas_decimais,
