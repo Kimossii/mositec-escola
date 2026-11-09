@@ -68,6 +68,29 @@ class MiniPautaService
     }
 
     /**
+     * Cada avaliação mostra-se pela sigla do seu tipo (MAC 1, MAC 2…, a sigla da prova da escola, NE, NER), nunca por um nome livre.
+     *
+     * @param \Illuminate\Support\Collection<int, AvaliacaoInstrumento> $instrumentos
+     * @return list<array<string, mixed>>
+     */
+    private function instrumentosParaTela($instrumentos, string $siglaProva): array
+    {
+        $contador = 0;
+
+        return $instrumentos->map(function (AvaliacaoInstrumento $i) use (&$contador, $siglaProva) {
+            $sigla = match ($i->tipo) {
+                TipoInstrumento::MAC => 'MAC '.++$contador,
+                TipoInstrumento::PT => $siglaProva,
+                TipoInstrumento::EXAME => 'NE',
+                TipoInstrumento::RECURSO => 'NER',
+                default => $i->nome,
+            };
+
+            return ['id' => $i->id, 'nome' => $i->nome, 'sigla' => $sigla, 'tipo' => $i->tipo->value, 'tipo_descricao' => $i->tipo_descricao, 'obrigatorio' => $i->obrigatorio];
+        })->values()->all();
+    }
+
+    /**
      * Os tipos que se criam à mão. O exame, o recurso e a avaliação qualitativa criam-se pelos seus próprios ecrãs.
      *
      * @return list<array{valor: int, nome: string}>
@@ -215,9 +238,7 @@ class MiniPautaService
             'regra' => ['escala_maxima' => $regra->escala_maxima, 'nota_minima' => (string) $regra->nota_minima, 'casas_decimais' => $regra->casas_decimais, ...$this->definicoes->paraTela()],
             'periodos' => $periodos->map(fn (Periodo $p) => ['id' => $p->id, 'nome' => $p->nome, 'numero' => $p->numero])->all(),
             'periodo_id' => $periodo->id,
-            'instrumentos' => $instrumentos->map(fn (AvaliacaoInstrumento $i) => [
-                'id' => $i->id, 'nome' => $i->nome, 'tipo' => $i->tipo->value, 'tipo_descricao' => $i->tipo_descricao, 'obrigatorio' => $i->obrigatorio,
-            ])->all(),
+            'instrumentos' => $this->instrumentosParaTela($instrumentos, $base['rotulo_pt']),
             'alunos' => $alunos,
             'exame' => $comExame ? ['peso_mfd' => $this->semZeros($regra->peso_mfd_exame), 'peso_exame' => $this->semZeros($regra->peso_exame)] : null,
             'recurso' => $comRecurso ? ['peso_mf' => $this->semZeros($regra->peso_mfd_exame), 'peso_recurso' => $this->semZeros($regra->peso_exame)] : null,

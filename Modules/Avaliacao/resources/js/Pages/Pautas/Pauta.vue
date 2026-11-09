@@ -63,12 +63,12 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
     <div class="app-container container-fluid py-6">
         <div class="mb-6 d-print-none">
             <h1 class="fs-2 fw-bold mb-1">Pautas finais</h1>
-            <div class="text-muted">Resultado final de cada turma. A pauta só é formal depois de aprovada.</div>
+            <div class="text-body-secondary">Resultado final de cada turma. A pauta só é formal depois de aprovada.</div>
         </div>
 
         <div class="card card-flush mb-6 d-print-none">
             <div class="card-body py-4">
-                <label class="form-label fs-7 fw-bold text-muted text-uppercase">Turma</label>
+                <label class="form-label fs-7 fw-bold text-body-secondary text-uppercase">Turma</label>
                 <SelectSolid v-model="turma" :options="opcoesTurmas" searchable placeholder="Escolha a turma" class="w-100 w-md-50" @update:model-value="nextTick(abrir)" />
             </div>
         </div>
@@ -79,9 +79,9 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                     <h3 class="fw-bold mb-1">{{ pauta.turma_rotulo }}
                         <span class="badge ms-3" :class="ESTADOS[pauta.estado].classe">{{ ESTADOS[pauta.estado].texto }}{{ pauta.versao > 1 ? ` · v${pauta.versao}` : '' }}</span>
                     </h3>
-                    <div v-if="pauta.regra?.qualitativa" class="text-muted fs-7">Avaliação qualitativa · escala «{{ pauta.regra.escala_nome }}» · a MFD é o nível do 3.º trimestre</div>
-                    <div v-else-if="pauta.regra" class="text-muted fs-7">Escala 0–{{ pauta.regra.escala_maxima }} · mínimo {{ pauta.regra.nota_minima }}</div>
-                    <div v-if="pauta.aprovada_em" class="text-muted fs-7">Aprovada em {{ pauta.aprovada_em }}{{ pauta.aprovada_por ? ` por ${pauta.aprovada_por}` : '' }}</div>
+                    <div v-if="pauta.regra?.qualitativa" class="text-body-secondary fs-7">Avaliação qualitativa · escala «{{ pauta.regra.escala_nome }}» · a MFD é o nível do 3.º trimestre</div>
+                    <div v-else-if="pauta.regra" class="text-body-secondary fs-7">Escala 0–{{ pauta.regra.escala_maxima }} · mínimo {{ pauta.regra.nota_minima }}</div>
+                    <div v-if="pauta.aprovada_em" class="text-body-secondary fs-7">Aprovada em {{ pauta.aprovada_em }}{{ pauta.aprovada_por ? ` por ${pauta.aprovada_por}` : '' }}</div>
                 </div>
                 <div class="card-toolbar gap-2 d-print-none">
                     <button type="button" class="btn btn-sm btn-light" @click="imprimir">Imprimir</button>
@@ -94,9 +94,12 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
             </div>
 
             <div class="card-body pt-3">
-                <div v-if="pauta.estado !== 'definitiva' && pauta.bloqueios.length" class="alert alert-warning py-3 d-print-none">
-                    <div class="fw-bold mb-1">Ainda não se pode aprovar:</div>
-                    <div v-for="(b, i) in pauta.bloqueios" :key="i">• {{ b }}</div>
+                <div v-if="pauta.estado !== 'definitiva' && pauta.bloqueios.length" class="d-flex align-items-start gap-4 rounded bg-warning p-4 mb-4 d-print-none" style="color: #181C32;">
+                    <i class="ki-duotone ki-information-5 fs-2x mt-1" style="color: #181C32;"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                    <div>
+                        <div class="fw-bolder mb-1">Ainda não se pode aprovar</div>
+                        <div v-for="(b, i) in pauta.bloqueios" :key="i" class="fw-semibold">{{ b }}</div>
+                    </div>
                 </div>
 
                 <div v-if="pauta.avisos?.length" class="alert alert-info py-3 d-print-none">
@@ -105,7 +108,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
 
                 <div v-if="aConfirmar" class="border rounded p-4 mb-5 bg-body-secondary d-print-none">
                     <div class="fw-bold mb-2">Aprovar esta pauta?</div>
-                    <div class="text-muted mb-3">Os resultados passam a definitivos, a decisão de cada aluno fica formalizada e as notas desta turma ficam bloqueadas até a pauta ser reaberta.</div>
+                    <div class="text-body-secondary mb-3">Os resultados passam a definitivos, a decisão de cada aluno fica formalizada e as notas desta turma ficam bloqueadas até a pauta ser reaberta.</div>
                     <button type="button" class="btn btn-sm btn-primary me-2" @click="aprovar">Confirmar aprovação</button>
                     <button type="button" class="btn btn-sm btn-light" @click="aConfirmar = false">Cancelar</button>
                 </div>
@@ -120,38 +123,38 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                 </div>
 
                 <div v-if="!pauta.regra" class="alert alert-warning">A escola ainda não configurou a regra de avaliação desta classe.</div>
-                <div v-else-if="!pauta.alunos.length" class="text-center text-muted py-8">A turma não tem alunos com matrícula activa.</div>
+                <div v-else-if="!pauta.alunos.length" class="text-center text-body-secondary py-8">A turma não tem alunos com matrícula activa.</div>
 
                 <div v-else class="table-responsive">
-                    <table class="table table-bordered align-middle fs-7 text-center mb-0">
+                    <table class="pauta-tabela table table-bordered align-middle fs-7 text-center mb-0">
                         <thead>
                             <tr class="fw-bold text-uppercase">
                                 <th rowspan="2" style="width: 2.5rem">N.º</th>
                                 <th rowspan="2" class="text-start">Nome do aluno</th>
-                                <th v-for="d in pauta.disciplinas" :key="d.id" :colspan="(pauta.com_exame ? 3 : 4) + (pauta.com_recurso ? 2 : 0)">{{ d.nome }}</th>
-                                <th rowspan="2">Resultado final</th>
+                                <th v-for="d in pauta.disciplinas" :key="d.id" class="pauta-grupo pauta-disciplina" :colspan="(pauta.com_exame ? 3 : 4) + (pauta.com_recurso ? 2 : 0)">{{ d.nome }}</th>
+                                <th rowspan="2" class="pauta-grupo">Resultado final</th>
                             </tr>
-                            <tr class="text-muted">
+                            <tr class="text-body-secondary">
                                 <template v-for="d in pauta.disciplinas" :key="d.id">
-                                    <template v-if="pauta.com_exame"><th>MFD</th><th>NE</th><th>MF</th></template>
-                                    <template v-else><th>MT1</th><th>MT2</th><th>MT3</th><th>MFD</th></template>
+                                    <template v-if="pauta.com_exame"><th class="pauta-grupo">MFD</th><th>NE</th><th>MF</th></template>
+                                    <template v-else><th class="pauta-grupo">MT1</th><th>MT2</th><th>MT3</th><th>MFD</th></template>
                                     <template v-if="pauta.com_recurso"><th>NER</th><th>MFR</th></template>
                                 </template>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="(a, n) in pauta.alunos" :key="a.matricula_id">
-                                <td class="text-muted">{{ n + 1 }}</td>
+                                <td class="text-body-secondary">{{ n + 1 }}</td>
                                 <td class="text-start fw-semibold text-nowrap">{{ a.nome }}
                                     <a :href="`/avaliacao/pautas/${pauta.turma_id}/boletins?matricula=${a.matricula_id}`" class="ms-2 fs-8 fw-normal d-print-none" title="Boletim deste aluno">Boletim</a></td>
                                 <template v-for="d in pauta.disciplinas" :key="d.id">
                                     <template v-if="pauta.com_exame">
-                                        <td>{{ a.celulas[d.id]?.mfd ?? '—' }}</td>
+                                        <td class="pauta-grupo">{{ a.celulas[d.id]?.mfd ?? '—' }}</td>
                                         <td>{{ a.celulas[d.id]?.ne ?? '—' }}</td>
                                         <td class="fw-bold" :class="a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mf ?? '—' }}</td>
                                     </template>
                                     <template v-else>
-                                    <td>{{ a.celulas[d.id]?.mt1 ?? '—' }}</td>
+                                    <td class="pauta-grupo">{{ a.celulas[d.id]?.mt1 ?? '—' }}</td>
                                     <td>{{ a.celulas[d.id]?.mt2 ?? '—' }}</td>
                                     <td>{{ a.celulas[d.id]?.mt3 ?? '—' }}</td>
                                     <td class="fw-bold" :class="a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mfd ?? '—' }}</td>
@@ -161,7 +164,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                                         <td class="fw-bold" :class="a.celulas[d.id]?.mfr != null && a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mfr ?? '' }}</td>
                                     </template>
                                 </template>
-                                <td class="fw-bold text-nowrap" :title="a.recurso?.texto" :class="a.decisao?.valor === 1 || a.decisao?.valor === 3 ? 'text-danger' : (a.decisao ? 'text-success' : 'text-muted')"><template v-if="pauta.progressao_manual && pauta.estado !== 'definitiva' && pode.aprovar">
+                                <td class="pauta-grupo fw-bold text-nowrap" :title="a.recurso?.texto" :class="a.decisao?.valor === 1 || a.decisao?.valor === 3 ? 'text-danger' : (a.decisao ? 'text-success' : 'text-body-secondary')"><template v-if="pauta.progressao_manual && pauta.estado !== 'definitiva' && pode.aprovar">
                                         <SelectSolid :model-value="escolhas[a.matricula_id] ?? a.decisao?.valor ?? ''" :options="opcoesDecisao" pequeno placeholder="Decidir…" class="w-150px d-print-none" @update:model-value="(v) => decidir(a, v)" />
                                         <input v-if="(escolhas[a.matricula_id] ?? a.decisao?.valor) === 1" type="text" class="form-control form-control-sm mt-1 d-print-none"
                                             placeholder="Motivo" :value="motivos[a.matricula_id] ?? a.motivo_progressao" @input="motivos[a.matricula_id] = $event.target.value" @blur="decidir(a, 1)">
@@ -176,3 +179,22 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Divisão marcada entre disciplinas (e antes do resultado final), legível nos dois temas. */
+.pauta-grupo { border-left: 2px solid var(--bs-gray-700) !important; }
+.pauta-disciplina { background: var(--bs-gray-200); }
+
+/* Tema claro: as linhas do tema (#F4F4F4) quase não se vêem sobre o branco. Só aqui, só no claro; o escuro já se distingue. */
+html[data-bs-theme='light'] .pauta-tabela,
+html[data-bs-theme='light'] .pauta-tabela tr,
+html[data-bs-theme='light'] .pauta-tabela th,
+html[data-bs-theme='light'] .pauta-tabela td { border-color: #B9C0CF !important; }
+/* Contorno: linha de cima (primeira linha do cabeçalho), de baixo (última do corpo) e separação cabeçalho/corpo. */
+html[data-bs-theme='light'] .pauta-tabela thead tr:first-child > * { border-top: 2px solid #4B5675 !important; }
+html[data-bs-theme='light'] .pauta-tabela thead tr:last-child > *,
+html[data-bs-theme='light'] .pauta-tabela thead th[rowspan] { border-bottom: 2px solid #4B5675 !important; }
+html[data-bs-theme='light'] .pauta-tabela tbody tr:last-child > * { border-bottom: 2px solid #4B5675 !important; }
+html[data-bs-theme='light'] .pauta-grupo { border-left-color: #4B5675 !important; }
+html[data-bs-theme='light'] .pauta-disciplina { background: #E9ECF3; }
+</style>

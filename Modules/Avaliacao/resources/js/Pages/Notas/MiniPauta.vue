@@ -26,7 +26,8 @@ const valores = reactive({}); // `${inscricao}-${instrumento}` -> texto digitado
 const motivoForaDoPrazo = ref('');
 const aAnular = ref(null); // { nota_id, aluno, instrumento }
 const anulacao = reactive({ motivo: '', conta_como_zero: false });
-const novo = reactive({ nome: '', tipo: MAC, obrigatorio: true });
+const novo = reactive({ tipo: MAC, obrigatorio: true });
+const modalNova = ref(false);
 
 // Só há uma prova trimestral por trimestre: depois de criada, deixa de se oferecer.
 const macsCriadas = computed(() => (props.pauta?.instrumentos ?? []).filter((i) => i.tipo === MAC).length);
@@ -117,7 +118,7 @@ function confirmarAnulacao() {
 function criarAvaliacao() {
     router.post('/avaliacao/notas/instrumentos', {
         turma_id: turma.value, disciplina_id: disciplina.value, periodo_id: props.pauta.periodo_id, ...novo,
-    }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { novo.nome = ''; novo.tipo = MAC; toast.success('Avaliação criada.'); } });
+    }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { novo.tipo = MAC; modalNova.value = false; toast.success('Avaliação criada.'); } });
 }
 
 const qual = reactive({}); // inscricao -> { nivel, obs } editados e ainda não guardados
@@ -157,22 +158,22 @@ function eliminar(instrumento) {
     <div class="app-container container-fluid py-6">
         <div class="mb-6">
             <h1 class="fs-2 fw-bold mb-1">Avaliações / Notas</h1>
-            <div class="text-muted">Lançamento de notas e cálculo da média trimestral.</div>
+            <div class="text-body-secondary">Lançamento de notas e cálculo da média trimestral.</div>
         </div>
 
         <div class="card card-flush mb-6">
             <div class="card-body py-4">
                 <div class="row g-4 align-items-end">
                     <div class="col-12 col-md-5">
-                        <label class="form-label fs-7 fw-bold text-muted text-uppercase">Turma</label>
+                        <label class="form-label fs-7 fw-bold text-body-secondary text-uppercase">Turma</label>
                         <SelectSolid v-model="turma" :options="opcoesTurmas" searchable placeholder="Escolha a turma" @update:model-value="disciplina = null" />
                     </div>
                     <div class="col-12 col-md-5">
-                        <label class="form-label fs-7 fw-bold text-muted text-uppercase">Disciplina</label>
+                        <label class="form-label fs-7 fw-bold text-body-secondary text-uppercase">Disciplina</label>
                         <SelectSolid v-model="disciplina" :options="opcoesDisciplinas" :disabled="!turma" placeholder="Escolha a disciplina" @update:model-value="(v) => abrir(turma, v)" />
                     </div>
                 </div>
-                <div v-if="!opcoes.length" class="text-muted mt-4">Não tem turmas atribuídas neste momento.</div>
+                <div v-if="!opcoes.length" class="text-body-secondary mt-4">Não tem turmas atribuídas neste momento.</div>
             </div>
         </div>
 
@@ -188,7 +189,7 @@ function eliminar(instrumento) {
             <div class="card-header pt-5">
                 <div class="card-title flex-column align-items-start">
                     <h3 class="fw-bold mb-1">{{ pauta.disciplina_nome }}</h3>
-                    <div class="text-muted fs-7">{{ pauta.turma_rotulo }} · escala «{{ pauta.escala.nome }}»</div>
+                    <div class="text-body-secondary fs-7">{{ pauta.turma_rotulo }} · escala «{{ pauta.escala.nome }}»</div>
                 </div>
                 <div class="card-toolbar gap-3">
                     <span class="btn-group">
@@ -201,25 +202,25 @@ function eliminar(instrumento) {
                 </div>
             </div>
             <div class="card-body pt-3">
-                <div v-if="pauta.prazo" class="fs-7 text-muted mb-4">Prazo de lançamento: <strong :class="pauta.prazo.encerrado ? 'text-danger' : ''">{{ pauta.prazo.data_limite }}</strong></div>
+                <div v-if="pauta.prazo" class="fs-7 text-body-secondary mb-4">Prazo de lançamento: <strong :class="pauta.prazo.encerrado ? 'text-danger' : ''">{{ pauta.prazo.data_limite }}</strong></div>
                 <div v-if="pauta.prazo?.encerrado" class="alert alert-warning py-3 d-flex flex-wrap align-items-center gap-3">
                     <span>O prazo terminou. Só quem tem permissão pode lançar, e tem de indicar o motivo:</span>
                     <input v-model="motivoForaDoPrazo" type="text" class="form-control form-control-sm w-300px" placeholder="Motivo do lançamento fora do prazo">
                 </div>
-                <div v-if="!pauta.alunos.length" class="text-center text-muted py-6">Nenhuma criança inscrita nesta área.</div>
+                <div v-if="!pauta.alunos.length" class="text-center text-body-secondary py-6">Nenhuma criança inscrita nesta área.</div>
                 <div v-else class="table-responsive">
                     <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
                         <thead>
-                            <tr class="text-start text-muted fw-bold fs-7 text-uppercase"><th style="width: 3rem">#</th><th>Criança</th><th style="width: 16rem">Avaliação</th><th>Observação</th><th v-if="pauta.competencias.length" class="text-center" style="width: 7rem">Competências</th></tr>
+                            <tr class="text-start text-body-secondary fw-bold fs-7 text-uppercase"><th style="width: 3rem">#</th><th>Criança</th><th style="width: 16rem">Avaliação</th><th>Observação</th><th v-if="pauta.competencias.length" class="text-center" style="width: 7rem">Competências</th></tr>
                         </thead>
                         <tbody>
                             <template v-for="(a, n) in pauta.alunos" :key="a.inscricao_id">
                                 <tr>
-                                    <td class="text-muted">{{ n + 1 }}</td>
+                                    <td class="text-body-secondary">{{ n + 1 }}</td>
                                     <td class="fw-semibold">{{ a.nome }}</td>
                                     <td>
                                         <SelectSolid :model-value="nivelDe(a)" :options="opcoesNiveis" pequeno placeholder="—" @update:model-value="(v) => guardarQualitativa(a, 'nivel', Number(v))" />
-                                        <div v-if="a.sugestao && a.sugestao.nivel_id !== nivelDe(a)" class="fs-8 text-muted mt-1">
+                                        <div v-if="a.sugestao && a.sugestao.nivel_id !== nivelDe(a)" class="fs-8 text-body-secondary mt-1">
                                             Sugestão: <strong>{{ a.sugestao.designacao }}</strong> ({{ a.sugestao.avaliadas }} de {{ a.sugestao.total }} competências)
                                             <a href="#" class="ms-1" @click.prevent="aplicarSugestao(a)">Aplicar</a>
                                         </div>
@@ -250,7 +251,7 @@ function eliminar(instrumento) {
             <div class="card-header pt-5">
                 <div class="card-title flex-column align-items-start">
                     <h3 class="fw-bold mb-1">{{ pauta.disciplina_nome }}</h3>
-                    <div class="text-muted fs-7">{{ pauta.turma_rotulo }} · escala 0–{{ pauta.regra.escala_maxima }} · mínimo {{ pauta.regra.nota_minima }}</div>
+                    <div class="text-body-secondary fs-7">{{ pauta.turma_rotulo }} · escala 0–{{ pauta.regra.escala_maxima }} · mínimo {{ pauta.regra.nota_minima }}</div>
                 </div>
                 <div class="card-toolbar gap-3">
                     <span class="btn-group">
@@ -263,7 +264,7 @@ function eliminar(instrumento) {
             </div>
 
             <div class="card-body pt-3">
-                <div class="d-flex flex-wrap gap-4 fs-7 text-muted mb-4">
+                <div class="d-flex flex-wrap gap-4 fs-7 text-body-secondary mb-4">
                     <span>Prazo das avaliações contínuas: <strong :class="pauta.prazos.MAC.encerrado ? 'text-danger' : ''">{{ pauta.prazos.MAC.data_limite }}</strong></span>
                     <span>Prazo da prova: <strong :class="pauta.prazos.PT.encerrado ? 'text-danger' : ''">{{ pauta.prazos.PT.data_limite }}</strong></span>
                     <span v-if="pauta.recurso">Só faz recurso quem tem a nota final abaixo do mínimo · prazo do recurso: <strong :class="pauta.prazos.RECURSO.encerrado ? 'text-danger' : ''">{{ pauta.prazos.RECURSO.data_limite }}</strong> · MFR = MF × {{ pauta.recurso.peso_mf }}% + NER × {{ pauta.recurso.peso_recurso }}%</span>
@@ -275,26 +276,37 @@ function eliminar(instrumento) {
                     <input v-model="motivoForaDoPrazo" type="text" class="form-control form-control-sm w-300px" placeholder="Motivo do lançamento fora do prazo">
                 </div>
 
-                <div v-if="!pauta.instrumentos.length" class="text-muted py-6">Ainda não há avaliações neste trimestre. Crie a primeira abaixo.</div>
+                <div v-if="!pauta.instrumentos.length" class="text-body-secondary py-6">Ainda não há avaliações neste trimestre. Crie a primeira em «Nova avaliação».</div>
 
-                <div v-if="pauta.instrumentos.length && pode.criar" class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-                    <span class="fs-7" :class="alteracoes.total ? 'text-warning fw-bold' : 'text-muted'">
-                        {{ alteracoes.total ? `${alteracoes.total} nota(s) por guardar` : 'Escreva as notas e carregue em «Guardar notas» (ou Enter).' }}
-                    </span>
-                    <button type="button" class="btn btn-sm btn-primary" :disabled="!alteracoes.total || aGuardar" @click="guardarTudo">
-                        {{ aGuardar ? 'A guardar…' : 'Guardar notas' }}
-                    </button>
+                <div v-if="pode.criar" class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                    <div class="d-flex flex-wrap align-items-center gap-3 fs-7">
+                        <span class="badge" :class="macsCriadas < minAvaliacoes ? 'badge-light-warning' : 'badge-light-success'"
+                            :title="`A escola pede entre ${minAvaliacoes} e ${maxAvaliacoes} avaliações contínuas por trimestre`">
+                            Contínuas {{ macsCriadas }}/{{ maxAvaliacoes }}
+                        </span>
+                        <span v-if="macsCriadas < minAvaliacoes" class="text-warning">Faltam {{ minAvaliacoes - macsCriadas }} para o mínimo ({{ minAvaliacoes }}).</span>
+                        <span v-if="pauta.instrumentos.length" :class="alteracoes.total ? 'text-warning fw-bold' : 'text-body-secondary'">
+                            {{ alteracoes.total ? `${alteracoes.total} nota(s) por guardar` : 'Escreva as notas e carregue em «Guardar notas» (ou Enter).' }}
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-light-primary" :disabled="!tiposPossiveis.length"
+                            :title="tiposPossiveis.length ? '' : 'Não há mais avaliações a criar neste trimestre.'" @click="modalNova = true">+ Nova avaliação</button>
+                        <button v-if="pauta.instrumentos.length" type="button" class="btn btn-sm btn-primary" :disabled="!alteracoes.total || aGuardar" @click="guardarTudo">
+                            {{ aGuardar ? 'A guardar…' : 'Guardar notas' }}
+                        </button>
+                    </div>
                 </div>
 
                 <div v-if="pauta.instrumentos.length" class="table-responsive">
                     <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
                         <thead>
-                            <tr class="text-start text-muted fw-bold fs-7 text-uppercase">
+                            <tr class="text-start text-body-secondary fw-bold fs-7 text-uppercase">
                                 <th style="width: 3rem">#</th>
                                 <th>Aluno</th>
                                 <th v-for="i in pauta.instrumentos" :key="i.id" class="text-center">
-                                    {{ i.nome }}
-                                    <div class="fw-normal text-nowrap">{{ i.tipo_descricao }}{{ i.obrigatorio ? '' : ' · facultativa' }}
+                                    <span :title="i.tipo_descricao">{{ i.sigla }}</span>
+                                    <div class="fw-normal text-nowrap">{{ i.obrigatorio ? '' : 'facultativa' }}
                                         <a v-if="pode.criar" href="#" class="text-danger ms-1" title="Eliminar avaliação" @click.prevent="eliminar(i)">×</a>
                                     </div>
                                 </th>
@@ -308,16 +320,16 @@ function eliminar(instrumento) {
                         </thead>
                         <tbody>
                             <tr v-for="(a, n) in pauta.alunos" :key="a.inscricao_id">
-                                <td class="text-muted">{{ n + 1 }}</td>
+                                <td class="text-body-secondary">{{ n + 1 }}</td>
                                 <td class="fw-semibold">{{ a.nome }}</td>
                                 <td v-for="i in pauta.instrumentos" :key="i.id" class="text-center" style="min-width: 7rem">
                                     <div class="d-flex align-items-center justify-content-center gap-1">
                                         <input :value="textoDaCelula(a, i)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px"
-                                            :class="[a.notas[i.id]?.estado === ESTADO_ANULADA ? 'text-muted' : '', pendente(`${a.inscricao_id}-${i.id}`, a.notas[i.id]?.valor, valores) ? 'border-warning bg-light-warning' : '']" @input="valores[`${a.inscricao_id}-${i.id}`] = $event.target.value" @keyup.enter="guardarTudo">
-                                        <a v-if="pode.anular && a.notas[i.id] && a.notas[i.id].estado !== 1 && a.notas[i.id].estado !== 2" href="#" class="text-muted" title="Anular"
+                                            :class="[a.notas[i.id]?.estado === ESTADO_ANULADA ? 'text-body-secondary' : '', pendente(`${a.inscricao_id}-${i.id}`, a.notas[i.id]?.valor, valores) ? 'border-warning bg-light-warning' : '']" @input="valores[`${a.inscricao_id}-${i.id}`] = $event.target.value" @keyup.enter="guardarTudo">
+                                        <a v-if="pode.anular && a.notas[i.id] && a.notas[i.id].estado !== 1 && a.notas[i.id].estado !== 2" href="#" class="text-body-secondary" title="Anular"
                                             @click.prevent="aAnular = { nota_id: a.notas[i.id].id, aluno: a.nome, instrumento: i.nome }">⊘</a>
                                     </div>
-                                    <div v-if="a.notas[i.id] && a.notas[i.id].estado !== 0" class="fs-8 text-muted">{{ a.notas[i.id].estado_descricao }}</div>
+                                    <div v-if="a.notas[i.id] && a.notas[i.id].estado !== 0" class="fs-8 text-body-secondary">{{ a.notas[i.id].estado_descricao }}</div>
                                 </td>
                                 <td class="text-center">{{ a.mac ?? '—' }}</td>
                                 <td class="text-center">{{ a.pt ?? '—' }}</td>
@@ -328,10 +340,10 @@ function eliminar(instrumento) {
                                         <div class="d-flex align-items-center justify-content-center gap-1">
                                             <input :value="textoExame(a)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px"
                                                 :class="pendente(a.inscricao_id, a.ne?.valor, exames) ? 'border-warning bg-light-warning' : ''" @input="exames[a.inscricao_id] = $event.target.value" @keyup.enter="guardarTudo">
-                                            <a v-if="pode.anular && a.ne && a.ne.estado === 0" href="#" class="text-muted" title="Anular"
+                                            <a v-if="pode.anular && a.ne && a.ne.estado === 0" href="#" class="text-body-secondary" title="Anular"
                                                 @click.prevent="aAnular = { nota_id: a.ne.id, aluno: a.nome, instrumento: 'Exame' }">⊘</a>
                                         </div>
-                                        <div v-if="a.ne && a.ne.estado !== 0" class="fs-8 text-muted">{{ a.ne.estado_descricao }}</div>
+                                        <div v-if="a.ne && a.ne.estado !== 0" class="fs-8 text-body-secondary">{{ a.ne.estado_descricao }}</div>
                                     </td>
                                     <td class="text-center fw-bold">{{ a.mf ?? '—' }}</td>
                                 </template>
@@ -340,48 +352,61 @@ function eliminar(instrumento) {
                                         <div v-if="a.recurso_necessario" class="d-flex align-items-center justify-content-center gap-1">
                                             <input :value="textoRecurso(a)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px"
                                                 :class="pendente(a.inscricao_id, a.ner?.valor, recursos) ? 'border-warning bg-light-warning' : ''" @input="recursos[a.inscricao_id] = $event.target.value" @keyup.enter="guardarTudo">
-                                            <a v-if="pode.anular && a.ner && a.ner.estado === 0" href="#" class="text-muted" title="Anular"
+                                            <a v-if="pode.anular && a.ner && a.ner.estado === 0" href="#" class="text-body-secondary" title="Anular"
                                                 @click.prevent="aAnular = { nota_id: a.ner.id, aluno: a.nome, instrumento: 'Exame de recurso' }">⊘</a>
                                         </div>
-                                        <span v-else class="text-muted" :title="a.recurso_motivo">—</span>
+                                        <span v-else class="text-body-secondary" :title="a.recurso_motivo">—</span>
                                         <div v-if="a.recurso_motivo" class="fs-8 text-danger" :title="a.recurso_motivo">Sem direito a recurso</div>
-                                        <div v-if="a.ner && a.ner.estado !== 0" class="fs-8 text-muted">{{ a.ner.estado_descricao }}</div>
+                                        <div v-if="a.ner && a.ner.estado !== 0" class="fs-8 text-body-secondary">{{ a.ner.estado_descricao }}</div>
                                     </td>
                                     <td class="text-center fw-bold">{{ a.mfr ?? '—' }}</td>
                                 </template>
                             </tr>
-                            <tr v-if="!pauta.alunos.length"><td :colspan="pauta.instrumentos.length + (pauta.exame ? 8 : 6) + (pauta.recurso ? 2 : 0)" class="text-center text-muted py-6">Nenhum aluno inscrito nesta disciplina.</td></tr>
+                            <tr v-if="!pauta.alunos.length"><td :colspan="pauta.instrumentos.length + (pauta.exame ? 8 : 6) + (pauta.recurso ? 2 : 0)" class="text-center text-body-secondary py-6">Nenhum aluno inscrito nesta disciplina.</td></tr>
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
 
-                <div v-if="aAnular" class="border rounded p-4 mt-6 bg-body-secondary">
-                    <div class="fw-bold mb-2">Anular «{{ aAnular.instrumento }}» de {{ aAnular.aluno }}</div>
-                    <div class="d-flex flex-wrap align-items-center gap-3">
-                        <input v-model="anulacao.motivo" type="text" class="form-control form-control-sm w-300px" placeholder="Motivo da anulação">
+        <div v-if="aAnular" class="modal d-block" style="background: rgba(0,0,0,0.5);" @click.self="aAnular = null">
+            <div class="modal-dialog modal-dialog-centered" @keydown.esc="aAnular = null">
+                <form class="modal-content" @submit.prevent="anulacao.motivo.trim() && confirmarAnulacao()">
+                    <div class="modal-header">
+                        <h3 class="modal-title fw-bold">Anular «{{ aAnular.instrumento }}» de {{ aAnular.aluno }}</h3>
+                        <button type="button" class="btn btn-sm btn-icon btn-active-light-primary" aria-label="Fechar" @click="aAnular = null">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        <input v-model="anulacao.motivo" type="text" class="form-control mb-4" placeholder="Motivo da anulação" autofocus>
                         <label class="form-check form-check-sm form-check-custom form-check-solid">
                             <input v-model="anulacao.conta_como_zero" type="checkbox" class="form-check-input">
                             <span class="form-check-label">Conta como zero</span>
                         </label>
-                        <button type="button" class="btn btn-sm btn-danger" :disabled="!anulacao.motivo.trim()" @click="confirmarAnulacao">Anular</button>
-                        <button type="button" class="btn btn-sm btn-light" @click="aAnular = null">Cancelar</button>
                     </div>
-                </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" @click="aAnular = null">Cancelar</button>
+                        <button type="submit" class="btn btn-danger" :disabled="!anulacao.motivo.trim()">Anular</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-                <div v-if="pode.criar" class="border-top mt-6 pt-5">
-                    <div class="fw-bold mb-1">Nova avaliação neste trimestre</div>
-                    <div class="fs-7 text-muted mb-3">
-                        Avaliações contínuas: <strong>{{ macsCriadas }}</strong> de {{ maxAvaliacoes }} · a escola pede pelo menos {{ minAvaliacoes }} por trimestre
-                        <span v-if="limiteAtingido" class="ms-2 text-warning">Limite da escola atingido.</span>
-                        <span v-else-if="macsCriadas < minAvaliacoes" class="ms-2 text-warning">Falta(m) {{ minAvaliacoes - macsCriadas }} para o mínimo da escola.</span>
+        <div v-if="modalNova" class="modal d-block" style="background: rgba(0,0,0,0.5);" @click.self="modalNova = false">
+            <div class="modal-dialog modal-dialog-centered" @keydown.esc="modalNova = false">
+                <form class="modal-content" @submit.prevent="criarAvaliacao">
+                    <div class="modal-header">
+                        <h3 class="modal-title fw-bold">Nova avaliação</h3>
+                        <button type="button" class="btn btn-sm btn-icon btn-active-light-primary" aria-label="Fechar" @click="modalNova = false">✕</button>
                     </div>
-                    <div v-if="!tiposPossiveis.length" class="text-muted fs-7">Não há mais avaliações a criar neste trimestre.</div>
-                    <div v-else class="d-flex flex-wrap align-items-center gap-3">
-                        <SelectSolid v-model="novo.tipo" :options="opcoesTipos" pequeno class="w-200px" />
-                        <input v-model="novo.nome" type="text" class="form-control form-control-sm w-250px" placeholder="Nome (opcional — senão, automático)">
-                        <button type="button" class="btn btn-sm btn-primary" @click="criarAvaliacao">Adicionar</button>
+                    <div class="modal-body">
+                        <label class="fw-semibold fs-7 mb-1">Tipo</label>
+                        <SelectSolid v-model="novo.tipo" :options="opcoesTipos" />
                     </div>
-                </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" @click="modalNova = false">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Adicionar</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
