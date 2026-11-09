@@ -23,11 +23,29 @@ class ElegibilidadeRecursoService
     }
 
     /**
+     * Só a matrícula pedida: calcula-se apenas as disciplinas desse aluno, em vez da turma inteira. É o que o lançamento
+     * de uma nota de recurso precisa, e o cálculo nunca fica desactualizado por causa de notas lançadas no mesmo pedido.
+     *
+     * @return array{reprovadas: list<int>, elegivel: bool, motivo: ?string, texto: ?string}|null null se a matrícula não está activa na turma
+     */
+    public function paraMatricula(Turma $turma, AvaliacaoRegra $regra, int $matriculaId): ?array
+    {
+        return $this->calcular($turma, $regra, [$matriculaId])[$matriculaId] ?? null;
+    }
+
+    /**
      * @return array<int, array{reprovadas: list<int>, elegivel: bool, motivo: ?string, texto: ?string}> indexado pela matrícula
      */
     public function paraTurma(Turma $turma, AvaliacaoRegra $regra): array
     {
-        $matriculas = Matricula::query()->where('turma_id', $turma->id)->where('estado', EstadoMatriculaEnum::ACTIVA)->pluck('id');
+        return $this->calcular($turma, $regra, null);
+    }
+
+    /** @param list<int>|null $apenas limita às matrículas indicadas; null = a turma toda */
+    private function calcular(Turma $turma, AvaliacaoRegra $regra, ?array $apenas): array
+    {
+        $matriculas = Matricula::query()->where('turma_id', $turma->id)->where('estado', EstadoMatriculaEnum::ACTIVA)
+            ->when($apenas !== null, fn ($q) => $q->whereIn('id', $apenas))->pluck('id');
         $inscricoes = InscricaoDisciplina::query()->whereIn('matricula_id', $matriculas)->where('estado', EstadoInscricaoDisciplinaEnum::INSCRITA)
             ->with('planoCurricularDisciplina:id,disciplina_id')->get()->groupBy(fn (InscricaoDisciplina $i) => $i->planoCurricularDisciplina->disciplina_id);
 

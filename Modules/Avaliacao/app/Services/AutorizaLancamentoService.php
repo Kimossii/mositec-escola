@@ -8,9 +8,11 @@ use Illuminate\Validation\ValidationException;
 use Modules\Core\Contracts\VerificaAtribuicaoDocente;
 
 /**
- * Quem pode lançar avaliação qualitativa (nível da área ou de uma competência). Dentro do prazo: o docente atribuído à
- * turma e área, com `nota.criar` ou `nota.editar`. Depois do prazo: só quem tem `nota.lancar-fora-prazo`, com motivo. Quem
- * tem essa permissão também lança dentro do prazo, sem ser docente atribuído.
+ * Fonte única da regra de quem pode lançar avaliação (notas por números, níveis qualitativos e competências). Tudo vem
+ * do motor de permissões, nada é decidido pelo papel do utilizador:
+ * - Dentro do prazo: o docente atribuído à turma e disciplina, com a permissão de criar ou editar indicada pelo chamador.
+ * - Depois do prazo: só quem tem `nota.lancar-fora-prazo`, e com motivo. Sem essa permissão, o prazo é definitivo.
+ * - Quem tem `nota.lancar-fora-prazo` também lança dentro do prazo, sem ser docente atribuído.
  */
 class AutorizaLancamentoService
 {
@@ -18,7 +20,10 @@ class AutorizaLancamentoService
     {
     }
 
-    public function exigir(int $turmaId, int $disciplinaId, bool $foraDoPrazo, ?string $motivo): void
+    /**
+     * @param list<string> $permissoes basta ter uma delas (ex.: ['nota.criar'] para nota nova, ['nota.editar'] para alterar)
+     */
+    public function exigir(int $turmaId, int $disciplinaId, bool $foraDoPrazo, ?string $motivo, array $permissoes = ['nota.criar', 'nota.editar']): void
     {
         $utilizador = auth()->user();
         $temExcepcao = Gate::allows('nota.lancar-fora-prazo');
@@ -35,11 +40,11 @@ class AutorizaLancamentoService
         }
 
         $podeNaTurma = $utilizador !== null
-            && (Gate::allows('nota.criar') || Gate::allows('nota.editar'))
+            && Gate::any($permissoes)
             && $this->atribuicoes->podeGerir($utilizador->id, $turmaId, $disciplinaId);
 
         if (! $podeNaTurma && ! $temExcepcao) {
-            throw new AuthorizationException('Não lecciona esta área nesta turma.');
+            throw new AuthorizationException('Não lecciona esta disciplina nesta turma.');
         }
     }
 }

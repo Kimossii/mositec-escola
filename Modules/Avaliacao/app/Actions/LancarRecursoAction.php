@@ -56,7 +56,7 @@ class LancarRecursoAction
 
             // As regras da escola: máximo de negativas e disciplinas-chave decidem se o aluno tem direito ao recurso.
             $regra = $this->regras->paraTurma($turma);
-            $direito = $regra === null ? null : ($this->elegibilidade->paraTurma($turma, $regra)[$inscricao->matricula_id] ?? null);
+            $direito = $regra === null ? null : ($this->elegibilidade->paraMatricula($turma, $regra, $inscricao->matricula_id));
             if ($direito !== null && ! $direito['elegivel']) {
                 throw ValidationException::withMessages(['inscricao_disciplina_id' => $direito['texto'] ?? 'Este aluno não tem direito a exame de recurso.']);
             }

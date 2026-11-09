@@ -2,20 +2,18 @@
 
 namespace Modules\Avaliacao\Actions;
 
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Modules\Avaliacao\DTO\LancarNotaDTO;
 use Modules\Avaliacao\Enums\EstadoNota;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
 use Modules\Avaliacao\Services\AcessoAMiniPautaService;
+use Modules\Avaliacao\Services\AutorizaLancamentoService;
 use Modules\Avaliacao\Services\DocenteDoUtilizadorService;
 use Modules\Avaliacao\Services\PautaFinalService;
 use Modules\Avaliacao\Services\PrazoService;
 use Modules\Avaliacao\Services\RegraAvaliacaoService;
-use Modules\Core\Contracts\VerificaAtribuicaoDocente;
 use Modules\Core\Traits\LogService;
 use Modules\Matricula\Models\InscricaoDisciplina;
 use Modules\Turma\Models\Turma;
@@ -33,7 +31,7 @@ class LancarNotaAction
         private PrazoService $prazos,
         private RegraAvaliacaoService $regras,
         private DocenteDoUtilizadorService $docentes,
-        private VerificaAtribuicaoDocente $atribuicoes,
+        private AutorizaLancamentoService $autorizacao,
         private PautaFinalService $pautas,
         private AcessoAMiniPautaService $acesso,
     ) {
@@ -64,7 +62,7 @@ class LancarNotaAction
 
         $utilizador = auth()->user();
         $foraDoPrazo = $this->prazos->instrumentoEncerrado($instrumento, $this->docentes->idDe($utilizador));
-        $this->autorizar($instrumento, $nota !== null, $foraDoPrazo, $dto->motivo);
+        $this->autorizacao->exigir($instrumento->turma_id, $instrumento->disciplina_id, $foraDoPrazo, $dto->motivo, [$nota !== null ? 'nota.editar' : 'nota.criar']);
 
         $anterior = $nota?->only(['valor', 'estado']);
 
@@ -102,31 +100,6 @@ class LancarNotaAction
     {
         if (! preg_match('/^\d+(\.\d{1,2})?$/', $valor) || bccomp($valor, (string) $escalaMaxima, 2) > 0) {
             throw ValidationException::withMessages(['valor' => "A nota tem de estar entre 0 e {$escalaMaxima}."]);
-        }
-    }
-
-    private function autorizar(AvaliacaoInstrumento $instrumento, bool $existente, bool $foraDoPrazo, ?string $motivo): void
-    {
-        $utilizador = auth()->user();
-        $temExcepcao = Gate::allows('nota.lancar-fora-prazo');
-
-        if ($foraDoPrazo) {
-            if (! $temExcepcao) {
-                throw new AuthorizationException('O prazo de lançamento terminou.');
-            }
-            if ($motivo === null || trim($motivo) === '') {
-                throw ValidationException::withMessages(['motivo' => 'Indique o motivo do lançamento fora do prazo.']);
-            }
-
-            return;
-        }
-
-        $podeNaTurma = $utilizador !== null
-            && Gate::allows($existente ? 'nota.editar' : 'nota.criar')
-            && $this->atribuicoes->podeGerir($utilizador->id, $instrumento->turma_id, $instrumento->disciplina_id);
-
-        if (! $podeNaTurma && ! $temExcepcao) {
-            throw new AuthorizationException('Não lecciona esta disciplina nesta turma.');
         }
     }
 }
