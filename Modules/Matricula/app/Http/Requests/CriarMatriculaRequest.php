@@ -2,6 +2,7 @@
 
 namespace Modules\Matricula\Http\Requests;
 
+use Modules\Core\Tenancy\ExisteNaEscola;
 use App\Http\Requests\BaseRequest;
 
 class CriarMatriculaRequest extends BaseRequest
@@ -17,12 +18,12 @@ class CriarMatriculaRequest extends BaseRequest
             'turma_id' => [
                 'required',
                 'integer',
-                'exists:turmas,id',
+                ExisteNaEscola::em('turmas'),
             ],
             'ano_lectivo_id' => [
                 'required',
                 'integer',
-                'exists:ano_lectivos,id',
+                ExisteNaEscola::em('ano_lectivos'),
             ],
             'data_matricula' => [
                 'nullable',

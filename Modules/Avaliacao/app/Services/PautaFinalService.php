@@ -277,7 +277,8 @@ class PautaFinalService
         return [
             'tipo' => 'quantitativa',
             'com_exame' => $linhas->contains(fn (AvaliacaoPautaLinha $l) => $l->mf !== null),
-            'com_recurso' => (bool) $regra?->com_recurso,
+            // O que foi aprovado manda: com NER/MFR gravados a pauta mostra o recurso, mesmo que a regra mude depois.
+            'com_recurso' => $linhas->contains(fn (AvaliacaoPautaLinha $l) => $l->ner !== null || $l->mfr !== null) || (bool) $regra?->com_recurso,
             'turma_id' => $turma->id,
             'turma_rotulo' => $turma->rotulo(completo: true),
             'regra' => $regra === null ? null : $this->regraParaTela($regra),

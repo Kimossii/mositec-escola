@@ -6,6 +6,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Modules\Core\Enums\Estado;
 use Modules\Core\Traits\LogService;
 use Modules\Permissao\Enums\Perfil;
+use Modules\Usuario\DTO\AcessoDeDocenteDTO;
 use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Enums\TipoLogin;
 use Modules\Usuario\Exceptions\ContaDeDocenteRecusada;
@@ -28,16 +29,17 @@ class CriarUtilizadorDocenteAction
     ) {}
 
     /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
-    public function executar(int $docenteId, string $email, string $password, Estado $estado = Estado::ATIVO): User
+    public function executar(AcessoDeDocenteDTO $acesso): User
     {
-        return $this->comLog('Criar acesso de docente', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($docenteId, $email, $password, $estado));
+        return $this->comLog('Criar acesso de docente', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($acesso));
     }
 
     /**
      * @throws ContaDeDocenteRecusada
      */
-    private function executarSemRegisto(int $docenteId, string $email, string $password, Estado $estado): User
+    private function executarSemRegisto(AcessoDeDocenteDTO $acesso): User
     {
+        [$docenteId, $email, $password, $estado] = [$acesso->docenteId, $acesso->email, $acesso->password, $acesso->estado];
         $docente = $this->consulta->procurar($docenteId) ?? throw ContaDeDocenteRecusada::naoEncontrado();
 
         if ($docente->estado !== Estado::ATIVO->value) {

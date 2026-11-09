@@ -14,7 +14,7 @@ const seccoesPedagogico = [
             // { href: '#', label: 'Planos de Aula' },
             { href: '/avaliacao/notas', label: 'Avaliações / Notas', permissao: 'nota.ver' },
             { href: '/avaliacao/configuracao', label: 'Configuração da avaliação', permissao: 'nota.configurar' },
-            { href: '/avaliacao/pautas', label: 'Pautas', permissao: 'nota.exportar' },
+            { href: '/avaliacao/pautas', label: 'Pautas', permissao: 'nota.ver-pauta' },
             // { href: '#', label: 'Conselho de Turma' },
             // { href: '#', label: 'Exames / Recuperações' },
         ],

@@ -2,6 +2,7 @@
 
 namespace Modules\Aluno\Actions;
 
+use Modules\Aluno\DTO\EnquadramentoAcademicoDTO;
 use Modules\Aluno\Enums\EstadoEnquadramentoAcademicoEnum;
 use Modules\Aluno\Models\Aluno;
 use Modules\Aluno\Models\AlunoEnquadramentoAcademico;
@@ -12,22 +13,15 @@ class CriarEnquadramentoAcademicoAlunoAction
     use LogService;
 
     /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
-    public function executar(
-        Aluno $aluno,
-        ?int $cursoId = null,
-        ?int $nivelAcademicoId = null,
-        ?int $utilizadorId = null,
-    ): AlunoEnquadramentoAcademico
+    public function executar(Aluno $aluno, EnquadramentoAcademicoDTO $dto): AlunoEnquadramentoAcademico
     {
-        return $this->comLog('Criar enquadramento académico aluno', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($aluno, $cursoId, $nivelAcademicoId, $utilizadorId));
+        return $this->comLog('Criar enquadramento académico aluno', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($aluno, $dto));
     }
 
-    private function executarSemRegisto(
-        Aluno $aluno,
-        ?int $cursoId = null,
-        ?int $nivelAcademicoId = null,
-        ?int $utilizadorId = null,
-    ): AlunoEnquadramentoAcademico {
+    private function executarSemRegisto(Aluno $aluno, EnquadramentoAcademicoDTO $dto): AlunoEnquadramentoAcademico
+    {
+        [$cursoId, $nivelAcademicoId, $utilizadorId] = [$dto->cursoId, $dto->nivelAcademicoId, $dto->utilizadorId];
+
         if ($cursoId === null && $nivelAcademicoId === null) {
             throw new \InvalidArgumentException(
                 'O aluno deve ser enquadrado por um curso ou por um nível académico.'

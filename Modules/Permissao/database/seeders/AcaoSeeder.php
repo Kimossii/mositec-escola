@@ -36,6 +36,8 @@ class AcaoSeeder extends Seeder
             // Pautas: aprovar (provisório → definitivo) e reabrir uma pauta definitiva.
             ['nome' => 'aprovar', 'numero' => 17],
             ['nome' => 'reabrir', 'numero' => 18],
+            // Ver a pauta final de uma turma (o resultado de todos os alunos): permissão própria, à parte de `exportar` (PDF, Excel, boletins).
+            ['nome' => 'ver-pauta', 'numero' => 19],
         ];
 
         foreach ($acoes as $acao) {

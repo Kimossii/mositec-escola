@@ -103,13 +103,20 @@ const opcoesModo = computed(() => props.modos.map((m) => ({ value: m.valor, labe
                         <span class="form-check-label fw-bold">Exame de recurso</span>
                     </label>
                     <template v-if="f.com_recurso">
-                        <label class="form-label fs-8 fw-bold text-muted text-uppercase">Máximo de disciplinas negativas (vazio = sem máximo)</label>
+                        <template v-if="!f.com_exame">
+                        <div class="text-muted fs-8 mb-2">MFR = MF × {{ Number(f.peso_mfd_exame) || 0 }}% + NER × {{ Number(f.peso_exame) || 0 }}% (os pesos do recurso)</div>
+                        <div class="d-flex gap-2 mb-4">
+                            <input v-model="f.peso_mfd_exame" type="text" class="form-control" placeholder="Peso da nota final %">
+                            <input v-model="f.peso_exame" type="text" class="form-control" placeholder="Peso do recurso %">
+                        </div>
+                    </template>
+                    <label class="form-label fs-8 fw-bold text-muted text-uppercase">Máximo de disciplinas negativas que ainda dão direito a recurso (vazio = sem máximo)</label>
                         <input v-model="f.recurso_max_disciplinas" type="number" min="0" class="form-control w-150px mb-3">
-                        <label class="form-label fs-8 fw-bold text-muted text-uppercase">Disciplinas-chave (negativa = reprovação directa)</label>
+                        <label class="form-label fs-8 fw-bold text-muted text-uppercase">Disciplinas-chave: negativa a uma delas = reprovação directa, sem recurso</label>
                         <div class="d-flex flex-wrap gap-2">
                             <button v-for="d in disciplinas" :key="d.id" type="button" class="btn btn-sm" :class="f.disciplinas_chave.includes(d.id) ? 'btn-primary' : 'btn-light'" @click="alternarChave(d.id)">{{ d.nome }}</button>
                         </div>
-                        <div class="text-muted fs-8 mt-2">Acima do máximo, ou com negativa a uma disciplina-chave, o aluno reprova sem recurso.</div>
+                        <div class="text-muted fs-8 mt-2">Exemplo: máximo 2 → com 3 negativas o aluno reprova sem recurso; com 1 ou 2 (e nenhuma a disciplina-chave) pode ir ao recurso nessas disciplinas. Máximo 0 = ninguém vai ao recurso. Negativa a uma disciplina-chave reprova logo, sem recurso.</div>
                     </template>
                     <div v-else class="text-muted fs-8">Sem recurso: quem fica abaixo do mínimo reprova.</div>
                 </div>

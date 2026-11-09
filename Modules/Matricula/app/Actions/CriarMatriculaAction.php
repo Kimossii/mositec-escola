@@ -8,6 +8,7 @@ use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\DTO\MatriculaDTO;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Events\MatriculaEstadoAlterado;
+use Modules\Matricula\DTO\HistoricoMatriculaDTO;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\GeradorNumeroRegistoMatriculaService;
 use Modules\Matricula\Services\ValidadorMatriculaService;
@@ -68,7 +69,7 @@ class CriarMatriculaAction
                 'criado_por' => $utilizadorId,
             ]);
 
-            $this->registarHistorico->executar($matricula, null, $matricula->estado, $utilizadorId);
+            $this->registarHistorico->executar($matricula, new HistoricoMatriculaDTO(null, $matricula->estado, $utilizadorId));
 
             $this->inscreverDisciplinas->executar($matricula, $utilizadorId);
 

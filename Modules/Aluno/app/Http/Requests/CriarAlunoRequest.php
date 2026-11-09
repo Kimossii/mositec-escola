@@ -2,6 +2,7 @@
 
 namespace Modules\Aluno\Http\Requests;
 
+use Modules\Core\Tenancy\ExisteNaEscola;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 use Modules\Core\Http\Requests\Concerns\ValidaProvinciaMunicipio;
@@ -24,7 +25,7 @@ class CriarAlunoRequest extends BaseRequest
             'dados_pessoa_id' => [
                 'nullable',
                 'integer',
-                'exists:dados_pessoas,id',
+                ExisteNaEscola::em('dados_pessoas'),
                 Rule::unique('alunos', 'dados_pessoa_id'),
             ],
             'nome_completo' => ['required_without:dados_pessoa_id', 'string', 'max:255'],

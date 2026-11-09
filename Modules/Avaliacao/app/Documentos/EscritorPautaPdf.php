@@ -13,13 +13,16 @@ class EscritorPautaPdf
         $opcoes = new Options;
         $opcoes->set('defaultFont', 'DejaVu Sans');
         $opcoes->set('isRemoteEnabled', false);
-        $opcoes->set('isPhpEnabled', true); // só para o número das páginas; todo o conteúdo é escapado
         $opcoes->set('chroot', sys_get_temp_dir());
 
         $pdf = new Dompdf($opcoes);
         $pdf->loadHtml($this->html($doc), 'UTF-8');
         $pdf->setPaper('A4', 'landscape');
         $pdf->render();
+
+        // O número das páginas põe-se depois de desenhar, no canvas: o dompdf não precisa de executar PHP do documento.
+        $canvas = $pdf->getCanvas();
+        $canvas->page_text($canvas->get_width() - 80, $canvas->get_height() - 22, 'Página {PAGE_NUM} de {PAGE_COUNT}', $pdf->getFontMetrics()->getFont('DejaVu Sans'), 7, [0, 0, 0]);
 
         file_put_contents($caminho, $pdf->output());
     }
@@ -100,7 +103,6 @@ class EscritorPautaPdf
             <div class="meta">'.$meta.'</div>
             <table class="pauta"><thead><tr>'.$linha1.'</tr><tr>'.$linha2.'</tr></thead><tbody>'.$corpo.'</tbody></table>'
             .($doc->nota ? '<div class="nota">'.$e($doc->nota).'</div>' : '').$assinaturas.'
-            <script type="text/php">if (isset($pdf)) { $pdf->page_text($pdf->get_width() - 80, $pdf->get_height() - 22, "Página {PAGE_NUM} de {PAGE_COUNT}", null, 7, [0, 0, 0]); }</script>
         </body></html>';
     }
 }

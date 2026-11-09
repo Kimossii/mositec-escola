@@ -9,6 +9,8 @@ use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Events\MatriculaEstadoAlterado;
+use Modules\Matricula\DTO\HistoricoMatriculaDTO;
+use Modules\Matricula\DTO\ReactivarMatriculaDTO;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Models\MatriculaHistorico;
 use Modules\Core\Traits\LogService;
@@ -25,13 +27,15 @@ class ReactivarMatriculaAction
     }
 
     /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
-    public function executar(Matricula $matricula, string $dataEfeito, string $motivo, ?int $utilizadorId = null): Matricula
+    public function executar(Matricula $matricula, ReactivarMatriculaDTO $dto): Matricula
     {
-        return $this->comLog('Reactivar matrícula', $this->contextoDeArgumentos(func_get_args()), fn () => $this->executarSemRegisto($matricula, $dataEfeito, $motivo, $utilizadorId));
+        return $this->comLog('Reactivar matrícula', $this->contextoDeArgumentos(func_get_args()), fn () => $this->executarSemRegisto($matricula, $dto));
     }
 
-    private function executarSemRegisto(Matricula $matricula, string $dataEfeito, string $motivo, ?int $utilizadorId = null): Matricula
+    private function executarSemRegisto(Matricula $matricula, ReactivarMatriculaDTO $dto): Matricula
     {
+        [$dataEfeito, $motivo, $utilizadorId] = [$dto->dataEfeito, $dto->motivo, $dto->utilizadorId];
+
         return DB::transaction(function () use ($matricula, $dataEfeito, $motivo, $utilizadorId) {
             $bloqueada = Matricula::query()->whereKey($matricula->getKey())->lockForUpdate()->firstOrFail();
 
@@ -63,7 +67,7 @@ class ReactivarMatriculaAction
             $bloqueada->editado_por = $utilizadorId;
             $bloqueada->save();
 
-            $this->registarHistorico->executar($bloqueada, EstadoMatriculaEnum::TRANCADA, EstadoMatriculaEnum::ACTIVA, $utilizadorId, $data, trim($motivo));
+            $this->registarHistorico->executar($bloqueada, new HistoricoMatriculaDTO(EstadoMatriculaEnum::TRANCADA, EstadoMatriculaEnum::ACTIVA, $utilizadorId, $data, trim($motivo)));
 
             MatriculaEstadoAlterado::dispatch((int) $bloqueada->id, EstadoMatriculaEnum::TRANCADA->value, EstadoMatriculaEnum::ACTIVA->value, $data, $utilizadorId);
 

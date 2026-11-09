@@ -2,6 +2,7 @@
 
 namespace Modules\Turma\Http\Requests;
 
+use Modules\Core\Tenancy\ExisteNaEscola;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class AdicionarHorarioTurnoRequest extends BaseRequest
             'horario_id' => [
                 'required',
                 'integer',
-                'exists:horarios,id',
+                ExisteNaEscola::em('horarios'),
                 Rule::unique('turno_horarios', 'horario_id')
                     ->where('turno_id', $this->route('turno')?->id),
             ],

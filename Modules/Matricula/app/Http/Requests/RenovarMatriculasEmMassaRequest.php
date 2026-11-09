@@ -2,6 +2,7 @@
 
 namespace Modules\Matricula\Http\Requests;
 
+use Modules\Core\Tenancy\ExisteNaEscola;
 use App\Http\Requests\BaseRequest;
 
 class RenovarMatriculasEmMassaRequest extends BaseRequest
@@ -18,7 +19,7 @@ class RenovarMatriculasEmMassaRequest extends BaseRequest
             // única página da listagem, baixo o suficiente para o pedido
             // síncrono (sem fila) não arriscar timeout.
             'matricula_ids' => ['required', 'array', 'min:1', 'max:200'],
-            'matricula_ids.*' => ['integer', 'exists:matriculas,id'],
+            'matricula_ids.*' => ['integer', ExisteNaEscola::em('matriculas')],
         ];
     }
 

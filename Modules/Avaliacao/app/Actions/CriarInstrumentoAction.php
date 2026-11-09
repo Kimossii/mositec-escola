@@ -3,13 +3,16 @@
 namespace Modules\Avaliacao\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Modules\AnoLectivo\Models\Periodo;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Services\DefinicoesDeAvaliacaoService;
+use Modules\Avaliacao\Services\DocenteDoUtilizadorService;
 use Modules\Avaliacao\Services\PautaFinalService;
+use Modules\Avaliacao\Services\PrazoService;
 use Modules\Avaliacao\Services\RegraAvaliacaoService;
 use Modules\Core\Traits\LogService;
 use Modules\Disciplina\Models\Disciplina;
@@ -20,7 +23,7 @@ class CriarInstrumentoAction
 {
     use LogService;
 
-    public function __construct(private PautaFinalService $pautas, private RegraAvaliacaoService $regras, private DefinicoesDeAvaliacaoService $definicoes)
+    public function __construct(private PautaFinalService $pautas, private RegraAvaliacaoService $regras, private DefinicoesDeAvaliacaoService $definicoes, private PrazoService $prazos, private DocenteDoUtilizadorService $docentes)
     {
     }
 
@@ -40,6 +43,14 @@ class CriarInstrumentoAction
                 ->where('turma_id', $turma->id)->where('disciplina_id', $dto->disciplina_id)
                 ->where('periodo_id', $periodo->id)->where('tipo', TipoInstrumento::PT->value)->exists()) {
                 throw ValidationException::withMessages(['tipo' => 'Já existe uma prova trimestral para esta turma, disciplina e trimestre.']);
+            }
+
+            // Depois do prazo, criar uma avaliação contínua ou a prova baixaria a média de toda a turma (a nota em falta vale zero):
+            // só quem pode lançar fora do prazo o faz (chamadas internas, sem utilizador, não passam por aqui).
+            if (auth()->check() && in_array($dto->tipo, [TipoInstrumento::MAC, TipoInstrumento::PT], true)
+                && $this->prazos->prazoEncerrado($periodo->id, $dto->tipo, $turma->id, $dto->disciplina_id, $this->docentes->idDe(auth()->user()))
+                && ! Gate::allows('nota.lancar-fora-prazo')) {
+                throw ValidationException::withMessages(['tipo' => 'O prazo deste trimestre já terminou: só quem pode lançar fora do prazo cria avaliações agora.']);
             }
 
             if ($dto->tipo === TipoInstrumento::MAC) {

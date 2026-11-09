@@ -4,6 +4,7 @@ namespace Modules\Plataforma\Http\Controllers\Concerns;
 
 use Illuminate\Http\Request;
 use Modules\Plataforma\Actions\RegistarAuditoriaAction;
+use Modules\Plataforma\DTO\RegistoAuditoriaDTO;
 use Throwable;
 
 /**
@@ -18,7 +19,7 @@ trait AuditaSemFalhar
     private function auditar(RegistarAuditoriaAction $auditoria, Request $request, string $accao, string $codigoTenant, array $detalhe = []): void
     {
         try {
-            $auditoria->executar($request->user('plataforma'), $accao, $codigoTenant, $detalhe);
+            $auditoria->executar(new RegistoAuditoriaDTO($request->user('plataforma'), $accao, $codigoTenant, $detalhe));
         } catch (Throwable $e) {
             report($e);
         }

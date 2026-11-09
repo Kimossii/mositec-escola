@@ -36,9 +36,9 @@ Route::middleware(['auth', 'can:nota.configurar'])->prefix('avaliacao/configurac
     Route::post('/prazos/{prazo}/excepcoes', [ConfiguracaoAvaliacaoController::class, 'prolongarPrazo'])->whereNumber('prazo')->middleware('can:nota.prolongar-prazo')->name('prazos.prolongar');
 });
 
-// Pauta final: consulta como documento (`nota.exportar`); aprovar e reabrir têm permissões próprias.
+// Pauta final: ver tem a sua permissão (`nota.ver-pauta`); exportar e boletins `nota.exportar`; aprovar e reabrir têm permissões próprias.
 Route::middleware(['auth'])->prefix('avaliacao/pautas')->name('avaliacao.pautas.')->group(function () {
-    Route::get('/', [PautaController::class, 'index'])->middleware('can:nota.exportar')->name('index');
+    Route::get('/', [PautaController::class, 'index'])->middleware('can:nota.ver-pauta')->name('index');
     Route::get('/{turma}/exportar', [PautaController::class, 'exportar'])->whereNumber('turma')->middleware(['can:nota.exportar', 'throttle:operacao-pesada'])->name('exportar');
     Route::get('/{turma}/boletins', [PautaController::class, 'boletins'])->whereNumber('turma')->middleware(['can:nota.exportar', 'throttle:operacao-pesada'])->name('boletins');
     Route::post('/{turma}/aprovar', [PautaController::class, 'aprovar'])->whereNumber('turma')->middleware('can:nota.aprovar')->name('aprovar');

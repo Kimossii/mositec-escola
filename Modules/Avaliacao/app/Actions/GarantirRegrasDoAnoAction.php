@@ -2,6 +2,7 @@
 
 namespace Modules\Avaliacao\Actions;
 
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Avaliacao\Enums\ModoArredondamento;
@@ -32,20 +33,19 @@ class GarantirRegrasDoAnoAction
         }
 
         $this->comLog('Criar as regras de avaliação do ano', $this->contextoDeArgumentos(func_get_args(), 'executar'), function () use ($anoLectivoId) {
-            DB::transaction(function () use ($anoLectivoId) {
-                // Outro pedido pode ter criado as regras entretanto.
-                if (AvaliacaoRegra::query()->where('ano_lectivo_id', $anoLectivoId)->lockForUpdate()->exists()) {
-                    return;
-                }
+            try {
+                DB::transaction(function () use ($anoLectivoId) {
+                    $anterior = $this->anoAnterior($anoLectivoId);
 
-                $anterior = $this->anoAnterior($anoLectivoId);
-
-                if ($anterior !== null) {
-                    $this->herdar($anterior, $anoLectivoId);
-                } else {
-                    $this->porDefeito($anoLectivoId);
-                }
-            });
+                    if ($anterior !== null) {
+                        $this->herdar($anterior, $anoLectivoId);
+                    } else {
+                        $this->porDefeito($anoLectivoId);
+                    }
+                });
+            } catch (UniqueConstraintViolationException) {
+                // Outro pedido criou as regras do ano ao mesmo tempo (a restrição única das ligações impede duplicados): está feito.
+            }
         });
     }
 

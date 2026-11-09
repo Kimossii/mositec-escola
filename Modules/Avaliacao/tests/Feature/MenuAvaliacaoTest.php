@@ -29,8 +29,8 @@ class MenuAvaliacaoTest extends TestCase
 
         $this->assertStringContainsString("\n        { href: '/avaliacao/notas', title: 'Avaliações / Notas', permissao: 'nota.ver' },", $sidebar);
         $this->assertStringContainsString("\n        { href: '/avaliacao/configuracao', title: 'Configuração da avaliação', permissao: 'nota.configurar' },", $sidebar);
-        $this->assertStringContainsString("\n        { href: '/avaliacao/pautas', title: 'Pautas', permissao: 'nota.exportar' },", $sidebar);
-        $this->assertStringContainsString("\n            { href: '/avaliacao/pautas', label: 'Pautas', permissao: 'nota.exportar' },", $cabecalho);
+        $this->assertStringContainsString("\n        { href: '/avaliacao/pautas', title: 'Pautas', permissao: 'nota.ver-pauta' },", $sidebar);
+        $this->assertStringContainsString("\n            { href: '/avaliacao/pautas', label: 'Pautas', permissao: 'nota.ver-pauta' },", $cabecalho);
         $this->assertStringContainsString("\n            { href: '/avaliacao/notas', label: 'Avaliações / Notas', permissao: 'nota.ver' },", $cabecalho);
         $this->assertStringContainsString("\n            { href: '/avaliacao/configuracao', label: 'Configuração da avaliação', permissao: 'nota.configurar' },", $cabecalho);
     }

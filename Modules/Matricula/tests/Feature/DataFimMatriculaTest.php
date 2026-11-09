@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
+use Modules\Aluno\DTO\EnquadramentoAcademicoDTO;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
@@ -89,7 +90,7 @@ class DataFimMatriculaTest extends TestCase
             'dados_pessoa_id' => $pessoa->id,
             'numero_matricula' => 'AL-' . uniqid(),
         ]);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, null, $this->turma->nivel_academico_id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $this->turma->nivel_academico_id));
 
         return Matricula::create([
             'aluno_id' => $aluno->id,

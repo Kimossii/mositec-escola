@@ -5,6 +5,7 @@ namespace Tests\Feature\Tenancy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Aluno\Actions\CriarAlunoAction;
 use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
+use Modules\Aluno\DTO\EnquadramentoAcademicoDTO;
 use Modules\Aluno\DTO\AlunoDTO;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
@@ -56,7 +57,7 @@ class SequenciasIsolamentoTest extends TestCase
             dadosPessoaId: null, nomeCompleto: 'Aluno ' . $bi, email: null, telefone: null,
             dataNascimento: null, sexo: DadosPessoa::SEXO_FEMININO, numeroIdentificacao: $bi,
         ));
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, null, $nivel->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $nivel->id));
 
         $matricula = app(CriarMatriculaAction::class)->executar(
             $aluno,

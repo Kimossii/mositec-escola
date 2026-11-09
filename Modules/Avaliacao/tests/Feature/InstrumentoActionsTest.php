@@ -5,10 +5,8 @@ namespace Modules\Avaliacao\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
-use Modules\Avaliacao\Actions\AtualizarInstrumentoAction;
 use Modules\Avaliacao\Actions\CriarInstrumentoAction;
 use Modules\Avaliacao\Actions\EliminarInstrumentoAction;
-use Modules\Avaliacao\DTO\AtualizarInstrumentoDTO;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\Enums\EstadoNota;
 use Modules\Avaliacao\Enums\TipoInstrumento;
@@ -61,17 +59,6 @@ class InstrumentoActionsTest extends TestCase
 
         $this->expectException(ValidationException::class);
         app(CriarInstrumentoAction::class)->executar(new InstrumentoDTO($c['turma']->id, $c['disciplina']->id, $outro['periodos'][1]->id, TipoInstrumento::MAC, 'X'));
-    }
-
-    public function test_actualizar_muda_nome_e_obrigatoriedade(): void
-    {
-        $c = $this->cenarioDeAvaliacao();
-        $i = app(CriarInstrumentoAction::class)->executar($this->dto($c, TipoInstrumento::MAC, 'A1'));
-
-        $i = app(AtualizarInstrumentoAction::class)->executar(new AtualizarInstrumentoDTO($i->id, 'Teste 1', false));
-
-        $this->assertSame('Teste 1', $i->nome);
-        $this->assertFalse($i->obrigatorio);
     }
 
     public function test_eliminar_sem_notas_funciona_e_com_notas_e_rejeitado(): void

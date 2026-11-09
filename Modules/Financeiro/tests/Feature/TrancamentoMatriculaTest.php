@@ -26,6 +26,8 @@ use Modules\Financeiro\Tests\Concerns\ComPropinasFinanceiro;
 use Modules\Financeiro\Tests\Concerns\ComUtilizadoresFinanceiro;
 use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
 use Modules\Matricula\Actions\ReactivarMatriculaAction;
+use Modules\Matricula\DTO\ReactivarMatriculaDTO;
+use Modules\Matricula\DTO\TrancarMatriculaDTO;
 use Modules\Matricula\Actions\TrancarMatriculaAction;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Models\Matricula;
@@ -59,7 +61,7 @@ class TrancamentoMatriculaTest extends TestCase
 
     private function trancar(Matricula $matricula, bool $confirmar = false, string $data = self::HOJE): Matricula
     {
-        return app(TrancarMatriculaAction::class)->executar($matricula, $data, 'Mudança de cidade', $confirmar, $this->adminEscola()->id);
+        return app(TrancarMatriculaAction::class)->executar($matricula, new TrancarMatriculaDTO($data, 'Mudança de cidade', $confirmar, $this->adminEscola()->id));
     }
 
     private function recusa(string $campo, callable $operacao): void
@@ -119,7 +121,7 @@ class TrancamentoMatriculaTest extends TestCase
 
         $this->recusa('data_efeito', fn () => $this->trancar($matricula, false, '2026-10-17'));
         $this->recusa('data_efeito', fn () => $this->trancar($matricula, false, '2026-08-01'));
-        $this->recusa('motivo', fn () => app(TrancarMatriculaAction::class)->executar($matricula, self::HOJE, 'abc'));
+        $this->recusa('motivo', fn () => app(TrancarMatriculaAction::class)->executar($matricula, new TrancarMatriculaDTO(self::HOJE, 'abc')));
 
         $this->trancar($matricula);
         $this->recusa('estado', fn () => $this->trancar($matricula->fresh()));
@@ -143,11 +145,11 @@ class TrancamentoMatriculaTest extends TestCase
         $this->trancar($matricula);
         $reactivar = app(ReactivarMatriculaAction::class);
 
-        $this->recusa('data_efeito', fn () => $reactivar->executar($matricula->fresh(), '2026-10-01', 'Voltou à cidade'));
-        $this->recusa('motivo', fn () => $reactivar->executar($matricula->fresh(), self::HOJE, 'x'));
+        $this->recusa('data_efeito', fn () => $reactivar->executar($matricula->fresh(), new ReactivarMatriculaDTO('2026-10-01', 'Voltou à cidade')));
+        $this->recusa('motivo', fn () => $reactivar->executar($matricula->fresh(), new ReactivarMatriculaDTO(self::HOJE, 'x')));
 
-        $this->assertSame(EstadoMatriculaEnum::ACTIVA, $reactivar->executar($matricula->fresh(), self::HOJE, 'Voltou à cidade', $this->adminEscola()->id)->estado);
-        $this->recusa('estado', fn () => $reactivar->executar($matricula->fresh(), self::HOJE, 'Voltou à cidade'));
+        $this->assertSame(EstadoMatriculaEnum::ACTIVA, $reactivar->executar($matricula->fresh(), new ReactivarMatriculaDTO(self::HOJE, 'Voltou à cidade', $this->adminEscola()->id))->estado);
+        $this->recusa('estado', fn () => $reactivar->executar($matricula->fresh(), new ReactivarMatriculaDTO(self::HOJE, 'Voltou à cidade')));
     }
 
     public function test_multas_ficam_congeladas_enquanto_trancada(): void
@@ -173,7 +175,7 @@ class TrancamentoMatriculaTest extends TestCase
         $this->trancar($matricula, false, self::HOJE);
         MatriculaHistorico::query()->where('matricula_id', $matricula->id)->update(['data_efeito' => '2026-09-01']);
         Carbon::setTestNow(CarbonImmutable::parse('2026-12-10 10:00:00', 'UTC'));
-        app(ReactivarMatriculaAction::class)->executar($matricula->fresh(), '2026-12-01', 'Voltou à cidade', $this->adminEscola()->id);
+        app(ReactivarMatriculaAction::class)->executar($matricula->fresh(), new ReactivarMatriculaDTO('2026-12-01', 'Voltou à cidade', $this->adminEscola()->id));
 
         $criadas = Propina::query()->where('matricula_id', $matricula->id)->pluck('periodo_inicio')->map->toDateString()->all();
 

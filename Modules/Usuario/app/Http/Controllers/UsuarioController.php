@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Modules\Autenticacao\Service\FotoDoUtilizadorService;
 use Modules\Core\Exportacao\Exportador;
@@ -14,6 +13,7 @@ use Modules\Permissao\Enums\Perfil;
 use Modules\Usuario\Actions\RedefinirSenhaUsuarioAction;
 use Modules\Usuario\Http\Requests\AtualizarUsuarioRequest;
 use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
+use Modules\Usuario\Http\Requests\ExportarUtilizadoresRequest;
 use Modules\Usuario\Http\Requests\ProcurarAlunoPorMatriculaRequest;
 use Modules\Usuario\Http\Requests\ProcurarDocenteSemContaRequest;
 use Modules\Usuario\Models\User;
@@ -169,16 +169,9 @@ class UsuarioController extends Controller
      * Exporta a lista (todos ou um perfil) com os filtros do ecrã: Excel, PDF, CSV ou ZIP. Os administradores só entram
      * no ficheiro para quem tem `autorizacao.ver`.
      */
-    public function exportar(Request $request, ExportacaoDeUtilizadoresService $exportacao, Exportador $exportador)
+    public function exportar(ExportarUtilizadoresRequest $request, ExportacaoDeUtilizadoresService $exportacao, Exportador $exportador)
     {
-        $this->authorize('usuario.exportar');
-
-        $dados = $request->validate([
-            'formato' => ['required', 'string'],
-            'perfil' => ['nullable', 'string', Rule::in(array_keys(ExportacaoDeUtilizadoresService::PERFIS))],
-            'pesquisa' => ['nullable', 'string', 'max:100'],
-            'estado' => ['nullable', 'in:0,1'],
-        ]);
+        $dados = $request->validated();
 
         $podeVerAdministradores = $request->user()->can('autorizacao.ver');
 

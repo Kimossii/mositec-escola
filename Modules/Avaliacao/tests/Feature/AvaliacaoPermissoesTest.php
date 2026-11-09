@@ -39,7 +39,7 @@ class AvaliacaoPermissoesTest extends TestCase
     public function test_nota_declara_as_accoes_de_avaliacao(): void
     {
         $this->assertSame(
-            ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'exportar'],
+            ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'ver-pauta', 'exportar'],
             Modulo::NOTA->acoesAplicaveis(),
         );
     }

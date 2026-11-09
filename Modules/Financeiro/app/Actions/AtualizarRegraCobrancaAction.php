@@ -4,6 +4,7 @@ namespace Modules\Financeiro\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Actions\RegistarAuditoriaTenantAction;
+use Modules\Core\DTO\AuditoriaTenantDTO;
 use Modules\Financeiro\DTO\RegraCobrancaDTO;
 use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Services\AplicarMultasDiariasService;
@@ -75,7 +76,7 @@ class AtualizarRegraCobrancaAction
             $regra = $regra->fresh();
 
             // Auditoria do tenant: diff de todos os campos alterados (incluindo escalões), na mesma transacção.
-            $this->auditoria->executar('regra_cobranca.actualizada', 'regras_cobranca', (int) $regra->id, $antes, $this->instantaneo($regra));
+            $this->auditoria->executar(new AuditoriaTenantDTO('regra_cobranca.actualizada', 'regras_cobranca', (int) $regra->id, $antes, $this->instantaneo($regra)));
 
             return $regra;
         });

@@ -248,4 +248,19 @@ class FluxoDaInterfaceTest extends TestCase
         $sem = collect($pagina['niveis'])->firstWhere('id', $decima->id);
         $this->assertTrue($sem['sem_regra'] && ! $sem['tem_regra_padrao'], 'a 10.ª fica sem regra e sem alarme');
     }
+
+    public function test_depois_do_prazo_o_professor_nao_cria_avaliacoes_que_baixariam_a_media_da_turma(): void
+    {
+        $c = $this->cenarioDeAvaliacao();
+        $this->inscreverAluno($c, 'Ana');
+        $professor = $this->professorAtribuido($c);
+        $this->travelTo('2026-05-10 10:00:00'); // o 1.º trimestre acabou em 30 de Abril
+        $dados = ['turma_id' => $c['turma']->id, 'disciplina_id' => $c['disciplina']->id, 'periodo_id' => $c['periodos'][1]->id, 'tipo' => TipoInstrumento::MAC->value, 'nome' => '', 'obrigatorio' => true];
+
+        $this->actingAs($professor)->post('/avaliacao/notas/instrumentos', $dados)->assertSessionHasErrors('tipo');
+        $this->assertSame(0, \Modules\Avaliacao\Models\AvaliacaoInstrumento::count());
+
+        // No trimestre em curso continua a poder criar.
+        $this->actingAs($professor)->post('/avaliacao/notas/instrumentos', [...$dados, 'periodo_id' => $c['periodos'][2]->id])->assertSessionHasNoErrors();
+    }
 }

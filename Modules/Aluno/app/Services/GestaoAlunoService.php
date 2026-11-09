@@ -5,7 +5,6 @@ namespace Modules\Aluno\Services;
 use Modules\Aluno\Actions\AlterarEstadoAlunoAction;
 use Modules\Aluno\Actions\AtualizarAlunoAction;
 use Modules\Aluno\Actions\CriarAlunoAction;
-use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
 use Modules\Aluno\DTO\AlunoDTO;
 use Modules\Aluno\Http\Requests\AtualizarAlunoRequest;
 use Modules\Aluno\Http\Requests\CriarAlunoRequest;
@@ -19,7 +18,6 @@ class GestaoAlunoService
         private CriarAlunoAction $criarAluno,
         private AtualizarAlunoAction $atualizarAluno,
         private AlterarEstadoAlunoAction $alterarEstadoAluno,
-        private CriarEnquadramentoAcademicoAlunoAction $criarEnquadramentoAcademicoAluno,
     ) {
     }
 
@@ -36,9 +34,5 @@ class GestaoAlunoService
     public function alterarEstado(Aluno $aluno, Estado $novoEstado): Aluno
     {
         return $this->alterarEstadoAluno->executar($aluno, $novoEstado);
-    }
-    public function enquadrarAcademicamente(Aluno $aluno, ?int $cursoId = null, ?int $nivelAcademicoId = null, ?int $utilizadorId = null, ): AlunoEnquadramentoAcademico
-    {
-        return $this->criarEnquadramentoAcademicoAluno->executar($aluno, $cursoId, $nivelAcademicoId, $utilizadorId, );
     }
 }

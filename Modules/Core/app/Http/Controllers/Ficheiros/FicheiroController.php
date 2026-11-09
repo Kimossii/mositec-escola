@@ -58,8 +58,9 @@ class FicheiroController extends Controller
 
         $utilizadores = $this->modeloUtilizador()::query()->where('id', '!=', $request->user()->id)
             ->when($q !== '', fn ($query) => $query->where(fn ($w) => $w->where('name', 'ilike', "%{$q}%")->orWhere('email', 'ilike', "%{$q}%")))
-            ->orderBy('name')->limit(40)->get(['id', 'name', 'email'])
+            ->orderBy('name')->get(['id', 'name', 'email'])
             ->filter(fn (Authenticatable $u) => $this->podeReceber($u, $pedido))
+            ->take(40)
             ->map(fn (Authenticatable $u) => ['id' => $u->id, 'nome' => $u->name, 'email' => $u->email])->values();
 
         return response()->json($utilizadores);

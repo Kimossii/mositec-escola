@@ -8,7 +8,7 @@ class VerPautaRequest extends BaseRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('nota.exportar') ?? false;
+        return $this->user()?->can('nota.ver-pauta') ?? false;
     }
 
     public function rules(): array
