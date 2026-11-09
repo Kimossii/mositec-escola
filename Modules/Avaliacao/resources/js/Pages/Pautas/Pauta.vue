@@ -1,8 +1,9 @@
 <script setup>
-import { reactive, ref } from 'vue';
+import { computed, nextTick, reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 
 const props = defineProps({
     turmas: { type: Array, required: true }, // [{ id, rotulo, estado }]
@@ -40,6 +41,8 @@ function reabrir() {
     });
 }
 
+const opcoesTurmas = computed(() => props.turmas.map((t) => ({ value: t.id, label: `${t.rotulo} — ${ESTADOS[t.estado].texto}` })));
+const opcoesDecisao = [{ value: 0, label: 'Transita' }, { value: 1, label: 'Não transita' }];
 const imprimir = () => window.print();
 
 const escolhas = reactive({}); // matricula -> decisão escolhida (0 Transita, 1 Não transita) ainda por gravar
@@ -66,10 +69,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
         <div class="card card-flush mb-6 d-print-none">
             <div class="card-body py-4">
                 <label class="form-label fs-7 fw-bold text-muted text-uppercase">Turma</label>
-                <select v-model="turma" class="form-select form-select-sm w-100 w-md-50" @change="abrir">
-                    <option :value="null" disabled>Escolha a turma</option>
-                    <option v-for="t in turmas" :key="t.id" :value="t.id">{{ t.rotulo }} — {{ ESTADOS[t.estado].texto }}</option>
-                </select>
+                <SelectSolid v-model="turma" :options="opcoesTurmas" searchable placeholder="Escolha a turma" class="w-100 w-md-50" @update:model-value="nextTick(abrir)" />
             </div>
         </div>
 
@@ -162,11 +162,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                                     </template>
                                 </template>
                                 <td class="fw-bold text-nowrap" :title="a.recurso?.texto" :class="a.decisao?.valor === 1 || a.decisao?.valor === 3 ? 'text-danger' : (a.decisao ? 'text-success' : 'text-muted')"><template v-if="pauta.progressao_manual && pauta.estado !== 'definitiva' && pode.aprovar">
-                                        <select :value="escolhas[a.matricula_id] ?? a.decisao?.valor ?? ''" class="form-select form-select-sm w-150px d-print-none" @change="decidir(a, $event.target.value)">
-                                            <option value="" disabled>Decidir…</option>
-                                            <option :value="0">Transita</option>
-                                            <option :value="1">Não transita</option>
-                                        </select>
+                                        <SelectSolid :model-value="escolhas[a.matricula_id] ?? a.decisao?.valor ?? ''" :options="opcoesDecisao" pequeno placeholder="Decidir…" class="w-150px d-print-none" @update:model-value="(v) => decidir(a, v)" />
                                         <input v-if="(escolhas[a.matricula_id] ?? a.decisao?.valor) === 1" type="text" class="form-control form-control-sm mt-1 d-print-none"
                                             placeholder="Motivo" :value="motivos[a.matricula_id] ?? a.motivo_progressao" @input="motivos[a.matricula_id] = $event.target.value" @blur="decidir(a, 1)">
                                     </template>

@@ -199,30 +199,32 @@ class FluxoDaInterfaceTest extends TestCase
         $this->actingAs($outro)->post('/avaliacao/notas/lote', $dados([$nota($ana, '3')]))->assertForbidden();
     }
 
-    public function test_o_admin_cria_uma_regra_nova_passa_uma_classe_para_ela_e_elimina_a_que_ficou_vazia(): void
+    public function test_uma_classe_nao_se_liga_a_uma_segunda_regra_primeiro_tira_se_da_primeira(): void
     {
         $c = $this->cenarioDeAvaliacao();
         $quarta = \Modules\Turma\Models\NivelAcademico::create(['estabelecimento_id' => $c['nivel']->estabelecimento_id, 'codigo' => 'PRI_4', 'nome' => '4.ª Classe', 'ordem' => 4, 'etapa_ensino' => 3]);
         $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
         $props = fn () => $this->props($this->actingAs($admin)->get('/avaliacao/configuracao')->assertOk());
+        $regra = $props()['regras'][0]; // «3.ª a 5.ª classe»: segue a 3.ª e a 4.ª
+        $this->assertEqualsCanonicalizing([$c['nivel']->id, $quarta->id], $regra['nivel_ids']);
 
-        $regra = $props()['regras'][0];
+        // Uma regra nova com a 4.ª, que já tem regra, é recusada e não deixa nada criado.
+        $nova = [...$regra, 'regra_id' => null, 'nova' => true, 'nome' => 'Só a 4.ª', 'nivel_ids' => [$quarta->id], 'ano_lectivo_id' => $c['ano']->id];
+        $this->actingAs($admin)->post('/avaliacao/configuracao/regras', $nova)->assertSessionHasErrors('nivel_ids');
+        $this->assertCount(1, $props()['regras']);
+        $this->assertEqualsCanonicalizing([$c['nivel']->id, $quarta->id], $props()['regras'][0]['nivel_ids'], 'a 4.ª continua onde estava');
 
-        // Nova regra só para a 4.ª (como o ecrã envia: regra_id nulo, o nome e as classes), tirando-a da regra onde estava.
-        $this->actingAs($admin)->post('/avaliacao/configuracao/regras', [
-            ...$regra, 'regra_id' => null, 'nova' => true, 'nome' => 'Só a 4.ª', 'nivel_ids' => [$quarta->id], 'ano_lectivo_id' => $c['ano']->id,
-        ])->assertSessionHasNoErrors();
+        // Tira-se a 4.ª da regra atual e só então se liga à nova.
+        $this->actingAs($admin)->post('/avaliacao/configuracao/regras', [...$regra, 'regra_id' => $regra['id'], 'nivel_ids' => [$c['nivel']->id], 'ano_lectivo_id' => $c['ano']->id])->assertSessionHasNoErrors();
+        $this->actingAs($admin)->post('/avaliacao/configuracao/regras', $nova)->assertSessionHasNoErrors();
 
         $regras = collect($props()['regras'])->keyBy('nome');
         $this->assertSame([$quarta->id], $regras['Só a 4.ª']['nivel_ids']);
         $this->assertSame([$c['nivel']->id], $regras['3.ª a 5.ª classe']['nivel_ids']);
 
-        // Passa a 4.ª de volta e a regra nova fica vazia: já se pode eliminar.
-        $this->actingAs($admin)->post('/avaliacao/configuracao/regras', [
-            ...$regras['3.ª a 5.ª classe'], 'regra_id' => $regras['3.ª a 5.ª classe']['id'], 'nivel_ids' => [$c['nivel']->id, $quarta->id], 'ano_lectivo_id' => $c['ano']->id,
-        ])->assertSessionHasNoErrors();
+        // A regra que fica sem classes pode ser eliminada.
+        $this->actingAs($admin)->post('/avaliacao/configuracao/regras', [...$regras['Só a 4.ª'], 'regra_id' => $regras['Só a 4.ª']['id'], 'nivel_ids' => [], 'ano_lectivo_id' => $c['ano']->id])->assertSessionHasNoErrors();
         $this->actingAs($admin)->delete('/avaliacao/configuracao/regras/'.$regras['Só a 4.ª']['id'])->assertSessionHasNoErrors();
-
         $this->assertSame(['3.ª a 5.ª classe'], array_column($props()['regras'], 'nome'));
     }
 

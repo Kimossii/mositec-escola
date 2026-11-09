@@ -33,6 +33,7 @@ class RegraDeAvaliacaoTest extends TestCase
             nivel_ids: $o['niveis'] ?? [$c['nivel']->id],
             regra_id: $o['regra_id'] ?? null,
             nome: $o['nome'] ?? '',
+            nova: $o['nova'] ?? false,
             escala_maxima: $o['escala'] ?? 10,
             nota_minima: $o['minima'] ?? '5',
             peso_mac: $o['mac'] ?? '50',
@@ -125,7 +126,7 @@ class RegraDeAvaliacaoTest extends TestCase
         AvaliacaoRegraNivel::create(['ano_lectivo_id' => $c['ano']->id, 'nivel_academico_id' => $c['nivel']->id, 'regra_id' => $b->id]);
     }
 
-    public function test_ligar_uma_classe_a_outra_regra_tira_a_da_anterior(): void
+    public function test_uma_classe_que_ja_segue_uma_regra_nao_se_liga_a_outra(): void
     {
         $c = $this->cenarioDeAvaliacao();
         $quarta = NivelAcademico::create(['estabelecimento_id' => $c['nivel']->estabelecimento_id, 'codigo' => 'PRI_4', 'nome' => '4.ª Classe', 'ordem' => 4, 'etapa_ensino' => 3]);
@@ -134,13 +135,20 @@ class RegraDeAvaliacaoTest extends TestCase
         $juntas = $acao->executar($this->dto($c, ['niveis' => [$c['nivel']->id, $quarta->id]]));
         $this->assertEqualsCanonicalizing([$c['nivel']->id, $quarta->id], $juntas->niveis()->pluck('nivel_academico_id')->all());
 
-        $so4 = $acao->executar($this->dto($c, ['niveis' => [$quarta->id]]));
-        $this->assertSame($juntas->id, $so4->id, 'a 4.ª já seguia a regra: actualiza-se a mesma');
-        $this->assertSame([$quarta->id], $juntas->fresh()->niveis()->pluck('nivel_academico_id')->all(), 'a 3.ª ficou sem regra');
+        // Uma regra nova com a 4.ª é recusada, e nada fica criado nem mudado.
+        try {
+            $acao->executar($this->dto($c, ['niveis' => [$quarta->id], 'nome' => 'Só a 4.ª', 'nova' => true]));
+            $this->fail('A 4.ª já segue uma regra.');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('já segue a regra', $e->errors()['nivel_ids'][0]);
+        }
+        $this->assertSame(1, AvaliacaoRegra::count());
+        $this->assertCount(2, $juntas->fresh()->niveis);
 
-        $nova = $acao->executar($this->dto($c, ['niveis' => [$c['nivel']->id], 'nome' => 'Só a 3.ª']));
-        $this->assertNotSame($juntas->id, $nova->id);
-        $this->assertSame('Só a 3.ª', $nova->nome);
+        // Tirada da primeira, já se liga a uma regra nova.
+        $acao->executar($this->dto($c, ['niveis' => [$c['nivel']->id], 'regra_id' => $juntas->id]));
+        $nova = $acao->executar($this->dto($c, ['niveis' => [$quarta->id], 'nome' => 'Só a 4.ª', 'nova' => true]));
+        $this->assertSame([$quarta->id], $nova->niveis()->pluck('nivel_academico_id')->all());
         $this->assertSame(2, AvaliacaoRegra::count());
     }
 
@@ -160,22 +168,35 @@ class RegraDeAvaliacaoTest extends TestCase
         app(GuardarRegraQualitativaAction::class)->executar(new RegraQualitativaDTO($c['ano']->id, [$c['nivel']->id], null));
     }
 
-    public function test_eliminar_so_uma_regra_sem_classes(): void
+    public function test_uma_regra_ainda_nao_usada_elimina_se_mesmo_com_classes_e_as_classes_ficam_sem_regra(): void
     {
         $c = $this->cenarioDeAvaliacao();
         $regra = app(GuardarRegraAvaliacaoAction::class)->executar($this->dto($c));
-        $eliminar = app(EliminarRegraAvaliacaoAction::class);
+        $this->assertSame(1, AvaliacaoRegraNivel::count());
+
+        app(EliminarRegraAvaliacaoAction::class)->executar($regra->id, false);
+
+        $this->assertSame(0, AvaliacaoRegra::count());
+        $this->assertSame(0, AvaliacaoRegraNivel::count(), 'as classes ficam sem regra');
+    }
+
+    public function test_uma_regra_ja_usada_nao_se_elimina(): void
+    {
+        $c = $this->cenarioDeAvaliacao();
+        $regra = app(GuardarRegraAvaliacaoAction::class)->executar($this->dto($c));
+        \Modules\Avaliacao\Models\AvaliacaoInstrumento::create(['turma_id' => $c['turma']->id, 'disciplina_id' => $c['disciplina']->id, 'periodo_id' => $c['periodos'][1]->id, 'tipo' => \Modules\Avaliacao\Enums\TipoInstrumento::MAC, 'nome' => 'A1', 'obrigatorio' => true]);
+
+        $admin = $this->criarUtilizadorComPerfil(\Modules\Permissao\Enums\Perfil::ADMIN_ESCOLA, 'admin@example.com');
+        $props = \Inertia\Testing\AssertableInertia::fromTestResponse($this->actingAs($admin)->get('/avaliacao/configuracao'))->toArray()['props'];
+        $this->assertTrue(collect($props['regras'])->firstWhere('id', $regra->id)['em_uso']);
 
         try {
-            $eliminar->executar($regra->id, false);
-            $this->fail('A regra tem uma classe ligada.');
-        } catch (ValidationException) {
-            $this->assertSame(1, AvaliacaoRegra::count());
+            app(EliminarRegraAvaliacaoAction::class)->executar($regra->id, false);
+            $this->fail('A regra já foi usada.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('regra_id', $e->errors());
         }
-
-        app(GuardarRegraAvaliacaoAction::class)->executar($this->dto($c, ['niveis' => [], 'regra_id' => $regra->id]));
-        $eliminar->executar($regra->id, false);
-        $this->assertSame(0, AvaliacaoRegra::count());
+        $this->assertSame(1, AvaliacaoRegra::count());
     }
 
     public function test_um_ano_novo_herda_as_regras_do_anterior_com_as_classes_e_so_actua_quando_nao_tem_nenhuma(): void

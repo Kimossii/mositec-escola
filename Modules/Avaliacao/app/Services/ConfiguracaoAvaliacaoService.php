@@ -23,7 +23,7 @@ use Modules\Turma\Models\Turma;
 /** Leitura da página de configuração: as regras do ano e as classes ligadas a cada uma, prazos por trimestre e tipo, e excepções. Só consulta. */
 class ConfiguracaoAvaliacaoService
 {
-    public function __construct(private CabecalhoDocumentoService $cabecalho, private DefinicoesDeAvaliacaoService $definicoes, private RegraPadraoService $padrao)
+    public function __construct(private CabecalhoDocumentoService $cabecalho, private DefinicoesDeAvaliacaoService $definicoes, private RegraPadraoService $padrao, private RegraEmUsoService $emUso)
     {
     }
 
@@ -68,6 +68,7 @@ class ConfiguracaoAvaliacaoService
         $numericas = $regras->map(fn (AvaliacaoRegra $r) => [
             'id' => $r->id,
             'qualitativa' => false,
+            'em_uso' => $this->emUso->emUso($r),
             'nome' => $r->nome,
             'nivel_ids' => $r->niveis->pluck('nivel_academico_id')->all(),
             'escala_maxima' => $r->escala_maxima,
@@ -92,6 +93,7 @@ class ConfiguracaoAvaliacaoService
         $qualitativas = $regrasQ->map(fn (AvaliacaoRegraQualitativa $r) => [
             'id' => $r->id,
             'qualitativa' => true,
+            'em_uso' => $this->emUso->emUso($r),
             'nome' => $r->nome,
             'nivel_ids' => $r->niveis->pluck('nivel_academico_id')->all(),
             'escala_id' => $r->escala_id,

@@ -19,7 +19,7 @@ class GuardarRegraRequest extends BaseRequest
             'ano_lectivo_id' => ['required', 'integer'],
             'regra_id' => ['nullable', 'integer'],
             'nova' => ['nullable', 'boolean'],
-            'sigla_prova' => ['required', 'string', 'max:10'],
+            'sigla_prova' => ['nullable', 'string', 'max:10'],
             'nome' => ['required', 'string', 'max:120'],
             'nivel_ids' => ['present', 'array', 'max:60'],
             'nivel_ids.*' => ['integer'],

@@ -3,6 +3,7 @@ import { computed, reactive, ref, watchEffect } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 
 const props = defineProps({
     opcoes: { type: Array, required: true }, // [{ turma_id, turma_rotulo, disciplinas: [{ disciplina_id, disciplina_nome }] }]
@@ -32,8 +33,12 @@ const macsCriadas = computed(() => (props.pauta?.instrumentos ?? []).filter((i) 
 const maxAvaliacoes = computed(() => props.pauta?.regra?.max_avaliacoes ?? 10);
 const minAvaliacoes = computed(() => props.pauta?.regra?.min_avaliacoes ?? 5);
 const limiteAtingido = computed(() => macsCriadas.value >= maxAvaliacoes.value);
+const opcoesTurmas = computed(() => props.opcoes.map((o) => ({ value: o.turma_id, label: o.turma_rotulo })));
+const opcoesDisciplinas = computed(() => disciplinasDaTurma.value.map((d) => ({ value: d.disciplina_id, label: d.disciplina_nome })));
+const opcoesNiveis = computed(() => (props.pauta?.escala?.niveis ?? []).map((nv) => ({ value: nv.id, label: nv.designacao })));
 const tiposPossiveis = computed(() => props.tipos.filter((t) => (t.valor !== PT || !(props.pauta?.instrumentos ?? []).some((i) => i.tipo === PT)) && (t.valor !== MAC || !limiteAtingido.value)));
 // Se o tipo escolhido deixou de se poder criar (limite atingido, prova já criada), passa ao primeiro possível.
+const opcoesTipos = computed(() => tiposPossiveis.value.map((t) => ({ value: t.valor, label: t.nome })));
 watchEffect(() => { if (tiposPossiveis.value.length && !tiposPossiveis.value.some((t) => t.valor === novo.tipo)) novo.tipo = tiposPossiveis.value[0].valor; });
 
 const aoFalhar = (e) => toast.error(Object.values(e)[0]);
@@ -160,17 +165,11 @@ function eliminar(instrumento) {
                 <div class="row g-4 align-items-end">
                     <div class="col-12 col-md-5">
                         <label class="form-label fs-7 fw-bold text-muted text-uppercase">Turma</label>
-                        <select v-model="turma" class="form-select form-select-sm" @change="disciplina = null">
-                            <option :value="null" disabled>Escolha a turma</option>
-                            <option v-for="o in opcoes" :key="o.turma_id" :value="o.turma_id">{{ o.turma_rotulo }}</option>
-                        </select>
+                        <SelectSolid v-model="turma" :options="opcoesTurmas" searchable placeholder="Escolha a turma" @update:model-value="disciplina = null" />
                     </div>
                     <div class="col-12 col-md-5">
                         <label class="form-label fs-7 fw-bold text-muted text-uppercase">Disciplina</label>
-                        <select v-model="disciplina" class="form-select form-select-sm" :disabled="!turma" @change="abrir(turma, disciplina)">
-                            <option :value="null" disabled>Escolha a disciplina</option>
-                            <option v-for="d in disciplinasDaTurma" :key="d.disciplina_id" :value="d.disciplina_id">{{ d.disciplina_nome }}</option>
-                        </select>
+                        <SelectSolid v-model="disciplina" :options="opcoesDisciplinas" :disabled="!turma" placeholder="Escolha a disciplina" @update:model-value="(v) => abrir(turma, v)" />
                     </div>
                 </div>
                 <div v-if="!opcoes.length" class="text-muted mt-4">Não tem turmas atribuídas neste momento.</div>
@@ -219,10 +218,7 @@ function eliminar(instrumento) {
                                     <td class="text-muted">{{ n + 1 }}</td>
                                     <td class="fw-semibold">{{ a.nome }}</td>
                                     <td>
-                                        <select :value="nivelDe(a)" class="form-select form-select-sm" @change="guardarQualitativa(a, 'nivel', Number($event.target.value))">
-                                            <option value="" disabled>—</option>
-                                            <option v-for="nv in pauta.escala.niveis" :key="nv.id" :value="nv.id">{{ nv.designacao }}</option>
-                                        </select>
+                                        <SelectSolid :model-value="nivelDe(a)" :options="opcoesNiveis" pequeno placeholder="—" @update:model-value="(v) => guardarQualitativa(a, 'nivel', Number(v))" />
                                         <div v-if="a.sugestao && a.sugestao.nivel_id !== nivelDe(a)" class="fs-8 text-muted mt-1">
                                             Sugestão: <strong>{{ a.sugestao.designacao }}</strong> ({{ a.sugestao.avaliadas }} de {{ a.sugestao.total }} competências)
                                             <a href="#" class="ms-1" @click.prevent="aplicarSugestao(a)">Aplicar</a>
@@ -239,10 +235,7 @@ function eliminar(instrumento) {
                                     <td :colspan="pauta.competencias.length ? 4 : 3" class="bg-body-secondary">
                                         <div v-for="c in pauta.competencias" :key="c.id" class="d-flex flex-wrap align-items-center gap-3 py-1">
                                             <span class="flex-grow-1 fs-7">{{ c.descricao }}</span>
-                                            <select :value="nivelDaCompetencia(a, c)" class="form-select form-select-sm w-200px" @change="guardarCompetencia(a, c, Number($event.target.value))">
-                                                <option value="" disabled>—</option>
-                                                <option v-for="nv in pauta.escala.niveis" :key="nv.id" :value="nv.id">{{ nv.designacao }}</option>
-                                            </select>
+                                            <SelectSolid :model-value="nivelDaCompetencia(a, c)" :options="opcoesNiveis" pequeno placeholder="—" class="w-200px" @update:model-value="(v) => guardarCompetencia(a, c, Number(v))" />
                                         </div>
                                     </td>
                                 </tr>
@@ -384,9 +377,7 @@ function eliminar(instrumento) {
                     </div>
                     <div v-if="!tiposPossiveis.length" class="text-muted fs-7">Não há mais avaliações a criar neste trimestre.</div>
                     <div v-else class="d-flex flex-wrap align-items-center gap-3">
-                        <select v-model="novo.tipo" class="form-select form-select-sm w-200px">
-                            <option v-for="t in tiposPossiveis" :key="t.valor" :value="t.valor">{{ t.nome }}</option>
-                        </select>
+                        <SelectSolid v-model="novo.tipo" :options="opcoesTipos" pequeno class="w-200px" />
                         <input v-model="novo.nome" type="text" class="form-control form-control-sm w-250px" placeholder="Nome (opcional — senão, automático)">
                         <button type="button" class="btn btn-sm btn-primary" @click="criarAvaliacao">Adicionar</button>
                     </div>

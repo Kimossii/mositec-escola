@@ -43,10 +43,18 @@ class LigarClassesARegraAction
             throw ValidationException::withMessages(['nivel_ids' => 'Há uma classe indicada que não existe.']);
         }
 
-        // Tira da regra as classes que já não são dela e, do ano, as que passam para esta.
+        // Uma classe que já segue outra regra não se liga a esta: tem de ser tirada primeiro dessa.
+        $ocupadas = AvaliacaoRegraNivel::query()->where('ano_lectivo_id', $anoLectivoId)->whereIn('nivel_academico_id', $nivelIds)
+            ->where(fn ($q) => $q->whereNull($coluna)->orWhere($coluna, '!=', $regraId))->with(['regra', 'regraQualitativa', 'nivelAcademico'])->get();
+
+        if ($ocupadas->isNotEmpty()) {
+            $mensagens = $ocupadas->map(fn (AvaliacaoRegraNivel $l) => "«{$l->nivelAcademico->nome}» já segue a regra «".($l->regra?->nome ?? $l->regraQualitativa?->nome)."».");
+
+            throw ValidationException::withMessages(['nivel_ids' => $mensagens->implode(' ').' Tire-a primeiro dessa regra.']);
+        }
+
+        // Tira da regra as classes que já não são dela.
         AvaliacaoRegraNivel::query()->where('ano_lectivo_id', $anoLectivoId)->where($coluna, $regraId)->whereNotIn('nivel_academico_id', $nivelIds)->delete();
-        AvaliacaoRegraNivel::query()->where('ano_lectivo_id', $anoLectivoId)->whereIn('nivel_academico_id', $nivelIds)
-            ->where(fn ($q) => $q->whereNull($coluna)->orWhere($coluna, '!=', $regraId))->delete();
 
         $ligadas = AvaliacaoRegraNivel::query()->where('ano_lectivo_id', $anoLectivoId)->where($coluna, $regraId)->pluck('nivel_academico_id')->all();
 

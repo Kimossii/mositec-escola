@@ -91,7 +91,7 @@ class GestaoConfiguracaoAvaliacaoService
             com_exame: (bool) $d['com_exame'],
             com_recurso: (bool) $d['com_recurso'],
             nova: (bool) ($d['nova'] ?? false),
-            sigla_prova: trim((string) $d['sigla_prova']),
+            sigla_prova: trim((string) ($d['sigla_prova'] ?? '')) ?: 'PT',
         ));
     }
 
