@@ -11,6 +11,7 @@ use Modules\Avaliacao\Actions\LancarNotasEmLoteAction;
 use Modules\Avaliacao\Actions\LancarNotaAction;
 use Modules\Avaliacao\Actions\LancarQualitativaAction;
 use Modules\Avaliacao\Actions\LancarRecursoAction;
+use Modules\Avaliacao\Actions\TratarNegativaAction;
 use Modules\Avaliacao\DTO\AnularNotaDTO;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\DTO\LancarCompetenciaDTO;
@@ -18,6 +19,7 @@ use Modules\Avaliacao\DTO\LancarExameDTO;
 use Modules\Avaliacao\DTO\LancarNotaDTO;
 use Modules\Avaliacao\DTO\LancarNotasEmLoteDTO;
 use Modules\Avaliacao\DTO\LancarQualitativaDTO;
+use Modules\Avaliacao\DTO\TratarNegativaDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Http\Requests\AnularNotaRequest;
 use Modules\Avaliacao\Http\Requests\CriarInstrumentoRequest;
@@ -26,6 +28,7 @@ use Modules\Avaliacao\Http\Requests\LancarExameRequest;
 use Modules\Avaliacao\Http\Requests\LancarNotaRequest;
 use Modules\Avaliacao\Http\Requests\LancarNotasEmLoteRequest;
 use Modules\Avaliacao\Http\Requests\LancarQualitativaRequest;
+use Modules\Avaliacao\Http\Requests\TratarNegativaRequest;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Usuario\Models\User;
 
@@ -38,6 +41,7 @@ class GestaoMiniPautaService
         private LancarExameAction $lancarExame,
         private LancarRecursoAction $lancarRecurso,
         private LancarQualitativaAction $lancarQualitativa,
+        private TratarNegativaAction $tratarNegativa,
         private LancarCompetenciaAction $lancarCompetencia,
         private AnularNotaAction $anularNota,
         private LancarNotasEmLoteAction $lancarEmLote,
@@ -78,6 +82,13 @@ class GestaoMiniPautaService
     public function lancarRecurso(LancarExameRequest $request): void
     {
         $this->lancarRecurso->executar($this->exame($request));
+    }
+
+    public function tratarNegativa(TratarNegativaRequest $request): void
+    {
+        $d = $request->validated();
+
+        $this->tratarNegativa->executar(new TratarNegativaDTO((int) $d['inscricao_disciplina_id'], $d['medida']));
     }
 
     public function lancarQualitativa(LancarQualitativaRequest $request): void

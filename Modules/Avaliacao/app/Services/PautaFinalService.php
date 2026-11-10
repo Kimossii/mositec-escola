@@ -8,6 +8,7 @@ use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\Avaliacao\Enums\Decisao;
 use Modules\Avaliacao\Enums\EstadoPauta;
 use Modules\Avaliacao\Models\AvaliacaoDecisao;
+use Modules\Avaliacao\Models\AvaliacaoNegativaTratada;
 use Modules\Avaliacao\Models\AvaliacaoPauta;
 use Modules\Avaliacao\Models\AvaliacaoPautaLinha;
 use Modules\Avaliacao\Models\AvaliacaoPautaLinhaQualitativa;
@@ -72,7 +73,7 @@ class PautaFinalService
             'turmas' => $this->turmas(),
             'selecao' => ['turma' => $turma?->id],
             'pauta' => $turma === null ? null : $this->paraTurma($turma->id),
-            'pode' => ['aprovar' => $gate->allows('nota.aprovar'), 'reabrir' => $gate->allows('nota.reabrir')],
+            'pode' => ['aprovar' => $gate->allows('nota.aprovar'), 'reabrir' => $gate->allows('nota.reabrir'), 'tratar_negativa' => $gate->allows('nota.tratar-negativa')],
         ];
     }
 
@@ -164,6 +165,11 @@ class PautaFinalService
             }
         }
 
+        $tratamNegativas = $regra->tratamento_negativas->tratamNegativas();
+        $tratadas = AvaliacaoNegativaTratada::query()
+            ->whereIn('inscricao_disciplina_id', collect($celulas)->flatMap(fn (array $d) => array_column($d, 'inscricao_id'))->all())
+            ->pluck('medida', 'inscricao_disciplina_id');
+
         $alunos = [];
         $comPendentes = 0;
         $chave = $comRecurso ? $regra->disciplinasChave()->pluck('disciplinas.id')->map(fn ($id) => (int) $id)->all() : [];
@@ -178,7 +184,15 @@ class PautaFinalService
                 }
                 $recurso = ['elegivel' => $av['elegivel'], 'texto' => RegraDoRecurso::descrever($av, $regra->recurso_max_disciplinas, $nomes)];
             }
-            $decisao = $this->decisao->decidir(array_column($doAluno, 'nota_final'), (string) $regra->nota_minima, $regra->reprova_por_aproveitamento, $comExame);
+            $negativas = array_values(array_map(
+                fn ($id) => ['disciplina' => $nomes[$id] ?? '', 'inscricao_id' => $doAluno[$id]['inscricao_id'], 'medida' => $tratadas[$doAluno[$id]['inscricao_id']] ?? null],
+                array_keys(array_filter($doAluno, fn (array $c) => $c['aprovado'] === false)),
+            ));
+            $decisao = $this->decisao->decidir(array_column($doAluno, 'nota_final'), (string) $regra->nota_minima, $regra->tratamento_negativas, $comExame);
+            // Onde o aluno tem de transitar, só transita no papel com todas as negativas tratadas.
+            if ($tratamNegativas && collect($negativas)->contains(fn (array $n) => $n['medida'] === null)) {
+                $decisao = null;
+            }
             $pendente = in_array(true, array_column($doAluno, 'pendente'), true) || $doAluno === [];
             $comPendentes += $pendente ? 1 : 0;
 
@@ -188,6 +202,7 @@ class PautaFinalService
                 'numero_matricula' => $m->aluno?->numero_matricula,
                 'sexo' => $m->aluno?->dadosPessoa?->sexo,
                 'celulas' => $doAluno,
+                'negativas' => $negativas,
                 'recurso' => $recurso,
                 'decisao' => $this->decisaoParaTela($decisao),
                 'estado_decisao' => $decisao !== null ? 'definida' : 'pendente',
@@ -207,6 +222,12 @@ class PautaFinalService
             $bloqueios[] = "Faltam resultados em {$comPendentes} aluno(s): lance as notas em falta antes de aprovar.";
         }
 
+        // Onde o aluno tem de transitar, cada negativa precisa da sua medida registada antes de a pauta se aprovar.
+        $porTratar = $tratamNegativas ? count(array_filter($alunos, fn (array $a) => collect($a['negativas'])->contains(fn (array $n) => $n['medida'] === null))) : 0;
+        if ($porTratar > 0) {
+            $bloqueios[] = "Faltam tratar as negativas de {$porTratar} aluno(s): registe a medida de cada uma antes de aprovar.";
+        }
+
         // O recurso não é obrigatório e nunca bloqueia a aprovação; avisa-se, para a escola decidir quando aprovar.
         $avisos = [];
         $aEspera = count(array_filter($alunos, fn (array $a) => collect($a['celulas'])->contains(fn (array $c) => $c['recurso_permitido'] && $c['ner'] === null)));
@@ -223,6 +244,7 @@ class PautaFinalService
             'avisos' => $avisos,
             'com_exame' => $comExame,
             'com_recurso' => $comRecurso,
+            'trata_negativas' => $tratamNegativas,
             'disciplinas' => $disciplinas->map(fn (Disciplina $d) => ['id' => $d->id, 'nome' => (string) $d->nome])->all(),
             'alunos' => $alunos,
             'pode_aprovar' => $bloqueios === [],

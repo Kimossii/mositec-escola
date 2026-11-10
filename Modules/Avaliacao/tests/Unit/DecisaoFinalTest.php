@@ -3,15 +3,16 @@
 namespace Modules\Avaliacao\Tests\Unit;
 
 use Modules\Avaliacao\Enums\Decisao;
+use Modules\Avaliacao\Enums\TratamentoDeNegativas;
 use Modules\Avaliacao\Services\RegraPadraoService;
 use Modules\Avaliacao\Support\Calculo\DecisaoFinal;
 use PHPUnit\Framework\TestCase;
 
 class DecisaoFinalTest extends TestCase
 {
-    private function decidir(array $notas, bool $reprova = true, bool $exame = false): ?Decisao
+    private function decidir(array $notas, TratamentoDeNegativas $tratamento = TratamentoDeNegativas::REPROVA, bool $exame = false): ?Decisao
     {
-        return (new DecisaoFinal(new \Modules\Avaliacao\Support\Calculo\CalculadoraQuantitativa()))->decidir($notas, '5', $reprova, $exame);
+        return (new DecisaoFinal(new \Modules\Avaliacao\Support\Calculo\CalculadoraQuantitativa()))->decidir($notas, '5', $tratamento, $exame);
     }
 
     public function test_transita_com_todas_as_disciplinas_positivas_incluindo_o_minimo_exacto(): void
@@ -30,9 +31,11 @@ class DecisaoFinalTest extends TestCase
         $this->assertSame(Decisao::NAO_TRANSITA, $this->decidir(['4.00']));
     }
 
-    public function test_sem_reprovacao_por_aproveitamento_transita_sempre(): void
+    public function test_so_o_tratamento_reprova_decide_pelas_negativas(): void
     {
-        $this->assertSame(Decisao::TRANSITA, $this->decidir(['1.00', '2.00'], reprova: false));
+        $t = TratamentoDeNegativas::TRANSITA_TRATANDO_NEGATIVAS;
+        $this->assertSame(Decisao::TRANSITA, $this->decidir(['1.00', '2.00'], $t));
+        $this->assertSame(Decisao::APTO, $this->decidir(['1.00', '2.00'], $t, exame: true));
     }
 
     public function test_disciplina_sem_mfd_deixa_a_decisao_em_aberto(): void

@@ -9,6 +9,7 @@ use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Enums\TipoInstrumento;
+use Modules\Avaliacao\Enums\TratamentoDeNegativas;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
@@ -66,6 +67,45 @@ class MiniPautaHttpTest extends TestCase
             ->where('pauta.alunos.0.nome', fn ($nome) => str_starts_with($nome, 'Ana'))
             ->where('pauta.periodo_id', $this->c['periodos'][1]->id)
             ->where('pauta.prazos.MAC.encerrado', false));
+    }
+
+    public function test_a_mini_pauta_marca_a_negativa_do_trimestre_aberto_logo_ao_lancar_as_notas(): void
+    {
+        $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
+        $inscricao = $this->inscreverAluno($this->c, 'Ana');
+        $this->notasCompletas($this->c, $inscricao, [1 => ['2', '2']]);
+
+        // Regra por defeito (reprova): a negativa aparece com a consequência.
+        $this->actingAs($admin)->get($this->url())->assertInertia(fn (Assert $p) => $p
+            ->where('pauta.alunos.0.negativa', true)
+            ->where('pauta.regra.trata_negativas', false)
+            ->where('pauta.regra.consequencia_negativa', 'Em risco de reprovar'));
+
+        // Onde o aluno tem de transitar, a negativa pede tratamento; depois de tratada mostra a medida.
+        $this->regra->update(['tratamento_negativas' => TratamentoDeNegativas::TRANSITA_TRATANDO_NEGATIVAS]);
+        $this->actingAs($admin)->get($this->url())->assertInertia(fn (Assert $p) => $p
+            ->where('pauta.regra.trata_negativas', true)
+            ->where('pauta.alunos.0.medida_negativa', null)
+            ->where('pode.tratar_negativa', true));
+
+        $this->actingAs($admin)->post('/avaliacao/notas/negativas', ['inscricao_disciplina_id' => $inscricao->id, 'medida' => 'Aulas de apoio.'])->assertRedirect();
+        $this->actingAs($admin)->get($this->url())->assertInertia(fn (Assert $p) => $p->where('pauta.alunos.0.medida_negativa', 'Aulas de apoio.'));
+    }
+
+    public function test_so_trata_negativas_quem_tem_a_permissao_e_so_onde_o_aluno_tem_de_transitar(): void
+    {
+        $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
+        $inscricao = $this->inscreverAluno($this->c, 'Ana');
+        $this->notasCompletas($this->c, $inscricao, [1 => ['2', '2']]);
+        $dados = ['inscricao_disciplina_id' => $inscricao->id, 'medida' => 'Apoio.'];
+
+        // Classe que reprova: não há tratamento de negativas.
+        $this->actingAs($admin)->post('/avaliacao/notas/negativas', $dados)->assertSessionHasErrors('inscricao_disciplina_id');
+
+        // Sem a permissão: 403.
+        $this->regra->update(['tratamento_negativas' => TratamentoDeNegativas::TRANSITA_TRATANDO_NEGATIVAS]);
+        $semPermissao = $this->criarUtilizadorComPerfil(Perfil::FUNCIONARIO, 'func@example.com');
+        $this->actingAs($semPermissao)->post('/avaliacao/notas/negativas', $dados)->assertForbidden();
     }
 
     public function test_docente_nao_atribuido_recebe_403(): void

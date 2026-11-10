@@ -71,8 +71,8 @@ const nomeDaProgressao = (v) => props.progressoes.find((p) => p.valor === v)?.no
             <div v-if="!r.qualitativa" class="d-flex flex-wrap gap-2 mb-4">
                 <span v-if="r.com_exame" class="badge badge-light-warning">Exame próprio</span>
                 <span v-if="r.com_recurso" class="badge badge-light-danger">Recurso</span>
-                <span v-if="!r.reprova_por_aproveitamento" class="badge badge-light">Não reprova</span>
-                <span v-if="!r.com_exame && !r.com_recurso && r.reprova_por_aproveitamento" class="badge badge-light">Média final decide</span>
+                <span v-if="r.tratamento_negativas === 1" class="badge badge-light">Negativas tratadas</span>
+                <span v-if="!r.com_exame && !r.com_recurso && r.tratamento_negativas === 0" class="badge badge-light">Média final decide</span>
             </div>
             <div v-if="!r.qualitativa" class="h-4px w-100 bg-light mb-5 d-flex" :title="`Média trimestral: ${Number(r.peso_mac)}% avaliação contínua, ${Number(r.peso_pt)}% prova`">
                 <div class="bg-primary h-4px" :style="{ width: Number(r.peso_mac) + '%' }"></div>

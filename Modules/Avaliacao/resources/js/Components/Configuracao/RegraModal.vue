@@ -13,6 +13,7 @@ const props = defineProps({
     escalas: { type: Array, default: () => [] },
     progressoes: { type: Array, default: () => [] },
     modos: { type: Array, default: () => [] },
+    negativas: { type: Array, default: () => [] }, // [{ valor, nome }]
     disciplinas: { type: Array, default: () => [] },
     processando: { type: Boolean, default: false },
     erros: { type: Object, default: () => ({}) },
@@ -20,7 +21,7 @@ const props = defineProps({
 const emit = defineEmits(['guardar', 'eliminar', 'fechar']);
 
 const BASE_NOTAS = () => ({ nome: '', escala_maxima: 10, nota_minima: '5', peso_mac: '50', peso_pt: '50', sigla_prova: 'PT', peso_mt1: null, peso_mt2: null, peso_mt3: null, peso_mfd_exame: '40', peso_exame: '60',
-    com_exame: false, com_recurso: false, exame_usa_mfd_arredondada: true, recurso_max_disciplinas: null, disciplinas_chave: [], casas_decimais: 2, modo_arredondamento: 0, reprova_por_aproveitamento: true, nivel_ids: [] });
+    com_exame: false, com_recurso: false, exame_usa_mfd_arredondada: true, recurso_max_disciplinas: null, disciplinas_chave: [], casas_decimais: 2, modo_arredondamento: 0, tratamento_negativas: 0, nivel_ids: [] });
 const BASE_QUALITATIVA = () => ({ nome: '', escala_id: '', progressao: 0, nivel_ids: [] });
 
 const aberta = computed(() => props.regra !== null || props.nova);
@@ -83,6 +84,8 @@ const opcoesProgressao = computed(() => props.progressoes.map((p) => ({ value: p
 
 const mensagens = computed(() => [...new Set(Object.values(props.erros ?? {}).flat())]);
 const podeEliminar = computed(() => !criar.value && !props.regra?.em_uso);
+const opcoesNegativas = computed(() => props.negativas.map((n) => ({ value: n.valor, label: n.nome })));
+const nomeDoTratamento = (v) => props.negativas.find((n) => n.valor === v)?.nome ?? '';
 const nomeDoModo = (v) => props.modos.find((m) => m.valor === v)?.nome ?? '';
 const nomeDaEscala = (id) => props.escalas.find((e) => e.id === id)?.nome ?? 'Por escolher';
 const nomeDaProgressao = (v) => props.progressoes.find((p) => p.valor === v)?.nome ?? '';
@@ -119,7 +122,7 @@ const podeGuardar = computed(() => !!f.nome?.trim() && (!criar.value || f.nivel_
                             <div class="col-6 col-md-3"><div class="border border-dashed rounded p-4 h-100"><div class="fw-bold">0–{{ regra.escala_maxima }}</div><div class="fs-8 text-muted">Escala</div></div></div>
                             <div class="col-6 col-md-3"><div class="border border-dashed rounded p-4 h-100"><div class="fw-bold">{{ regra.nota_minima }}</div><div class="fs-8 text-muted">Nota mínima</div></div></div>
                             <div class="col-6 col-md-3"><div class="border border-dashed rounded p-4 h-100"><div class="fw-bold">{{ Number(regra.peso_mac) }}% · {{ Number(regra.peso_pt) }}%</div><div class="fs-8 text-muted">MAC · {{ regra.sigla_prova }}</div></div></div>
-                            <div class="col-6 col-md-3"><div class="border border-dashed rounded p-4 h-100"><div class="fw-bold">{{ regra.reprova_por_aproveitamento ? 'Sim' : 'Não' }}</div><div class="fs-8 text-muted">Reprova por aproveitamento</div></div></div>
+                            <div class="col-6 col-md-3"><div class="border border-dashed rounded p-4 h-100"><div class="fw-bold">{{ nomeDoTratamento(regra.tratamento_negativas) }}</div><div class="fs-8 text-muted">Aluno com negativas</div></div></div>
                             <div class="col-6 col-md-3"><div class="border border-dashed rounded p-4 h-100"><div class="fw-bold">{{ regra.casas_decimais }} casas</div><div class="fs-8 text-muted">{{ nomeDoModo(regra.modo_arredondamento) }}</div></div></div>
                             <div class="col-6 col-md-3"><div class="border border-dashed rounded p-4 h-100"><div class="fw-bold">{{ regra.peso_mt1 === null ? 'Iguais' : `${Number(regra.peso_mt1)}% · ${Number(regra.peso_mt2)}% · ${Number(regra.peso_mt3)}%` }}</div><div class="fs-8 text-muted">Pesos dos trimestres</div></div></div>
                             <div class="col-12 col-md-6"><div class="border border-dashed rounded p-4 h-100"><div class="fw-bold">{{ regra.com_exame ? `Sim: MF = MFD × ${Number(regra.peso_mfd_exame)}% + NE × ${Number(regra.peso_exame)}%` : 'Não' }}</div><div class="fs-8 text-muted">Exame próprio</div></div></div>
@@ -191,7 +194,11 @@ const podeGuardar = computed(() => !!f.nome?.trim() && (!criar.value || f.nivel_
                         <div class="d-flex flex-wrap gap-8 mb-5">
                             <label class="form-check form-switch form-check-custom"><input v-model="f.com_exame" type="checkbox" class="form-check-input"><span class="form-check-label">Exame próprio</span></label>
                             <label class="form-check form-switch form-check-custom"><input v-model="f.com_recurso" type="checkbox" class="form-check-input"><span class="form-check-label">Exame de recurso</span></label>
-                            <label class="form-check form-switch form-check-custom"><input v-model="f.reprova_por_aproveitamento" type="checkbox" class="form-check-input"><span class="form-check-label">Reprova por aproveitamento</span></label>
+                        </div>
+                        <div class="mb-5">
+                            <label class="form-label fs-7 fw-bold text-muted text-uppercase">Aluno com negativas</label>
+                            <SelectSolid v-model="f.tratamento_negativas" :options="opcoesNegativas" class="w-100 w-md-50" />
+                            <div class="text-muted fs-8 mt-1">Nunca fica escondido: o professor vê a negativa logo na mini-pauta e a pauta final marca-a.</div>
                         </div>
 
                         <a href="#" class="fs-7 fw-semibold" @click.prevent="avancado = !avancado">{{ avancado ? '▾ Menos opções' : '▸ Mais opções (arredondamento, pesos dos trimestres, exame e recurso em detalhe…)' }}</a>

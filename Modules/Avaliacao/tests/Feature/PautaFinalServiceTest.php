@@ -3,6 +3,8 @@
 namespace Modules\Avaliacao\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\Avaliacao\Enums\TratamentoDeNegativas;
+use Modules\Avaliacao\Models\AvaliacaoNegativaTratada;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Services\PautaFinalService;
@@ -93,12 +95,35 @@ class PautaFinalServiceTest extends TestCase
         $this->assertSame('A turma não tem alunos com matrícula activa.', $p['bloqueios'][0]);
     }
 
-    public function test_1_e_2_classes_transitam_mesmo_com_notas_baixas(): void
+    public function test_1_e_2_classes_transitam_mesmo_com_notas_baixas_depois_de_tratadas_as_negativas(): void
     {
         $c = $this->cenarioDeAvaliacao('PRI_1');
-        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5', reprova_por_aproveitamento: false));
-        $this->notasCompletas($c, $this->inscreverAluno($c), [1 => ['1', '1'], 2 => ['1', '1'], 3 => ['1', '1']]);
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5', tratamento_negativas: TratamentoDeNegativas::TRANSITA_TRATANDO_NEGATIVAS));
+        $inscricao = $this->inscreverAluno($c);
+        $this->notasCompletas($c, $inscricao, [1 => ['1', '1'], 2 => ['1', '1'], 3 => ['1', '1']]);
+        AvaliacaoNegativaTratada::create(['inscricao_disciplina_id' => $inscricao->id, 'medida' => 'Apoio.']);
 
         $this->assertSame('Transita', $this->pauta($c)['alunos'][0]['decisao']['rotulo']);
+    }
+
+    public function test_onde_o_aluno_tem_de_transitar_a_pauta_so_se_aprova_com_as_negativas_tratadas(): void
+    {
+        $c = $this->cenarioDeAvaliacao('PRI_1');
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5', tratamento_negativas: TratamentoDeNegativas::TRANSITA_TRATANDO_NEGATIVAS));
+        $inscricao = $this->inscreverAluno($c);
+        $this->notasCompletas($c, $inscricao, [1 => ['1', '1'], 2 => ['1', '1'], 3 => ['1', '1']]);
+
+        $p = $this->pauta($c);
+        $this->assertNull($p['alunos'][0]['decisao']); // com a negativa por tratar, não transita no papel
+        $this->assertSame([['disciplina' => $c['disciplina']->nome, 'inscricao_id' => $inscricao->id, 'medida' => null]], $p['alunos'][0]['negativas']);
+        $this->assertFalse($p['pode_aprovar']);
+        $this->assertStringContainsString('Faltam tratar as negativas de 1 aluno(s)', implode(' ', $p['bloqueios']));
+
+        AvaliacaoNegativaTratada::create(['inscricao_disciplina_id' => $inscricao->id, 'medida' => 'Aulas de apoio às terças.']);
+
+        $p = $this->pauta($c);
+        $this->assertSame('Transita', $p['alunos'][0]['decisao']['rotulo']);
+        $this->assertSame('Aulas de apoio às terças.', $p['alunos'][0]['negativas'][0]['medida']);
+        $this->assertTrue($p['pode_aprovar']);
     }
 }

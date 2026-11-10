@@ -4,12 +4,13 @@ import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import TratarNegativaModal from '../../Components/Notas/TratarNegativaModal.vue';
 
 const props = defineProps({
     turmas: { type: Array, required: true }, // [{ id, rotulo, estado }]
     selecao: { type: Object, required: true }, // { turma }
     pauta: { type: Object, default: null },
-    pode: { type: Object, required: true }, // { aprovar, reabrir }
+    pode: { type: Object, required: true }, // { aprovar, reabrir, tratar_negativa }
 });
 defineOptions({ layout: AppLayout });
 
@@ -56,7 +57,11 @@ function decidir(a, valor) {
         matricula_id: a.matricula_id, decisao: valor, motivo: valor === 1 ? (motivos[a.matricula_id] ?? a.motivo_progressao) : null,
     }, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => { delete escolhas[a.matricula_id]; toast.success('Progressão guardada.'); } });
 }
-const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
+// Nota abaixo do mínimo da escola: a vermelho.
+const negativaDe = (v) => v !== null && v !== undefined && v !== '' && Number(v) < Number(props.pauta?.regra?.nota_minima);
+const aTratar = ref(null); // { inscricao_id, aluno, disciplina, medida }
+const tratar = (a, n) => { aTratar.value = { inscricao_id: n.inscricao_id, aluno: a.nome, disciplina: n.disciplina, medida: n.medida }; };
+const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.medida) && props.pauta?.trata_negativas ? 'Por tratar' : 'Pendente');
 </script>
 
 <template>
@@ -154,9 +159,9 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                                         <td class="fw-bold" :class="a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mf ?? '—' }}</td>
                                     </template>
                                     <template v-else>
-                                    <td class="pauta-grupo">{{ a.celulas[d.id]?.mt1 ?? '—' }}</td>
-                                    <td>{{ a.celulas[d.id]?.mt2 ?? '—' }}</td>
-                                    <td>{{ a.celulas[d.id]?.mt3 ?? '—' }}</td>
+                                    <td class="pauta-grupo" :class="negativaDe(a.celulas[d.id]?.mt1) ? 'text-danger' : ''">{{ a.celulas[d.id]?.mt1 ?? '—' }}</td>
+                                    <td :class="negativaDe(a.celulas[d.id]?.mt2) ? 'text-danger' : ''">{{ a.celulas[d.id]?.mt2 ?? '—' }}</td>
+                                    <td :class="negativaDe(a.celulas[d.id]?.mt3) ? 'text-danger' : ''">{{ a.celulas[d.id]?.mt3 ?? '—' }}</td>
                                     <td class="fw-bold" :class="a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mfd ?? '—' }}</td>
                                     </template>
                                     <template v-if="pauta.com_recurso">
@@ -170,6 +175,14 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                                             placeholder="Motivo" :value="motivos[a.matricula_id] ?? a.motivo_progressao" @input="motivos[a.matricula_id] = $event.target.value" @blur="decidir(a, 1)">
                                     </template>
                                     <template v-else>{{ textoDecisao(a) }}</template>
+                                    <div v-for="n in a.negativas" :key="n.inscricao_id" class="fs-8 fw-semibold text-wrap d-print-none" style="max-width: 15rem">
+                                        <span :class="pauta.trata_negativas && n.medida ? 'text-success' : 'text-danger'">Negativa a {{ n.disciplina }}</span>
+                                        <template v-if="pauta.trata_negativas">
+                                            <span v-if="n.medida" class="text-body-secondary"> · tratada</span>
+                                            <span v-else class="text-danger"> · por tratar</span>
+                                            <a v-if="pode.tratar_negativa && pauta.estado !== 'definitiva'" href="#" class="ms-1" @click.prevent="tratar(a, n)">{{ n.medida ? 'Ver' : 'Tratar' }}</a>
+                                        </template>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -177,6 +190,8 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? 'Pendente';
                 </div>
             </div>
         </div>
+
+        <TratarNegativaModal :alvo="aTratar" @fechar="aTratar = null" />
     </div>
 </template>
 

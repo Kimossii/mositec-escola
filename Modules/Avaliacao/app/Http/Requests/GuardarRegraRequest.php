@@ -5,6 +5,7 @@ namespace Modules\Avaliacao\Http\Requests;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 use Modules\Avaliacao\Enums\ModoArredondamento;
+use Modules\Avaliacao\Enums\TratamentoDeNegativas;
 
 class GuardarRegraRequest extends BaseRequest
 {
@@ -40,7 +41,7 @@ class GuardarRegraRequest extends BaseRequest
             'disciplinas_chave.*' => ['integer'],
             'casas_decimais' => ['required', 'integer', 'between:0,4'],
             'modo_arredondamento' => ['required', Rule::in(array_column(ModoArredondamento::cases(), 'value'))],
-            'reprova_por_aproveitamento' => ['required', 'boolean'],
+            'tratamento_negativas' => ['required', Rule::in(array_column(TratamentoDeNegativas::cases(), 'value'))],
         ];
     }
 

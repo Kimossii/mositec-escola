@@ -248,7 +248,7 @@ class ExameProprioTest extends TestCase
     public function test_configuracao_guarda_os_pesos_do_exame_e_recusa_pesos_que_nao_somam_100(): void
     {
         $base = ['ano_lectivo_id' => $this->c['ano']->id, 'nome' => 'Regra', 'nivel_ids' => [$this->c['nivel']->id], 'com_exame' => true, 'com_recurso' => true, 'sigla_prova' => 'PT', 'escala_maxima' => 10, 'nota_minima' => '5', 'peso_mac' => '50', 'peso_pt' => '50',
-            'casas_decimais' => 2, 'modo_arredondamento' => 0, 'reprova_por_aproveitamento' => true];
+            'casas_decimais' => 2, 'modo_arredondamento' => 0, 'tratamento_negativas' => 0];
 
         $this->post('/avaliacao/configuracao/regras', [...$base, 'peso_mfd_exame' => '30', 'peso_exame' => '70'])->assertRedirect();
         $this->assertSame('70.00', \Modules\Avaliacao\Models\AvaliacaoRegra::firstOrFail()->peso_exame);

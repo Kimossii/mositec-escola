@@ -10,6 +10,7 @@ use Modules\AnoLectivo\Models\Periodo;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
+use Modules\Avaliacao\Models\AvaliacaoNegativaTratada;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
 use Modules\Avaliacao\Support\Calculo\CalculadoraQuantitativa;
 use Modules\Core\Contracts\VerificaAtribuicaoDocente;
@@ -63,7 +64,7 @@ class MiniPautaService
             'selecao' => ['turma' => $turmaId, 'disciplina' => $disciplinaId],
             'pauta' => $pauta,
             'tipos' => $this->tiposDeAvaliacao(),
-            'pode' => ['anular' => $gate->allows('nota.anular'), 'criar' => $gate->allows('nota.criar'), 'fora_prazo' => $gate->allows('nota.lancar-fora-prazo')],
+            'pode' => ['anular' => $gate->allows('nota.anular'), 'criar' => $gate->allows('nota.criar'), 'fora_prazo' => $gate->allows('nota.lancar-fora-prazo'), 'tratar_negativa' => $gate->allows('nota.tratar-negativa')],
         ];
     }
 
@@ -196,7 +197,8 @@ class MiniPautaService
         $resultados = $this->resultados->calcularTurma($turmaId, $disciplinaId, $inscricoes->pluck('id')->all());
 
         $n = $periodo->numero;
-        $alunos = $inscricoes->map(function (InscricaoDisciplina $i) use ($notas, $resultados, $n, $regra, $notasExame, $notasRecurso, $elegibilidade) {
+        $tratadas = AvaliacaoNegativaTratada::query()->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))->pluck('medida', 'inscricao_disciplina_id');
+        $alunos = $inscricoes->map(function (InscricaoDisciplina $i) use ($tratadas, $notas, $resultados, $n, $regra, $notasExame, $notasRecurso, $elegibilidade) {
             $r = $resultados[$i->id];
 
             return [
@@ -210,6 +212,8 @@ class MiniPautaService
                 'pt' => $this->apresentar($r->pt[$n], $regra),
                 'mt' => $this->apresentar($r->mt[$n], $regra),
                 'pendente' => $r->pendentes[$n],
+                'medida_negativa' => $tratadas[$i->id] ?? null,
+                'negativa' => $this->temNegativa($regra, $n === 3 ? ($r->mfdArredondada ?? $this->apresentar($r->mt[$n], $regra)) : $this->apresentar($r->mt[$n], $regra)),
                 'mfd' => $r->mfdArredondada,
                 'ne' => isset($notasExame[$i->id]) ? [
                     'id' => $notasExame[$i->id]->id, 'valor' => $notasExame[$i->id]->valor, 'estado' => $notasExame[$i->id]->estado->value, 'estado_descricao' => $notasExame[$i->id]->estado_descricao,
@@ -235,7 +239,7 @@ class MiniPautaService
 
         // array_merge, não `+`: o `$base` já traz `regra => null` e o `+` manteria esse valor.
         return array_merge($base, [
-            'regra' => ['escala_maxima' => $regra->escala_maxima, 'nota_minima' => (string) $regra->nota_minima, 'casas_decimais' => $regra->casas_decimais, ...$this->definicoes->paraTela()],
+            'regra' => ['escala_maxima' => $regra->escala_maxima, 'nota_minima' => (string) $regra->nota_minima, 'casas_decimais' => $regra->casas_decimais, 'consequencia_negativa' => $regra->tratamento_negativas->consequencia(), 'trata_negativas' => $regra->tratamento_negativas->tratamNegativas(), ...$this->definicoes->paraTela()],
             'periodos' => $periodos->map(fn (Periodo $p) => ['id' => $p->id, 'nome' => $p->nome, 'numero' => $p->numero])->all(),
             'periodo_id' => $periodo->id,
             'instrumentos' => $this->instrumentosParaTela($instrumentos, $base['rotulo_pt']),
@@ -256,6 +260,13 @@ class MiniPautaService
     private function apresentar(?string $valor, AvaliacaoRegra $regra): ?string
     {
         return $valor === null ? null : $this->calculadora->arredondar($valor, $regra->casas_decimais, $regra->modo_arredondamento);
+    }
+
+    /** A negativa que o professor já vê (MT do trimestre aberto, MFD no 3.º) e que a regra da escola não deixa passar em silêncio. */
+    private function temNegativa(AvaliacaoRegra $regra, ?string $nota): bool
+    {
+        return $nota !== null
+            && ! $this->calculadora->aprovadoNaDisciplina($nota, (string) $regra->nota_minima);
     }
 
     private function periodoEmCurso($periodos): ?Periodo

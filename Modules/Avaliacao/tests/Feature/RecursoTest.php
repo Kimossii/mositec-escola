@@ -331,7 +331,7 @@ class RecursoTest extends TestCase
     {
         $outra = $this->outraDisciplina($this->c, 'POR')['disciplina'];
         $base = ['ano_lectivo_id' => $this->c['ano']->id, 'nome' => 'Regra', 'nivel_ids' => [$this->c['nivel']->id], 'com_exame' => true, 'com_recurso' => true, 'sigla_prova' => 'PT', 'escala_maxima' => 10, 'nota_minima' => '5', 'peso_mac' => '50', 'peso_pt' => '50',
-            'casas_decimais' => 2, 'modo_arredondamento' => 0, 'reprova_por_aproveitamento' => true];
+            'casas_decimais' => 2, 'modo_arredondamento' => 0, 'tratamento_negativas' => 0];
 
         $this->post('/avaliacao/configuracao/regras', [...$base, 'recurso_max_disciplinas' => 2, 'disciplinas_chave' => [$outra->id]])->assertRedirect();
 

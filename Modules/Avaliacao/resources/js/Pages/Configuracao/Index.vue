@@ -20,6 +20,7 @@ const props = defineProps({
     tipos_de_prazo: { type: Array, default: () => [] }, // os tipos de prazo que a escola usa
     turmas: { type: Array, default: () => [] }, // as turmas do ano: [{ id, rotulo }]
     modos: { type: Array, required: true }, // [{ valor, nome }]
+    negativas: { type: Array, required: true }, // [{ valor, nome }]
     tipos: { type: Array, required: true }, // [{ valor, nome }]
     progressoes: { type: Array, default: () => [] }, // [{ valor, nome }]
     escalas: { type: Array, default: () => [] }, // [{ id, nome, niveis: [{ id, codigo, designacao }] }]
@@ -371,7 +372,7 @@ function mover(i, delta) {
         </div>
 
         <RegraModal
-            :regra="modal.regra" :nova="modal.nova" :editar="modal.editar" :niveis="niveis" :regras="regras" :escalas="escalas" :progressoes="progressoes" :modos="modos" :disciplinas="disciplinas"
+            :regra="modal.regra" :nova="modal.nova" :editar="modal.editar" :niveis="niveis" :regras="regras" :escalas="escalas" :progressoes="progressoes" :modos="modos" :negativas="negativas" :disciplinas="disciplinas"
             :processando="modal.processando" :erros="modal.erros" @guardar="guardarRegra" @eliminar="eliminarRegra" @fechar="fecharModal"
         />
 

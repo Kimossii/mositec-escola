@@ -48,12 +48,6 @@ const opcoesModo = computed(() => props.modos.map((m) => ({ value: m.valor, labe
                             <label class="form-label fs-8 fw-bold text-muted text-uppercase">Arredondamento</label>
                             <SelectSolid v-model="f.modo_arredondamento" :options="opcoesModo" />
                         </div>
-                        <div v-if="!ocultarEssenciais" class="col-12">
-                            <label class="form-check form-switch form-check-custom">
-                                <input v-model="f.reprova_por_aproveitamento" type="checkbox" class="form-check-input">
-                                <span class="form-check-label">Reprova por aproveitamento</span>
-                            </label>
-                        </div>
                         <div v-if="f.com_exame || f.com_recurso" class="col-12">
                             <label class="form-check form-switch form-check-custom">
                                 <input v-model="f.exame_usa_mfd_arredondada" type="checkbox" class="form-check-input">

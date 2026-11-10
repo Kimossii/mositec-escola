@@ -70,7 +70,7 @@ enum Modulo: int
             // Atribuições docentes: encerram-se (histórico) e só se elimina uma ainda agendada.
             self::ATRIBUICAO_DOCENTE => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar', 'exportar'],
             // Notas e avaliação: `criar`/`editar` lançam dentro do prazo; fora dele só `lancar-fora-prazo`; `prolongar-prazo` abre excepções.
-            self::NOTA => ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'ver-pauta', 'exportar'],
+            self::NOTA => ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'ver-pauta', 'exportar', 'tratar-negativa'],
             // Área do Professor: só consulta das suas turmas e alunos.
             self::AREA_PROFESSOR => ['ver'],
             // `trancar` cobre trancar e reactivar uma matrícula.

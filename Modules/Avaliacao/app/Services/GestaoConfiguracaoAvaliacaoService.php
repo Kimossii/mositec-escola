@@ -24,6 +24,7 @@ use Modules\Avaliacao\DTO\ProlongarPrazoDTO;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\DTO\RegraQualitativaDTO;
 use Modules\Avaliacao\Enums\ModoArredondamento;
+use Modules\Avaliacao\Enums\TratamentoDeNegativas;
 use Modules\Avaliacao\Enums\Progressao;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Http\Requests\CriarRegrasPorDefeitoRequest;
@@ -81,7 +82,7 @@ class GestaoConfiguracaoAvaliacaoService
             peso_mt3: $texto('peso_mt3'),
             casas_decimais: (int) $d['casas_decimais'],
             modo_arredondamento: ModoArredondamento::from((int) $d['modo_arredondamento']),
-            reprova_por_aproveitamento: (bool) $d['reprova_por_aproveitamento'],
+            tratamento_negativas: TratamentoDeNegativas::from((int) $d['tratamento_negativas']),
             peso_mfd_exame: $texto('peso_mfd_exame') ?? '40',
             peso_exame: $texto('peso_exame') ?? '60',
             recurso_max_disciplinas: isset($d['recurso_max_disciplinas']) ? (int) $d['recurso_max_disciplinas'] : null,

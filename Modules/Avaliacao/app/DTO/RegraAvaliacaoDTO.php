@@ -3,6 +3,7 @@
 namespace Modules\Avaliacao\DTO;
 
 use Modules\Avaliacao\Enums\ModoArredondamento;
+use Modules\Avaliacao\Enums\TratamentoDeNegativas;
 
 /** Uma regra de avaliação numérica de um ano lectivo e as classes que a seguem. */
 readonly class RegraAvaliacaoDTO
@@ -27,7 +28,7 @@ readonly class RegraAvaliacaoDTO
         public ?string $peso_mt3 = null,
         public int $casas_decimais = 2,
         public ModoArredondamento $modo_arredondamento = ModoArredondamento::HALF_UP,
-        public bool $reprova_por_aproveitamento = true,
+        public TratamentoDeNegativas $tratamento_negativas = TratamentoDeNegativas::REPROVA,
         public string $peso_mfd_exame = '40',
         public string $peso_exame = '60',
         public ?int $recurso_max_disciplinas = null,

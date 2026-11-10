@@ -14,6 +14,7 @@ use Modules\Avaliacao\Http\Requests\LancarExameRequest;
 use Modules\Avaliacao\Http\Requests\LancarNotaRequest;
 use Modules\Avaliacao\Http\Requests\LancarNotasEmLoteRequest;
 use Modules\Avaliacao\Http\Requests\LancarQualitativaRequest;
+use Modules\Avaliacao\Http\Requests\TratarNegativaRequest;
 use Modules\Avaliacao\Http\Requests\VerMiniPautaRequest;
 use Modules\Avaliacao\Services\ExportacaoDePautasService;
 use Modules\Avaliacao\Services\GestaoMiniPautaService;
@@ -77,6 +78,13 @@ class MiniPautaController extends Controller
     public function lancarCompetencia(LancarCompetenciaRequest $request): RedirectResponse
     {
         $this->gestao->lancarCompetencia($request);
+
+        return back();
+    }
+
+    public function tratarNegativa(TratarNegativaRequest $request): RedirectResponse
+    {
+        $this->gestao->tratarNegativa($request);
 
         return back();
     }

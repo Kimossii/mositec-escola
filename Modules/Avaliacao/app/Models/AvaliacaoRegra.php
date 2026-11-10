@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Avaliacao\Enums\ModoArredondamento;
+use Modules\Avaliacao\Enums\TratamentoDeNegativas;
 use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 
@@ -36,7 +37,8 @@ class AvaliacaoRegra extends Model
         'casas_decimais',
         'modo_arredondamento',
         'modo_arredondamento_descricao',
-        'reprova_por_aproveitamento',
+        'tratamento_negativas',
+        'tratamento_negativas_descricao',
         'com_exame',
         'com_recurso',
         'exame_usa_mfd_arredondada',
@@ -57,7 +59,7 @@ class AvaliacaoRegra extends Model
         'recurso_max_disciplinas' => 'integer',
         'casas_decimais' => 'integer',
         'modo_arredondamento' => ModoArredondamento::class,
-        'reprova_por_aproveitamento' => 'boolean',
+        'tratamento_negativas' => TratamentoDeNegativas::class,
         'com_exame' => 'boolean',
         'com_recurso' => 'boolean',
         'exame_usa_mfd_arredondada' => 'boolean',
@@ -67,6 +69,8 @@ class AvaliacaoRegra extends Model
     {
         static::saving(function (self $regra) {
             $regra->modo_arredondamento_descricao = $regra->modo_arredondamento?->label();
+            $regra->tratamento_negativas ??= TratamentoDeNegativas::REPROVA;
+            $regra->tratamento_negativas_descricao = $regra->tratamento_negativas->label();
         });
     }
 

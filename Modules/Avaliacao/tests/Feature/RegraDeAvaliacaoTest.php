@@ -6,6 +6,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Modules\AnoLectivo\Models\AnoLectivo;
+use Modules\Avaliacao\Enums\TratamentoDeNegativas;
 use Modules\Avaliacao\Actions\GarantirRegrasDoAnoAction;
 use Modules\Avaliacao\Actions\EliminarRegraAvaliacaoAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
@@ -53,7 +54,7 @@ class RegraDeAvaliacaoTest extends TestCase
             array_column($s->regras(), 'nome'),
         );
         $this->assertSame('1.ª e 2.ª classe', $s->regraDe('PRI_2')['nome']);
-        $this->assertFalse($s->regraDe('PRI_1')['reprova_por_aproveitamento']);
+        $this->assertSame(TratamentoDeNegativas::TRANSITA_TRATANDO_NEGATIVAS, $s->regraDe('PRI_1')['tratamento_negativas']);
         $this->assertSame([20, '10', false, true], [$s->regraDe('SEC_8')['escala_maxima'], $s->regraDe('SEC_8')['nota_minima'], $s->temExameProprio('SEC_8'), $s->temRecurso('SEC_8')]);
         $this->assertSame([true, true], [$s->temExameProprio('PRI_6'), $s->temRecurso('PRI_6')]);
         $this->assertSame([true, true], [$s->temExameProprio('SEC_9'), $s->temRecurso('SEC_9')]);

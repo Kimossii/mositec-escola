@@ -4,6 +4,7 @@ import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import TratarNegativaModal from '../../Components/Notas/TratarNegativaModal.vue';
 
 const props = defineProps({
     opcoes: { type: Array, required: true }, // [{ turma_id, turma_rotulo, disciplinas: [{ disciplina_id, disciplina_nome }] }]
@@ -33,6 +34,12 @@ const modalNova = ref(false);
 const macsCriadas = computed(() => (props.pauta?.instrumentos ?? []).filter((i) => i.tipo === MAC).length);
 const maxAvaliacoes = computed(() => props.pauta?.regra?.max_avaliacoes ?? 10);
 const minAvaliacoes = computed(() => props.pauta?.regra?.min_avaliacoes ?? 5);
+// Nota abaixo do mínimo da escola: a vermelho, como na pauta final.
+const negativaDe = (v) => v !== null && v !== undefined && v !== '' && Number(v) < Number(props.pauta?.regra?.nota_minima);
+const negativasTotal = computed(() => (props.pauta?.alunos ?? []).filter((a) => a.negativa).length);
+const negativasPorTratar = computed(() => (props.pauta?.alunos ?? []).filter((a) => a.negativa && !a.medida_negativa).length);
+const aTratar = ref(null); // { inscricao_id, aluno, disciplina, medida }
+const tratar = (a) => { aTratar.value = { inscricao_id: a.inscricao_id, aluno: a.nome, disciplina: props.pauta.disciplina_nome, medida: a.medida_negativa }; };
 const limiteAtingido = computed(() => macsCriadas.value >= maxAvaliacoes.value);
 const opcoesTurmas = computed(() => props.opcoes.map((o) => ({ value: o.turma_id, label: o.turma_rotulo })));
 const opcoesDisciplinas = computed(() => disciplinasDaTurma.value.map((d) => ({ value: d.disciplina_id, label: d.disciplina_nome })));
@@ -272,6 +279,11 @@ function eliminar(instrumento) {
                     <span v-if="pauta.exame">Prazo do exame: <strong :class="pauta.prazos.EXAME.encerrado ? 'text-danger' : ''">{{ pauta.prazos.EXAME.data_limite }}</strong> · MF = MFD × {{ pauta.exame.peso_mfd }}% + NE × {{ pauta.exame.peso_exame }}%</span>
                 </div>
 
+                <div v-if="negativasTotal" class="d-flex align-items-center gap-2 fw-semibold text-danger mb-4">
+                    <i class="ki-duotone ki-information-5 fs-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                    <span>{{ negativasTotal }} aluno(s) com negativa nesta disciplina<template v-if="pauta.regra.trata_negativas"> · {{ negativasPorTratar }} por tratar</template><template v-else> · {{ pauta.regra.consequencia_negativa }}</template></span>
+                </div>
+
                 <div v-if="algumEncerrado" class="alert alert-warning py-3 d-flex flex-wrap align-items-center gap-3">
                     <span v-if="pode.fora_prazo">O prazo terminou para parte das avaliações. Para lançar fora do prazo, indique o motivo:</span>
                     <span v-else>O prazo terminou para parte das avaliações. Nessas já não é possível lançar notas.</span>
@@ -333,10 +345,16 @@ function eliminar(instrumento) {
                                     </div>
                                     <div v-if="a.notas[i.id] && a.notas[i.id].estado !== 0" class="fs-8 text-body-secondary">{{ a.notas[i.id].estado_descricao }}</div>
                                 </td>
-                                <td class="text-center">{{ a.mac ?? '—' }}</td>
-                                <td class="text-center">{{ a.pt ?? '—' }}</td>
-                                <td class="text-center fw-bold">{{ a.mt ?? '—' }}<span v-if="a.pendente" class="badge badge-light-warning ms-2">pendente</span></td>
-                                <td class="text-center">{{ a.mfd ?? '—' }}</td>
+                                <td class="text-center" :class="negativaDe(a.mac) ? 'text-danger' : ''">{{ a.mac ?? '—' }}</td>
+                                <td class="text-center" :class="negativaDe(a.pt) ? 'text-danger' : ''">{{ a.pt ?? '—' }}</td>
+                                <td class="text-center fw-bold" :class="negativaDe(a.mt) || a.negativa ? 'text-danger' : ''">{{ a.mt ?? '—' }}<template v-if="a.negativa">
+                                        <template v-if="pauta.regra.trata_negativas">
+                                            <component :is="pode.tratar_negativa ? 'a' : 'span'" v-if="a.medida_negativa" href="#" class="badge badge-light-success ms-2" :title="a.medida_negativa" @click.prevent="pode.tratar_negativa && tratar(a)">Tratada</component>
+                                            <component :is="pode.tratar_negativa ? 'a' : 'span'" v-else href="#" class="badge badge-light-danger ms-2" :title="pauta.regra.consequencia_negativa" @click.prevent="pode.tratar_negativa && tratar(a)">{{ pode.tratar_negativa ? 'Tratar negativa' : 'Por tratar' }}</component>
+                                        </template>
+                                        <span v-else class="badge badge-light-danger ms-2" :title="pauta.regra.consequencia_negativa">Negativa</span>
+                                    </template><span v-if="a.pendente" class="badge badge-light-warning ms-2">pendente</span></td>
+                                <td class="text-center fw-bold" :class="negativaDe(a.mfd) ? 'text-danger' : ''">{{ a.mfd ?? '—' }}</td>
                                 <template v-if="pauta.exame">
                                     <td class="text-center" style="min-width: 7rem">
                                         <div class="d-flex align-items-center justify-content-center gap-1">
@@ -347,7 +365,7 @@ function eliminar(instrumento) {
                                         </div>
                                         <div v-if="a.ne && a.ne.estado !== 0" class="fs-8 text-body-secondary">{{ a.ne.estado_descricao }}</div>
                                     </td>
-                                    <td class="text-center fw-bold">{{ a.mf ?? '—' }}</td>
+                                    <td class="text-center fw-bold" :class="negativaDe(a.mf) ? 'text-danger' : ''">{{ a.mf ?? '—' }}</td>
                                 </template>
                                 <template v-if="pauta.recurso">
                                     <td class="text-center" style="min-width: 7rem">
@@ -361,7 +379,7 @@ function eliminar(instrumento) {
                                         <div v-if="a.recurso_motivo" class="fs-8 text-danger" :title="a.recurso_motivo">Sem direito a recurso</div>
                                         <div v-if="a.ner && a.ner.estado !== 0" class="fs-8 text-body-secondary">{{ a.ner.estado_descricao }}</div>
                                     </td>
-                                    <td class="text-center fw-bold">{{ a.mfr ?? '—' }}</td>
+                                    <td class="text-center fw-bold" :class="negativaDe(a.mfr) ? 'text-danger' : ''">{{ a.mfr ?? '—' }}</td>
                                 </template>
                             </tr>
                             <tr v-if="!pauta.alunos.length"><td :colspan="pauta.instrumentos.length + (pauta.exame ? 8 : 6) + (pauta.recurso ? 2 : 0)" class="text-center text-body-secondary py-6">Nenhum aluno inscrito nesta disciplina.</td></tr>
@@ -370,6 +388,8 @@ function eliminar(instrumento) {
                 </div>
             </div>
         </div>
+
+        <TratarNegativaModal :alvo="aTratar" @fechar="aTratar = null" />
 
         <div v-if="aAnular" class="modal d-block" style="background: rgba(0,0,0,0.5);" @click.self="aAnular = null">
             <div class="modal-dialog modal-dialog-centered" @keydown.esc="aAnular = null">

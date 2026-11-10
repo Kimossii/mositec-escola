@@ -69,7 +69,7 @@ class GarantirRegrasDoAnoAction
         foreach (AvaliacaoRegra::query()->where('ano_lectivo_id', $anteriorId)->with(['niveis', 'disciplinasChave:disciplinas.id'])->get() as $regra) {
             $nova = AvaliacaoRegra::create([...$regra->only([
                 'nome', 'escala_maxima', 'nota_minima', 'peso_mac', 'peso_pt', 'sigla_prova', 'peso_mt1', 'peso_mt2', 'peso_mt3', 'peso_mfd_exame', 'peso_exame',
-                'recurso_max_disciplinas', 'casas_decimais', 'modo_arredondamento', 'reprova_por_aproveitamento', 'com_exame', 'com_recurso', 'exame_usa_mfd_arredondada',
+                'recurso_max_disciplinas', 'casas_decimais', 'modo_arredondamento', 'tratamento_negativas', 'com_exame', 'com_recurso', 'exame_usa_mfd_arredondada',
             ]), 'ano_lectivo_id' => $destinoId]);
             $nova->disciplinasChave()->syncWithPivotValues($regra->disciplinasChave->pluck('id')->all(), ['tenant_id' => $nova->tenant_id]);
 
@@ -121,7 +121,7 @@ class GarantirRegrasDoAnoAction
             } elseif ($regra === null) {
                 $regra = AvaliacaoRegra::create([
                     'ano_lectivo_id' => $anoLectivoId, 'nome' => $definicao['nome'], 'escala_maxima' => $definicao['escala_maxima'], 'nota_minima' => $definicao['nota_minima'],
-                    'casas_decimais' => 2, 'modo_arredondamento' => ModoArredondamento::HALF_UP, 'reprova_por_aproveitamento' => $definicao['reprova_por_aproveitamento'],
+                    'casas_decimais' => 2, 'modo_arredondamento' => ModoArredondamento::HALF_UP, 'tratamento_negativas' => $definicao['tratamento_negativas'],
                     'com_exame' => $definicao['com_exame'], 'com_recurso' => $definicao['com_recurso'], 'sigla_prova' => $definicao['sigla_prova'],
                 ]);
             }

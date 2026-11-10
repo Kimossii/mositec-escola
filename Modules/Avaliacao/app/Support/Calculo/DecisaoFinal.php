@@ -3,6 +3,7 @@
 namespace Modules\Avaliacao\Support\Calculo;
 
 use Modules\Avaliacao\Enums\Decisao;
+use Modules\Avaliacao\Enums\TratamentoDeNegativas;
 
 /**
  * Decisão do aluno a partir das notas finais arredondadas (as impressas na pauta: a MFD, ou a MF nas disciplinas com
@@ -16,7 +17,7 @@ class DecisaoFinal
     }
 
     /** @param  array<int, ?string>  $notasFinais */
-    public function decidir(array $notasFinais, string $notaMinima, bool $reprovaPorAproveitamento, bool $termosApto): ?Decisao
+    public function decidir(array $notasFinais, string $notaMinima, TratamentoDeNegativas $tratamento, bool $termosApto): ?Decisao
     {
         if ($notasFinais === [] || in_array(null, $notasFinais, true)) {
             return null;
@@ -24,7 +25,8 @@ class DecisaoFinal
 
         [$positiva, $negativa] = $termosApto ? [Decisao::APTO, Decisao::NAO_APTO] : [Decisao::TRANSITA, Decisao::NAO_TRANSITA];
 
-        if (! $reprovaPorAproveitamento) {
+        // Só «reprova» decide pelas negativas. Nos outros tratamentos o aluno segue, e a negativa fica marcada na pauta.
+        if ($tratamento !== TratamentoDeNegativas::REPROVA) {
             return $positiva;
         }
 

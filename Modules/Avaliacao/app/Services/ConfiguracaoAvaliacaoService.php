@@ -7,6 +7,7 @@ use Modules\AnoLectivo\Enums\TipoPeriodo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\AnoLectivo\Models\Periodo;
 use Modules\Avaliacao\Enums\ModoArredondamento;
+use Modules\Avaliacao\Enums\TratamentoDeNegativas;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Avaliacao\Enums\Progressao;
 use Modules\Avaliacao\Enums\TipoInstrumento;
@@ -41,7 +42,7 @@ class ConfiguracaoAvaliacaoService
         $anos = AnoLectivo::query()->orderByDesc('data_inicio')->get();
         $ano = $this->anoSelecionado($anoLectivoId);
 
-        $comum = ['modos' => $this->modos(), 'tipos' => $this->tipos(), 'escalas' => $this->escalas(), 'progressoes' => array_map(fn (Progressao $p) => ['valor' => $p->value, 'nome' => $p->label()], Progressao::cases()),
+        $comum = ['modos' => $this->modos(), 'negativas' => $this->negativas(), 'tipos' => $this->tipos(), 'escalas' => $this->escalas(), 'progressoes' => array_map(fn (Progressao $p) => ['valor' => $p->value, 'nome' => $p->label()], Progressao::cases()),
             ...$this->competencias(), ...$this->documentos(), 'definicoes' => $this->definicoes->paraTela()];
 
         if ($ano === null) {
@@ -88,7 +89,7 @@ class ConfiguracaoAvaliacaoService
             'disciplinas_chave' => $r->disciplinasChave->pluck('id')->all(),
             'casas_decimais' => $r->casas_decimais,
             'modo_arredondamento' => $r->modo_arredondamento->value,
-            'reprova_por_aproveitamento' => $r->reprova_por_aproveitamento,
+            'tratamento_negativas' => $r->tratamento_negativas->value,
         ]);
 
         $qualitativas = $regrasQ->map(fn (AvaliacaoRegraQualitativa $r) => [
@@ -168,6 +169,12 @@ class ConfiguracaoAvaliacaoService
             'id' => $e->id, 'nome' => $e->nome,
             'niveis' => $e->niveis->map(fn ($n) => ['id' => $n->id, 'codigo' => $n->codigo, 'designacao' => $n->designacao])->all(),
         ])->all();
+    }
+
+    /** Os tratamentos de negativas que a escola pode escolher por regra. */
+    private function negativas(): array
+    {
+        return array_map(fn (TratamentoDeNegativas $t) => ['valor' => $t->value, 'nome' => $t->label()], TratamentoDeNegativas::cases());
     }
 
     private function modos(): array

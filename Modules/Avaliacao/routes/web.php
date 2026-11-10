@@ -15,6 +15,7 @@ Route::middleware(['auth'])->prefix('avaliacao/notas')->name('avaliacao.notas.')
     Route::post('/recurso', [MiniPautaController::class, 'lancarRecurso'])->middleware('can:nota.criar')->name('recurso.lancar');
     Route::post('/competencias', [MiniPautaController::class, 'lancarCompetencia'])->middleware('can:nota.criar')->name('competencias.lancar');
     Route::post('/qualitativas', [MiniPautaController::class, 'lancarQualitativa'])->middleware('can:nota.criar')->name('qualitativas.lancar');
+    Route::post('/negativas', [MiniPautaController::class, 'tratarNegativa'])->middleware('can:nota.tratar-negativa')->name('negativas.tratar');
     Route::post('/{nota}/anular', [MiniPautaController::class, 'anular'])->whereNumber('nota')->middleware('can:nota.anular')->name('anular');
     Route::post('/instrumentos', [MiniPautaController::class, 'criarInstrumento'])->name('instrumentos.store');
     Route::delete('/instrumentos/{instrumento}', [MiniPautaController::class, 'eliminarInstrumento'])->whereNumber('instrumento')->middleware('can:nota.editar')->name('instrumentos.destroy');
