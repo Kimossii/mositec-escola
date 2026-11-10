@@ -63,6 +63,12 @@ class Turma extends Model
         return $this->hasMany(TurmaSala::class);
     }
 
+    /** Rotas com `scopeBindings()`: o filho `{sala}` procura-se na relação `turmaSalas`. */
+    protected function childRouteBindingRelationshipName($childType)
+    {
+        return $childType === 'sala' ? 'turmaSalas' : parent::childRouteBindingRelationshipName($childType);
+    }
+
     public function criadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'criado_por');
