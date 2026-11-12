@@ -9,6 +9,7 @@ use Modules\Autenticacao\Http\Middleware\ExigirTrocaDeSenha;
 use Modules\Autenticacao\Http\Middleware\VerificarTenantDaSessao;
 use Modules\Core\Tenancy\Http\Middleware\ExigirTenantNoContexto;
 use Modules\Core\Tenancy\Http\Middleware\ResolverTenant;
+use Modules\Core\Tenancy\Support\ProxiesConfiaveis;
 use Modules\Estabelecimento\Http\Middleware\ExigirConfiguracaoInicial;
 use Modules\Plataforma\Http\Middleware\ApenasHostCentral;
 use Modules\Plataforma\Http\Middleware\ConfigurarSessaoPlataforma;
@@ -24,6 +25,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Atrás do proxy da plataforma de alojamento, sem isto a aplicação julga que o pedido é http (e gera redirects
+        // http://, que o browser bloqueia num site https) e vê o IP do proxy. Só X-Forwarded-For e X-Forwarded-Proto:
+        // NUNCA X-Forwarded-Host (forjaria o host e, portanto, o tenant). Por omissão não confia em ninguém.
+        if (($proxies = ProxiesConfiaveis::dasVariaveis(env('TRUSTED_PROXIES'))) !== null) {
+            $middleware->trustProxies(at: $proxies, headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO);
+        }
+
         // Global, e não nos grupos web/api: o tenant tem de estar resolvido
         // antes de qualquer middleware de rota. No grupo api, o Sanctum põe o
         // EnsureFrontendRequestsAreStateful (que inicia a sessão e autentica)
