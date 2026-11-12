@@ -35,7 +35,7 @@ class ResolverTenant
 
         $this->contexto->limpar();
 
-        if (HostsCentrais::contem($request->getHost())) {
+        if (HostsCentrais::pedidoCentral($request)) {
             return $next($request);
         }
 
