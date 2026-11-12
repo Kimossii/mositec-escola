@@ -205,6 +205,8 @@ class MiniPautaService
         $tratadas = AvaliacaoNegativaTratada::query()->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))->pluck('medida', 'inscricao_disciplina_id');
         $alunos = $inscricoes->map(function (InscricaoDisciplina $i) use ($emRecurso, $recursoAberto, $tratadas, $notas, $resultados, $n, $regra, $notasExame, $notasRecurso, $elegibilidade) {
             $r = $resultados[$i->id];
+            // A nota final que o professor vê neste trimestre: com exame próprio, a MF só existe no 3.º; antes disso é a MFD.
+            $final = $regra->com_exame && $n !== 3 ? $r->mfdArredondada : $r->baseArredondada();
 
             return [
                 'inscricao_id' => $i->id,
@@ -218,9 +220,9 @@ class MiniPautaService
                 'mt' => $this->apresentar($r->mt[$n], $regra),
                 'pendente' => $r->pendentes[$n],
                 'medida_negativa' => $tratadas[$i->id] ?? null,
-                'negativa' => $this->temNegativa($regra, $r->baseArredondada(), $this->apresentar($r->mt[$n], $regra)),
+                'negativa' => $this->temNegativa($regra, $final, $this->apresentar($r->mt[$n], $regra)),
                 // A negativa é da nota final (e o selo vai na coluna dela), não da MT mostrada.
-                'negativa_final' => $r->baseArredondada() !== null && $this->abaixoDoMinimo($regra, $r->baseArredondada()),
+                'negativa_final' => $final !== null && $this->abaixoDoMinimo($regra, $final),
                 'mfd' => $r->mfdArredondada,
                 'ne' => isset($notasExame[$i->id]) ? [
                     'id' => $notasExame[$i->id]->id, 'valor' => $notasExame[$i->id]->valor, 'estado' => $notasExame[$i->id]->estado->value, 'estado_descricao' => $notasExame[$i->id]->estado_descricao,

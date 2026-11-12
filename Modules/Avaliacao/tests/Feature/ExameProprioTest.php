@@ -256,4 +256,16 @@ class ExameProprioTest extends TestCase
 
         $this->get('/avaliacao/configuracao')->assertInertia(fn ($p) => $p->where('regras.0.com_exame', true)->where('regras.0.peso_exame', '70.00'));
     }
+
+    public function test_na_mini_pauta_a_negativa_so_conta_a_mf_no_3_trimestre_e_antes_disso_a_mfd(): void
+    {
+        $this->mfd('8');
+        $this->exame('2'); // MFD 8 passa; MF 4,4 não
+        $url = fn (int $trimestre) => '/avaliacao/notas?'.http_build_query(['turma' => $this->c['turma']->id, 'disciplina' => $this->c['disciplina']->id, 'periodo' => $this->c['periodos'][$trimestre]->id]);
+
+        // No 1.º trimestre não se vê a MF: a MFD positiva não dá negativa.
+        $this->get($url(1))->assertInertia(fn ($p) => $p->where('pauta.alunos.0.negativa', false)->where('pauta.alunos.0.negativa_final', false));
+        // No 3.º a MF (4,4) já aparece e é negativa.
+        $this->get($url(3))->assertInertia(fn ($p) => $p->where('pauta.alunos.0.negativa', true)->where('pauta.alunos.0.negativa_final', true));
+    }
 }
