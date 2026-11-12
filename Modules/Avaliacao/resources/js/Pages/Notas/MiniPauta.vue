@@ -281,8 +281,7 @@ function eliminar(instrumento) {
                     <span v-if="pauta.exame">Prazo do exame: <strong :class="pauta.prazos.EXAME.encerrado ? 'text-danger' : ''">{{ pauta.prazos.EXAME.data_limite }}</strong> · MF = MFD × {{ pauta.exame.peso_mfd }}% + NE × {{ pauta.exame.peso_exame }}%</span>
                 </div>
 
-                <div v-if="negativasTotal" class="d-flex align-items-center gap-2 fw-semibold text-danger mb-4">
-                    <i class="ki-duotone ki-information-5 fs-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                <div v-if="negativasTotal" class="fw-semibold text-danger mb-4">
                     <span>{{ negativasTotal }} aluno(s) com negativa nesta disciplina<template v-if="pauta.regra.trata_negativas"> · {{ negativasPorTratar }} por tratar</template><template v-else> · {{ pauta.regra.consequencia_negativa }}</template></span>
                 </div>
 
@@ -301,9 +300,8 @@ function eliminar(instrumento) {
                             Contínuas {{ macsCriadas }}/{{ maxAvaliacoes }}
                         </span>
                         <span v-if="macsCriadas < minAvaliacoes" class="text-warning">Faltam {{ minAvaliacoes - macsCriadas }} para o mínimo ({{ minAvaliacoes }}).</span>
-                        <span v-if="pauta.instrumentos.length" :class="alteracoes.total ? 'text-warning fw-bold' : 'text-body-secondary'">
-                            {{ alteracoes.total ? `${alteracoes.total} nota(s) por guardar` : 'Escreva as notas e carregue em «Guardar notas» (ou Enter).' }}
-                        </span>
+                        <span v-if="pauta.instrumentos.length && alteracoes.total" class="text-warning fw-bold">{{ alteracoes.total }} nota(s) por guardar</span>
+                        <i v-if="pauta.instrumentos.length" class="ki-duotone ki-information-5 fs-3 text-body-secondary" style="cursor: help;" title="Escreva as notas e carregue em «Guardar notas» (ou Enter)."><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                     </div>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-sm btn-light-primary" :disabled="!tiposPossiveis.length"
