@@ -61,26 +61,18 @@ class TratarNegativaAction
             throw ValidationException::withMessages(['inscricao_disciplina_id' => 'Nesta classe a negativa decide a transição: não há tratamento de negativas.']);
         }
 
-        if (! $this->temNegativa($inscricao->id, $regra->casas_decimais, $regra->modo_arredondamento, (string) $regra->nota_minima)) {
+        if (! $this->temNegativa($inscricao->id, (string) $regra->nota_minima)) {
             throw ValidationException::withMessages(['inscricao_disciplina_id' => 'Este aluno não tem negativa nesta disciplina.']);
         }
 
         return AvaliacaoNegativaTratada::updateOrCreate(['inscricao_disciplina_id' => $inscricao->id], ['medida' => $medida]);
     }
 
-    /** Negativa em qualquer trimestre (já lançado) ou na nota final. */
-    private function temNegativa(int $inscricaoId, int $casas, $modo, string $minima): bool
+    /** A negativa que se trata é a da nota final da disciplina: com a média final positiva não há nada a tratar. */
+    private function temNegativa(int $inscricaoId, string $minima): bool
     {
-        $r = $this->resultados->calcular($inscricaoId);
-        $notas = array_map(fn (?string $mt) => $mt === null ? null : $this->calculadora->arredondar($mt, $casas, $modo), array_values($r->mt));
-        $notas[] = $r->notaFinalArredondada();
+        $final = $this->resultados->calcular($inscricaoId)->notaFinalArredondada();
 
-        foreach (array_filter($notas, fn ($n) => $n !== null) as $nota) {
-            if (! $this->calculadora->aprovadoNaDisciplina($nota, $minima)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $final !== null && ! $this->calculadora->aprovadoNaDisciplina($final, $minima);
     }
 }

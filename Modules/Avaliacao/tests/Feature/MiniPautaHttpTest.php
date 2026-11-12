@@ -73,7 +73,7 @@ class MiniPautaHttpTest extends TestCase
     {
         $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
         $inscricao = $this->inscreverAluno($this->c, 'Ana');
-        $this->notasCompletas($this->c, $inscricao, [1 => ['2', '2']]);
+        $this->notasCompletas($this->c, $inscricao, [1 => ['2', '2'], 2 => ['2', '2'], 3 => ['2', '2']]);
 
         // Regra por defeito (reprova): a negativa aparece com a consequência.
         $this->actingAs($admin)->get($this->url())->assertInertia(fn (Assert $p) => $p
@@ -92,22 +92,23 @@ class MiniPautaHttpTest extends TestCase
         $this->actingAs($admin)->get($this->url())->assertInertia(fn (Assert $p) => $p->where('pauta.alunos.0.medida_negativa', 'Aulas de apoio.'));
     }
 
-    public function test_mt_negativa_no_3_trimestre_e_informativa_quando_a_media_final_ainda_passa(): void
+    public function test_com_a_media_final_positiva_nao_ha_negativa_a_tratar_mesmo_com_uma_mt_negativa(): void
     {
         $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
+        $this->regra->update(['tratamento_negativas' => TratamentoDeNegativas::TRANSITA_TRATANDO_NEGATIVAS]);
         $inscricao = $this->inscreverAluno($this->c, 'Ana');
-        $this->notasCompletas($this->c, $inscricao, [1 => ['9', '9'], 2 => ['9', '9'], 3 => ['2', '2']]); // MT3 = 2, MFD ≈ 6,67 (mínimo 5)
+        $this->notasCompletas($this->c, $inscricao, [1 => ['2', '2'], 2 => ['9', '9'], 3 => ['9', '9']]); // MT1 = 2, MFD ≈ 6,67 (mínimo 5)
 
-        $this->actingAs($admin)->get($this->url(['periodo' => $this->c['periodos'][3]->id]))->assertInertia(fn (Assert $p) => $p
-            ->where('pauta.alunos.0.mt_negativa', true)
-            ->where('pauta.alunos.0.negativa', false)); // não decide a passagem: sem selo de negativa nem botão de tratar
+        $this->actingAs($admin)->get($this->url())->assertInertia(fn (Assert $p) => $p
+            ->where('pauta.alunos.0.negativa', false));
+        $this->actingAs($admin)->post('/avaliacao/notas/negativas', ['inscricao_disciplina_id' => $inscricao->id, 'medida' => 'Apoio.'])->assertSessionHasErrors('inscricao_disciplina_id');
     }
 
     public function test_so_trata_negativas_quem_tem_a_permissao_e_so_onde_o_aluno_tem_de_transitar(): void
     {
         $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
         $inscricao = $this->inscreverAluno($this->c, 'Ana');
-        $this->notasCompletas($this->c, $inscricao, [1 => ['2', '2']]);
+        $this->notasCompletas($this->c, $inscricao, [1 => ['2', '2'], 2 => ['2', '2'], 3 => ['2', '2']]);
         $dados = ['inscricao_disciplina_id' => $inscricao->id, 'medida' => 'Apoio.'];
 
         // Classe que reprova: não há tratamento de negativas.

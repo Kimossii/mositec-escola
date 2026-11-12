@@ -218,9 +218,7 @@ class MiniPautaService
                 'mt' => $this->apresentar($r->mt[$n], $regra),
                 'pendente' => $r->pendentes[$n],
                 'medida_negativa' => $tratadas[$i->id] ?? null,
-                // Informativo: a MT do trimestre aberto abaixo do mínimo, mesmo que a média final ainda passe.
-                'mt_negativa' => $this->abaixoDoMinimo($regra, $this->apresentar($r->mt[$n], $regra)),
-                'negativa' => $this->temNegativa($regra, $n === 3 ? ($r->mfdArredondada ?? $this->apresentar($r->mt[$n], $regra)) : $this->apresentar($r->mt[$n], $regra)),
+                'negativa' => $this->temNegativa($regra, $r->baseArredondada(), $this->apresentar($r->mt[$n], $regra)),
                 'mfd' => $r->mfdArredondada,
                 'ne' => isset($notasExame[$i->id]) ? [
                     'id' => $notasExame[$i->id]->id, 'valor' => $notasExame[$i->id]->valor, 'estado' => $notasExame[$i->id]->estado->value, 'estado_descricao' => $notasExame[$i->id]->estado_descricao,
@@ -275,11 +273,18 @@ class MiniPautaService
         return $nota !== null && ! $this->calculadora->aprovadoNaDisciplina($nota, (string) $regra->nota_minima);
     }
 
-    /** A negativa que o professor já vê (MT do trimestre aberto, MFD no 3.º) e que a regra da escola não deixa passar em silêncio. */
-    private function temNegativa(AvaliacaoRegra $regra, ?string $nota): bool
+    /**
+     * A negativa que decide: a da nota final da disciplina (MFD, ou MF com exame), quando já existe. Uma MT negativa
+     * com a média final positiva não decide nada (fica só o selo informativo). Enquanto não há nota final, a MT negativa
+     * é só um risco: avisa-se onde a negativa reprova, e não se pede tratamento onde o aluno tem de transitar.
+     */
+    private function temNegativa(AvaliacaoRegra $regra, ?string $notaFinal, ?string $mt): bool
     {
-        return $nota !== null
-            && ! $this->calculadora->aprovadoNaDisciplina($nota, (string) $regra->nota_minima);
+        if ($notaFinal !== null) {
+            return $this->abaixoDoMinimo($regra, $notaFinal);
+        }
+
+        return ! $regra->tratamento_negativas->tratamNegativas() && $this->abaixoDoMinimo($regra, $mt);
     }
 
     private function periodoEmCurso($periodos): ?Periodo

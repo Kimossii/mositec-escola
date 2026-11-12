@@ -61,6 +61,8 @@ function decidir(a, valor) {
 }
 // Nota abaixo do mínimo da escola: a vermelho.
 const negativaDe = (v) => v !== null && v !== undefined && v !== '' && Number(v) < Number(props.pauta?.regra?.nota_minima);
+// A negativa desta disciplina do aluno (para o link «Tratar» na própria célula).
+const tratamentoDe = (a, d) => a.negativas?.find((n) => n.inscricao_id === a.celulas[d.id]?.inscricao_id) ?? null;
 const aTratar = ref(null); // { inscricao_id, aluno, disciplina, medida }
 const tratar = (a, n) => { aTratar.value = { inscricao_id: n.inscricao_id, aluno: a.nome, disciplina: n.disciplina, medida: n.medida }; };
 const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.medida) && props.pauta?.trata_negativas ? 'Por tratar' : 'Pendente');
@@ -163,13 +165,19 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                                     <template v-if="pauta.com_exame">
                                         <td class="pauta-grupo">{{ a.celulas[d.id]?.mfd ?? '—' }}</td>
                                         <td>{{ a.celulas[d.id]?.ne ?? '—' }}</td>
-                                        <td class="fw-bold" :class="a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mf ?? '—' }}</td>
+                                        <td class="fw-bold" :class="a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mf ?? '—' }}<div v-if="pauta.trata_negativas && tratamentoDe(a, d)" class="fs-8 fw-semibold d-print-none">
+                                            <a v-if="pode.tratar_negativa && pauta.estado !== 'definitiva'" href="#" :class="tratamentoDe(a, d).medida ? 'text-success' : 'text-danger'" :title="tratamentoDe(a, d).medida ?? 'Negativa por tratar'" @click.prevent="tratar(a, tratamentoDe(a, d))">{{ tratamentoDe(a, d).medida ? 'Tratada' : 'Tratar' }}</a>
+                                            <span v-else :class="tratamentoDe(a, d).medida ? 'text-success' : 'text-danger'" :title="tratamentoDe(a, d).medida ?? ''">{{ tratamentoDe(a, d).medida ? 'Tratada' : 'Por tratar' }}</span>
+                                        </div></td>
                                     </template>
                                     <template v-else>
                                     <td class="pauta-grupo" :class="negativaDe(a.celulas[d.id]?.mt1) ? 'text-danger' : ''">{{ a.celulas[d.id]?.mt1 ?? '—' }}</td>
                                     <td :class="negativaDe(a.celulas[d.id]?.mt2) ? 'text-danger' : ''">{{ a.celulas[d.id]?.mt2 ?? '—' }}</td>
                                     <td :class="negativaDe(a.celulas[d.id]?.mt3) ? 'text-danger' : ''">{{ a.celulas[d.id]?.mt3 ?? '—' }}</td>
-                                    <td class="fw-bold" :class="a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mfd ?? '—' }}</td>
+                                    <td class="fw-bold" :class="a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mfd ?? '—' }}<div v-if="pauta.trata_negativas && tratamentoDe(a, d)" class="fs-8 fw-semibold d-print-none">
+                                            <a v-if="pode.tratar_negativa && pauta.estado !== 'definitiva'" href="#" :class="tratamentoDe(a, d).medida ? 'text-success' : 'text-danger'" :title="tratamentoDe(a, d).medida ?? 'Negativa por tratar'" @click.prevent="tratar(a, tratamentoDe(a, d))">{{ tratamentoDe(a, d).medida ? 'Tratada' : 'Tratar' }}</a>
+                                            <span v-else :class="tratamentoDe(a, d).medida ? 'text-success' : 'text-danger'" :title="tratamentoDe(a, d).medida ?? ''">{{ tratamentoDe(a, d).medida ? 'Tratada' : 'Por tratar' }}</span>
+                                        </div></td>
                                     </template>
                                     <template v-if="pauta.mostra_recurso">
                                         <td>{{ a.celulas[d.id]?.ner ?? '' }}</td>
@@ -182,14 +190,6 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                                             placeholder="Motivo" :value="motivos[a.matricula_id] ?? a.motivo_progressao" @input="motivos[a.matricula_id] = $event.target.value" @blur="decidir(a, 1)">
                                     </template>
                                     <template v-else>{{ textoDecisao(a) }}</template>
-                                    <div v-for="n in a.negativas" :key="n.inscricao_id" class="fs-8 fw-semibold text-wrap d-print-none" style="max-width: 15rem">
-                                        <span :class="pauta.trata_negativas && n.medida ? 'text-success' : 'text-danger'">Negativa a {{ n.disciplina }}</span>
-                                        <template v-if="pauta.trata_negativas">
-                                            <span v-if="n.medida" class="text-body-secondary"> · tratada</span>
-                                            <span v-else class="text-danger"> · por tratar</span>
-                                            <a v-if="pode.tratar_negativa && pauta.estado !== 'definitiva'" href="#" class="ms-1" @click.prevent="tratar(a, n)">{{ n.medida ? 'Ver' : 'Tratar' }}</a>
-                                        </template>
-                                    </div>
                                 </td>
                             </tr>
                         </tbody>
