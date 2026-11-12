@@ -17,6 +17,10 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        // O .env.example liga o SESSION_ENCRYPT (e o CI copia-o para .env): os testes que lêem o payload bruto da sessão
+        // têm de correr sempre sem cifra, venha o .env de onde vier.
+        config(['session.encrypt' => false]);
+
         $this->prepararTenantDeTeste();
     }
 
