@@ -6,6 +6,8 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import TratarNegativaModal from '../../Components/Notas/TratarNegativaModal.vue';
 import NegativaSelo from '../../Components/Notas/NegativaSelo.vue';
+import PesquisaDeAlunos from '../../Components/Notas/PesquisaDeAlunos.vue';
+import { filtrarAlunos } from '../../Components/Notas/pesquisa.js';
 
 const props = defineProps({
     opcoes: { type: Array, required: true }, // [{ turma_id, turma_rotulo, disciplinas: [{ disciplina_id, disciplina_nome }] }]
@@ -38,6 +40,8 @@ const minAvaliacoes = computed(() => props.pauta?.regra?.min_avaliacoes ?? 5);
 // Nota abaixo do mínimo da escola: a vermelho, como na pauta final.
 const negativaDe = (v) => v !== null && v !== undefined && v !== '' && Number(v) < Number(props.pauta?.regra?.nota_minima);
 const numeroDoPeriodo = computed(() => (props.pauta?.periodos ?? []).find((p) => p.id === props.pauta?.periodo_id)?.numero ?? '');
+const pesquisa = ref('');
+const alunosFiltrados = computed(() => filtrarAlunos(props.pauta?.alunos ?? [], pesquisa.value));
 const negativasTotal = computed(() => (props.pauta?.alunos ?? []).filter((a) => a.negativa).length);
 const negativasPorTratar = computed(() => (props.pauta?.alunos ?? []).filter((a) => a.negativa && !a.medida_negativa).length);
 const aTratar = ref(null); // { inscricao_id, aluno, disciplina, medida }
@@ -218,13 +222,14 @@ function eliminar(instrumento) {
                     <input v-if="pode.fora_prazo" v-model="motivoForaDoPrazo" type="text" class="form-control form-control-sm w-300px" placeholder="Motivo do lançamento fora do prazo">
                 </div>
                 <div v-if="!pauta.alunos.length" class="text-center text-body-secondary py-6">Nenhuma criança inscrita nesta área.</div>
-                <div v-else class="table-responsive tabela-com-selects">
+                <PesquisaDeAlunos v-if="pauta.alunos.length" v-model="pesquisa" :total="pauta.alunos.length" :visiveis="alunosFiltrados.length" class="mb-4" />
+                <div v-if="pauta.alunos.length" class="table-responsive tabela-com-selects">
                     <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
                         <thead>
                             <tr class="text-start text-body-secondary fw-bold fs-7 text-uppercase"><th style="width: 3rem">#</th><th>Criança</th><th style="width: 16rem">Avaliação</th><th>Observação</th><th v-if="pauta.competencias.length" class="text-center" style="width: 7rem">Competências</th></tr>
                         </thead>
                         <tbody>
-                            <template v-for="(a, n) in pauta.alunos" :key="a.inscricao_id">
+                            <template v-for="{ a, n } in alunosFiltrados" :key="a.inscricao_id">
                                 <tr>
                                     <td class="text-body-secondary">{{ n + 1 }}</td>
                                     <td class="fw-semibold">{{ a.nome }}</td>
@@ -312,6 +317,7 @@ function eliminar(instrumento) {
                     </div>
                 </div>
 
+                <PesquisaDeAlunos v-if="pauta.instrumentos.length && pauta.alunos.length" v-model="pesquisa" :total="pauta.alunos.length" :visiveis="alunosFiltrados.length" class="mb-4" />
                 <div v-if="pauta.instrumentos.length" class="table-responsive">
                     <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
                         <thead>
@@ -332,7 +338,7 @@ function eliminar(instrumento) {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(a, n) in pauta.alunos" :key="a.inscricao_id">
+                            <tr v-for="{ a, n } in alunosFiltrados" :key="a.inscricao_id">
                                 <td class="text-body-secondary">{{ n + 1 }}</td>
                                 <td class="fw-semibold">{{ a.nome }}</td>
                                 <td v-for="i in pauta.instrumentos" :key="i.id" class="text-center" style="min-width: 7rem">

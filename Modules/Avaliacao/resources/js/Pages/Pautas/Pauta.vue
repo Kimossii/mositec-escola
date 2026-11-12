@@ -5,6 +5,8 @@ import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import TratarNegativaModal from '../../Components/Notas/TratarNegativaModal.vue';
+import PesquisaDeAlunos from '../../Components/Notas/PesquisaDeAlunos.vue';
+import { filtrarAlunos } from '../../Components/Notas/pesquisa.js';
 
 const props = defineProps({
     turmas: { type: Array, required: true }, // [{ id, rotulo, estado }]
@@ -26,6 +28,8 @@ const ESTADOS = {
 };
 
 const aoFalhar = (e) => toast.error(Object.values(e)[0]);
+const pesquisa = ref('');
+const alunosFiltrados = computed(() => filtrarAlunos(props.pauta?.alunos ?? [], pesquisa.value));
 const fase = computed(() => props.pauta?.fase ?? props.selecao.fase ?? 1);
 const abrir = (f = 1) => turma.value && router.get('/avaliacao/pautas', { turma: turma.value, fase: typeof f === 'number' ? f : 1 }, { preserveState: true });
 const abrirFase = (f) => router.get('/avaliacao/pautas', { turma: turma.value, fase: f }, { preserveState: true });
@@ -139,7 +143,9 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                 <div v-if="!pauta.regra" class="alert alert-warning">A escola ainda não configurou a regra de avaliação desta classe.</div>
                 <div v-else-if="!pauta.alunos.length" class="text-center text-body-secondary py-8">{{ fase === 2 ? 'Nenhum aluno está em recurso.' : 'A turma não tem alunos com matrícula activa.' }}</div>
 
-                <div v-else class="table-responsive">
+                <template v-else>
+                <PesquisaDeAlunos v-model="pesquisa" :total="pauta.alunos.length" :visiveis="alunosFiltrados.length" class="mb-4" />
+                <div class="table-responsive">
                     <table class="pauta-tabela table table-bordered align-middle fs-7 text-center mb-0">
                         <thead>
                             <tr class="fw-bold text-uppercase">
@@ -157,7 +163,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(a, n) in pauta.alunos" :key="a.matricula_id">
+                            <tr v-for="{ a, n } in alunosFiltrados" :key="a.matricula_id">
                                 <td class="text-body-secondary">{{ n + 1 }}</td>
                                 <td class="text-start fw-semibold text-nowrap">{{ a.nome }}
                                     <a :href="`/avaliacao/pautas/${pauta.turma_id}/boletins?matricula=${a.matricula_id}`" class="ms-2 fs-8 fw-normal d-print-none" title="Boletim deste aluno">Boletim</a></td>
@@ -195,6 +201,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                         </tbody>
                     </table>
                 </div>
+                </template>
             </div>
         </div>
 
