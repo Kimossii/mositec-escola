@@ -8,7 +8,8 @@ use Modules\Core\Tenancy\Support\HostsCentrais;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Primeiro middleware do grupo `plataforma`: o painel só responde nos hosts centrais.
+ * Primeiro middleware do grupo `plataforma`: o painel só responde nos hosts centrais (ou, na instalação dedicada
+ * de um só domínio, no caminho `/plataforma` desse domínio).
  * Fora deles (ou sem hosts centrais configurados) responde 404, igual a uma rota inexistente.
  *
  * Como envolve tudo o resto do grupo, também aplica a todas as respostas do painel (erros
@@ -18,7 +19,7 @@ class ApenasHostCentral
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! HostsCentrais::contem($request->getHost())) {
+        if (! HostsCentrais::pedidoCentral($request)) {
             abort(404);
         }
 
