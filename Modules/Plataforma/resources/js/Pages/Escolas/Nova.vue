@@ -7,6 +7,9 @@ import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 
 defineOptions({ layout: LayoutPlataforma });
 
+// Instalação dedicada (modo único): o domínio não se pede.
+defineProps({ modoUnico: { type: Boolean, default: false } });
+
 const form = reactive({
     nome: '',
     admin_nome: '',
@@ -59,10 +62,13 @@ function submit() {
                         <input v-model="form.nome" type="text" name="nome" class="form-control form-control-solid" :class="{ 'is-invalid': errors.nome }" />
                         <div v-if="errors.nome" class="text-danger fs-7 mt-1">{{ errors.nome }}</div>
                     </div>
-                    <div class="col-12 col-md-6">
+                    <div v-if="!modoUnico" class="col-12 col-md-6">
                         <label class="required fw-semibold fs-6 mb-2">Domínio principal</label>
                         <input v-model="form.dominio" type="text" name="dominio" placeholder="escola.exemplo.ao" class="form-control form-control-solid" :class="{ 'is-invalid': errors.dominio }" />
                         <div v-if="errors.dominio" class="text-danger fs-7 mt-1">{{ errors.dominio }}</div>
+                    </div>
+                    <div v-else class="col-12 col-md-6">
+                        <div class="text-muted fs-7">Esta instalação serve uma só escola: o domínio é o da própria aplicação.</div>
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="fw-semibold fs-6 mb-2">Código (opcional)</label>
