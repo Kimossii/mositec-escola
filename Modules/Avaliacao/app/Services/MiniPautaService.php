@@ -219,6 +219,8 @@ class MiniPautaService
                 'pendente' => $r->pendentes[$n],
                 'medida_negativa' => $tratadas[$i->id] ?? null,
                 'negativa' => $this->temNegativa($regra, $r->baseArredondada(), $this->apresentar($r->mt[$n], $regra)),
+                // A negativa é da nota final (e o selo vai na coluna dela), não da MT mostrada.
+                'negativa_final' => $r->baseArredondada() !== null && $this->abaixoDoMinimo($regra, $r->baseArredondada()),
                 'mfd' => $r->mfdArredondada,
                 'ne' => isset($notasExame[$i->id]) ? [
                     'id' => $notasExame[$i->id]->id, 'valor' => $notasExame[$i->id]->valor, 'estado' => $notasExame[$i->id]->estado->value, 'estado_descricao' => $notasExame[$i->id]->estado_descricao,

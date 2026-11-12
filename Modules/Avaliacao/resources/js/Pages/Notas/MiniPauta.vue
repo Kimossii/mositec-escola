@@ -5,6 +5,7 @@ import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import TratarNegativaModal from '../../Components/Notas/TratarNegativaModal.vue';
+import NegativaSelo from '../../Components/Notas/NegativaSelo.vue';
 
 const props = defineProps({
     opcoes: { type: Array, required: true }, // [{ turma_id, turma_rotulo, disciplinas: [{ disciplina_id, disciplina_nome }] }]
@@ -347,14 +348,8 @@ function eliminar(instrumento) {
                                 </td>
                                 <td class="text-center" :class="negativaDe(a.mac) ? 'text-danger' : ''">{{ a.mac ?? '—' }}</td>
                                 <td class="text-center" :class="negativaDe(a.pt) ? 'text-danger' : ''">{{ a.pt ?? '—' }}</td>
-                                <td class="text-center fw-bold" :class="negativaDe(a.mt) || a.negativa ? 'text-danger' : ''">{{ a.mt ?? '—' }}<template v-if="a.negativa">
-                                        <template v-if="pauta.regra.trata_negativas">
-                                            <component :is="pode.tratar_negativa ? 'a' : 'span'" v-if="a.medida_negativa" href="#" class="badge badge-light-success ms-2" :title="a.medida_negativa" @click.prevent="pode.tratar_negativa && tratar(a)">Tratada</component>
-                                            <component :is="pode.tratar_negativa ? 'a' : 'span'" v-else href="#" class="badge badge-light-danger ms-2" :title="pauta.regra.consequencia_negativa" @click.prevent="pode.tratar_negativa && tratar(a)">{{ pode.tratar_negativa ? 'Tratar negativa' : 'Por tratar' }}</component>
-                                        </template>
-                                        <span v-else class="badge badge-light-danger ms-2" :title="pauta.regra.consequencia_negativa">Negativa</span>
-                                    </template><span v-if="a.pendente" class="badge badge-light-warning ms-2">pendente</span></td>
-                                <td class="text-center fw-bold" :class="negativaDe(a.mfd) ? 'text-danger' : ''">{{ a.mfd ?? '—' }}</td>
+                                <td class="text-center fw-bold" :class="negativaDe(a.mt) ? 'text-danger' : ''">{{ a.mt ?? '—' }}<NegativaSelo v-if="a.negativa && !a.negativa_final" :aluno="a" :trata="pauta.regra.trata_negativas" :pode-tratar="pode.tratar_negativa" :consequencia="pauta.regra.consequencia_negativa" @tratar="tratar(a)" /><span v-if="a.pendente" class="badge badge-light-warning ms-2">pendente</span></td>
+                                <td class="text-center fw-bold" :class="negativaDe(a.mfd) ? 'text-danger' : ''">{{ a.mfd ?? '—' }}<template v-if="!pauta.exame"><NegativaSelo v-if="a.negativa_final" :aluno="a" :trata="pauta.regra.trata_negativas" :pode-tratar="pode.tratar_negativa" :consequencia="pauta.regra.consequencia_negativa" @tratar="tratar(a)" /></template></td>
                                 <template v-if="pauta.exame">
                                     <td class="text-center" style="min-width: 7rem">
                                         <div class="d-flex align-items-center justify-content-center gap-1">
@@ -365,7 +360,7 @@ function eliminar(instrumento) {
                                         </div>
                                         <div v-if="a.ne && a.ne.estado !== 0" class="fs-8 text-body-secondary">{{ a.ne.estado_descricao }}</div>
                                     </td>
-                                    <td class="text-center fw-bold" :class="negativaDe(a.mf) ? 'text-danger' : ''">{{ a.mf ?? '—' }}</td>
+                                    <td class="text-center fw-bold" :class="negativaDe(a.mf) ? 'text-danger' : ''">{{ a.mf ?? '—' }}<NegativaSelo v-if="a.negativa_final" :aluno="a" :trata="pauta.regra.trata_negativas" :pode-tratar="pode.tratar_negativa" :consequencia="pauta.regra.consequencia_negativa" @tratar="tratar(a)" /></td>
                                 </template>
                                 <template v-if="pauta.recurso">
                                     <td class="text-center" style="min-width: 7rem">
