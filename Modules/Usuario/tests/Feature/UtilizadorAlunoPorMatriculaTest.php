@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
+use Modules\Aluno\DTO\EnquadramentoAcademicoDTO;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
@@ -251,7 +252,7 @@ class UtilizadorAlunoPorMatriculaTest extends TestCase
         $aluno = $this->criarAluno('2026-0001', 'Ana Silva');
         $aluno->dadosPessoa()->first()->update(['data_nascimento' => '2010-03-05']);
         $e = $this->estruturaAcademica('10A');
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, cursoId: $e['curso']->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(cursoId: $e['curso']->id));
         $this->matricular($aluno, $e['turma'], EstadoMatriculaEnum::ACTIVA->value);
 
         $resposta = $this->getJson(self::URL_PROCURAR . '?matricula=2026-0001')->assertOk();
@@ -308,7 +309,7 @@ class UtilizadorAlunoPorMatriculaTest extends TestCase
         $this->actingAsStaff();
         $aluno = $this->criarAluno('2026-0001');
         $e = $this->estruturaAcademica('Z');
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $e['nivel']->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $e['nivel']->id));
         $this->matricular($aluno, $e['turma'], EstadoMatriculaEnum::ACTIVA->value);
 
         $this->getJson(self::URL_PROCURAR . '?matricula=2026-0001')->assertOk()->assertJsonPath('curso', 'Curso Z');
@@ -338,7 +339,7 @@ class UtilizadorAlunoPorMatriculaTest extends TestCase
         $escolaB = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
         $deB = $this->noTenant($escolaB, fn () => $this->estruturaAcademica('BBB'));
         // Referências de A para registos de B (dados inconsistentes): o scope tem de os esconder.
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, cursoId: $deB['curso']->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(cursoId: $deB['curso']->id));
         $this->matricular($aluno, $deB['turma'], EstadoMatriculaEnum::ACTIVA->value);
 
         $resposta = $this->getJson(self::URL_PROCURAR . '?matricula=2026-0001')->assertOk();

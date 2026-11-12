@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
+use Modules\Aluno\DTO\EnquadramentoAcademicoDTO;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
@@ -149,7 +150,7 @@ class MatriculaHttpTest extends TestCase
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $turma = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $nivel->id));
         $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
 
         $this->post(route('matriculas.store', $aluno), [
@@ -203,7 +204,7 @@ class MatriculaHttpTest extends TestCase
         ]);
         $turma = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $outroNivel->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $outroNivel->id));
         // Aluno já enquadrado noutro nível — este é o caso real que rebentava em 500.
 
         $this->post(route('matriculas.store', $aluno), [
@@ -223,7 +224,7 @@ class MatriculaHttpTest extends TestCase
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $turma = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $nivel->id));
 
         $matricula = Matricula::create([
             'aluno_id' => $aluno->id,
@@ -251,7 +252,7 @@ class MatriculaHttpTest extends TestCase
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $turma = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $nivel->id));
 
         $matricula = Matricula::create([
             'aluno_id' => $aluno->id,
@@ -283,7 +284,7 @@ class MatriculaHttpTest extends TestCase
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $turma = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $nivel->id));
 
         $matricula = Matricula::create([
             'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
@@ -305,7 +306,7 @@ class MatriculaHttpTest extends TestCase
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $turma = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $nivel->id));
 
         $matricula = Matricula::create([
             'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
@@ -576,7 +577,7 @@ class MatriculaHttpTest extends TestCase
         $nivel = $this->criarNivelAcademico($estabelecimento);
         $turma = $this->criarTurma($anoLectivo, $nivel);
         $aluno = $this->criarAluno($estabelecimento);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $nivel->id));
 
         $matricula = Matricula::create([
             'aluno_id' => $aluno->id, 'turma_id' => $turma->id, 'ano_lectivo_id' => $anoLectivo->id,
@@ -612,7 +613,7 @@ class MatriculaHttpTest extends TestCase
         $turmaAtual = $this->criarTurma($anoLectivoAtual, $nivel5);
         $this->criarTurma($anoLectivoSeguinte, $nivel6);
         $aluno = $this->criarAluno($estabelecimento);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, nivelAcademicoId: $nivel5->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $nivel5->id));
         // A renovação cria a nova Matrícula na turma SEGUINTE — é essa combinação
         // curso/nível/ano-lectivo que precisa do Plano Curricular confirmado.
         $this->confirmarPlanoCurricular($estabelecimento, $anoLectivoSeguinte, $nivel6);
@@ -654,7 +655,7 @@ class MatriculaHttpTest extends TestCase
         $this->confirmarPlanoCurricular($estabelecimento, $anoLectivoSeguinte, $nivel6);
 
         $alunoA = $this->criarAluno($estabelecimento);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($alunoA, nivelAcademicoId: $nivel5->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($alunoA, new EnquadramentoAcademicoDTO(nivelAcademicoId: $nivel5->id));
         $matriculaA = Matricula::create([
             'aluno_id' => $alunoA->id, 'turma_id' => $turmaAtual->id, 'ano_lectivo_id' => $anoLectivoAtual->id,
             'numero_registo_matricula' => '2025-8001', 'data_matricula' => '2026-02-01',
@@ -662,7 +663,7 @@ class MatriculaHttpTest extends TestCase
         ]);
 
         $alunoB = $this->criarAluno($estabelecimento);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($alunoB, nivelAcademicoId: $nivel5->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($alunoB, new EnquadramentoAcademicoDTO(nivelAcademicoId: $nivel5->id));
         $matriculaB = Matricula::create([
             'aluno_id' => $alunoB->id, 'turma_id' => $turmaAtual->id, 'ano_lectivo_id' => $anoLectivoAtual->id,
             'numero_registo_matricula' => '2025-8002', 'data_matricula' => '2026-02-01',

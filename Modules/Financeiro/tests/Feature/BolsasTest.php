@@ -8,6 +8,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 use Modules\Financeiro\Actions\AplicarBolsaAction;
 use Modules\Financeiro\Actions\GuardarBolsaAction;
+use Modules\Financeiro\DTO\GuardarBolsaDTO;
 use Modules\Financeiro\Actions\TerminarBolsaAction;
 use Modules\Financeiro\DTO\PedidoGeracaoPropinasDTO;
 use Modules\Financeiro\Enums\AmbitoGeracaoPropinas;
@@ -47,10 +48,7 @@ class BolsasTest extends TestCase
 
     private function bolsa($matricula, string $percentagem = '50', string $de = '2026-09-01', string $ate = '2027-06-30'): Bolsa
     {
-        return app(GuardarBolsaAction::class)->executar([
-            'matricula_id' => $matricula->id, 'nome' => 'Bolsa de mérito', 'percentagem' => $percentagem,
-            'data_inicio' => $de, 'data_fim' => $ate, 'motivo' => 'Melhor aluno da turma',
-        ]);
+        return app(GuardarBolsaAction::class)->executar(new GuardarBolsaDTO('Bolsa de mérito', $percentagem, $de, $ate, 'Melhor aluno da turma', $matricula->id));
     }
 
     private function gerar($ano, $matricula)

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Modules\Plataforma\Actions\RegistarAuditoriaAction;
+use Modules\Plataforma\DTO\RegistoAuditoriaDTO;
 use Modules\Plataforma\Http\Requests\CriarEscolaRequest;
 use Modules\Plataforma\Models\RegistoDeAuditoria;
 use Modules\Plataforma\Services\AuditoriaConsultaService;
@@ -107,9 +108,9 @@ class EscolaController extends Controller
 
         try {
             // Só código e domínio: a senha nunca vai para a auditoria.
-            $auditoria->executar($request->user('plataforma'), 'escola.criada', $criada->tenant->codigo, [
+            $auditoria->executar(new RegistoAuditoriaDTO($request->user('plataforma'), 'escola.criada', $criada->tenant->codigo, [
                 'dominio' => $criada->dominio->dominio,
-            ]);
+            ]));
         } catch (Throwable $e) {
             // A escola já existe: uma falha da auditoria não pode fazer perder a senha temporária,
             // que só se mostra agora. Fica registada nos logs para ser vista.

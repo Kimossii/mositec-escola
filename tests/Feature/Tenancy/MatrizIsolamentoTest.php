@@ -208,6 +208,7 @@ class MatrizIsolamentoTest extends TestCase
         'Aluno' => 'Modules/Aluno/tests/Feature/AlunoTenancyTest.php',
         'AnoLectivo' => 'Modules/AnoLectivo/tests/Feature/AnoLectivoTenancyTest.php',
         'Autenticacao' => 'Modules/Autenticacao/tests/Feature/TokenTenancyTest.php',
+        'Avaliacao' => 'Modules/Avaliacao/tests/Feature/AvaliacaoTenancyTest.php',
         'Core' => 'Modules/Core/tests/Feature/HorarioTenancyTest.php',
         'Curso' => 'Modules/Curso/tests/Feature/CursoTenancyTest.php',
         'Disciplina' => 'Modules/Disciplina/tests/Feature/DisciplinaTenancyTest.php',

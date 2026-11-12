@@ -3,6 +3,7 @@
 namespace Modules\Financeiro\Services;
 
 use Illuminate\Support\Facades\DB;
+use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Financeiro\DTO\PausaCobrancaDTO;
 use Modules\Financeiro\Models\PausaCobranca;
 use Modules\Financeiro\Models\PausaCobrancaMes;
@@ -92,6 +93,22 @@ class PausasCobrancaService
     /**
      * @return list<array<string, mixed>>
      */
+    /**
+     * O que o ecrã das pausas precisa: as pausas do ano escolhido (por omissão o activo), os anos para o filtro e o ano activo.
+     *
+     * @return array<string, mixed>
+     */
+    public function pagina(?int $anoLectivoId): array
+    {
+        $activo = AnoLectivo::current()?->id;
+
+        return [
+            'pausas' => $this->listar($anoLectivoId ?? $activo),
+            'anosLectivos' => AnoLectivo::query()->orderByDesc('data_inicio')->get(['id', 'nome', 'data_inicio', 'data_fim']),
+            'anoLectivoActualId' => $activo,
+        ];
+    }
+
     public function listar(?int $anoLectivoId = null): array
     {
         return PausaCobranca::query()

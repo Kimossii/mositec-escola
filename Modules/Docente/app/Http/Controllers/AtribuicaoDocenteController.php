@@ -9,6 +9,7 @@ use Modules\Core\Exportacao\Exportador;
 use Modules\Docente\Http\Requests\AtribuirDocenteRequest;
 use Modules\Docente\Http\Requests\AtualizarAtribuicaoRequest;
 use Modules\Docente\Http\Requests\EncerrarAtribuicaoRequest;
+use Modules\Docente\Http\Requests\ExportarAtribuicoesRequest;
 use Modules\Docente\Http\Requests\SubstituirTitularRequest;
 use Modules\Docente\Models\AtribuicaoDocente;
 use Modules\Docente\Services\AtribuicaoDocenteConsultaService;
@@ -44,20 +45,9 @@ class AtribuicaoDocenteController extends Controller
     }
 
     /** Exporta a lista (Excel, PDF, CSV ou ZIP) com os mesmos filtros do ecrã. */
-    public function exportar(Request $request, ExportacaoDeAtribuicoesService $exportacao, Exportador $exportador)
+    public function exportar(ExportarAtribuicoesRequest $request, ExportacaoDeAtribuicoesService $exportacao, Exportador $exportador)
     {
-        $this->authorize('atribuicao-docente.exportar');
-
-        $dados = $request->validate([
-            'formato' => ['required', 'string'],
-            'ano_lectivo_id' => ['nullable', 'integer'],
-            'turma_id' => ['nullable', 'integer'],
-            'docente_id' => ['nullable', 'integer'],
-            'disciplina_id' => ['nullable', 'integer'],
-            'papel' => ['nullable', 'in:0,1'],
-            'estado_vigencia' => ['nullable', 'in:agendada,em_curso,terminada'],
-            'pesquisa' => ['nullable', 'string', 'max:100'],
-        ]);
+        $dados = $request->validated();
 
         return $exportador->responder($exportacao->tabela($dados), $dados['formato'], 'atribuicoes-docentes', 'atribuicao-docente.exportar');
     }

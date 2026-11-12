@@ -9,6 +9,7 @@ use Illuminate\Validation\ValidationException;
 use Modules\Financeiro\Actions\AnularPagamentoAction;
 use Modules\Financeiro\Actions\CancelarCobrancaAction;
 use Modules\Financeiro\Actions\CriarCobrancaAction;
+use Modules\Financeiro\DTO\CriarCobrancaDTO;
 use Modules\Financeiro\Actions\PagarCobrancaAction;
 use Modules\Financeiro\DTO\MotivoDeAnulacaoDTO;
 use Modules\Financeiro\Enums\EstadoCobranca;
@@ -64,7 +65,7 @@ class CobrancasTest extends TestCase
 
     private function criar($matricula, array $itens)
     {
-        return app(CriarCobrancaAction::class)->executar($matricula, $itens, null, null, utilizadorId: $this->adminEscola()->id);
+        return app(CriarCobrancaAction::class)->executar($matricula, new CriarCobrancaDTO($itens, utilizadorId: $this->adminEscola()->id));
     }
 
     private function recusa(string $campo, callable $operacao): void

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Permissao\Exceptions\PerfilDeAlunoFixo;
+use Modules\Permissao\Http\Requests\AtribuirPerfilRequest;
 use Modules\Permissao\Http\Requests\CriarPerfilRequest;
 use Modules\Permissao\Http\Requests\SincronizarPermissoesPerfilRequest;
 use Modules\Permissao\Http\Requests\SincronizarPermissoesUtilizadorRequest;
@@ -87,12 +88,10 @@ class PermissaoController extends Controller
         return redirect()->back()->with('success', 'Permissões do utilizador atualizadas.');
     }
 
-    public function atribuirPerfil(Request $request, User $user)
+    public function atribuirPerfil(AtribuirPerfilRequest $request, User $user)
     {
-        $request->validate(['role_id' => 'required|exists:roles,id']);
-
         try {
-            $this->gestao->atribuirPerfil($user, $request->role_id);
+            $this->gestao->atribuirPerfil($user, (int) $request->validated()['role_id']);
         } catch (PerfilDeAlunoFixo $e) {
             return redirect()->back()->withErrors(['role_id' => $e->getMessage()]);
         }

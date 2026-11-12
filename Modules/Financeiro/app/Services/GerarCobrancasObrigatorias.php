@@ -6,6 +6,7 @@ use Modules\Core\Enums\Estado;
 use Modules\Financeiro\Actions\CriarCobrancaAction;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Enums\MomentoObrigatorio;
+use Modules\Financeiro\DTO\CriarCobrancaDTO;
 use Modules\Financeiro\Enums\OrigemCobranca;
 use Modules\Financeiro\Models\CatalogoAlvo;
 use Modules\Financeiro\Models\Cobranca;
@@ -52,7 +53,7 @@ class GerarCobrancasObrigatorias
             return null;
         }
 
-        return $this->criar->executar($matricula, $itens, null, 'Obrigatório ao matricular', OrigemCobranca::OBRIGATORIO);
+        return $this->criar->executar($matricula, new CriarCobrancaDTO($itens, null, 'Obrigatório ao matricular', OrigemCobranca::OBRIGATORIO));
     }
 
     /** @return list<array{tipo: string, modelo: Produto|Servico}> */

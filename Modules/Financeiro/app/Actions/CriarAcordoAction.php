@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
+use Modules\Financeiro\DTO\CriarAcordoDTO;
 use Modules\Financeiro\DTO\IsentarMultaDTO;
 use Modules\Financeiro\Enums\EstadoCobranca;
 use Modules\Financeiro\Models\Acordo;
@@ -42,14 +43,17 @@ class CriarAcordoAction
     }
 
     /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
-    public function executar(Matricula $matricula, array $propinaIds, int $descontoMultaPct, int $prestacoes, string $primeiroVencimento, string $motivo, ?int $utilizadorId = null): Acordo
+    public function executar(Matricula $matricula, CriarAcordoDTO $dto): Acordo
     {
-        return $this->comLog('Criar acordo', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $propinaIds, $descontoMultaPct, $prestacoes, $primeiroVencimento, $motivo, $utilizadorId));
+        return $this->comLog('Criar acordo', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $dto));
     }
 
-    /** @param list<int> $propinaIds */
-    private function executarSemRegisto(Matricula $matricula, array $propinaIds, int $descontoMultaPct, int $prestacoes, string $primeiroVencimento, string $motivo, ?int $utilizadorId = null): Acordo
+    private function executarSemRegisto(Matricula $matricula, CriarAcordoDTO $dto): Acordo
     {
+        [$propinaIds, $descontoMultaPct, $prestacoes, $primeiroVencimento, $motivo, $utilizadorId] = [
+            $dto->propinaIds, $dto->descontoMultaPct, $dto->prestacoes, $dto->primeiroVencimento, $dto->motivo, $dto->utilizadorId,
+        ];
+
         return DB::transaction(function () use ($matricula, $propinaIds, $descontoMultaPct, $prestacoes, $primeiroVencimento, $motivo, $utilizadorId) {
             $regras = RegraCobranca::query()->first();
 

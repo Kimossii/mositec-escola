@@ -15,5 +15,6 @@
     "Tenant": true,
     "Plataforma": true,
     "Financeiro": true,
-    "Docente": true
+    "Docente": true,
+    "Avaliacao": true
 }

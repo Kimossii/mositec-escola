@@ -4,6 +4,7 @@ namespace Modules\Matricula\Services;
 
 use Illuminate\Validation\ValidationException;
 use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
+use Modules\Aluno\DTO\EnquadramentoAcademicoDTO;
 use Modules\Aluno\Enums\EstadoEnquadramentoAcademicoEnum;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
@@ -81,12 +82,11 @@ class ValidadorMatriculaService
                 ]);
             }
 
-            $this->criarEnquadramentoAcademico->executar(
-                $aluno,
+            $this->criarEnquadramentoAcademico->executar($aluno, new EnquadramentoAcademicoDTO(
                 cursoId: $turma->curso_id,
                 nivelAcademicoId: $turma->nivel_academico_id,
                 utilizadorId: $utilizadorId,
-            );
+            ));
 
             return;
         }
@@ -105,12 +105,10 @@ class ValidadorMatriculaService
             ]);
         }
 
-        $this->criarEnquadramentoAcademico->executar(
-            $aluno,
-            cursoId: null,
+        $this->criarEnquadramentoAcademico->executar($aluno, new EnquadramentoAcademicoDTO(
             nivelAcademicoId: $turma->nivel_academico_id,
             utilizadorId: $utilizadorId,
-        );
+        ));
     }
 
     /**

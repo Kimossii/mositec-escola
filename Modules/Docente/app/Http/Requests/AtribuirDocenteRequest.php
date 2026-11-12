@@ -2,6 +2,7 @@
 
 namespace Modules\Docente\Http\Requests;
 
+use Modules\Core\Tenancy\ExisteNaEscola;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 use Modules\Docente\Enums\PapelDocente;
@@ -16,9 +17,9 @@ class AtribuirDocenteRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'docente_id' => ['required', 'integer', 'exists:docentes,id'],
-            'turma_id' => ['required', 'integer', 'exists:turmas,id'],
-            'disciplina_id' => ['required', 'integer', 'exists:disciplinas,id'],
+            'docente_id' => ['required', 'integer', ExisteNaEscola::em('docentes')],
+            'turma_id' => ['required', 'integer', ExisteNaEscola::em('turmas')],
+            'disciplina_id' => ['required', 'integer', ExisteNaEscola::em('disciplinas')],
             'papel' => ['required', Rule::enum(PapelDocente::class)],
             'data_inicio' => ['required', 'date_format:Y-m-d'],
             'data_fim' => ['nullable', 'date_format:Y-m-d'],

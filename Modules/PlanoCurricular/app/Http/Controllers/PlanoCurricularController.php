@@ -95,7 +95,6 @@ class PlanoCurricularController extends Controller
         $this->authorize('plano-curricular.editar');
 
         $this->garantirMesmoEstabelecimento($planoCurricular);
-        abort_unless($disciplina->plano_curricular_id === $planoCurricular->id, 404);
 
         $this->service->atualizarDisciplina($disciplina, $request);
 
@@ -107,7 +106,6 @@ class PlanoCurricularController extends Controller
         $this->authorize('plano-curricular.editar');
 
         $this->garantirMesmoEstabelecimento($planoCurricular);
-        abort_unless($disciplina->plano_curricular_id === $planoCurricular->id, 404);
 
         $this->service->removerDisciplina($disciplina);
 

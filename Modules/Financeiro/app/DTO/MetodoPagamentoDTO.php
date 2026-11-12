@@ -8,14 +8,14 @@ use Modules\Financeiro\Enums\TipoMetodoPagamento;
 class MetodoPagamentoDTO
 {
     public function __construct(
-        public string $nome,
-        public TipoMetodoPagamento $tipo,
-        public ?string $titular,
-        public ?string $banco,
-        public ?string $iban,
-        public ?string $numeroConta,
-        public ?string $telefone,
-        public bool $exigeComprovativo,
+        public readonly string $nome,
+        public readonly TipoMetodoPagamento $tipo,
+        public readonly ?string $titular,
+        public readonly ?string $banco,
+        public readonly ?string $iban,
+        public readonly ?string $numeroConta,
+        public readonly ?string $telefone,
+        public readonly bool $exigeComprovativo,
     ) {
     }
 

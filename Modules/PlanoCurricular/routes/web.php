@@ -10,9 +10,13 @@ Route::middleware(['auth'])->prefix('planos-curriculares')->name('planos-curricu
     Route::patch('/{planoCurricular}/estado', [PlanoCurricularController::class, 'alterarEstado'])->middleware('can:plano-curricular.editar')->name('alterar-estado');
 
     Route::post('/{planoCurricular}/disciplinas', [PlanoCurricularController::class, 'adicionarDisciplina'])->middleware('can:plano-curricular.editar')->name('disciplinas.store');
-    Route::put('/{planoCurricular}/disciplinas/{disciplina}', [PlanoCurricularController::class, 'atualizarDisciplina'])->middleware('can:plano-curricular.editar')->name('disciplinas.update');
-    Route::delete('/{planoCurricular}/disciplinas/{disciplina}', [PlanoCurricularController::class, 'removerDisciplina'])->middleware('can:plano-curricular.editar')->name('disciplinas.destroy');
+    // A disciplina tem de pertencer ao plano do endereço (senão 404).
+    Route::scopeBindings()->group(function () {
+        Route::put('/{planoCurricular}/disciplinas/{disciplina}', [PlanoCurricularController::class, 'atualizarDisciplina'])->middleware('can:plano-curricular.editar')->name('disciplinas.update');
+        Route::delete('/{planoCurricular}/disciplinas/{disciplina}', [PlanoCurricularController::class, 'removerDisciplina'])->middleware('can:plano-curricular.editar')->name('disciplinas.destroy');
+    });
 
     Route::post('/{planoCurricular}/anos-lectivos', [PlanoCurricularController::class, 'confirmarAnoLectivo'])->middleware('can:plano-curricular.editar')->name('anos-lectivos.store');
+    // Sem scopeBindings: aqui a disciplina vem depois do ano lectivo e seria procurada nele, não no plano. O controlador confere os dois.
     Route::put('/{planoCurricular}/anos-lectivos/{planoCurricularAnoLectivo}/disciplinas/{disciplina}/periodos', [PlanoCurricularController::class, 'definirPeriodosDisciplina'])->middleware('can:plano-curricular.editar')->name('anos-lectivos.disciplinas.periodos.update');
 });

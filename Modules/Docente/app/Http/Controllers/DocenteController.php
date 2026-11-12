@@ -10,6 +10,7 @@ use Modules\Docente\Http\Requests\AlterarEstadoDocenteRequest;
 use Modules\Docente\Http\Requests\AtualizarDocenteRequest;
 use Modules\Docente\Http\Requests\CriarAcessoDocenteRequest;
 use Modules\Docente\Http\Requests\CriarDocenteRequest;
+use Modules\Docente\Http\Requests\ExportarDocentesRequest;
 use Modules\Docente\Models\Docente;
 use Modules\Docente\Services\DocenteConsultaService;
 use Modules\Docente\Services\ExportacaoDeDocentesService;
@@ -38,16 +39,9 @@ class DocenteController extends Controller
     }
 
     /** Exporta a lista (Excel, PDF, CSV ou ZIP) com os mesmos filtros do ecrã. */
-    public function exportar(Request $request, ExportacaoDeDocentesService $exportacao, Exportador $exportador)
+    public function exportar(ExportarDocentesRequest $request, ExportacaoDeDocentesService $exportacao, Exportador $exportador)
     {
-        $this->authorize('docente.exportar');
-
-        $dados = $request->validate([
-            'formato' => ['required', 'string'],
-            'pesquisa' => ['nullable', 'string', 'max:100'],
-            'estado' => ['nullable', 'in:0,1'],
-            'acesso' => ['nullable', 'in:com,sem'],
-        ]);
+        $dados = $request->validated();
 
         return $exportador->responder($exportacao->tabela($dados), $dados['formato'], 'docentes', 'docente.exportar');
     }

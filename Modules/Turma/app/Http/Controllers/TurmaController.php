@@ -107,8 +107,6 @@ class TurmaController extends Controller
     {
         $this->authorize('turmas.editar');
 
-        abort_unless($sala->turma_id === $turma->id, 404);
-
         $this->service->atualizarSala($sala, $request);
 
         return redirect()->back()->with('success', 'Associação da sala atualizada com sucesso.');
@@ -117,8 +115,6 @@ class TurmaController extends Controller
     public function encerrarSala(EncerrarSalaTurmaRequest $request, Turma $turma, TurmaSala $sala)
     {
         $this->authorize('turmas.editar');
-
-        abort_unless($sala->turma_id === $turma->id, 404);
 
         $this->service->encerrarSala($sala, $request);
 

@@ -13,7 +13,7 @@ defineOptions({ layout: AppLayout });
 </script>
 
 <template>
-    <div class="app-container container-fluid">
+    <div class="app-container container-fluid py-6">
         <div class="mb-6">
             <BotaoVoltar href="/professor/turmas" />
             <div class="text-muted fs-8 text-uppercase fw-bold">Disciplina</div>

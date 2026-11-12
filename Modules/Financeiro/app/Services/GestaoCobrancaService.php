@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Financeiro\Actions\CancelarCobrancaAction;
 use Modules\Financeiro\Actions\CriarCobrancaAction;
 use Modules\Financeiro\Actions\PagarCobrancaAction;
+use Modules\Financeiro\DTO\CriarCobrancaDTO;
 use Modules\Financeiro\DTO\RegistarPagamentoDTO;
 use Modules\Financeiro\Http\Requests\CriarCobrancaRequest;
 use Modules\Financeiro\Models\Cobranca;
@@ -33,7 +34,7 @@ class GestaoCobrancaService
 
         // Criar e pagar na mesma transacção: se o pagamento falhar, a cobrança (e o stock abatido) revertem.
         return DB::transaction(function () use ($request, $dados, $matricula, $utilizadorId) {
-            $cobranca = $this->criar->executar($matricula, $dados['itens'], $dados['data_limite'] ?? null, $dados['observacao'] ?? null, utilizadorId: $utilizadorId);
+            $cobranca = $this->criar->executar($matricula, new CriarCobrancaDTO($dados['itens'], $dados['data_limite'] ?? null, $dados['observacao'] ?? null, utilizadorId: $utilizadorId));
             $pagamento = ($dados['pagar_agora'] ?? false) ? $this->pagar($cobranca, $request) : null;
 
             return ['cobranca' => $cobranca, 'pagamento' => $pagamento];

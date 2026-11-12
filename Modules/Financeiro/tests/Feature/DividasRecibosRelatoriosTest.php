@@ -76,7 +76,7 @@ class DividasRecibosRelatoriosTest extends TestCase
         $admin = $this->adminEscola();
         $turma = $matricula->turma;
         $esperadoCurto = $turma->rotulo();
-        $esperadoCompleto = $turma->load(['turno', 'anoLectivo'])->rotulo(completo: true);
+        $esperadoCompleto = $turma->load(['nivelAcademico', 'turno', 'anoLectivo'])->rotulo(completo: true);
 
         $this->actingAs($admin)->get('/financeiro/dividas')->assertOk()->assertInertia(fn (Assert $page) => $page
             ->where('dividas.data.0.turma_rotulo', $esperadoCurto)

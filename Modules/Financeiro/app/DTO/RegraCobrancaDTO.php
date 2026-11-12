@@ -11,25 +11,25 @@ use Modules\Financeiro\Support\Multa;
 class RegraCobrancaDTO
 {
     public function __construct(
-        public int $dia_vencimento,
-        public int $dias_tolerancia,
-        public bool $permite_pagamento_parcial,
-        public bool $permite_pagamento_antecipado,
-        public bool $gerar_automaticamente,
-        public bool $permite_negociacao,
-        public int $desconto_maximo_negociacao,
+        public readonly int $dia_vencimento,
+        public readonly int $dias_tolerancia,
+        public readonly bool $permite_pagamento_parcial,
+        public readonly bool $permite_pagamento_antecipado,
+        public readonly bool $gerar_automaticamente,
+        public readonly bool $permite_negociacao,
+        public readonly int $desconto_maximo_negociacao,
         /** null = não mexer na flag */
-        public ?bool $multa_activa = null,
+        public readonly ?bool $multa_activa = null,
         /** null = não mexer na flag */
-        public ?bool $exigir_regularizacao_trancamento = null,
+        public readonly ?bool $exigir_regularizacao_trancamento = null,
         /** null = não mexer na flag */
-        public ?bool $exigir_regularizacao_matricula = null,
+        public readonly ?bool $exigir_regularizacao_matricula = null,
         /** null = não mexer na flag */
-        public ?bool $exigir_regularizacao_servicos = null,
+        public readonly ?bool $exigir_regularizacao_servicos = null,
         /** null = não mexer na flag */
-        public ?bool $gerar_obrigatorios_ao_matricular = null,
+        public readonly ?bool $gerar_obrigatorios_ao_matricular = null,
         /** @var list<EscalaoMultaDTO>|null null = não mexer nos escalões */
-        public ?array $escaloes = null,
+        public readonly ?array $escaloes = null,
     ) {
     }
 
