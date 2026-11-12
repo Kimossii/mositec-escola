@@ -82,7 +82,7 @@ O painel central da MosiTec (`Modules/Plataforma`, prefixo `/plataforma`, rotas 
 
 ### Risco de deploy: reverse proxy e IP
 
-Atrás de um reverse proxy sem `trustProxies` configurado, todos os clientes chegam com o IP do proxy e o balde por IP (`p|ip:`) passa a ser global: qualquer pessoa bloquearia o login dos super admins. Configurar os proxies confiáveis NO DEPLOY (não há variável de ambiente para isso) e SÓ para `X-Forwarded-For` e `X-Forwarded-Proto`. NUNCA confiar em `X-Forwarded-Host`: permitiria forjar o host e, portanto, o tenant. Em produção: HTTPS e `SESSION_SECURE_COOKIE=true`.
+Atrás de um reverse proxy sem `trustProxies` configurado, todos os clientes chegam com o IP do proxy e o balde por IP (`p|ip:`) passa a ser global: qualquer pessoa bloquearia o login dos super admins. Definir `TRUSTED_PROXIES` no deploy (vazio = não confia em nenhum; `*` ou lista de IPs/redes CIDR, ex.: `10.0.0.0/8`); a aplicação só considera `X-Forwarded-For` e `X-Forwarded-Proto`. Sem isto, os redirects saem `http://` e o browser bloqueia-os num site https (sem feedback ao criar escola ou recuperar administrador). NUNCA confiar em `X-Forwarded-Host`: permitiria forjar o host e, portanto, o tenant. Em produção: HTTPS e `SESSION_SECURE_COOKIE=true`.
 
 ### Modelo de ameaça
 
