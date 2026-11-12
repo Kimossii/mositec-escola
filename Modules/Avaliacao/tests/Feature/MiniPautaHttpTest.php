@@ -92,6 +92,22 @@ class MiniPautaHttpTest extends TestCase
         $this->actingAs($admin)->get($this->url())->assertInertia(fn (Assert $p) => $p->where('pauta.alunos.0.medida_negativa', 'Aulas de apoio.'));
     }
 
+    public function test_a_mini_pauta_traz_o_resumo_do_ano_com_os_tres_trimestres(): void
+    {
+        $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
+        $inscricao = $this->inscreverAluno($this->c, 'Ana');
+        $this->notasCompletas($this->c, $inscricao, [1 => ['2', '2'], 2 => ['8', '8'], 3 => ['9', '9']]); // MT1 2, MT2 8, MT3 9, MFD 6,33
+
+        $this->actingAs($admin)->get($this->url())->assertInertia(fn (Assert $p) => $p
+            ->where('pauta.resumo.com_exame', false)
+            ->where('pauta.resumo.com_recurso', false)
+            ->where('pauta.resumo.alunos.0.mt.1', '2.00')
+            ->where('pauta.resumo.alunos.0.mt.2', '8.00')
+            ->where('pauta.resumo.alunos.0.mt.3', '9.00')
+            ->where('pauta.resumo.alunos.0.mfd', '6.33')
+            ->where('pauta.resumo.alunos.0.negativa', false)); // a MFD passa: a MT1 negativa não decide
+    }
+
     public function test_com_a_media_final_positiva_nao_ha_negativa_a_tratar_mesmo_com_uma_mt_negativa(): void
     {
         $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');

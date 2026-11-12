@@ -238,6 +238,8 @@ class MiniPautaService
             ];
         })->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values()->all();
 
+        $resumo = $this->resumoDoAno($inscricoes, $resultados, $tratadas, $regra);
+
         $docenteId = $this->docentes->idDe($utilizador);
         $prazos = [];
         foreach (TipoInstrumento::cases() as $tipo) {
@@ -254,6 +256,7 @@ class MiniPautaService
             'periodo_id' => $periodo->id,
             'instrumentos' => $this->instrumentosParaTela($instrumentos, $base['rotulo_pt'].$periodo->numero),
             'alunos' => $alunos,
+            'resumo' => $resumo,
             'exame' => $comExame ? ['peso_mfd' => $this->semZeros($regra->peso_mfd_exame), 'peso_exame' => $this->semZeros($regra->peso_exame)] : null,
             'recurso' => $comRecurso ? ['aberto' => $recursoAberto, 'peso_mf' => $this->semZeros($regra->peso_mfd_exame), 'peso_recurso' => $this->semZeros($regra->peso_exame)] : null,
             'prazos' => $prazos,
@@ -270,6 +273,37 @@ class MiniPautaService
     private function apresentar(?string $valor, AvaliacaoRegra $regra): ?string
     {
         return $valor === null ? null : $this->calculadora->arredondar($valor, $regra->casas_decimais, $regra->modo_arredondamento);
+    }
+
+    /**
+     * O ano inteiro da disciplina por aluno (MT1 a MT3, MFD e, onde a regra os tem, NE/MF e NER/MFR), para a vista «Resumo».
+     *
+     * @param  \Illuminate\Support\Collection<int, InscricaoDisciplina>  $inscricoes
+     * @param  \Illuminate\Support\Collection<int|string, string>  $tratadas
+     * @return array{com_exame: bool, com_recurso: bool, alunos: list<array<string, mixed>>}
+     */
+    private function resumoDoAno($inscricoes, array $resultados, $tratadas, AvaliacaoRegra $regra): array
+    {
+        $alunos = $inscricoes->map(function (InscricaoDisciplina $i) use ($resultados, $tratadas, $regra) {
+            $r = $resultados[$i->id];
+            $final = $r->baseArredondada();
+
+            return [
+                'inscricao_id' => $i->id,
+                'nome' => (string) $i->matricula->aluno?->dadosPessoa?->nome_completo,
+                'numero_matricula' => $i->matricula->aluno?->numero_matricula,
+                'mt' => [1 => $this->apresentar($r->mt[1], $regra), 2 => $this->apresentar($r->mt[2], $regra), 3 => $this->apresentar($r->mt[3], $regra)],
+                'mfd' => $r->mfdArredondada,
+                'ne' => $r->ne === null ? null : $this->apresentar($r->ne, $regra),
+                'mf' => $r->mfArredondada,
+                'ner' => $r->ner === null ? null : $this->apresentar($r->ner, $regra),
+                'mfr' => $r->mfrArredondada,
+                'negativa' => $final !== null && $this->abaixoDoMinimo($regra, $final),
+                'medida_negativa' => $tratadas[$i->id] ?? null,
+            ];
+        })->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values()->all();
+
+        return ['com_exame' => (bool) $regra->com_exame, 'com_recurso' => (bool) $regra->com_recurso, 'alunos' => $alunos];
     }
 
     private function abaixoDoMinimo(AvaliacaoRegra $regra, ?string $nota): bool
