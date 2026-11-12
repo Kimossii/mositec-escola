@@ -40,7 +40,10 @@ const minAvaliacoes = computed(() => props.pauta?.regra?.min_avaliacoes ?? 5);
 // Nota abaixo do mínimo da escola: a vermelho, como na pauta final.
 const negativaDe = (v) => v !== null && v !== undefined && v !== '' && Number(v) < Number(props.pauta?.regra?.nota_minima);
 const numeroDoPeriodo = computed(() => (props.pauta?.periodos ?? []).find((p) => p.id === props.pauta?.periodo_id)?.numero ?? '');
+const vista = ref('trimestre'); // 'trimestre' | 'resumo'
 const pesquisa = ref('');
+const resumoFiltrado = computed(() => filtrarAlunos(props.pauta?.resumo?.alunos ?? [], pesquisa.value));
+const resumoNegativas = computed(() => (props.pauta?.resumo?.alunos ?? []).filter((a) => a.negativa).length);
 const alunosFiltrados = computed(() => filtrarAlunos(props.pauta?.alunos ?? [], pesquisa.value));
 const negativasTotal = computed(() => (props.pauta?.alunos ?? []).filter((a) => a.negativa).length);
 const negativasPorTratar = computed(() => (props.pauta?.alunos ?? []).filter((a) => a.negativa && !a.medida_negativa).length);
@@ -61,6 +64,7 @@ const encerrado = (i) => props.pauta?.prazos?.[tipoDoInstrumento(i)]?.encerrado 
 const algumEncerrado = computed(() => (props.pauta?.instrumentos ?? []).some(encerrado) || (props.pauta?.exame && props.pauta.prazos.EXAME.encerrado) || (props.pauta?.recurso && props.pauta.prazos.RECURSO.encerrado));
 
 function abrir(turmaId, disciplinaId, periodoId = null) {
+    vista.value = 'trimestre';
     if (!turmaId || !disciplinaId) return;
     if (alteracoes.value.total > 0 && !window.confirm('Tem notas por guardar. Sair sem guardar?')) return;
     router.get('/avaliacao/notas', { turma: turmaId, disciplina: disciplinaId, periodo: periodoId ?? undefined }, { preserveState: true });
@@ -271,7 +275,8 @@ function eliminar(instrumento) {
                 <div class="card-toolbar gap-3">
                     <span class="btn-group">
                         <button v-for="p in pauta.periodos" :key="p.id" type="button" class="btn btn-sm"
-                            :class="p.id === pauta.periodo_id ? 'btn-primary' : 'btn-light'" @click="abrir(turma, disciplina, p.id)">{{ p.nome }}</button>
+                            :class="p.id === pauta.periodo_id && vista !== 'resumo' ? 'btn-primary' : 'btn-light'" @click="abrir(turma, disciplina, p.id)">{{ p.nome }}</button>
+                        <button type="button" class="btn btn-sm" :class="vista === 'resumo' ? 'btn-primary' : 'btn-light'" @click="vista = 'resumo'">Resumo</button>
                     </span>
                     <a :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&formato=pdf`" class="btn btn-sm btn-light">PDF</a>
                     <a :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&formato=excel`" class="btn btn-sm btn-light">Excel</a>
@@ -279,6 +284,43 @@ function eliminar(instrumento) {
             </div>
 
             <div class="card-body pt-3">
+                <template v-if="vista === 'resumo'">
+                    <div v-if="resumoNegativas" class="fw-semibold text-danger mb-4">{{ resumoNegativas }} aluno(s) com negativa na nota final<template v-if="pauta.regra.trata_negativas"> · {{ pauta.resumo.alunos.filter((a) => a.negativa && !a.medida_negativa).length }} por tratar</template></div>
+                    <PesquisaDeAlunos v-if="pauta.resumo.alunos.length" v-model="pesquisa" :total="pauta.resumo.alunos.length" :visiveis="resumoFiltrado.length" class="mb-4" />
+                    <div v-if="!pauta.resumo.alunos.length" class="text-center text-body-secondary py-6">Nenhum aluno inscrito nesta disciplina.</div>
+                    <div v-else class="table-responsive">
+                        <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                            <thead>
+                                <tr class="text-start text-body-secondary fw-bold fs-7 text-uppercase">
+                                    <th style="width: 3rem">#</th>
+                                    <th>Aluno</th>
+                                    <th class="text-center">MT1</th><th class="text-center">MT2</th><th class="text-center">MT3</th>
+                                    <th class="text-center">MFD</th>
+                                    <template v-if="pauta.resumo.com_exame"><th class="text-center">NE</th><th class="text-center">MF</th></template>
+                                    <template v-if="pauta.resumo.com_recurso"><th class="text-center">NER</th><th class="text-center">MFR</th></template>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="{ a, n } in resumoFiltrado" :key="a.inscricao_id">
+                                    <td class="text-body-secondary">{{ n + 1 }}</td>
+                                    <td class="fw-semibold">{{ a.nome }}</td>
+                                    <td v-for="t in [1, 2, 3]" :key="t" class="text-center" :class="negativaDe(a.mt[t]) ? 'text-danger' : ''">{{ a.mt[t] ?? '—' }}</td>
+                                    <td class="text-center fw-bold" :class="negativaDe(a.mfd) ? 'text-danger' : ''">{{ a.mfd ?? '—' }}<NegativaSelo v-if="a.negativa && !pauta.resumo.com_exame" :aluno="a" :trata="pauta.regra.trata_negativas" :pode-tratar="pode.tratar_negativa" :consequencia="pauta.regra.consequencia_negativa" @tratar="tratar(a)" /></td>
+                                    <template v-if="pauta.resumo.com_exame">
+                                        <td class="text-center">{{ a.ne ?? '—' }}</td>
+                                        <td class="text-center fw-bold" :class="negativaDe(a.mf) ? 'text-danger' : ''">{{ a.mf ?? '—' }}<NegativaSelo v-if="a.negativa" :aluno="a" :trata="pauta.regra.trata_negativas" :pode-tratar="pode.tratar_negativa" :consequencia="pauta.regra.consequencia_negativa" @tratar="tratar(a)" /></td>
+                                    </template>
+                                    <template v-if="pauta.resumo.com_recurso">
+                                        <td class="text-center">{{ a.ner ?? '' }}</td>
+                                        <td class="text-center fw-bold" :class="negativaDe(a.mfr) ? 'text-danger' : ''">{{ a.mfr ?? '' }}</td>
+                                    </template>
+                                </tr>
+                                <tr v-if="!resumoFiltrado.length"><td colspan="12" class="text-center text-body-secondary py-6">Nenhum aluno corresponde à pesquisa.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+                <template v-else>
                 <div class="d-flex flex-wrap gap-4 fs-7 text-body-secondary mb-4">
                     <span>Prazo das avaliações contínuas: <strong :class="pauta.prazos.MAC.encerrado ? 'text-danger' : ''">{{ pauta.prazos.MAC.data_limite }}</strong></span>
                     <span>Prazo da prova: <strong :class="pauta.prazos.PT.encerrado ? 'text-danger' : ''">{{ pauta.prazos.PT.data_limite }}</strong></span>
@@ -386,6 +428,7 @@ function eliminar(instrumento) {
                         </tbody>
                     </table>
                 </div>
+                </template>
             </div>
         </div>
 
