@@ -36,6 +36,7 @@ const maxAvaliacoes = computed(() => props.pauta?.regra?.max_avaliacoes ?? 10);
 const minAvaliacoes = computed(() => props.pauta?.regra?.min_avaliacoes ?? 5);
 // Nota abaixo do mínimo da escola: a vermelho, como na pauta final.
 const negativaDe = (v) => v !== null && v !== undefined && v !== '' && Number(v) < Number(props.pauta?.regra?.nota_minima);
+const numeroDoPeriodo = computed(() => (props.pauta?.periodos ?? []).find((p) => p.id === props.pauta?.periodo_id)?.numero ?? '');
 const negativasTotal = computed(() => (props.pauta?.alunos ?? []).filter((a) => a.negativa).length);
 const negativasPorTratar = computed(() => (props.pauta?.alunos ?? []).filter((a) => a.negativa && !a.medida_negativa).length);
 const aTratar = ref(null); // { inscricao_id, aluno, disciplina, medida }
@@ -259,7 +260,7 @@ function eliminar(instrumento) {
             <div class="card-header pt-5">
                 <div class="card-title flex-column align-items-start">
                     <h3 class="fw-bold mb-1">{{ pauta.disciplina_nome }}</h3>
-                    <div class="text-body-secondary fs-7">{{ pauta.turma_rotulo }} · escala 0–{{ pauta.regra.escala_maxima }} · mínimo {{ pauta.regra.nota_minima }}</div>
+                    <div class="text-body-secondary fs-7">{{ pauta.turma_rotulo }}</div>
                 </div>
                 <div class="card-toolbar gap-3">
                     <span class="btn-group">
@@ -318,15 +319,14 @@ function eliminar(instrumento) {
                             <tr class="text-start text-body-secondary fw-bold fs-7 text-uppercase">
                                 <th style="width: 3rem">#</th>
                                 <th>Aluno</th>
-                                <th v-for="i in pauta.instrumentos" :key="i.id" class="text-center">
+                                <th v-for="i in pauta.instrumentos" :key="i.id" class="text-center text-nowrap">
                                     <span :title="i.tipo_descricao">{{ i.sigla }}</span>
-                                    <div class="fw-normal text-nowrap">{{ i.obrigatorio ? '' : 'facultativa' }}
-                                        <a v-if="pode.criar" href="#" class="text-danger ms-1" title="Eliminar avaliação" @click.prevent="eliminar(i)">×</a>
-                                    </div>
+                                    <a v-if="pode.criar" href="#" class="text-danger ms-1" title="Eliminar avaliação" @click.prevent="eliminar(i)">×</a>
+                                    <div v-if="!i.obrigatorio" class="fw-normal fs-8">facultativa</div>
                                 </th>
                                 <th class="text-center">MAC</th>
-                                <th class="text-center">{{ pauta.rotulo_pt }}</th>
-                                <th class="text-center">MT</th>
+                                <th class="text-center">{{ pauta.rotulo_pt }}{{ numeroDoPeriodo }}</th>
+                                <th class="text-center">MT{{ numeroDoPeriodo }}</th>
                                 <th class="text-center">MFD</th>
                                 <template v-if="pauta.exame"><th class="text-center">Exame (NE)</th><th class="text-center">MF</th></template>
                                 <template v-if="pauta.recurso"><th class="text-center">Recurso (NER)</th><th class="text-center">MFR</th></template>

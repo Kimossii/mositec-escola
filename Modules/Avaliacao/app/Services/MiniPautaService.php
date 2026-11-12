@@ -248,7 +248,7 @@ class MiniPautaService
             'regra' => ['escala_maxima' => $regra->escala_maxima, 'nota_minima' => (string) $regra->nota_minima, 'casas_decimais' => $regra->casas_decimais, 'consequencia_negativa' => $regra->tratamento_negativas->consequencia(), 'trata_negativas' => $regra->tratamento_negativas->tratamNegativas(), ...$this->definicoes->paraTela()],
             'periodos' => $periodos->map(fn (Periodo $p) => ['id' => $p->id, 'nome' => $p->nome, 'numero' => $p->numero])->all(),
             'periodo_id' => $periodo->id,
-            'instrumentos' => $this->instrumentosParaTela($instrumentos, $base['rotulo_pt']),
+            'instrumentos' => $this->instrumentosParaTela($instrumentos, $base['rotulo_pt'].$periodo->numero),
             'alunos' => $alunos,
             'exame' => $comExame ? ['peso_mfd' => $this->semZeros($regra->peso_mfd_exame), 'peso_exame' => $this->semZeros($regra->peso_exame)] : null,
             'recurso' => $comRecurso ? ['aberto' => $recursoAberto, 'peso_mf' => $this->semZeros($regra->peso_mfd_exame), 'peso_recurso' => $this->semZeros($regra->peso_exame)] : null,
