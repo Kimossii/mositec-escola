@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
 use Modules\Core\Tenancy\Provisioning\ColectorDeCredenciais;
 use Modules\Core\Tenancy\Provisioning\DadosProvisionamento;
+use Modules\Core\Tenancy\Support\NormalizadorHost;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Tenant\DTO\CriarTenantDTO;
 use Modules\Tenant\DTO\TenantCriado;
@@ -148,10 +149,24 @@ class CriarTenantAction
         }
 
         $dominio = '';
-        try {
-            $dominio = $this->dominios->validar($dto->dominioPrincipal);
-        } catch (DadosDeTenantInvalidos $e) {
-            $erros += $e->erros;
+        $informado = $dto->dominioPrincipal !== null && trim($dto->dominioPrincipal) !== '';
+
+        if (! $informado && config('tenancy.modo') === 'unico') {
+            // Instalação dedicada: o domínio não identifica a escola (o host é ignorado). Fica registado o host da própria
+            // aplicação como referência técnica. Não passa pelo ValidadorDominio, que recusa de propósito esse host no modo `dominio`.
+            $dominio = NormalizadorHost::normalizar((string) parse_url((string) config('app.url'), PHP_URL_HOST));
+
+            if ($dominio === '') {
+                $erros['dominio'] = 'Defina o APP_URL com o endereço da aplicação: no modo único é o domínio de referência da escola.';
+            }
+        } elseif (! $informado) {
+            $erros['dominio'] = 'O domínio principal é obrigatório.';
+        } else {
+            try {
+                $dominio = $this->dominios->validar($dto->dominioPrincipal);
+            } catch (DadosDeTenantInvalidos $e) {
+                $erros += $e->erros;
+            }
         }
 
         if ($erros !== []) {

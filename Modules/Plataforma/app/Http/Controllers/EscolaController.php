@@ -84,7 +84,10 @@ class EscolaController extends Controller
 
     public function nova()
     {
-        return Inertia::render('Plataforma/Escolas/Nova');
+        return Inertia::render('Plataforma/Escolas/Nova', [
+            // Instalação dedicada: o formulário não pede o domínio principal.
+            'modoUnico' => config('tenancy.modo') === 'unico',
+        ]);
     }
 
     public function store(CriarEscolaRequest $request, CriarTenantAction $criar, RegistarAuditoriaAction $auditoria)
@@ -96,7 +99,7 @@ class EscolaController extends Controller
                 nomeEstabelecimento: $dados['nome'],
                 nomeAdministrador: $dados['admin_nome'],
                 emailAdministrador: $dados['admin_email'],
-                dominioPrincipal: $dados['dominio'],
+                dominioPrincipal: $dados['dominio'] ?? null,
                 codigo: $dados['codigo'] ?? null,
             ));
         } catch (DadosDeTenantInvalidos $e) {

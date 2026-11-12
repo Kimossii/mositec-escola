@@ -31,7 +31,8 @@ class CriarTenantCommand extends Command
             nomeEstabelecimento: $this->valor('nome', 'Nome do estabelecimento'),
             nomeAdministrador: $this->valor('admin-nome', 'Nome do administrador'),
             emailAdministrador: $this->valor('admin-email', 'Email do administrador'),
-            dominioPrincipal: $this->valor('dominio', 'Domínio principal'),
+            // Modo único: o domínio é opcional (a escola usa o host de APP_URL); no modo `dominio` pede-se sempre.
+            dominioPrincipal: config('tenancy.modo') === 'unico' ? ($this->option('dominio') ?: null) : $this->valor('dominio', 'Domínio principal'),
             codigo: ($codigo = trim((string) $this->option('codigo'))) !== '' ? $codigo : null,
         );
 
