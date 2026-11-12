@@ -37,6 +37,21 @@ npm run build                       # ou `npm run dev` durante o desenvolvimento
 > Um módulo só carrega se estiver activo em `modules_statuses.json` (falha silenciosa: sem rotas e sem erro).
 > Novo módulo: `php artisan module:make NomeDoModulo`.
 
+## Domínios e painel da Plataforma (tenancy)
+
+Mudar estas variáveis do `.env` (ou do painel do serviço de deploy) exige **reiniciar**. Detalhe no `.env.example`.
+
+| Instalação | `TENANCY_MODO` | `TENANCY_HOSTS_CENTRAIS` | Escolas | Painel da Plataforma |
+|---|---|---|---|---|
+| **Dedicada** (um servidor por cliente) | `unico` | **vazio** | exactamente **uma** | `/plataforma` no mesmo domínio da escola |
+| **Partilhada** (vários clientes) | `dominio` | `painel.mositec.ao` (só o painel) | quantas quiser, cada uma com o seu domínio | `/plataforma` no host do painel |
+
+- Modo `unico`: a escola serve em qualquer endereço (domínio do cliente, IP, `*.ethiodeploy.app` de teste). O domínio dado ao criar a escola é ignorado. Com duas escolas, a escola deixa de abrir.
+- Modo `dominio`: um domínio desconhecido dá 404. `TENANCY_DOMINIOS_RAIZ=mositec.ao` é o domínio pai dos subdomínios das escolas. Precisa de domínio da MosiTec com subdomínios curinga e HTTPS.
+- **Nunca** pôr o endereço da escola em `TENANCY_HOSTS_CENTRAIS`: passa a ser "central", sem escola, e dá 404. Não definir `SESSION_DOMAIN` com o domínio pai.
+- Sem `artisan`/terminal no servidor: o super admin cria-se por `INSERT` em `super_admins` (hash bcrypt, `deve_alterar_senha = true`); com terminal, `php artisan mosi:plataforma:admin:create`.
+- Primeiro acesso: `/plataforma/login` → *Escolas → Nova* (nome, administrador, email) → copiar a senha temporária (aparece uma só vez).
+
 ## Arquitectura
 
 - **Módulos** em `Modules/<Nome>`: cada um com as suas migrações, models, Actions, Services, rotas e páginas Vue.

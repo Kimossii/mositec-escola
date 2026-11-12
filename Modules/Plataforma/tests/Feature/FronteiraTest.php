@@ -104,7 +104,7 @@ class FronteiraTest extends TestCase
         $this->get($this->central('/plataforma/login'))->assertOk();
     }
 
-    /** Modo `unico` (um só tenant, qualquer host é a escola): o host central continua a ser só do painel. */
+    /** Modo `unico` (um só tenant, qualquer host é a escola): o host central é só do painel, e noutros hosts o painel vive em `/plataforma`. */
     public function test_no_modo_unico_o_host_central_e_do_painel_e_qualquer_outro_host_e_da_escola(): void
     {
         // O modo único exige exactamente um tenant: fica só o de teste por omissão.
@@ -122,18 +122,17 @@ class FronteiraTest extends TestCase
         $this->get($this->central('/_fronteira/leitura-escola'))->assertNotFound();
         $this->assertFalse(app(TenantContext::class)->temTenant());
 
-        // Um host arbitrário: a escola responde e o painel dá 404.
+        // Um host arbitrário: a escola responde no resto do domínio e o painel responde em `/plataforma` (um só domínio chega).
         foreach (['192.168.1.10', 'qualquer.exemplo.test'] as $host) {
             $this->get("http://{$host}/login")->assertOk();
             $this->get("http://{$host}/_fronteira/leitura-escola")->assertOk()->assertSee('cursos:0');
-            $this->get("http://{$host}/plataforma/login")->assertNotFound();
-            $this->get("http://{$host}/plataforma/_fronteira/so-plataforma")->assertNotFound();
+            $this->get("http://{$host}/plataforma/login")->assertOk();
+            $this->get("http://{$host}/plataforma/_fronteira/so-plataforma")->assertOk()->assertSee('so-plataforma');
         }
 
-        // Sem hosts centrais: o painel desaparece em todos os hosts e a escola fica intacta.
+        // Sem hosts centrais: o painel continua em `/plataforma` do domínio da escola e a escola fica intacta.
         config(['tenancy.hosts_centrais' => []]);
-        $this->get($this->central('/plataforma/login'))->assertNotFound();
-        $this->get('http://192.168.1.10/plataforma/login')->assertNotFound();
+        $this->get('http://192.168.1.10/plataforma/login')->assertOk();
         $this->get('http://192.168.1.10/login')->assertOk();
         $this->get($this->central('/login'))->assertOk();
     }
