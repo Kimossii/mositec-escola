@@ -3,6 +3,8 @@
 namespace Modules\Financeiro\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
+use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Financeiro\Enums\EstadoBolsa;
 use Modules\Financeiro\Models\Bolsa;
 use Modules\Financeiro\Models\Propina;
@@ -11,6 +13,12 @@ use Modules\Financeiro\Support\Multa;
 
 class BolsaConsultaService
 {
+    /** Os anos lectivos para o filtro, do mais recente para o mais antigo. */
+    public function anosLectivos(): Collection
+    {
+        return AnoLectivo::query()->orderByDesc('data_inicio')->get(['id', 'nome', 'data_inicio', 'data_fim']);
+    }
+
     public function __construct(private CacheDeTotais $totais)
     {
     }

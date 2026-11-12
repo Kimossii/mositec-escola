@@ -2,6 +2,7 @@
 
 namespace Modules\Turma\Http\Requests;
 
+use Modules\Core\Tenancy\ExisteNaEscola;
 use App\Http\Requests\BaseRequest;
 
 class AssociarSalaTurmaRequest extends BaseRequest
@@ -14,7 +15,7 @@ class AssociarSalaTurmaRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'sala_id' => 'required|integer|exists:salas,id',
+            'sala_id' => ['required', 'integer', ExisteNaEscola::em('salas')],
             'inicio' => 'required|date',
         ];
     }

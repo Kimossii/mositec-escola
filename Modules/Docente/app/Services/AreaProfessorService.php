@@ -2,6 +2,7 @@
 
 namespace Modules\Docente\Services;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Aluno\Models\Aluno;
 use Modules\Core\Contracts\VerificaAtribuicaoDocente;
@@ -41,6 +42,40 @@ class AreaProfessorService
         usort($porTurma, fn (array $x, array $y) => strcmp($x['turma_rotulo'], $y['turma_rotulo']));
 
         return array_values($porTurma);
+    }
+
+    /**
+     * Os alunos de uma turma e disciplina, só para quem as lecciona hoje.
+     *
+     * @return array<string, mixed> o mesmo de `alunos()`
+     * @throws AuthorizationException se o utilizador não lecciona esta turma e disciplina
+     */
+    public function alunosDoProfessor(int $utilizadorId, int $turmaId, int $disciplinaId): array
+    {
+        if (! $this->podeVer($utilizadorId, $turmaId, $disciplinaId)) {
+            throw new AuthorizationException('Não lecciona esta disciplina nesta turma.');
+        }
+
+        return $this->alunos($turmaId, $disciplinaId);
+    }
+
+    /**
+     * A ficha limitada de um aluno, só se ele estiver numa turma e disciplina que o utilizador lecciona hoje.
+     *
+     * @return array<string, mixed>
+     * @throws AuthorizationException
+     */
+    public function fichaDoProfessor(int $utilizadorId, int $alunoId): array
+    {
+        return $this->ficha($utilizadorId, $alunoId) ?? throw new AuthorizationException('Este aluno não é seu.');
+    }
+
+    /** O aluno cuja foto o utilizador pode ver (mesma regra da ficha). @throws AuthorizationException */
+    public function alunoParaFoto(int $utilizadorId, int $alunoId): Aluno
+    {
+        $this->fichaDoProfessor($utilizadorId, $alunoId);
+
+        return Aluno::query()->findOrFail($alunoId);
     }
 
     /** Pode o utilizador ver os alunos desta turma e disciplina? (atribuição em vigor) */

@@ -5,8 +5,8 @@ namespace Modules\Docente\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Modules\Aluno\Models\Aluno;
 use Modules\Aluno\Services\AlunoConsultaService;
+use Modules\Docente\Http\Requests\MeusAlunosRequest;
 use Modules\Docente\Services\AreaProfessorService;
 
 class AreaProfessorController extends Controller
@@ -27,36 +27,31 @@ class AreaProfessorController extends Controller
     public function alunos(Request $request, int $turma, int $disciplina)
     {
         $this->authorize('area-professor.ver');
-        abort_unless($this->area->podeVer($request->user()->id, $turma, $disciplina), 403);
 
-        return Inertia::render('Docente/AreaProfessor/Alunos', $this->area->alunos($turma, $disciplina));
+        return Inertia::render('Docente/AreaProfessor/Alunos', $this->area->alunosDoProfessor($request->user()->id, $turma, $disciplina));
     }
 
-    public function meusAlunos(Request $request)
+    public function meusAlunos(MeusAlunosRequest $request)
     {
-        $this->authorize('area-professor.ver');
-        $filtros = $request->validate(['turma' => ['nullable', 'integer'], 'disciplina' => ['nullable', 'integer'], 'q' => ['nullable', 'string', 'max:100']]);
+        $filtros = $request->filtros();
 
         return Inertia::render('Docente/AreaProfessor/MeusAlunos', [
-            ...$this->area->meusAlunos($request->user()->id, $filtros['turma'] ?? null, $filtros['disciplina'] ?? null, $filtros['q'] ?? null),
-            'filtros' => ['turma' => $filtros['turma'] ?? null, 'disciplina' => $filtros['disciplina'] ?? null, 'q' => $filtros['q'] ?? ''],
+            ...$this->area->meusAlunos($request->user()->id, $filtros['turma'], $filtros['disciplina'], $filtros['q']),
+            'filtros' => $filtros,
         ]);
     }
 
     public function ficha(Request $request, int $aluno)
     {
         $this->authorize('area-professor.ver');
-        $ficha = $this->area->ficha($request->user()->id, $aluno);
-        abort_if($ficha === null, 403);
 
-        return Inertia::render('Docente/AreaProfessor/FichaAluno', ['aluno' => $ficha]);
+        return Inertia::render('Docente/AreaProfessor/FichaAluno', ['aluno' => $this->area->fichaDoProfessor($request->user()->id, $aluno)]);
     }
 
     public function foto(Request $request, int $aluno)
     {
         $this->authorize('area-professor.ver');
-        abort_if($this->area->ficha($request->user()->id, $aluno) === null, 403);
 
-        return $this->alunos->servirFoto(Aluno::query()->findOrFail($aluno));
+        return $this->alunos->servirFoto($this->area->alunoParaFoto($request->user()->id, $aluno));
     }
 }

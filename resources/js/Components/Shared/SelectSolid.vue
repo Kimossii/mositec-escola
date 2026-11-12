@@ -15,6 +15,8 @@ const props = defineProps({
     searchable: { type: Boolean, default: false },
     // Altura máxima da lista aberta, em px. Em formulários longos uma lista alta abre para cima e tapa o ecrã.
     alturaMaxima: { type: Number, default: 300 },
+    disabled: { type: Boolean, default: false },
+    pequeno: { type: Boolean, default: false }, // altura reduzida, para barras de filtros e tabelas
 });
 
 const termo = ref('');
@@ -43,7 +45,7 @@ function selecionar(valor) {
 
 <template>
     <div class="dropdown">
-        <button type="button" class="form-select form-select-solid text-start" data-bs-toggle="dropdown" aria-expanded="false">
+        <button type="button" class="form-select form-select-solid text-start text-truncate" :class="{ 'form-select-sm': pequeno }" :title="rotuloSelecionado" :disabled="disabled" data-bs-toggle="dropdown" aria-expanded="false">
             {{ rotuloSelecionado }}
         </button>
         <ul class="dropdown-menu w-100 p-0" :style="{ maxHeight: `${alturaMaxima}px`, overflowY: 'auto' }">

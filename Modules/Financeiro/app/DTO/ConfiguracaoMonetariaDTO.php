@@ -7,8 +7,8 @@ use Illuminate\Foundation\Http\FormRequest;
 class ConfiguracaoMonetariaDTO
 {
     public function __construct(
-        public string $moeda,
-        public bool $cambioManual,
+        public readonly string $moeda,
+        public readonly bool $cambioManual,
     ) {
     }
 

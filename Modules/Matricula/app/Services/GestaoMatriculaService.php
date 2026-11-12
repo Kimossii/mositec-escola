@@ -6,6 +6,8 @@ use Modules\Aluno\Models\Aluno;
 use Modules\Core\Contracts\PrevisaoCancelamentoAoTerminarMatricula;
 use Modules\Matricula\Actions\AlterarEstadoMatriculaAction;
 use Modules\Matricula\Actions\ReactivarMatriculaAction;
+use Modules\Matricula\DTO\ReactivarMatriculaDTO;
+use Modules\Matricula\DTO\TrancarMatriculaDTO;
 use Modules\Matricula\Actions\TrancarMatriculaAction;
 use Modules\Matricula\Actions\AtualizarMatriculaAction;
 use Modules\Matricula\Actions\CriarMatriculaAction;
@@ -52,12 +54,12 @@ class GestaoMatriculaService
 
     public function trancar(Matricula $matricula, string $dataEfeito, string $motivo, bool $confirmarComDividas): Matricula
     {
-        return $this->trancarMatricula->executar($matricula, $dataEfeito, $motivo, $confirmarComDividas, auth()->id());
+        return $this->trancarMatricula->executar($matricula, new TrancarMatriculaDTO($dataEfeito, $motivo, $confirmarComDividas, auth()->id()));
     }
 
     public function reactivar(Matricula $matricula, string $dataEfeito, string $motivo): Matricula
     {
-        return $this->reactivarMatricula->executar($matricula, $dataEfeito, $motivo, auth()->id());
+        return $this->reactivarMatricula->executar($matricula, new ReactivarMatriculaDTO($dataEfeito, $motivo, auth()->id()));
     }
 
     /** @return array{bloqueios: list<array>, avisos: list<array>} */

@@ -15,8 +15,11 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{turma}', [TurmaController::class, 'destroy'])->middleware('can:turmas.eliminar')->name('destroy');
 
         Route::post('/{turma}/salas', [TurmaController::class, 'associarSala'])->middleware('can:turmas.editar')->name('salas.store');
-        Route::put('/{turma}/salas/{sala}', [TurmaController::class, 'atualizarSala'])->middleware('can:turmas.editar')->name('salas.update');
-        Route::patch('/{turma}/salas/{sala}/encerrar', [TurmaController::class, 'encerrarSala'])->middleware('can:turmas.editar')->name('salas.encerrar');
+        // A sala tem de pertencer à turma do endereço (senão 404).
+        Route::scopeBindings()->group(function () {
+            Route::put('/{turma}/salas/{sala}', [TurmaController::class, 'atualizarSala'])->middleware('can:turmas.editar')->name('salas.update');
+            Route::patch('/{turma}/salas/{sala}/encerrar', [TurmaController::class, 'encerrarSala'])->middleware('can:turmas.editar')->name('salas.encerrar');
+        });
     });
 
     Route::prefix('niveis-academicos')->name('niveis-academicos.')->group(function () {

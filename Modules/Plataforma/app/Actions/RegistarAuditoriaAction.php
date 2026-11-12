@@ -3,6 +3,7 @@
 namespace Modules\Plataforma\Actions;
 
 use Modules\Plataforma\Exceptions\DetalheDeAuditoriaInvalido;
+use Modules\Plataforma\DTO\RegistoAuditoriaDTO;
 use Modules\Plataforma\Models\RegistoDeAuditoria;
 use Modules\Plataforma\Models\SuperAdmin;
 
@@ -31,12 +32,12 @@ class RegistarAuditoriaAction
     ];
 
     /**
-     * @param  array<string, mixed>  $detalhe
-     *
      * @throws DetalheDeAuditoriaInvalido
      */
-    public function executar(?SuperAdmin $autor, string $accao, ?string $codigoTenant, array $detalhe = []): void
+    public function executar(RegistoAuditoriaDTO $registo): void
     {
+        [$autor, $accao, $codigoTenant, $detalhe] = [$registo->autor, $registo->accao, $registo->codigoTenant, $registo->detalhe];
+
         if (trim($accao) === '') {
             throw new DetalheDeAuditoriaInvalido('A acção de auditoria é obrigatória.');
         }

@@ -11,7 +11,7 @@ const PAPEL = { 0: 'Titular', 1: 'Substituto' };
 </script>
 
 <template>
-    <div class="app-container container-fluid">
+    <div class="app-container container-fluid py-6">
         <div class="mb-6">
             <h1 class="fs-2 fw-bold mb-1">As minhas turmas</h1>
             <div class="text-muted">As turmas e disciplinas que lecciona hoje.</div>

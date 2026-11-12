@@ -6,15 +6,14 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Core\Exportacao\Exportador;
-use Modules\Core\Exportacao\TabelaExportavel;
-use Modules\Estabelecimento\Models\Estabelecimento;
-use Modules\Estabelecimento\Services\RelogioDoTenant;
+use Modules\Financeiro\Http\Requests\ExportarRecebimentosRequest;
+use Modules\Financeiro\Services\ExportacaoDeRecebimentosService;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Services\RelatorioFinanceiroService;
 
 class RelatorioFinanceiroController extends Controller
 {
-    public function __construct(private RelatorioFinanceiroService $relatorio, private MoedaDoTenant $moeda, private RelogioDoTenant $relogio)
+    public function __construct(private RelatorioFinanceiroService $relatorio, private MoedaDoTenant $moeda)
     {
     }
 
@@ -22,7 +21,7 @@ class RelatorioFinanceiroController extends Controller
     {
         $this->authorize('pagamento.exportar');
 
-        [$de, $ate] = $this->periodo($request);
+        [$de, $ate] = $this->relatorio->periodo($request->query('de'), $request->query('ate'));
 
         return Inertia::render('Financeiro/Relatorios/Index', [
             // Diferido: o relatório faz agregações pesadas; a página abre logo e os números chegam a seguir.
@@ -32,34 +31,10 @@ class RelatorioFinanceiroController extends Controller
         ]);
     }
 
-    public function exportarRecebimentos(Request $request, Exportador $exportador)
+    public function exportarRecebimentos(ExportarRecebimentosRequest $request, Exportador $exportador, ExportacaoDeRecebimentosService $exportacao)
     {
-        $this->authorize('pagamento.exportar');
+        [$de, $ate] = $this->relatorio->periodo($request->query('de'), $request->query('ate'));
 
-        $request->validate(['formato' => ['required', 'string']]);
-        [$de, $ate] = $this->periodo($request);
-        $moeda = $this->moeda->atual();
-        $linhas = array_map(fn (array $l) => [...$l, 'valor' => $l['valor'] / $moeda->fator()], $this->relatorio->recebimentos($de, $ate));
-
-        $tabela = new TabelaExportavel(
-            titulo: 'Recebimentos',
-            colunas: ['numero' => 'Nº', 'data' => 'Data', 'aluno' => 'Aluno', 'numero_aluno' => 'Nº aluno', 'matricula' => 'Matrícula', 'metodo' => 'Método', 'referencia' => 'Referência', 'valor' => "Valor ({$moeda->simbolo})"],
-            linhas: $linhas,
-            subtitulo: "Período {$de} a {$ate} · só pagamentos confirmados",
-            entidade: Estabelecimento::current()?->nome,
-            assinaturas: ['Elaborado por', 'Verificado por', 'O Director'],
-        );
-
-        return $exportador->responder($tabela, $request->query("formato"), "recebimentos-{$de}-{$ate}", "pagamento.exportar");
-    }
-
-    /** @return array{0: string, 1: string} início do mês corrente → hoje, por omissão */
-    private function periodo(Request $request): array
-    {
-        $hoje = $this->relogio->hoje();
-        $de = preg_match('/^\d{4}-\d{2}-\d{2}$/D', (string) $request->query('de')) === 1 ? (string) $request->query('de') : $hoje->startOfMonth()->toDateString();
-        $ate = preg_match('/^\d{4}-\d{2}-\d{2}$/D', (string) $request->query('ate')) === 1 ? (string) $request->query('ate') : $hoje->toDateString();
-
-        return $de <= $ate ? [$de, $ate] : [$ate, $de];
+        return $exportador->responder($exportacao->tabela($de, $ate), $request->validated()['formato'], "recebimentos-{$de}-{$ate}", 'pagamento.exportar');
     }
 }

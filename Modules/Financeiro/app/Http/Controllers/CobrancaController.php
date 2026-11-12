@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
+use Modules\Financeiro\Http\Requests\CancelarCobrancaRequest;
 use Modules\Financeiro\Http\Requests\CriarCobrancaRequest;
 use Modules\Financeiro\Http\Requests\PagarCobrancaRequest;
 use Modules\Financeiro\Models\Cobranca;
@@ -14,7 +15,6 @@ use Modules\Financeiro\Services\CobrancaConsultaService;
 use Modules\Financeiro\Services\GestaoCobrancaService;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Services\PagamentoConsultaService;
-use Modules\Matricula\Models\Matricula;
 
 class CobrancaController extends Controller
 {
@@ -46,14 +46,12 @@ class CobrancaController extends Controller
     {
         $this->authorize('cobranca.criar');
 
-        $matricula = $request->filled('matricula') ? Matricula::query()->find($request->integer('matricula')) : null;
-
         return Inertia::render('Financeiro/Cobrancas/Create', [
             'catalogo' => $this->consulta->catalogo(),
             'metodos' => $this->pagamentos->metodosActivos(),
             'moeda' => $this->moeda->atual()->paraFrontend(),
             'hoje' => $this->relogio->hoje()->toDateString(),
-            'matriculaInicial' => $matricula === null ? null : $this->consulta->resumoDaMatricula($matricula),
+            'matriculaInicial' => $this->consulta->resumoDaMatriculaPorId($request->filled('matricula') ? $request->integer('matricula') : null),
             // Para onde voltar (ex.: a ficha do aluno): lista branca, só a ficha de um aluno.
             'voltarPara' => preg_match('#^/alunos/\d+$#D', (string) $request->query('voltar')) === 1 ? (string) $request->query('voltar') : null,
         ]);
@@ -97,12 +95,9 @@ class CobrancaController extends Controller
         return redirect()->route('financeiro.cobrancas.show', $cobranca->id)->with('success', "Cobrança paga (pagamento n.º {$pagamento->numero}).");
     }
 
-    public function cancelar(Request $request, Cobranca $cobranca)
+    public function cancelar(CancelarCobrancaRequest $request, Cobranca $cobranca)
     {
-        $this->authorize('cobranca.cancelar');
-        $dados = $request->validate(['motivo' => ['required', 'string', 'min:5', 'max:1000']], ['motivo.required' => 'Indique o motivo do cancelamento.', 'motivo.min' => 'Indique o motivo (mínimo 5 caracteres).']);
-
-        $this->gestao->cancelar($cobranca, $dados['motivo'], $request->user()?->id);
+        $this->gestao->cancelar($cobranca, $request->validated()['motivo'], $request->user()?->id);
 
         return redirect()->route('financeiro.cobrancas.show', $cobranca->id)->with('success', 'Cobrança cancelada.');
     }

@@ -2,6 +2,7 @@
 
 namespace Modules\Docente\Http\Requests;
 
+use Modules\Core\Tenancy\ExisteNaEscola;
 use App\Http\Requests\BaseRequest;
 
 class SubstituirTitularRequest extends BaseRequest
@@ -14,9 +15,9 @@ class SubstituirTitularRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'turma_id' => ['required', 'integer', 'exists:turmas,id'],
-            'disciplina_id' => ['required', 'integer', 'exists:disciplinas,id'],
-            'novo_docente_id' => ['required', 'integer', 'exists:docentes,id'],
+            'turma_id' => ['required', 'integer', ExisteNaEscola::em('turmas')],
+            'disciplina_id' => ['required', 'integer', ExisteNaEscola::em('disciplinas')],
+            'novo_docente_id' => ['required', 'integer', ExisteNaEscola::em('docentes')],
             'ultimo_dia_do_titular' => ['required', 'date_format:Y-m-d'],
             'motivo' => ['required', 'string', 'max:500'],
         ];

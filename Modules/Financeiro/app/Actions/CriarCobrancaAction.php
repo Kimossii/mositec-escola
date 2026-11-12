@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Core\Enums\Estado;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
+use Modules\Financeiro\DTO\CriarCobrancaDTO;
 use Modules\Financeiro\Enums\OrigemCobranca;
 use Modules\Financeiro\Models\Cobranca;
 use Modules\Financeiro\Models\CobrancaItem;
@@ -40,16 +41,15 @@ class CriarCobrancaAction
     }
 
     /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
-    public function executar(Matricula $matricula, array $itens, ?string $dataLimite = null, ?string $observacao = null, OrigemCobranca $origem = OrigemCobranca::MANUAL, ?int $utilizadorId = null): Cobranca
+    public function executar(Matricula $matricula, CriarCobrancaDTO $dto): Cobranca
     {
-        return $this->comLog('Criar cobrança', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $itens, $dataLimite, $observacao, $origem, $utilizadorId));
+        return $this->comLog('Criar cobrança', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $dto));
     }
 
-    /**
-     * @param  list<array{tipo: string, id: int, quantidade: int, variante_id?: ?int}>  $itens
-     */
-    private function executarSemRegisto(Matricula $matricula, array $itens, ?string $dataLimite = null, ?string $observacao = null, OrigemCobranca $origem = OrigemCobranca::MANUAL, ?int $utilizadorId = null): Cobranca
+    private function executarSemRegisto(Matricula $matricula, CriarCobrancaDTO $dto): Cobranca
     {
+        [$itens, $dataLimite, $observacao, $origem, $utilizadorId] = [$dto->itens, $dto->dataLimite, $dto->observacao, $dto->origem, $dto->utilizadorId];
+
         return DB::transaction(function () use ($matricula, $itens, $dataLimite, $observacao, $origem, $utilizadorId) {
             $bloqueada = $this->bloqueio->matricula((int) $matricula->getKey())
                 ?? throw ValidationException::withMessages(['matricula' => 'A matrícula não existe ou foi eliminada.']);

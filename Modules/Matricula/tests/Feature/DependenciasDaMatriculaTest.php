@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
+use Modules\Aluno\DTO\EnquadramentoAcademicoDTO;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
@@ -70,7 +71,7 @@ class DependenciasDaMatriculaTest extends TestCase
             'dados_pessoa_id' => $pessoa->id,
             'numero_matricula' => '2026-' . random_int(1000, 9999),
         ]);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, null, $nivel->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $nivel->id));
 
         return Matricula::create([
             'aluno_id' => $aluno->id,

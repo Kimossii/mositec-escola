@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Modules\Aluno\Actions\CriarEnquadramentoAcademicoAlunoAction;
+use Modules\Aluno\DTO\EnquadramentoAcademicoDTO;
 use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
@@ -69,7 +70,7 @@ class MatriculaEstadoAlteradoTest extends TestCase
             'dados_pessoa_id' => $pessoa->id,
             'numero_matricula' => '2026-' . random_int(1000, 9999),
         ]);
-        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, null, $nivel->id);
+        (new CriarEnquadramentoAcademicoAlunoAction())->executar($aluno, new EnquadramentoAcademicoDTO(nivelAcademicoId: $nivel->id));
         $plano = PlanoCurricular::create([
             'estabelecimento_id' => $estabelecimento->id,
             'curso_id' => null,

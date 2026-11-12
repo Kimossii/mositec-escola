@@ -2,6 +2,7 @@
 
 namespace Modules\Matricula\Http\Requests;
 
+use Modules\Core\Tenancy\ExisteNaEscola;
 use App\Http\Requests\BaseRequest;
 
 class CriarInscricaoDisciplinaRequest extends BaseRequest
@@ -14,7 +15,7 @@ class CriarInscricaoDisciplinaRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'plano_curricular_disciplina_id' => ['required', 'integer', 'exists:plano_curricular_disciplinas,id'],
+            'plano_curricular_disciplina_id' => ['required', 'integer', ExisteNaEscola::em('plano_curricular_disciplinas')],
         ];
     }
 

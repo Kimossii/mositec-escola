@@ -12,6 +12,7 @@ use Modules\Docente\Http\Requests\CriarDocenteRequest;
 use Modules\Docente\Http\Requests\CriarAcessoDocenteRequest;
 use Modules\Docente\Models\Docente;
 use Modules\Usuario\Actions\CriarUtilizadorDocenteAction;
+use Modules\Usuario\DTO\AcessoDeDocenteDTO;
 use Modules\Usuario\Models\User;
 
 class GestaoDocenteService
@@ -43,7 +44,7 @@ class GestaoDocenteService
     /** «Criar acesso»: a mesma Action do novo professor em Utilizadores → Professores. */
     public function criarAcesso(Docente $docente, CriarAcessoDocenteRequest $request): User
     {
-        return $this->criarAcesso->executar($docente->id, $request->validated('email'), $request->validated('password'));
+        return $this->criarAcesso->executar(new AcessoDeDocenteDTO($docente->id, $request->validated('email'), $request->validated('password')));
     }
 
     public function eliminar(Docente $docente): void

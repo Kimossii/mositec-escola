@@ -4,6 +4,7 @@ namespace Modules\Financeiro\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Modules\Financeiro\DTO\GuardarBolsaDTO;
 use Modules\Financeiro\Enums\EstadoBolsa;
 use Modules\Financeiro\Models\Bolsa;
 use Modules\Financeiro\Support\Multa;
@@ -19,17 +20,16 @@ class GuardarBolsaAction
     use LogService;
 
     /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
-    public function executar(array $dados, ?Bolsa $bolsa = null): Bolsa
+    public function executar(GuardarBolsaDTO $dto, ?Bolsa $bolsa = null): Bolsa
     {
-        return $this->comLog('Guardar bolsa', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($dados, $bolsa));
+        return $this->comLog('Guardar bolsa', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($dto, $bolsa));
     }
 
-    /** @param array{matricula_id?: int, nome: string, percentagem: string, data_inicio: string, data_fim: string, motivo: string} $dados */
-    private function executarSemRegisto(array $dados, ?Bolsa $bolsa = null): Bolsa
+    private function executarSemRegisto(GuardarBolsaDTO $dto, ?Bolsa $bolsa = null): Bolsa
     {
-        return DB::transaction(function () use ($dados, $bolsa) {
+        return DB::transaction(function () use ($dto, $bolsa) {
             if ($bolsa === null) {
-                $matricula = Matricula::query()->with('anoLectivo')->findOrFail($dados['matricula_id']);
+                $matricula = Matricula::query()->with('anoLectivo')->findOrFail((int) $dto->matriculaId);
                 $alunoId = (int) $matricula->aluno_id;
                 $ano = $matricula->anoLectivo;
             } else {
@@ -43,14 +43,14 @@ class GuardarBolsaAction
                 $ano = $bolsa->anoLectivo;
             }
 
-            if ($dados['data_inicio'] < $ano->data_inicio->toDateString() || $dados['data_fim'] > $ano->data_fim->toDateString()) {
+            if ($dto->dataInicio < $ano->data_inicio->toDateString() || $dto->dataFim > $ano->data_fim->toDateString()) {
                 throw ValidationException::withMessages(['data_inicio' => "As datas da bolsa têm de estar dentro do ano lectivo ({$ano->nome})."]);
             }
 
             $sobreposta = Bolsa::query()
                 ->where('aluno_id', $alunoId)->where('ano_lectivo_id', $ano->id)->where('estado', EstadoBolsa::ACTIVA->value)
                 ->when($bolsa !== null, fn ($q) => $q->where('id', '!=', $bolsa->id))
-                ->where('data_inicio', '<=', $dados['data_fim'])->where('data_fim', '>=', $dados['data_inicio'])
+                ->where('data_inicio', '<=', $dto->dataFim)->where('data_fim', '>=', $dto->dataInicio)
                 ->exists();
 
             if ($sobreposta) {
@@ -58,11 +58,11 @@ class GuardarBolsaAction
             }
 
             $atributos = [
-                'nome' => trim($dados['nome']),
-                'percentagem' => Multa::percentagemParaPontosBase($dados['percentagem']),
-                'data_inicio' => $dados['data_inicio'],
-                'data_fim' => $dados['data_fim'],
-                'motivo' => trim($dados['motivo']),
+                'nome' => trim($dto->nome),
+                'percentagem' => Multa::percentagemParaPontosBase($dto->percentagem),
+                'data_inicio' => $dto->dataInicio,
+                'data_fim' => $dto->dataFim,
+                'motivo' => trim($dto->motivo),
             ];
 
             if ($bolsa === null) {

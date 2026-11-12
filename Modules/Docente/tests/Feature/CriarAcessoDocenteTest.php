@@ -19,6 +19,7 @@ use Modules\Permissao\Models\Modulo as ModuloRegistro;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\UserPermissao;
 use Modules\Usuario\Actions\CriarUtilizadorDocenteAction;
+use Modules\Usuario\DTO\AcessoDeDocenteDTO;
 use Modules\Usuario\Enums\TipoLogin;
 use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
@@ -198,7 +199,7 @@ class CriarAcessoDocenteTest extends TestCase
         $docente = $this->criarDocente('Rita Docente');
 
         try {
-            app(CriarUtilizadorDocenteAction::class)->executar($docente->id, $eu->email, 'segredo123');
+            app(CriarUtilizadorDocenteAction::class)->executar(new AcessoDeDocenteDTO($docente->id, $eu->email, 'segredo123'));
             $this->fail('Devia recusar o email em uso.');
         } catch (ValidationException $e) {
             $this->assertArrayHasKey('email', $e->errors());

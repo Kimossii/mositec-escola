@@ -2,6 +2,7 @@
 
 namespace Modules\Turma\Http\Requests;
 
+use Modules\Core\Tenancy\ExisteNaEscola;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 use Modules\Turma\Models\NivelAcademico;
@@ -16,7 +17,7 @@ class AtualizarTurmaRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'nivel_academico_id' => 'required|integer|exists:niveis_academicos,id',
+            'nivel_academico_id' => ['required', 'integer', ExisteNaEscola::em('niveis_academicos')],
             'curso_id' => [
                 Rule::requiredIf(function () {
                     $nivel = NivelAcademico::find($this->input('nivel_academico_id'));
@@ -25,7 +26,7 @@ class AtualizarTurmaRequest extends BaseRequest
                 }),
                 'nullable',
                 'integer',
-                'exists:cursos,id',
+                ExisteNaEscola::em('cursos'),
             ],
             'codigo' => [
                 'required',
@@ -36,7 +37,7 @@ class AtualizarTurmaRequest extends BaseRequest
                     ->ignore($this->route('turma')),
             ],
             'nome' => 'required|string|max:255',
-            'turno_id' => 'nullable|integer|exists:turnos,id',
+            'turno_id' => ['nullable', 'integer', ExisteNaEscola::em('turnos')],
         ];
     }
 

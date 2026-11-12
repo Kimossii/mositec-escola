@@ -4,6 +4,7 @@ namespace Modules\Financeiro\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Enums\EstadoAcordo;
 use Modules\Financeiro\Enums\EstadoCobranca;
@@ -14,6 +15,7 @@ use Modules\Financeiro\Models\Propina;
 use Modules\Financeiro\Models\PropinaMulta;
 use Modules\Financeiro\Support\CacheDeTotais;
 use Modules\Financeiro\Support\ProgressoDoAcordo;
+use Modules\Turma\Models\Turma;
 use Modules\Matricula\Models\Matricula;
 
 /**
@@ -22,6 +24,20 @@ use Modules\Matricula\Models\Matricula;
  */
 class DividasConsultaService
 {
+    /**
+     * Os anos lectivos e as turmas para os filtros da lista de dívidas.
+     *
+     * @return array{anosLectivos: Collection, turmas: Collection}
+     */
+    public function opcoesDeFiltro(): array
+    {
+        return [
+            'anosLectivos' => AnoLectivo::query()->orderByDesc('data_inicio')->get(['id', 'nome']),
+            'turmas' => Turma::query()->with(['nivelAcademico:id,nome', 'turno:id,nome', 'anoLectivo:id,nome'])->orderBy('nome')->get(['id', 'nome', 'ano_lectivo_id', 'turno_id', 'nivel_academico_id'])
+                ->each(fn (Turma $turma) => $turma->setAttribute('rotulo', $turma->rotulo(completo: true))->makeHidden(['nivel_academico', 'turno', 'ano_lectivo'])),
+        ];
+    }
+
     public function __construct(private RelogioDoTenant $relogio, private ProgressoDoAcordo $progresso, private CacheDeTotais $cache)
     {
     }
@@ -100,7 +116,7 @@ class DividasConsultaService
         $pesquisa = is_string($filtros['pesquisa'] ?? null) ? trim($filtros['pesquisa']) : '';
 
         $matriculas = Matricula::withTrashed()
-            ->with(['aluno.dadosPessoa', 'turma:id,nome,turno_id,ano_lectivo_id', 'turma.turno:id,nome', 'turma.anoLectivo:id,nome', 'anoLectivo:id,nome'])
+            ->with(['aluno.dadosPessoa', 'turma:id,nome,turno_id,ano_lectivo_id,nivel_academico_id', 'turma.nivelAcademico:id,nome', 'turma.turno:id,nome', 'turma.anoLectivo:id,nome', 'anoLectivo:id,nome'])
             ->whereIn('id', $ids)
             ->when(is_numeric($filtros['ano_lectivo_id'] ?? null), fn ($q) => $q->where('ano_lectivo_id', (int) $filtros['ano_lectivo_id']))
             ->when(is_numeric($filtros['turma_id'] ?? null), fn ($q) => $q->where('turma_id', (int) $filtros['turma_id']))

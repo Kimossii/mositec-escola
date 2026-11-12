@@ -8,6 +8,7 @@ use Illuminate\Validation\ValidationException;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Events\MatriculaEstadoAlterado;
+use Modules\Matricula\DTO\HistoricoMatriculaDTO;
 use Modules\Matricula\Models\Matricula;
 use Modules\Core\Traits\LogService;
 
@@ -72,7 +73,7 @@ class AlterarEstadoMatriculaAction
 
             $bloqueada->save();
 
-            $this->registarHistorico->executar($bloqueada, $estadoActual, $novoEstado, $utilizadorId);
+            $this->registarHistorico->executar($bloqueada, new HistoricoMatriculaDTO($estadoActual, $novoEstado, $utilizadorId));
 
             MatriculaEstadoAlterado::dispatch(
                 (int) $bloqueada->id,

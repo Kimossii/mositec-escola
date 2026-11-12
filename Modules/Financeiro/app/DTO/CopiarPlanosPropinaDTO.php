@@ -7,8 +7,8 @@ use Illuminate\Foundation\Http\FormRequest;
 class CopiarPlanosPropinaDTO
 {
     public function __construct(
-        public int $ano_origem_id,
-        public int $ano_destino_id,
+        public readonly int $ano_origem_id,
+        public readonly int $ano_destino_id,
     ) {
     }
 

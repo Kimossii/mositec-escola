@@ -10,6 +10,8 @@ use Modules\Core\DTO\ResultadoVerificacaoTrancamento;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Matricula\Enums\EstadoMatriculaEnum;
 use Modules\Matricula\Events\MatriculaEstadoAlterado;
+use Modules\Matricula\DTO\HistoricoMatriculaDTO;
+use Modules\Matricula\DTO\TrancarMatriculaDTO;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Models\MatriculaHistorico;
 use Modules\Core\Traits\LogService;
@@ -31,13 +33,15 @@ class TrancarMatriculaAction
     }
 
     /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
-    public function executar(Matricula $matricula, string $dataEfeito, string $motivo, bool $confirmarComDividas = false, ?int $utilizadorId = null): Matricula
+    public function executar(Matricula $matricula, TrancarMatriculaDTO $dto): Matricula
     {
-        return $this->comLog('Trancar matrícula', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $dataEfeito, $motivo, $confirmarComDividas, $utilizadorId));
+        return $this->comLog('Trancar matrícula', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => $this->executarSemRegisto($matricula, $dto));
     }
 
-    private function executarSemRegisto(Matricula $matricula, string $dataEfeito, string $motivo, bool $confirmarComDividas = false, ?int $utilizadorId = null): Matricula
+    private function executarSemRegisto(Matricula $matricula, TrancarMatriculaDTO $dto): Matricula
     {
+        [$dataEfeito, $motivo, $confirmarComDividas, $utilizadorId] = [$dto->dataEfeito, $dto->motivo, $dto->confirmarComDividas, $dto->utilizadorId];
+
         return DB::transaction(function () use ($matricula, $dataEfeito, $motivo, $confirmarComDividas, $utilizadorId) {
             $bloqueada = Matricula::query()->whereKey($matricula->getKey())->lockForUpdate()->firstOrFail();
 
@@ -68,15 +72,14 @@ class TrancarMatriculaAction
             $bloqueada->editado_por = $utilizadorId;
             $bloqueada->save();
 
-            $this->registarHistorico->executar(
-                $bloqueada,
+            $this->registarHistorico->executar($bloqueada, new HistoricoMatriculaDTO(
                 EstadoMatriculaEnum::ACTIVA,
                 EstadoMatriculaEnum::TRANCADA,
                 $utilizadorId,
                 $data->toDateString(),
                 $motivo,
                 ['avisos' => $resultado->avisos, 'confirmou_com_dividas' => $pedeConfirmacao && $confirmarComDividas],
-            );
+            ));
 
             MatriculaEstadoAlterado::dispatch((int) $bloqueada->id, EstadoMatriculaEnum::ACTIVA->value, EstadoMatriculaEnum::TRANCADA->value, $data->toDateString(), $utilizadorId);
 

@@ -6,7 +6,9 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Financeiro\Enums\EstadoAcordo;
 use Modules\Financeiro\Models\Acordo;
 use Modules\Financeiro\Models\AcordoPropina;
+use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Financeiro\Models\Propina;
+use Modules\Financeiro\Models\RegraCobranca;
 use Modules\Financeiro\Support\CacheDeTotais;
 use Modules\Financeiro\Support\ProgressoDoAcordo;
 use Modules\Financeiro\Support\RotuloDePeriodo;
@@ -14,8 +16,32 @@ use Modules\Matricula\Models\Matricula;
 
 class AcordoConsultaService
 {
-    public function __construct(private ProgressoDoAcordo $progresso, private CacheDeTotais $totais)
+    public function __construct(
+        private ProgressoDoAcordo $progresso,
+        private CacheDeTotais $totais,
+        private CobrancaConsultaService $matriculas,
+        private MoedaDoTenant $moeda,
+        private RelogioDoTenant $relogio,
+    ) {
+    }
+
+    /**
+     * O que o ecrã de novo acordo precisa: se a escola permite negociar, o desconto máximo, a moeda, a data de hoje e a
+     * matrícula já escolhida (se vier da ficha do aluno).
+     *
+     * @return array<string, mixed>
+     */
+    public function formulario(?int $matriculaId): array
     {
+        $regras = RegraCobranca::query()->first();
+
+        return [
+            'permiteNegociacao' => (bool) ($regras?->permite_negociacao ?? false),
+            'descontoMaximo' => (int) ($regras?->desconto_maximo_negociacao ?? 0),
+            'moeda' => $this->moeda->atual()->paraFrontend(),
+            'hoje' => $this->relogio->hoje()->toDateString(),
+            'matriculaInicial' => $this->matriculas->resumoDaMatriculaPorId($matriculaId),
+        ];
     }
 
     /**

@@ -192,6 +192,6 @@ class AtribuicaoDocenteExportacaoTest extends TestCase
         $this->atribuir($c, $this->criarDocente('Ana Docente'), PapelDocente::TITULAR, '2026-02-01');
         $this->como(Perfil::ADMIN_ESCOLA);
 
-        $this->assertStringContainsString('Turma 10A · Manhã · 2026', $this->csv(route('atribuicoes-docentes.exportar', ['formato' => 'csv'])));
+        $this->assertStringContainsString('Turma 10A · 10ª Classe · Manhã · 2026', $this->csv(route('atribuicoes-docentes.exportar', ['formato' => 'csv'])));
     }
 }

@@ -106,19 +106,19 @@ class NivelAcademicoSeeder extends Seeder
                         'codigo' => 'SEC_7',
                         'nome' => '7.ª Classe',
                         'ordem' => 12,
-                        'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO,
+                        'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
                     ],
                     [
                         'codigo' => 'SEC_8',
                         'nome' => '8.ª Classe',
                         'ordem' => 13,
-                        'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO,
+                        'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
                     ],
                     [
                         'codigo' => 'SEC_9',
                         'nome' => '9.ª Classe',
                         'ordem' => 14,
-                        'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO,
+                        'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
                     ],
                     [
                         'codigo' => 'SEC_10',
