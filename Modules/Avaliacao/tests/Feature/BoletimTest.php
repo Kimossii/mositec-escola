@@ -5,6 +5,7 @@ namespace Modules\Avaliacao\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Modules\Avaliacao\Actions\AprovarPautaAction;
+use Modules\Avaliacao\Enums\FasePauta;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
 use Modules\Avaliacao\Actions\LancarQualitativaAction;
 use Modules\Avaliacao\DTO\LancarQualitativaDTO;
@@ -82,8 +83,9 @@ class BoletimTest extends TestCase
         $inscricao = $this->inscreverAluno($c);
         $this->notasCompletas($c, $inscricao, [1 => ['8', '8'], 2 => ['8', '8'], 3 => ['8', '8']]);
         $this->lancarExame($c['turma']->id, $c['disciplina']->id, $inscricao->id, '2');
+        app(AprovarPautaAction::class)->executar($c['turma']->id); // 1.ª fase: manda-o ao recurso
         $this->lancarRecurso($c['turma']->id, $c['disciplina']->id, $inscricao->id, '8');
-        app(AprovarPautaAction::class)->executar($c['turma']->id);
+        app(AprovarPautaAction::class)->executar($c['turma']->id, FasePauta::RECURSO);
 
         [$b] = $this->boletins($c);
 

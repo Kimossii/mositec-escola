@@ -123,8 +123,9 @@ class DocumentosPautaTest extends TestCase
 
         $d = $this->pautaDe($c);
 
-        $this->assertSame(['MFD', 'NE', 'MF', 'NER', 'MFR'], $d->grupos[0]['colunas']);
-        $this->assertSame(['8.00', '10.00', '9.20', '', '', 'APTO'], array_slice($d->linhas[0], 3));
+        // Na 1.ª fase não há NER nem MFR: o recurso tem pauta própria.
+        $this->assertSame(['MFD', 'NE', 'MF'], $d->grupos[0]['colunas']);
+        $this->assertSame(['8.00', '10.00', '9.20', 'APTO'], array_slice($d->linhas[0], 3));
     }
 
     public function test_pauta_qualitativa_sem_sexo_e_com_observacao(): void

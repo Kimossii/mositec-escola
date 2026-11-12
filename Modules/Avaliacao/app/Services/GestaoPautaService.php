@@ -6,7 +6,9 @@ use Modules\Avaliacao\Actions\AprovarPautaAction;
 use Modules\Avaliacao\Actions\DecidirProgressaoAction;
 use Modules\Avaliacao\Actions\ReabrirPautaAction;
 use Modules\Avaliacao\DTO\DecidirProgressaoDTO;
+use Modules\Avaliacao\DTO\ReabrirPautaDTO;
 use Modules\Avaliacao\Enums\Decisao;
+use Modules\Avaliacao\Enums\FasePauta;
 use Modules\Avaliacao\Http\Requests\DecidirProgressaoRequest;
 use Modules\Avaliacao\Http\Requests\ReabrirPautaRequest;
 
@@ -20,14 +22,16 @@ class GestaoPautaService
     ) {
     }
 
-    public function aprovar(int $turmaId): void
+    public function aprovar(int $turmaId, FasePauta $fase = FasePauta::EPOCA_NORMAL): void
     {
-        $this->aprovar->executar($turmaId);
+        $this->aprovar->executar($turmaId, $fase);
     }
 
     public function reabrir(int $turmaId, ReabrirPautaRequest $request): void
     {
-        $this->reabrir->executar($turmaId, $request->validated()['motivo']);
+        $d = $request->validated();
+
+        $this->reabrir->executar(new ReabrirPautaDTO($turmaId, $d['motivo'], FasePauta::from((int) ($d['fase'] ?? 1))));
     }
 
     public function decidirProgressao(int $turmaId, DecidirProgressaoRequest $request): void

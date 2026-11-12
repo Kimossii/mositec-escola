@@ -15,6 +15,7 @@ class ReabrirPautaRequest extends BaseRequest
     {
         return [
             'motivo' => ['required', 'string', 'max:500'],
+            'fase' => ['nullable', 'integer', 'in:1,2'],
         ];
     }
 

@@ -6,7 +6,9 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use Modules\Avaliacao\DTO\ReabrirPautaDTO;
 use Modules\Avaliacao\Enums\EstadoPauta;
+use Modules\Avaliacao\Enums\FasePauta;
 use Modules\Avaliacao\Models\AvaliacaoPauta;
 use Modules\Core\Traits\LogService;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
@@ -21,9 +23,11 @@ class ReabrirPautaAction
     {
     }
 
-    public function executar(int $turmaId, string $motivo): AvaliacaoPauta
+    public function executar(ReabrirPautaDTO $dto): AvaliacaoPauta
     {
-        return $this->comLog('Reabrir pauta final', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => DB::transaction(function () use ($turmaId, $motivo) {
+        return $this->comLog('Reabrir pauta final', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => DB::transaction(function () use ($dto) {
+            $turmaId = $dto->turma_id;
+            $motivo = $dto->motivo;
             if (! Gate::allows('nota.reabrir')) {
                 throw new AuthorizationException('Sem permissão para reabrir pautas.');
             }
@@ -33,10 +37,14 @@ class ReabrirPautaAction
             }
 
             Turma::query()->findOrFail($turmaId);
-            $pauta = AvaliacaoPauta::query()->where('turma_id', $turmaId)->lockForUpdate()->first();
+            $pauta = AvaliacaoPauta::query()->where('turma_id', $turmaId)->where('fase', $dto->fase->value)->lockForUpdate()->first();
 
             if ($pauta?->estado !== EstadoPauta::DEFINITIVA) {
                 throw ValidationException::withMessages(['pauta' => 'Só se reabre uma pauta definitiva.']);
+            }
+
+            if ($dto->fase === FasePauta::EPOCA_NORMAL && AvaliacaoPauta::query()->where('turma_id', $turmaId)->where('fase', FasePauta::RECURSO->value)->where('estado', EstadoPauta::DEFINITIVA)->exists()) {
+                throw ValidationException::withMessages(['pauta' => 'Reabra primeiro a pauta do recurso.']);
             }
 
             $pauta->update(['estado' => EstadoPauta::REABERTA, 'reaberta_por' => auth()->id(), 'reaberta_em' => $this->relogio->agora(), 'motivo_reabertura' => $motivo]);

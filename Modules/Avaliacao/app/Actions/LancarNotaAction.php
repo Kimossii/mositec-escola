@@ -46,7 +46,7 @@ class LancarNotaAction
     {
         $instrumento = AvaliacaoInstrumento::query()->findOrFail($dto->instrumento_id);
         $this->acesso->exigirDoUtilizadorActual($instrumento->turma_id, $instrumento->disciplina_id);
-        $this->pautas->exigirAberta($instrumento->turma_id);
+        $this->pautas->exigirAbertaPara($instrumento->turma_id, $instrumento->tipo);
         $turma = Turma::query()->findOrFail($instrumento->turma_id);
         $regra = $this->regras->paraTurma($turma)
             ?? throw ValidationException::withMessages(['instrumento_id' => 'A escola ainda não configurou a regra de avaliação desta classe.']);

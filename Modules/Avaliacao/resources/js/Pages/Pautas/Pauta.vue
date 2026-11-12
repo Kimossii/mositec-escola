@@ -26,17 +26,19 @@ const ESTADOS = {
 };
 
 const aoFalhar = (e) => toast.error(Object.values(e)[0]);
-const abrir = () => turma.value && router.get('/avaliacao/pautas', { turma: turma.value }, { preserveState: true });
+const fase = computed(() => props.pauta?.fase ?? props.selecao.fase ?? 1);
+const abrir = (f = 1) => turma.value && router.get('/avaliacao/pautas', { turma: turma.value, fase: typeof f === 'number' ? f : 1 }, { preserveState: true });
+const abrirFase = (f) => router.get('/avaliacao/pautas', { turma: turma.value, fase: f }, { preserveState: true });
 
 function aprovar() {
-    router.post(`/avaliacao/pautas/${props.pauta.turma_id}/aprovar`, {}, {
+    router.post(`/avaliacao/pautas/${props.pauta.turma_id}/aprovar`, { fase: fase.value }, {
         preserveScroll: true, preserveState: true, onError: aoFalhar,
-        onSuccess: () => { aConfirmar.value = false; toast.success('Pauta aprovada. As notas desta turma ficaram bloqueadas.'); },
+        onSuccess: () => { aConfirmar.value = false; toast.success(fase.value === 2 ? 'Pauta do recurso aprovada. O processo da turma está fechado.' : 'Pauta aprovada. As notas desta turma ficaram bloqueadas.'); },
     });
 }
 
 function reabrir() {
-    router.post(`/avaliacao/pautas/${props.pauta.turma_id}/reabrir`, { motivo: motivo.value }, {
+    router.post(`/avaliacao/pautas/${props.pauta.turma_id}/reabrir`, { motivo: motivo.value, fase: fase.value }, {
         preserveScroll: true, preserveState: true, onError: aoFalhar,
         onSuccess: () => { aReabrir.value = false; motivo.value = ''; toast.success('Pauta reaberta.'); },
     });
@@ -90,8 +92,8 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                 </div>
                 <div class="card-toolbar gap-2 d-print-none">
                     <button type="button" class="btn btn-sm btn-light" @click="imprimir">Imprimir</button>
-                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/exportar?formato=pdf`" class="btn btn-sm btn-light">PDF</a>
-                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/exportar?formato=excel`" class="btn btn-sm btn-light">Excel</a>
+                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/exportar?formato=pdf&fase=${fase}`" class="btn btn-sm btn-light">PDF</a>
+                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/exportar?formato=excel&fase=${fase}`" class="btn btn-sm btn-light">Excel</a>
                     <a :href="`/avaliacao/pautas/${pauta.turma_id}/boletins`" class="btn btn-sm btn-light" title="Um boletim por aluno, cada um na sua página">Boletins (PDF)</a>
                     <button v-if="pode.aprovar && pauta.estado !== 'definitiva'" type="button" class="btn btn-sm btn-primary" :disabled="!pauta.pode_aprovar" @click="aConfirmar = true">Aprovar pauta</button>
                     <button v-if="pode.reabrir && pauta.estado === 'definitiva'" type="button" class="btn btn-sm btn-light-danger" @click="aReabrir = true">Reabrir pauta</button>
@@ -99,6 +101,11 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
             </div>
 
             <div class="card-body pt-3">
+                <div v-if="pauta.fases?.recurso" class="btn-group mb-4 d-print-none">
+                    <button type="button" class="btn btn-sm" :class="fase === 1 ? 'btn-primary' : 'btn-light'" @click="abrirFase(1)">1.ª fase</button>
+                    <button type="button" class="btn btn-sm" :class="fase === 2 ? 'btn-primary' : 'btn-light'" @click="abrirFase(2)">Recurso</button>
+                </div>
+
                 <div v-if="pauta.estado !== 'definitiva' && pauta.bloqueios.length" class="d-flex align-items-start gap-4 rounded bg-warning p-4 mb-4 d-print-none" style="color: #181C32;">
                     <i class="ki-duotone ki-information-5 fs-2x mt-1" style="color: #181C32;"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                     <div>
@@ -128,7 +135,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                 </div>
 
                 <div v-if="!pauta.regra" class="alert alert-warning">A escola ainda não configurou a regra de avaliação desta classe.</div>
-                <div v-else-if="!pauta.alunos.length" class="text-center text-body-secondary py-8">A turma não tem alunos com matrícula activa.</div>
+                <div v-else-if="!pauta.alunos.length" class="text-center text-body-secondary py-8">{{ fase === 2 ? 'Nenhum aluno está em recurso.' : 'A turma não tem alunos com matrícula activa.' }}</div>
 
                 <div v-else class="table-responsive">
                     <table class="pauta-tabela table table-bordered align-middle fs-7 text-center mb-0">
@@ -136,14 +143,14 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                             <tr class="fw-bold text-uppercase">
                                 <th rowspan="2" style="width: 2.5rem">N.º</th>
                                 <th rowspan="2" class="text-start">Nome do aluno</th>
-                                <th v-for="d in pauta.disciplinas" :key="d.id" class="pauta-grupo pauta-disciplina" :colspan="(pauta.com_exame ? 3 : 4) + (pauta.com_recurso ? 2 : 0)">{{ d.nome }}</th>
+                                <th v-for="d in pauta.disciplinas" :key="d.id" class="pauta-grupo pauta-disciplina" :colspan="(pauta.com_exame ? 3 : 4) + (pauta.mostra_recurso ? 2 : 0)">{{ d.nome }}</th>
                                 <th rowspan="2" class="pauta-grupo">Resultado final</th>
                             </tr>
                             <tr class="text-body-secondary">
                                 <template v-for="d in pauta.disciplinas" :key="d.id">
                                     <template v-if="pauta.com_exame"><th class="pauta-grupo">MFD</th><th>NE</th><th>MF</th></template>
                                     <template v-else><th class="pauta-grupo">MT1</th><th>MT2</th><th>MT3</th><th>MFD</th></template>
-                                    <template v-if="pauta.com_recurso"><th>NER</th><th>MFR</th></template>
+                                    <template v-if="pauta.mostra_recurso"><th>NER</th><th>MFR</th></template>
                                 </template>
                             </tr>
                         </thead>
@@ -164,12 +171,12 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                                     <td :class="negativaDe(a.celulas[d.id]?.mt3) ? 'text-danger' : ''">{{ a.celulas[d.id]?.mt3 ?? '—' }}</td>
                                     <td class="fw-bold" :class="a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mfd ?? '—' }}</td>
                                     </template>
-                                    <template v-if="pauta.com_recurso">
+                                    <template v-if="pauta.mostra_recurso">
                                         <td>{{ a.celulas[d.id]?.ner ?? '' }}</td>
                                         <td class="fw-bold" :class="a.celulas[d.id]?.mfr != null && a.celulas[d.id]?.aprovado === false ? 'text-danger' : ''">{{ a.celulas[d.id]?.mfr ?? '' }}</td>
                                     </template>
                                 </template>
-                                <td class="pauta-grupo fw-bold text-nowrap" :title="a.recurso?.texto" :class="a.decisao?.valor === 1 || a.decisao?.valor === 3 ? 'text-danger' : (a.decisao ? 'text-success' : 'text-body-secondary')"><template v-if="pauta.progressao_manual && pauta.estado !== 'definitiva' && pode.aprovar">
+                                <td class="pauta-grupo fw-bold text-nowrap" :title="a.recurso?.texto" :class="a.decisao?.valor === 1 || a.decisao?.valor === 3 ? 'text-danger' : (a.decisao?.valor === 4 ? 'text-primary' : (a.decisao ? 'text-success' : 'text-body-secondary'))"><template v-if="pauta.progressao_manual && pauta.estado !== 'definitiva' && pode.aprovar">
                                         <SelectSolid :model-value="escolhas[a.matricula_id] ?? a.decisao?.valor ?? ''" :options="opcoesDecisao" pequeno placeholder="Decidir…" class="w-150px d-print-none" @update:model-value="(v) => decidir(a, v)" />
                                         <input v-if="(escolhas[a.matricula_id] ?? a.decisao?.valor) === 1" type="text" class="form-control form-control-sm mt-1 d-print-none"
                                             placeholder="Motivo" :value="motivos[a.matricula_id] ?? a.motivo_progressao" @input="motivos[a.matricula_id] = $event.target.value" @blur="decidir(a, 1)">

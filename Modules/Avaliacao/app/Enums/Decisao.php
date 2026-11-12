@@ -9,6 +9,8 @@ enum Decisao: int
     case NAO_TRANSITA = 1;
     case APTO = 2;
     case NAO_APTO = 3;
+    /** Resultado da 1.ª fase de quem vai ao exame de recurso: a decisão final sai na pauta do recurso. */
+    case RECURSO = 4;
 
     public function label(): string
     {
@@ -17,6 +19,7 @@ enum Decisao: int
             self::NAO_TRANSITA => 'Não transita',
             self::APTO => 'Apto',
             self::NAO_APTO => 'Não apto',
+            self::RECURSO => 'Recurso',
         };
     }
 }

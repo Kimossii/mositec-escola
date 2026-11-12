@@ -45,7 +45,7 @@ class AnularNotaAction
 
             $nota = AvaliacaoNota::query()->with('instrumento')->whereKey($dto->nota_id)->lockForUpdate()->firstOrFail();
             $instrumento = $nota->instrumento;
-            $this->pautas->exigirAberta($instrumento->turma_id);
+            $this->pautas->exigirAbertaPara($instrumento->turma_id, $instrumento->tipo);
             $regra = $this->regras->paraTurma(Turma::query()->findOrFail($instrumento->turma_id));
             $foraDoPrazo = $regra !== null && $this->prazos->instrumentoEncerrado($instrumento, $this->docentes->idDe(auth()->user()));
 

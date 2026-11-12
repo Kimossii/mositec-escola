@@ -115,10 +115,9 @@ class ExameProprioTest extends TestCase
     {
         $this->mfd('8');
         $this->exame('2'); // 8×0,4 + 2×0,6 = 4,4 < 5
-        $this->fecharORecurso(); // sem recurso à vista, a MF abaixo do mínimo decide
 
         $this->assertSame('4.40', $this->celula()['mf']);
-        $this->assertSame('Não apto', $this->pauta()['alunos'][0]['decisao']['rotulo']);
+        $this->assertSame('Recurso', $this->pauta()['alunos'][0]['decisao']['rotulo']); // a MF abaixo do mínimo manda-o ao recurso, não à aprovação
         $this->assertFalse($this->celula()['aprovado']);
     }
 

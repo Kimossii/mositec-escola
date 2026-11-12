@@ -49,6 +49,20 @@ class PautaHttpTest extends TestCase
             ->where('pode.aprovar', true));
     }
 
+    public function test_a_pagina_aceita_a_fase_do_recurso_e_a_aprovacao_do_recurso_exige_a_1_fase(): void
+    {
+        $admin = $this->admin();
+
+        // Classe sem recurso: a aba do recurso não existe e a pauta do recurso diz que a classe não a tem.
+        $this->actingAs($admin)->get($this->url().'&fase=2')->assertOk()->assertInertia(fn (Assert $p) => $p
+            ->where('pauta.fase', 2)
+            ->where('pauta.fases.recurso', false)
+            ->where('pauta.bloqueios.0', 'Esta classe não tem exame de recurso.'));
+
+        $this->actingAs($admin)->post('/avaliacao/pautas/'.$this->c['turma']->id.'/aprovar', ['fase' => 2])->assertSessionHasErrors('pauta');
+        $this->actingAs($admin)->post('/avaliacao/pautas/'.$this->c['turma']->id.'/aprovar', ['fase' => 3])->assertSessionHasErrors('fase');
+    }
+
     public function test_professor_nao_ve_a_pauta_da_turma_inteira(): void
     {
         $this->actingAs($this->professorAtribuido($this->c))->get($this->url())->assertForbidden();

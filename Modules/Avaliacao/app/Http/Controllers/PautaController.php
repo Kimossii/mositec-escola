@@ -5,6 +5,8 @@ namespace Modules\Avaliacao\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
+use Modules\Avaliacao\Enums\FasePauta;
+use Modules\Avaliacao\Http\Requests\AprovarPautaRequest;
 use Modules\Avaliacao\Http\Requests\DecidirProgressaoRequest;
 use Modules\Avaliacao\Http\Requests\ExportarBoletinsRequest;
 use Modules\Avaliacao\Http\Requests\ExportarPautaRequest;
@@ -25,14 +27,17 @@ class PautaController extends Controller
 
     public function index(VerPautaRequest $request)
     {
-        $turma = $request->validated()['turma'] ?? null;
+        $d = $request->validated();
+        $turma = $d['turma'] ?? null;
 
-        return Inertia::render('Avaliacao/Pautas/Pauta', $this->pautas->pagina($request->user(), $turma === null ? null : (int) $turma));
+        return Inertia::render('Avaliacao/Pautas/Pauta', $this->pautas->pagina($request->user(), $turma === null ? null : (int) $turma, FasePauta::from((int) ($d['fase'] ?? 1))));
     }
 
     public function exportar(ExportarPautaRequest $request, int $turma)
     {
-        return $this->exportacao->pauta($turma, $request->validated()['formato']);
+        $d = $request->validated();
+
+        return $this->exportacao->pauta($turma, $d['formato'], FasePauta::from((int) ($d['fase'] ?? 1)));
     }
 
     public function boletins(ExportarBoletinsRequest $request, int $turma)
@@ -42,9 +47,9 @@ class PautaController extends Controller
         return $this->exportacao->boletins($turma, $matricula === null ? null : (int) $matricula);
     }
 
-    public function aprovar(int $turma): RedirectResponse
+    public function aprovar(AprovarPautaRequest $request, int $turma): RedirectResponse
     {
-        $this->gestao->aprovar($turma);
+        $this->gestao->aprovar($turma, FasePauta::from((int) ($request->validated()['fase'] ?? 1)));
 
         return back();
     }

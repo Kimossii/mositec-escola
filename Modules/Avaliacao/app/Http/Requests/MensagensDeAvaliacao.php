@@ -14,7 +14,7 @@ final class MensagensDeAvaliacao
         'periodo' => ['O trimestre', 'o'], 'periodo_id' => ['O trimestre', 'o'], 'ano' => ['O ano lectivo', 'o'], 'ano_lectivo_id' => ['O ano lectivo', 'o'],
         'nivel_academico_id' => ['A classe', 'a'], 'instrumento_id' => ['A avaliação', 'a'], 'inscricao_disciplina_id' => ['A inscrição do aluno', 'a'],
         'matricula' => ['A matrícula', 'a'], 'matricula_id' => ['A matrícula', 'a'], 'competencia_id' => ['A competência', 'a'], 'escala_id' => ['A escala', 'a'],
-        'escala_nivel_id' => ['O nível', 'o'], 'regra_id' => ['A regra', 'a'], 'valor' => ['A nota', 'a'], 'motivo' => ['O motivo', 'o'], 'medida' => ['A medida', 'a'],
+        'escala_nivel_id' => ['O nível', 'o'], 'regra_id' => ['A regra', 'a'], 'valor' => ['A nota', 'a'], 'motivo' => ['O motivo', 'o'], 'medida' => ['A medida', 'a'], 'fase' => ['A fase da pauta', 'a'],
         'observacao' => ['A observação', 'a'], 'conta_como_zero' => ['A opção «conta como zero»', 'a'], 'nome' => ['O nome', 'o'], 'tipo' => ['O tipo', 'o'],
         'obrigatorio' => ['A obrigatoriedade', 'a'], 'formato' => ['O formato', 'o'], 'detalhe' => ['O detalhe', 'o'], 'decisao' => ['A decisão', 'a'],
         'progressao' => ['A progressão', 'a'], 'data_limite' => ['A data limite', 'a'], 'escala_maxima' => ['A escala máxima', 'a'], 'nota_minima' => ['A nota mínima', 'a'],

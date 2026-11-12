@@ -2,6 +2,7 @@
 
 namespace Modules\Avaliacao\Services;
 
+use Modules\Avaliacao\Enums\FasePauta;
 use Illuminate\Validation\ValidationException;
 use Modules\Avaliacao\Documentos\DocumentoBoletim;
 use Modules\Avaliacao\Models\AvaliacaoQualitativa;
@@ -29,20 +30,35 @@ class BoletimDocumentoService
         $pauta = $this->pautas->paraTurma($turmaId);
         $cabecalho = $this->cabecalho->dados();
 
-        $qualitativa = ($pauta['tipo'] ?? 'quantitativa') === 'qualitativa';
-        $definitivo = ($pauta['estado'] ?? 'provisoria') === 'definitiva';
-        [$campos, $rotulos] = $this->colunasDaPauta->colunas($pauta);
-        $colunas = [$qualitativa ? 'Área' : 'Disciplina', ...$rotulos];
+        // Quem foi ao recurso tem o resultado final na pauta do recurso (quando já está aprovada); os outros, na da 1.ª fase.
+        $recurso = $this->pautas->definitiva($turmaId, FasePauta::RECURSO) ? $this->pautas->paraTurma($turmaId, FasePauta::RECURSO) : null;
+        $emRecurso = $recurso === null ? [] : array_column($recurso['alunos'], 'matricula_id');
 
-        $alunos = array_values(array_filter($pauta['alunos'], fn (array $a) => $matriculaId === null || $a['matricula_id'] === $matriculaId));
-        if ($matriculaId !== null && $alunos === []) {
+        $fontes = [];
+        foreach ($pauta['alunos'] as $a) {
+            if (! in_array($a['matricula_id'], $emRecurso, true)) {
+                $fontes[] = [$pauta, $a];
+            }
+        }
+        foreach ($recurso['alunos'] ?? [] as $a) {
+            $fontes[] = [$recurso, $a];
+        }
+        $fontes = array_values(array_filter($fontes, fn (array $f) => $matriculaId === null || $f[1]['matricula_id'] === $matriculaId));
+        if ($matriculaId !== null && $fontes === []) {
             throw ValidationException::withMessages(['matricula' => 'Este aluno não faz parte da pauta desta turma.']);
         }
+        usort($fontes, fn (array $x, array $y) => strnatcasecmp($x[1]['nome'], $y[1]['nome']));
 
+        $qualitativa = ($pauta['tipo'] ?? 'quantitativa') === 'qualitativa';
+        $alunos = array_column($fontes, 1);
         $observacoes = $qualitativa ? $this->observacoes($alunos, $pauta['disciplinas']) : [];
         $matriculas = Matricula::query()->whereIn('id', array_column($alunos, 'matricula_id'))->with('aluno')->get()->keyBy('id');
 
-        return array_map(function (array $aluno) use ($pauta, $turma, $cabecalho, $campos, $colunas, $qualitativa, $definitivo, $observacoes, $matriculas) {
+        return array_map(function (array $fonte) use ($turma, $cabecalho, $qualitativa, $observacoes, $matriculas) {
+            [$pauta, $aluno] = $fonte;
+            $definitivo = ($pauta['estado'] ?? 'provisoria') === 'definitiva';
+            [$campos, $rotulos] = $this->colunasDaPauta->colunas($pauta);
+            $colunas = [$qualitativa ? 'Área' : 'Disciplina', ...$rotulos];
             $linhas = array_map(fn (array $d) => [$d['nome'], ...array_map(fn (string $campo) => (string) ($aluno['celulas'][$d['id']][$campo] ?? ''), $campos)], $pauta['disciplinas']);
 
             return new DocumentoBoletim(
@@ -70,7 +86,7 @@ class BoletimDocumentoService
                 ],
                 nota: 'A emissão deste boletim não representa aprovação nem transição de classe.'.($definitivo ? '' : ' Os resultados são provisórios até a pauta ser aprovada.'),
             );
-        }, $alunos);
+        }, $fontes);
     }
 
     /**

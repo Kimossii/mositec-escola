@@ -14,6 +14,7 @@ use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
 use Modules\Avaliacao\Services\AcessoAMiniPautaService;
 use Modules\Avaliacao\Services\ElegibilidadeRecursoService;
+use Modules\Avaliacao\Services\PautaFinalService;
 use Modules\Avaliacao\Services\RegraAvaliacaoService;
 use Modules\Avaliacao\Services\ResultadoDisciplinaService;
 use Modules\Core\Traits\LogService;
@@ -36,6 +37,7 @@ class LancarRecursoAction
         private ElegibilidadeRecursoService $elegibilidade,
         private RegraAvaliacaoService $regras,
         private AcessoAMiniPautaService $acesso,
+        private PautaFinalService $pautas,
     ) {
     }
 
@@ -59,6 +61,12 @@ class LancarRecursoAction
             $direito = $regra === null ? null : ($this->elegibilidade->paraMatricula($turma, $regra, $inscricao->matricula_id));
             if ($direito !== null && ! $direito['elegivel']) {
                 throw ValidationException::withMessages(['inscricao_disciplina_id' => $direito['texto'] ?? 'Este aluno não tem direito a exame de recurso.']);
+            }
+
+            // O recurso só abre com a 1.ª fase aprovada, e só para quem ela mandou ao recurso.
+            $this->pautas->exigirRecursoAberto($turma->id);
+            if (! in_array($inscricao->matricula_id, $this->pautas->matriculasEmRecurso($turma->id), true)) {
+                throw ValidationException::withMessages(['inscricao_disciplina_id' => 'Este aluno não foi ao recurso na pauta da 1.ª fase.']);
             }
 
             $recurso = AvaliacaoInstrumento::query()->where('turma_id', $turma->id)->where('disciplina_id', $dto->disciplina_id)->where('tipo', TipoInstrumento::RECURSO->value)->first()

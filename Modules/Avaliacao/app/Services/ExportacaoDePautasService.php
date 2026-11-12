@@ -2,6 +2,7 @@
 
 namespace Modules\Avaliacao\Services;
 
+use Modules\Avaliacao\Enums\FasePauta;
 use Modules\Avaliacao\Documentos\ExportadorDePautas;
 use Modules\Matricula\Models\Matricula;
 use Modules\Turma\Models\Turma;
@@ -20,11 +21,11 @@ class ExportacaoDePautasService
     ) {
     }
 
-    public function pauta(int $turmaId, string $formato): BinaryFileResponse
+    public function pauta(int $turmaId, string $formato, FasePauta $fase = FasePauta::EPOCA_NORMAL): BinaryFileResponse
     {
         $turma = Turma::query()->findOrFail($turmaId);
 
-        return $this->exportador->responder($this->pautas->paraTurma($turma->id), $formato, 'pauta-final-'.$turma->nome);
+        return $this->exportador->responder($this->pautas->paraTurma($turma->id, $fase), $formato, 'pauta-final-'.$turma->nome.($fase === FasePauta::RECURSO ? '-recurso' : ''));
     }
 
     /** @param  string|null  $detalhe  `competencias` para o detalhe por competência (só Creche e Pré-Escolar) */

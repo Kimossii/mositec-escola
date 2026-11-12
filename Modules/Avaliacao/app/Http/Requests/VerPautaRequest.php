@@ -15,6 +15,7 @@ class VerPautaRequest extends BaseRequest
     {
         return [
             'turma' => ['nullable', 'integer'],
+            'fase' => ['nullable', 'integer', 'in:1,2'],
         ];
     }
 

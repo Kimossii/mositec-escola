@@ -38,7 +38,7 @@ class PautaDocumentoService
         }
 
         $estado = $pauta['estado'] ?? 'provisoria';
-        $titulo = 'PAUTA FINAL'.match ($estado) { 'definitiva' => '', 'reaberta' => ' (REABERTA)', default => ' (PROVISÓRIA)' };
+        $titulo = 'PAUTA FINAL'.(($pauta['fase'] ?? 1) === 2 ? ' — RECURSO' : '').match ($estado) { 'definitiva' => '', 'reaberta' => ' (REABERTA)', default => ' (PROVISÓRIA)' };
         $ano = (string) $turma->anoLectivo?->nome;
 
         return new DocumentoPauta(
@@ -76,7 +76,7 @@ class PautaDocumentoService
             ? [['mfd', 'ne', 'mf'], ['MFD', 'NE', 'MF']]
             : [['mt1', 'mt2', 'mt3', 'mfd'], ['MT1', 'MT2', 'MT3', 'MFD']];
 
-        if (! $qualitativa && ($pauta['com_recurso'] ?? false)) {
+        if (! $qualitativa && ($pauta['mostra_recurso'] ?? false)) {
             $campos = [...$campos, 'ner', 'mfr'];
             $rotulos = [...$rotulos, 'NER', 'MFR'];
         }

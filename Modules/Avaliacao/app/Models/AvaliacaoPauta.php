@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Avaliacao\Enums\EstadoPauta;
+use Modules\Avaliacao\Enums\FasePauta;
 use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Traits\RegistaAutoria;
 use Modules\Turma\Models\Turma;
@@ -20,11 +21,12 @@ class AvaliacaoPauta extends Model
     protected $table = 'avaliacao_pautas';
 
     protected $fillable = [
-        'turma_id', 'estado', 'estado_descricao', 'versao', 'casas_decimais', 'aprovada_por', 'aprovada_em',
+        'turma_id', 'fase', 'fase_descricao', 'estado', 'estado_descricao', 'versao', 'casas_decimais', 'aprovada_por', 'aprovada_em',
         'reaberta_por', 'reaberta_em', 'motivo_reabertura', 'criado_por', 'editado_por',
     ];
 
     protected $casts = [
+        'fase' => FasePauta::class,
         'estado' => EstadoPauta::class,
         'versao' => 'integer',
         'aprovada_em' => 'datetime',
@@ -34,6 +36,8 @@ class AvaliacaoPauta extends Model
     protected static function booted(): void
     {
         static::saving(function (self $pauta) {
+            $pauta->fase ??= FasePauta::EPOCA_NORMAL;
+            $pauta->fase_descricao = $pauta->fase->label();
             $pauta->estado_descricao = $pauta->estado?->label();
         });
     }

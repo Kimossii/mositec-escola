@@ -11,6 +11,7 @@ use Modules\Avaliacao\Actions\EliminarInstrumentoAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
 use Modules\Avaliacao\Actions\LancarNotaAction;
 use Modules\Avaliacao\Actions\ReabrirPautaAction;
+use Modules\Avaliacao\DTO\ReabrirPautaDTO;
 use Modules\Avaliacao\DTO\InstrumentoDTO;
 use Modules\Avaliacao\DTO\LancarNotaDTO;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
@@ -142,7 +143,7 @@ class PautaAprovacaoTest extends TestCase
     public function test_reabrir_exige_permissao_motivo_e_pauta_definitiva(): void
     {
         try {
-            app(ReabrirPautaAction::class)->executar($this->c['turma']->id, 'Erro de lançamento');
+            app(ReabrirPautaAction::class)->executar(new ReabrirPautaDTO($this->c['turma']->id, 'Erro de lançamento'));
             $this->fail('Sem pauta definitiva não se reabre.');
         } catch (ValidationException) {
         }
@@ -150,20 +151,20 @@ class PautaAprovacaoTest extends TestCase
         $this->aprovar();
 
         try {
-            app(ReabrirPautaAction::class)->executar($this->c['turma']->id, '  ');
+            app(ReabrirPautaAction::class)->executar(new ReabrirPautaDTO($this->c['turma']->id, '  '));
             $this->fail('Esperava ValidationException (motivo).');
         } catch (ValidationException) {
         }
 
         $this->actingAs($this->professorAtribuido($this->c, 'prof@example.com'));
         $this->expectException(AuthorizationException::class);
-        app(ReabrirPautaAction::class)->executar($this->c['turma']->id, 'Erro de lançamento');
+        app(ReabrirPautaAction::class)->executar(new ReabrirPautaDTO($this->c['turma']->id, 'Erro de lançamento'));
     }
 
     public function test_reabrir_permite_corrigir_e_a_nova_aprovacao_cria_a_versao_2_sem_apagar_a_1(): void
     {
         $this->aprovar();
-        $pauta = app(ReabrirPautaAction::class)->executar($this->c['turma']->id, 'Nota do 3.º trimestre mal lançada');
+        $pauta = app(ReabrirPautaAction::class)->executar(new ReabrirPautaDTO($this->c['turma']->id, 'Nota do 3.º trimestre mal lançada'));
 
         $this->assertSame(EstadoPauta::REABERTA, $pauta->estado);
         $this->assertSame('Nota do 3.º trimestre mal lançada', $pauta->motivo_reabertura);

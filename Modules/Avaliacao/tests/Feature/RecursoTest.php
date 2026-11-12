@@ -10,10 +10,12 @@ use Modules\Avaliacao\Actions\AprovarPautaAction;
 use Modules\Avaliacao\Actions\GuardarRegraAvaliacaoAction;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Enums\Decisao;
+use Modules\Avaliacao\Enums\FasePauta;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoDecisao;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
+use Modules\Avaliacao\Models\AvaliacaoPauta;
 use Modules\Avaliacao\Models\AvaliacaoPautaLinha;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
 use Modules\Avaliacao\Services\PautaFinalService;
@@ -57,8 +59,18 @@ class RecursoTest extends TestCase
         $this->lancarExame($this->c['turma']->id, $this->c['disciplina']->id, $this->inscricao->id, $v);
     }
 
+    /** A 1.ª fase fecha-se antes do recurso: é ela que diz quem vai. */
+    private function aprovarPrimeiraFase(): void
+    {
+        if (! app(PautaFinalService::class)->definitiva($this->c['turma']->id, FasePauta::EPOCA_NORMAL)) {
+            app(AprovarPautaAction::class)->executar($this->c['turma']->id);
+        }
+    }
+
     private function recurso(string $v): AvaliacaoNota
     {
+        $this->aprovarPrimeiraFase();
+
         return $this->lancarRecurso($this->c['turma']->id, $this->c['disciplina']->id, $this->inscricao->id, $v);
     }
 
@@ -67,9 +79,12 @@ class RecursoTest extends TestCase
         $this->definirPrazo($this->c['periodos'][3]->id, TipoInstrumento::RECURSO, '2026-03-01');
     }
 
+    /** Depois de a 1.ª fase estar aprovada, a pauta que interessa ao recurso é a da 2.ª fase. */
     private function pauta(): array
     {
-        return app(PautaFinalService::class)->paraTurma($this->c['turma']->id);
+        $fase = app(PautaFinalService::class)->definitiva($this->c['turma']->id, FasePauta::EPOCA_NORMAL) ? FasePauta::RECURSO : FasePauta::EPOCA_NORMAL;
+
+        return app(PautaFinalService::class)->paraTurma($this->c['turma']->id, $fase);
     }
 
     private function celula(): array
@@ -87,9 +102,9 @@ class RecursoTest extends TestCase
 
         $this->assertTrue($r->recursoNecessario);
         $this->assertSame('4.40', $r->notaFinalArredondada());
-        $this->assertSame('Não apto', $p['alunos'][0]['decisao']['rotulo']);
+        $this->assertSame('Recurso', $p['alunos'][0]['decisao']['rotulo']); // a 1.ª fase manda-o ao recurso: ainda não reprovou
         $this->assertTrue($p['pode_aprovar']);
-        $this->assertStringContainsString('têm direito a exame de recurso', implode(' ', $p['avisos']));
+        $this->assertStringContainsString('vão ao exame de recurso', implode(' ', $p['avisos']));
     }
 
     public function test_quem_esta_acima_do_minimo_nao_faz_recurso(): void
@@ -133,17 +148,27 @@ class RecursoTest extends TestCase
         $this->assertSame('Não apto', $this->pauta()['alunos'][0]['decisao']['rotulo']);
     }
 
-    public function test_sem_recurso_a_disciplina_fica_com_a_nota_que_tinha_e_a_pauta_aprova_se(): void
+    public function test_sem_nota_de_recurso_so_reprova_depois_do_prazo_e_a_pauta_do_recurso_aprova_se(): void
     {
         $this->mfd('8');
         $this->exame('2'); // MF = 4,4
+        $this->aprovarPrimeiraFase();
 
+        // Com o prazo do recurso aberto, falta a nota: a pauta do recurso não se aprova ainda.
+        $aberta = $this->pauta();
+        $this->assertFalse($aberta['pode_aprovar']);
+        $this->assertNull($aberta['alunos'][0]['decisao']);
+        $this->assertStringContainsString('Faltam notas de recurso', implode(' ', $aberta['bloqueios']));
+
+        // Passado o prazo, sem NER fica com a nota que tinha, e reprova mesmo.
+        $this->fecharORecurso();
         $this->assertSame('4.40', $this->celula()['nota_final']);
         $this->assertNull($this->celula()['mfr']);
+        $this->assertSame('Não apto', $this->pauta()['alunos'][0]['decisao']['rotulo']);
 
-        app(AprovarPautaAction::class)->executar($this->c['turma']->id);
+        app(AprovarPautaAction::class)->executar($this->c['turma']->id, FasePauta::RECURSO);
 
-        $this->assertSame(Decisao::NAO_APTO, AvaliacaoDecisao::firstOrFail()->decisao);
+        $this->assertSame(Decisao::NAO_APTO, AvaliacaoDecisao::query()->where('decisao', '!=', Decisao::RECURSO->value)->firstOrFail()->decisao);
     }
 
     public function test_recurso_anulado_deixa_a_nota_base_e_a_contar_como_zero_entra(): void
@@ -218,11 +243,12 @@ class RecursoTest extends TestCase
         $this->exame('2');
         $this->recurso('8');
 
-        app(AprovarPautaAction::class)->executar($this->c['turma']->id);
+        app(AprovarPautaAction::class)->executar($this->c['turma']->id, FasePauta::RECURSO);
 
-        $l = AvaliacaoPautaLinha::firstOrFail();
+        $recurso = AvaliacaoPauta::query()->where('fase', FasePauta::RECURSO->value)->firstOrFail();
+        $l = AvaliacaoPautaLinha::query()->where('pauta_id', $recurso->id)->firstOrFail();
         $this->assertSame(['8.0000', '6.5600'], [$l->ner, $l->mfr]);
-        $this->assertSame(Decisao::APTO, AvaliacaoDecisao::firstOrFail()->decisao);
+        $this->assertSame(Decisao::APTO, AvaliacaoDecisao::query()->where('pauta_id', $recurso->id)->firstOrFail()->decisao);
 
         AvaliacaoNota::query()->update(['valor' => '1']);
         $c = $this->celula();
@@ -235,6 +261,8 @@ class RecursoTest extends TestCase
         $this->exame('2');
         $acima = $this->inscreverAluno($this->c, 'Rui');
         $this->notasCompletas($this->c, $acima, [1 => ['9', '9'], 2 => ['9', '9'], 3 => ['9', '9']]);
+        $this->lancarExame($this->c['turma']->id, $this->c['disciplina']->id, $acima->id, '10');
+        $this->aprovarPrimeiraFase();
         $url = '/avaliacao/notas?'.http_build_query(['turma' => $this->c['turma']->id, 'disciplina' => $this->c['disciplina']->id, 'periodo' => $this->c['periodos'][3]->id]);
 
         $this->post('/avaliacao/notas/recurso', ['turma_id' => $this->c['turma']->id, 'disciplina_id' => $this->c['disciplina']->id, 'inscricao_disciplina_id' => $this->inscricao->id, 'valor' => '8'])->assertRedirect();
@@ -340,5 +368,53 @@ class RecursoTest extends TestCase
                 && collect($rs)->firstWhere('nome', 'Regra')['disciplinas_chave'] === [$outra->id]));
 
         $this->post('/avaliacao/configuracao/regras', [...$base, 'disciplinas_chave' => [999999]])->assertNotFound();
+    }
+
+    public function test_o_recurso_so_abre_depois_da_1_fase_e_a_pauta_do_recurso_so_tem_quem_la_foi(): void
+    {
+        $this->mfd('8');
+        $this->exame('2'); // MF 4,4: vai ao recurso
+        $rui = $this->inscreverAluno($this->c, 'Rui');
+        $this->notasCompletas($this->c, $rui, [1 => ['9', '9'], 2 => ['9', '9'], 3 => ['9', '9']]);
+        $this->lancarExame($this->c['turma']->id, $this->c['disciplina']->id, $rui->id, '10');
+        $servico = app(PautaFinalService::class);
+        $turma = $this->c['turma']->id;
+
+        // Antes de a 1.ª fase estar aprovada não há recurso, nem pauta do recurso.
+        try {
+            $this->lancarRecurso($turma, $this->c['disciplina']->id, $this->inscricao->id, '8');
+            $this->fail('Esperava ValidationException.');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('1.ª fase ainda não foi aprovada', $e->errors()['pauta'][0]);
+        }
+        $this->assertStringContainsString('1.ª fase ainda não foi aprovada', $servico->paraTurma($turma, FasePauta::RECURSO)['bloqueios'][0]);
+        $this->expectExceptionObject(ValidationException::withMessages(['pauta' => 'Aprove primeiro a pauta da 1.ª fase.']));
+        app(AprovarPautaAction::class)->executar($turma, FasePauta::RECURSO);
+    }
+
+    public function test_depois_da_1_fase_a_pauta_do_recurso_so_lista_quem_foi_e_fecha_o_processo(): void
+    {
+        $this->mfd('8');
+        $this->exame('2');
+        $rui = $this->inscreverAluno($this->c, 'Rui');
+        $this->notasCompletas($this->c, $rui, [1 => ['9', '9'], 2 => ['9', '9'], 3 => ['9', '9']]);
+        $this->lancarExame($this->c['turma']->id, $this->c['disciplina']->id, $rui->id, '10');
+        $servico = app(PautaFinalService::class);
+        $turma = $this->c['turma']->id;
+
+        app(AprovarPautaAction::class)->executar($turma);
+        $fase1 = $servico->paraTurma($turma);
+        $this->assertSame(['Recurso', 'Apto'], array_column(array_column($fase1['alunos'], 'decisao'), 'rotulo')); // Ana (recurso), Rui (apto)
+
+        // Só a Ana está na pauta do recurso, e a pauta da 1.ª fase já não se reabre com a do recurso definitiva.
+        $this->lancarRecurso($turma, $this->c['disciplina']->id, $this->inscricao->id, '8');
+        $recurso = $servico->paraTurma($turma, FasePauta::RECURSO);
+        $this->assertCount(1, $recurso['alunos']);
+        $this->assertTrue($recurso['pode_aprovar']);
+        app(AprovarPautaAction::class)->executar($turma, FasePauta::RECURSO);
+        $this->assertTrue($servico->definitiva($turma, FasePauta::RECURSO));
+
+        $this->expectException(ValidationException::class);
+        app(\Modules\Avaliacao\Actions\ReabrirPautaAction::class)->executar(new \Modules\Avaliacao\DTO\ReabrirPautaDTO($turma, 'Erro'));
     }
 }

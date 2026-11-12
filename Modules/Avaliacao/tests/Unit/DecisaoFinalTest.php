@@ -51,9 +51,9 @@ class DecisaoFinalTest extends TestCase
         $this->assertNull($this->decidir(['8.00', null], exame: true));
     }
 
-    public function test_o_enum_tem_os_quatro_termos(): void
+    public function test_o_enum_tem_os_cinco_termos(): void
     {
-        $this->assertSame(['Transita', 'Não transita', 'Apto', 'Não apto'], array_map(fn (Decisao $d) => $d->label(), Decisao::cases()));
+        $this->assertSame(['Transita', 'Não transita', 'Apto', 'Não apto', 'Recurso'], array_map(fn (Decisao $d) => $d->label(), Decisao::cases()));
     }
 
     public function test_so_a_6_e_a_9_classes_tem_exame_proprio(): void

@@ -5,8 +5,13 @@ namespace Modules\Avaliacao\Services;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
+use Modules\AnoLectivo\Enums\TipoPeriodo;
+use Modules\AnoLectivo\Models\Periodo;
 use Modules\Avaliacao\Enums\Decisao;
 use Modules\Avaliacao\Enums\EstadoPauta;
+use Modules\Avaliacao\Enums\FasePauta;
+use Modules\Avaliacao\Enums\TipoInstrumento;
+use Modules\Avaliacao\Enums\TratamentoDeNegativas;
 use Modules\Avaliacao\Models\AvaliacaoDecisao;
 use Modules\Avaliacao\Models\AvaliacaoNegativaTratada;
 use Modules\Avaliacao\Models\AvaliacaoPauta;
@@ -37,6 +42,7 @@ class PautaFinalService
         private CalculadoraQuantitativa $calculadora,
         private PautaQualitativaService $qualitativa,
         private RegraDoRecurso $regraDoRecurso,
+        private PrazoService $prazos,
     ) {
     }
 
@@ -47,7 +53,8 @@ class PautaFinalService
      */
     public function turmas(): array
     {
-        $pautas = AvaliacaoPauta::query()->get()->keyBy('turma_id');
+        // Com recurso há duas pautas por turma: mostra-se o estado da mais adiantada.
+        $pautas = AvaliacaoPauta::query()->orderBy('fase')->get()->keyBy('turma_id');
 
         return Turma::query()
             ->with(['nivelAcademico:id,nome', 'turno:id,nome', 'anoLectivo:id,nome'])
@@ -64,23 +71,55 @@ class PautaFinalService
      *
      * @return array<string, mixed>
      */
-    public function pagina(User $utilizador, ?int $turmaId): array
+    public function pagina(User $utilizador, ?int $turmaId, FasePauta $fase = FasePauta::EPOCA_NORMAL): array
     {
         $turma = $turmaId === null ? null : Turma::query()->findOrFail($turmaId);
         $gate = Gate::forUser($utilizador);
 
         return [
             'turmas' => $this->turmas(),
-            'selecao' => ['turma' => $turma?->id],
-            'pauta' => $turma === null ? null : $this->paraTurma($turma->id),
+            'selecao' => ['turma' => $turma?->id, 'fase' => $fase->value],
+            'pauta' => $turma === null ? null : $this->paraTurma($turma->id, $fase),
             'pode' => ['aprovar' => $gate->allows('nota.aprovar'), 'reabrir' => $gate->allows('nota.reabrir'), 'tratar_negativa' => $gate->allows('nota.tratar-negativa')],
         ];
     }
 
-    /** Há pauta definitiva para a turma? Enquanto houver, as notas dessa turma não se alteram. */
+    /** A pauta da 1.ª fase está definitiva? Enquanto estiver, as notas da época normal da turma não se alteram. */
     public function estaFechada(int $turmaId): bool
     {
-        return AvaliacaoPauta::query()->where('turma_id', $turmaId)->where('estado', EstadoPauta::DEFINITIVA)->exists();
+        return $this->definitiva($turmaId, FasePauta::EPOCA_NORMAL);
+    }
+
+    public function definitiva(int $turmaId, FasePauta $fase): bool
+    {
+        return AvaliacaoPauta::query()->where('turma_id', $turmaId)->where('fase', $fase->value)->where('estado', EstadoPauta::DEFINITIVA)->exists();
+    }
+
+    /** As notas do recurso seguem a pauta do recurso; todas as outras, a da 1.ª fase. */
+    public function exigirAbertaPara(int $turmaId, TipoInstrumento $tipo): void
+    {
+        $tipo === TipoInstrumento::RECURSO ? $this->exigirRecursoAberto($turmaId) : $this->exigirAberta($turmaId);
+    }
+
+    /** O recurso só abre depois de a 1.ª fase estar aprovada (é ela que diz quem vai) e fecha com a pauta do recurso. */
+    public function exigirRecursoAberto(int $turmaId): void
+    {
+        if (! $this->definitiva($turmaId, FasePauta::EPOCA_NORMAL)) {
+            throw ValidationException::withMessages(['pauta' => 'A pauta da 1.ª fase ainda não foi aprovada: o recurso só abre depois.']);
+        }
+
+        if ($this->definitiva($turmaId, FasePauta::RECURSO)) {
+            throw ValidationException::withMessages(['pauta' => 'A pauta do recurso é definitiva. Peça a sua reabertura para alterar notas.']);
+        }
+    }
+
+    /** @return list<int> matrículas que a pauta definitiva da 1.ª fase mandou ao recurso */
+    public function matriculasEmRecurso(int $turmaId): array
+    {
+        $pauta = AvaliacaoPauta::query()->where('turma_id', $turmaId)->where('fase', FasePauta::EPOCA_NORMAL->value)->where('estado', EstadoPauta::DEFINITIVA)->first();
+
+        return $pauta === null ? [] : AvaliacaoDecisao::query()->where('pauta_id', $pauta->id)->where('versao', $pauta->versao)
+            ->where('decisao', Decisao::RECURSO->value)->pluck('matricula_id')->map(fn ($id) => (int) $id)->all();
     }
 
     /** Recusa alterações às notas de uma turma cuja pauta final está definitiva (é preciso reabri-la primeiro). */
@@ -92,19 +131,26 @@ class PautaFinalService
     }
 
     /** @return array<string, mixed> */
-    public function paraTurma(int $turmaId): array
+    public function paraTurma(int $turmaId, FasePauta $fase = FasePauta::EPOCA_NORMAL): array
     {
-        $pauta = AvaliacaoPauta::query()->with('aprovadaPor:id,name')->where('turma_id', $turmaId)->first();
+        $pauta = AvaliacaoPauta::query()->with('aprovadaPor:id,name')->where('turma_id', $turmaId)->where('fase', $fase->value)->first();
 
         if ($pauta?->estado === EstadoPauta::DEFINITIVA) {
-            return $this->instantaneo($turmaId, $pauta);
+            $resultado = $this->instantaneo($turmaId, $pauta);
+        } else {
+            $resultado = $this->montar($turmaId, $fase);
+            $resultado['estado'] = $pauta === null ? 'provisoria' : 'reaberta';
+            $resultado['versao'] = $pauta?->versao;
         }
 
-        $viva = $this->montar($turmaId);
-        $viva['estado'] = $pauta === null ? 'provisoria' : 'reaberta';
-        $viva['versao'] = $pauta?->versao;
+        // As abas da página: o recurso só existe nas classes que o têm.
+        $regra = $this->regras->paraTurma(Turma::query()->findOrFail($turmaId));
+        $resultado['fases'] = [
+            'recurso' => (bool) $regra?->com_recurso || $this->definitiva($turmaId, FasePauta::RECURSO) || AvaliacaoPauta::query()->where('turma_id', $turmaId)->where('fase', FasePauta::RECURSO->value)->exists(),
+            'primeira_definitiva' => $this->definitiva($turmaId, FasePauta::EPOCA_NORMAL),
+        ];
 
-        return $viva;
+        return $resultado;
     }
 
     /**
@@ -112,15 +158,15 @@ class PautaFinalService
      *
      * @return array<string, mixed>
      */
-    public function montar(int $turmaId): array
+    public function montar(int $turmaId, FasePauta $fase = FasePauta::EPOCA_NORMAL): array
     {
         $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,nome,codigo'])->findOrFail($turmaId);
         if ($this->qualitativa->aplica($turma)) {
-            return $this->qualitativa->montar($turma);
+            return [...$this->qualitativa->montar($turma), 'fase' => FasePauta::EPOCA_NORMAL->value, 'mostra_recurso' => false];
         }
 
         $regra = $this->regras->paraTurma($turma);
-        $base = ['tipo' => 'quantitativa', 'turma_id' => $turma->id, 'turma_rotulo' => $turma->rotulo(completo: true), 'regra' => null, 'estado' => 'provisoria', 'versao' => null, 'com_exame' => false, 'com_recurso' => false,
+        $base = ['tipo' => 'quantitativa', 'fase' => $fase->value, 'mostra_recurso' => $fase === FasePauta::RECURSO, 'turma_id' => $turma->id, 'turma_rotulo' => $turma->rotulo(completo: true), 'regra' => null, 'estado' => 'provisoria', 'versao' => null, 'com_exame' => false, 'com_recurso' => false,
             'aprovada_em' => null, 'aprovada_por' => null, 'disciplinas' => [], 'alunos' => [], 'pode_aprovar' => false, 'bloqueios' => []];
 
         if ($regra === null) {
@@ -131,7 +177,17 @@ class PautaFinalService
         $comExame = $regra->com_exame;
         $comRecurso = $regra->com_recurso;
 
+        if ($fase === FasePauta::RECURSO) {
+            if (! $comRecurso) {
+                return [...$base, 'bloqueios' => ['Esta classe não tem exame de recurso.']];
+            }
+            if (! $this->definitiva($turmaId, FasePauta::EPOCA_NORMAL)) {
+                return [...$base, 'com_recurso' => true, 'bloqueios' => ['A pauta da 1.ª fase ainda não foi aprovada: o recurso só abre depois.']];
+            }
+        }
+
         $matriculas = Matricula::query()->where('turma_id', $turmaId)->where('estado', EstadoMatriculaEnum::ACTIVA)
+            ->when($fase === FasePauta::RECURSO, fn ($q) => $q->whereIn('id', $this->matriculasEmRecurso($turmaId)))
             ->with('aluno.dadosPessoa:id,nome_completo,sexo')->get();
         $inscricoes = InscricaoDisciplina::query()->whereIn('matricula_id', $matriculas->pluck('id'))
             ->where('estado', EstadoInscricaoDisciplinaEnum::INSCRITA)->with('planoCurricularDisciplina:id,disciplina_id')->get();
@@ -139,6 +195,8 @@ class PautaFinalService
         $porDisciplina = $inscricoes->groupBy(fn (InscricaoDisciplina $i) => $i->planoCurricularDisciplina->disciplina_id);
         $disciplinas = Disciplina::query()->findMany($porDisciplina->keys())->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values();
 
+        // Na 1.ª fase de uma classe com recurso, a nota que conta é a de antes do recurso (a MFR só entra na pauta do recurso).
+        $antesDoRecurso = $fase === FasePauta::EPOCA_NORMAL && $comRecurso;
         $celulas = [];
         foreach ($disciplinas as $disciplina) {
             $ids = $porDisciplina[$disciplina->id]->pluck('id')->all();
@@ -152,14 +210,14 @@ class PautaFinalService
                     'mfd' => $r->mfdArredondada,
                     'mf_exacta' => $r->mf,
                     'mf' => $r->mfArredondada,
-                    'ner' => $r->ner === null ? null : $this->apresentar($r->ner, $regra),
-                    'mfr_exacta' => $r->mfr,
-                    'mfr' => $r->mfrArredondada,
-                    'nota_final' => $r->notaFinalArredondada(),
+                    'ner' => $antesDoRecurso || $r->ner === null ? null : $this->apresentar($r->ner, $regra),
+                    'mfr_exacta' => $antesDoRecurso ? null : $r->mfr,
+                    'mfr' => $antesDoRecurso ? null : $r->mfrArredondada,
+                    'nota_final' => $antesDoRecurso ? $r->baseArredondada() : $r->notaFinalArredondada(),
                     'base' => $r->baseArredondada(),
                     'recurso_permitido' => false,
-                    'aprovado' => $r->notaFinalArredondada() === null ? null : $this->calculadora->aprovadoNaDisciplina($r->notaFinalArredondada(), (string) $regra->nota_minima),
-                    'pendente' => $r->notaFinalArredondada() === null,
+                    'aprovado' => ($antesDoRecurso ? $r->baseArredondada() : $r->notaFinalArredondada()) === null ? null : $this->calculadora->aprovadoNaDisciplina($antesDoRecurso ? $r->baseArredondada() : $r->notaFinalArredondada(), (string) $regra->nota_minima),
+                    'pendente' => ($antesDoRecurso ? $r->baseArredondada() : $r->notaFinalArredondada()) === null,
                     'exame_em_falta' => $comExame && $r->ne === null,
                 ];
             }
@@ -172,6 +230,9 @@ class PautaFinalService
 
         $alunos = [];
         $comPendentes = 0;
+        $semNer = 0;
+        $semNerNoPrazo = 0;
+        $periodoRecurso = Periodo::query()->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('tipo', TipoPeriodo::TRIMESTRE)->where('numero', 3)->first();
         $chave = $comRecurso ? $regra->disciplinasChave()->pluck('disciplinas.id')->map(fn ($id) => (int) $id)->all() : [];
         $nomes = $disciplinas->pluck('nome', 'id')->map(fn ($n) => (string) $n)->all();
         foreach ($matriculas as $m) {
@@ -188,7 +249,25 @@ class PautaFinalService
                 fn ($id) => ['disciplina' => $nomes[$id] ?? '', 'inscricao_id' => $doAluno[$id]['inscricao_id'], 'medida' => $tratadas[$doAluno[$id]['inscricao_id']] ?? null],
                 array_keys(array_filter($doAluno, fn (array $c) => $c['aprovado'] === false)),
             ));
-            $decisao = $this->decisao->decidir(array_column($doAluno, 'nota_final'), (string) $regra->nota_minima, $regra->tratamento_negativas, $comExame);
+            if ($fase === FasePauta::RECURSO) {
+                // Pauta do recurso: tudo o que ainda for negativo reprova, e reprovou mesmo. Sem NER, só depois do prazo.
+                $decisao = $this->decisao->decidir(array_column($doAluno, 'nota_final'), (string) $regra->nota_minima, TratamentoDeNegativas::REPROVA, $comExame);
+                foreach ($doAluno as $disciplinaId => $c) {
+                    if ($c['recurso_permitido'] && $c['ner'] === null) {
+                        if ($periodoRecurso !== null && ! $this->prazos->prazoEncerrado($periodoRecurso->id, TipoInstrumento::RECURSO, $turmaId, $disciplinaId)) {
+                            $decisao = null;
+                            $doAluno[$disciplinaId]['recurso_em_falta'] = true;
+                            $semNer++;
+                        } else {
+                            $semNerNoPrazo++;
+                        }
+                    }
+                }
+            } elseif ($comRecurso) {
+                $decisao = $this->decisaoDaEpocaNormal($doAluno, $av ?? null, $comExame);
+            } else {
+                $decisao = $this->decisao->decidir(array_column($doAluno, 'nota_final'), (string) $regra->nota_minima, $regra->tratamento_negativas, $comExame);
+            }
             // Onde o aluno tem de transitar, só transita no papel com todas as negativas tratadas.
             if ($tratamNegativas && collect($negativas)->contains(fn (array $n) => $n['medida'] === null)) {
                 $decisao = null;
@@ -228,11 +307,22 @@ class PautaFinalService
             $bloqueios[] = "Faltam tratar as negativas de {$porTratar} aluno(s): registe a medida de cada uma antes de aprovar.";
         }
 
-        // O recurso não é obrigatório e nunca bloqueia a aprovação; avisa-se, para a escola decidir quando aprovar.
         $avisos = [];
-        $aEspera = count(array_filter($alunos, fn (array $a) => collect($a['celulas'])->contains(fn (array $c) => $c['recurso_permitido'] && $c['ner'] === null)));
-        if ($aEspera > 0) {
-            $avisos[] = "{$aEspera} aluno(s) têm direito a exame de recurso e ainda sem nota. Se aprovar agora, ficam com a nota que têm.";
+        if ($fase === FasePauta::RECURSO) {
+            if ($alunos === []) {
+                $bloqueios[] = 'Nenhum aluno foi ao exame de recurso.';
+            }
+            if ($semNer > 0) {
+                $bloqueios[] = "Faltam notas de recurso ({$semNer} disciplina(s)): o prazo do recurso ainda está aberto.";
+            }
+            if ($semNerNoPrazo > 0) {
+                $avisos[] = "{$semNerNoPrazo} disciplina(s) sem nota de recurso dentro do prazo: o aluno reprova.";
+            }
+        } elseif ($comRecurso) {
+            $emRecurso = count(array_filter($alunos, fn (array $a) => ($a['decisao']['valor'] ?? null) === Decisao::RECURSO->value));
+            if ($emRecurso > 0) {
+                $avisos[] = "{$emRecurso} aluno(s) vão ao exame de recurso. Depois de aprovar esta pauta, o recurso abre e a decisão final sai na pauta do recurso.";
+            }
         }
         $diretos = count(array_filter($alunos, fn (array $a) => ($a['recurso']['texto'] ?? null) !== null));
         if ($diretos > 0) {
@@ -296,8 +386,13 @@ class PautaFinalService
         $alunos = array_values($alunos);
         usort($alunos, fn (array $x, array $y) => strnatcasecmp($x['nome'], $y['nome']));
 
+        $emRecurso = $pauta->fase === FasePauta::RECURSO;
+        $recursoGravado = $linhas->contains(fn (AvaliacaoPautaLinha $l) => $l->ner !== null || $l->mfr !== null);
+
         return [
             'tipo' => 'quantitativa',
+            'fase' => $pauta->fase->value,
+            'mostra_recurso' => $emRecurso || $recursoGravado,
             'com_exame' => $linhas->contains(fn (AvaliacaoPautaLinha $l) => $l->mf !== null),
             // O que foi aprovado manda: com NER/MFR gravados a pauta mostra o recurso, mesmo que a regra mude depois.
             'com_recurso' => $linhas->contains(fn (AvaliacaoPautaLinha $l) => $l->ner !== null || $l->mfr !== null) || (bool) $regra?->com_recurso,
@@ -329,6 +424,28 @@ class PautaFinalService
     private function formatar(?string $valor, int $casas): ?string
     {
         return $valor === null ? null : bcadd($valor, '0', $casas);
+    }
+
+    /**
+     * Decisão da 1.ª fase numa classe com recurso: com tudo positivo o aluno passa; com negativas dentro das regras do
+     * recurso vai ao recurso; fora delas reprova já. `null` enquanto faltar a nota final de uma disciplina.
+     *
+     * @param  array<int, array<string, mixed>>  $celulas
+     * @param  array{reprovadas: list<int>, elegivel: bool}|null  $avaliacaoDoRecurso
+     */
+    private function decisaoDaEpocaNormal(array $celulas, ?array $avaliacaoDoRecurso, bool $termosApto): ?Decisao
+    {
+        $bases = array_column($celulas, 'base');
+        if ($celulas === [] || in_array(null, $bases, true)) {
+            return null;
+        }
+
+        [$positiva, $negativa] = $termosApto ? [Decisao::APTO, Decisao::NAO_APTO] : [Decisao::TRANSITA, Decisao::NAO_TRANSITA];
+        if (($avaliacaoDoRecurso['reprovadas'] ?? []) === []) {
+            return $positiva;
+        }
+
+        return $avaliacaoDoRecurso['elegivel'] ? Decisao::RECURSO : $negativa;
     }
 
     private function decisaoParaTela(?Decisao $decisao): ?array

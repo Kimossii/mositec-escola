@@ -15,6 +15,7 @@ class ExportarPautaRequest extends BaseRequest
     {
         return [
             'formato' => ['required', 'string', 'in:pdf,excel'],
+            'fase' => ['nullable', 'integer', 'in:1,2'],
         ];
     }
 

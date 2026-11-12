@@ -31,7 +31,7 @@ class CriarInstrumentoAction
     {
         return $this->comLog('Criar instrumento de avaliação', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => DB::transaction(function () use ($dto) {
             $turma = Turma::query()->with('nivelAcademico:id,codigo')->whereKey($dto->turma_id)->lockForUpdate()->firstOrFail();
-            $this->pautas->exigirAberta($turma->id);
+            $this->pautas->exigirAbertaPara($turma->id, $dto->tipo);
             Disciplina::query()->findOrFail($dto->disciplina_id);
             $periodo = Periodo::query()->findOrFail($dto->periodo_id);
 

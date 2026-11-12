@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Gate;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Enums\TipoPeriodo;
 use Modules\AnoLectivo\Models\Periodo;
+use Modules\Avaliacao\Enums\FasePauta;
 use Modules\Avaliacao\Enums\TipoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
@@ -39,6 +40,7 @@ class MiniPautaService
         private RelogioDoTenant $relogio,
         private MiniPautaQualitativaService $qualitativa,
         private ElegibilidadeRecursoService $elegibilidade,
+        private PautaFinalService $pautas,
     ) {
     }
 
@@ -194,11 +196,14 @@ class MiniPautaService
         $recurso = $comRecurso ? AvaliacaoInstrumento::query()->where('turma_id', $turmaId)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::RECURSO->value)->first() : null;
         $notasRecurso = $recurso === null ? collect() : AvaliacaoNota::query()->where('instrumento_id', $recurso->id)->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))->get()->keyBy('inscricao_disciplina_id');
         $elegibilidade = $comRecurso ? $this->elegibilidade->paraTurma($turma, $regra) : [];
+        // O recurso só abre depois de aprovada a pauta da 1.ª fase, e só para quem ela mandou ao recurso.
+        $recursoAberto = $comRecurso && $this->pautas->definitiva($turmaId, FasePauta::EPOCA_NORMAL);
+        $emRecurso = $recursoAberto ? $this->pautas->matriculasEmRecurso($turmaId) : [];
         $resultados = $this->resultados->calcularTurma($turmaId, $disciplinaId, $inscricoes->pluck('id')->all());
 
         $n = $periodo->numero;
         $tratadas = AvaliacaoNegativaTratada::query()->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))->pluck('medida', 'inscricao_disciplina_id');
-        $alunos = $inscricoes->map(function (InscricaoDisciplina $i) use ($tratadas, $notas, $resultados, $n, $regra, $notasExame, $notasRecurso, $elegibilidade) {
+        $alunos = $inscricoes->map(function (InscricaoDisciplina $i) use ($emRecurso, $recursoAberto, $tratadas, $notas, $resultados, $n, $regra, $notasExame, $notasRecurso, $elegibilidade) {
             $r = $resultados[$i->id];
 
             return [
@@ -220,6 +225,7 @@ class MiniPautaService
                 ] : null,
                 'mf' => $r->mfArredondada,
                 'recurso_necessario' => $r->recursoNecessario && ($elegibilidade[$i->matricula_id]['elegivel'] ?? false),
+                'recurso_pode_lancar' => $recursoAberto && in_array($i->matricula_id, $emRecurso, true),
                 'recurso_motivo' => $r->recursoNecessario ? ($elegibilidade[$i->matricula_id]['texto'] ?? null) : null,
                 'ner' => isset($notasRecurso[$i->id]) ? [
                     'id' => $notasRecurso[$i->id]->id, 'valor' => $notasRecurso[$i->id]->valor, 'estado' => $notasRecurso[$i->id]->estado->value, 'estado_descricao' => $notasRecurso[$i->id]->estado_descricao,
@@ -245,7 +251,7 @@ class MiniPautaService
             'instrumentos' => $this->instrumentosParaTela($instrumentos, $base['rotulo_pt']),
             'alunos' => $alunos,
             'exame' => $comExame ? ['peso_mfd' => $this->semZeros($regra->peso_mfd_exame), 'peso_exame' => $this->semZeros($regra->peso_exame)] : null,
-            'recurso' => $comRecurso ? ['peso_mf' => $this->semZeros($regra->peso_mfd_exame), 'peso_recurso' => $this->semZeros($regra->peso_exame)] : null,
+            'recurso' => $comRecurso ? ['aberto' => $recursoAberto, 'peso_mf' => $this->semZeros($regra->peso_mfd_exame), 'peso_recurso' => $this->semZeros($regra->peso_exame)] : null,
             'prazos' => $prazos,
         ]);
     }

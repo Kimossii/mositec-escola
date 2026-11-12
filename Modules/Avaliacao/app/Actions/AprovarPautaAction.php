@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Modules\Avaliacao\Enums\Decisao;
 use Modules\Avaliacao\Enums\EstadoPauta;
+use Modules\Avaliacao\Enums\FasePauta;
 use Modules\Avaliacao\Models\AvaliacaoDecisao;
 use Modules\Avaliacao\Models\AvaliacaoPauta;
 use Modules\Avaliacao\Models\AvaliacaoPautaLinha;
@@ -30,27 +31,31 @@ class AprovarPautaAction
     {
     }
 
-    public function executar(int $turmaId): AvaliacaoPauta
+    public function executar(int $turmaId, FasePauta $fase = FasePauta::EPOCA_NORMAL): AvaliacaoPauta
     {
-        return $this->comLog('Aprovar pauta final', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => DB::transaction(function () use ($turmaId) {
+        return $this->comLog('Aprovar pauta final', $this->contextoDeArgumentos(func_get_args(), 'executar'), fn () => DB::transaction(function () use ($turmaId, $fase) {
             if (! Gate::allows('nota.aprovar')) {
                 throw new AuthorizationException('Sem permissão para aprovar pautas.');
             }
 
             Turma::query()->whereKey($turmaId)->lockForUpdate()->firstOrFail();
-            $existente = AvaliacaoPauta::query()->where('turma_id', $turmaId)->lockForUpdate()->first();
+            $existente = AvaliacaoPauta::query()->where('turma_id', $turmaId)->where('fase', $fase->value)->lockForUpdate()->first();
 
             if ($existente?->estado === EstadoPauta::DEFINITIVA) {
                 throw ValidationException::withMessages(['pauta' => 'Esta pauta já é definitiva.']);
             }
 
-            $viva = $this->pautas->montar($turmaId);
+            if ($fase === FasePauta::RECURSO && ! $this->pautas->definitiva($turmaId, FasePauta::EPOCA_NORMAL)) {
+                throw ValidationException::withMessages(['pauta' => 'Aprove primeiro a pauta da 1.ª fase.']);
+            }
+
+            $viva = $this->pautas->montar($turmaId, $fase);
             if (! $viva['pode_aprovar']) {
                 throw ValidationException::withMessages(['pauta' => $viva['bloqueios'][0] ?? 'A pauta não pode ser aprovada.']);
             }
 
             $versao = ($existente?->versao ?? 0) + 1;
-            $pauta = $existente ?? new AvaliacaoPauta(['turma_id' => $turmaId]);
+            $pauta = $existente ?? new AvaliacaoPauta(['turma_id' => $turmaId, 'fase' => $fase]);
             $pauta->fill(['estado' => EstadoPauta::DEFINITIVA, 'versao' => $versao, 'casas_decimais' => $viva['regra']['casas_decimais'] ?? 2, 'aprovada_por' => auth()->id(), 'aprovada_em' => $this->relogio->agora()])->save();
 
             foreach ($viva['alunos'] as $aluno) {
