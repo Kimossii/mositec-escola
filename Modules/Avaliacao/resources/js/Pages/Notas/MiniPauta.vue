@@ -353,7 +353,8 @@ function eliminar(instrumento) {
                                             <component :is="pode.tratar_negativa ? 'a' : 'span'" v-else href="#" class="badge badge-light-danger ms-2" :title="pauta.regra.consequencia_negativa" @click.prevent="pode.tratar_negativa && tratar(a)">{{ pode.tratar_negativa ? 'Tratar negativa' : 'Por tratar' }}</component>
                                         </template>
                                         <span v-else class="badge badge-light-danger ms-2" :title="pauta.regra.consequencia_negativa">Negativa</span>
-                                    </template><span v-if="a.pendente" class="badge badge-light-warning ms-2">pendente</span></td>
+                                    </template>
+                                    <span v-else-if="a.mt_negativa" class="badge badge-light-warning ms-2" title="Trimestre abaixo do mínimo. A média final da disciplina ainda passa.">Negativa no trimestre</span><span v-if="a.pendente" class="badge badge-light-warning ms-2">pendente</span></td>
                                 <td class="text-center fw-bold" :class="negativaDe(a.mfd) ? 'text-danger' : ''">{{ a.mfd ?? '—' }}</td>
                                 <template v-if="pauta.exame">
                                     <td class="text-center" style="min-width: 7rem">

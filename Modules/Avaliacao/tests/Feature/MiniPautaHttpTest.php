@@ -92,6 +92,17 @@ class MiniPautaHttpTest extends TestCase
         $this->actingAs($admin)->get($this->url())->assertInertia(fn (Assert $p) => $p->where('pauta.alunos.0.medida_negativa', 'Aulas de apoio.'));
     }
 
+    public function test_mt_negativa_no_3_trimestre_e_informativa_quando_a_media_final_ainda_passa(): void
+    {
+        $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');
+        $inscricao = $this->inscreverAluno($this->c, 'Ana');
+        $this->notasCompletas($this->c, $inscricao, [1 => ['9', '9'], 2 => ['9', '9'], 3 => ['2', '2']]); // MT3 = 2, MFD ≈ 6,67 (mínimo 5)
+
+        $this->actingAs($admin)->get($this->url(['periodo' => $this->c['periodos'][3]->id]))->assertInertia(fn (Assert $p) => $p
+            ->where('pauta.alunos.0.mt_negativa', true)
+            ->where('pauta.alunos.0.negativa', false)); // não decide a passagem: sem selo de negativa nem botão de tratar
+    }
+
     public function test_so_trata_negativas_quem_tem_a_permissao_e_so_onde_o_aluno_tem_de_transitar(): void
     {
         $admin = $this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com');

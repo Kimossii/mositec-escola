@@ -218,6 +218,8 @@ class MiniPautaService
                 'mt' => $this->apresentar($r->mt[$n], $regra),
                 'pendente' => $r->pendentes[$n],
                 'medida_negativa' => $tratadas[$i->id] ?? null,
+                // Informativo: a MT do trimestre aberto abaixo do mínimo, mesmo que a média final ainda passe.
+                'mt_negativa' => $this->abaixoDoMinimo($regra, $this->apresentar($r->mt[$n], $regra)),
                 'negativa' => $this->temNegativa($regra, $n === 3 ? ($r->mfdArredondada ?? $this->apresentar($r->mt[$n], $regra)) : $this->apresentar($r->mt[$n], $regra)),
                 'mfd' => $r->mfdArredondada,
                 'ne' => isset($notasExame[$i->id]) ? [
@@ -266,6 +268,11 @@ class MiniPautaService
     private function apresentar(?string $valor, AvaliacaoRegra $regra): ?string
     {
         return $valor === null ? null : $this->calculadora->arredondar($valor, $regra->casas_decimais, $regra->modo_arredondamento);
+    }
+
+    private function abaixoDoMinimo(AvaliacaoRegra $regra, ?string $nota): bool
+    {
+        return $nota !== null && ! $this->calculadora->aprovadoNaDisciplina($nota, (string) $regra->nota_minima);
     }
 
     /** A negativa que o professor já vê (MT do trimestre aberto, MFD no 3.º) e que a regra da escola não deixa passar em silêncio. */
