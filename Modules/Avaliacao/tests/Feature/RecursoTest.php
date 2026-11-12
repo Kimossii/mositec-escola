@@ -385,10 +385,10 @@ class RecursoTest extends TestCase
             $this->lancarRecurso($turma, $this->c['disciplina']->id, $this->inscricao->id, '8');
             $this->fail('Esperava ValidationException.');
         } catch (ValidationException $e) {
-            $this->assertStringContainsString('1.ª fase ainda não foi aprovada', $e->errors()['pauta'][0]);
+            $this->assertStringContainsString('pauta ainda não foi aprovada', $e->errors()['pauta'][0]);
         }
-        $this->assertStringContainsString('1.ª fase ainda não foi aprovada', $servico->paraTurma($turma, FasePauta::RECURSO)['bloqueios'][0]);
-        $this->expectExceptionObject(ValidationException::withMessages(['pauta' => 'Aprove primeiro a pauta da 1.ª fase.']));
+        $this->assertStringContainsString('pauta ainda não foi aprovada', $servico->paraTurma($turma, FasePauta::RECURSO)['bloqueios'][0]);
+        $this->expectExceptionObject(ValidationException::withMessages(['pauta' => 'Aprove primeiro a pauta.']));
         app(AprovarPautaAction::class)->executar($turma, FasePauta::RECURSO);
     }
 

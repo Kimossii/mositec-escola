@@ -372,7 +372,7 @@ function eliminar(instrumento) {
                                     <td class="text-center" style="min-width: 7rem">
                                         <div v-if="a.recurso_necessario" class="d-flex align-items-center justify-content-center gap-1">
                                             <input :value="textoRecurso(a)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px" :disabled="!a.recurso_pode_lancar"
-                                                :title="a.recurso_pode_lancar ? '' : (pauta.recurso.aberto ? 'Este aluno não foi ao recurso' : 'O recurso abre depois de aprovada a pauta da 1.ª fase')"
+                                                :title="a.recurso_pode_lancar ? '' : (pauta.recurso.aberto ? 'Este aluno não foi ao recurso' : 'O recurso abre depois de aprovada a pauta')"
                                                 :class="pendente(a.inscricao_id, a.ner?.valor, recursos) ? 'border-warning bg-light-warning' : ''" @input="recursos[a.inscricao_id] = $event.target.value" @keyup.enter="guardarTudo">
                                             <a v-if="pode.anular && a.ner && a.ner.estado === 0" href="#" class="text-body-secondary" title="Anular"
                                                 @click.prevent="aAnular = { nota_id: a.ner.id, aluno: a.nome, instrumento: 'Exame de recurso' }">⊘</a>

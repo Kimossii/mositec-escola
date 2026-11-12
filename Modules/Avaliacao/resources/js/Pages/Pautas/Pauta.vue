@@ -102,8 +102,8 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
 
             <div class="card-body pt-3">
                 <div v-if="pauta.fases?.recurso" class="btn-group mb-4 d-print-none">
-                    <button type="button" class="btn btn-sm" :class="fase === 1 ? 'btn-primary' : 'btn-light'" @click="abrirFase(1)">1.ª fase</button>
-                    <button type="button" class="btn btn-sm" :class="fase === 2 ? 'btn-primary' : 'btn-light'" @click="abrirFase(2)">Recurso</button>
+                    <button type="button" class="btn btn-sm" :class="fase === 1 ? 'btn-primary' : 'btn-light'" @click="abrirFase(1)">Pauta</button>
+                    <button type="button" class="btn btn-sm" :class="fase === 2 ? 'btn-primary' : 'btn-light'" @click="abrirFase(2)">Pauta do recurso</button>
                 </div>
 
                 <div v-if="pauta.estado !== 'definitiva' && pauta.bloqueios.length" class="d-flex align-items-start gap-4 rounded bg-warning p-4 mb-4 d-print-none" style="color: #181C32;">

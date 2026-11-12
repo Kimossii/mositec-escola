@@ -46,7 +46,7 @@ class AprovarPautaAction
             }
 
             if ($fase === FasePauta::RECURSO && ! $this->pautas->definitiva($turmaId, FasePauta::EPOCA_NORMAL)) {
-                throw ValidationException::withMessages(['pauta' => 'Aprove primeiro a pauta da 1.ª fase.']);
+                throw ValidationException::withMessages(['pauta' => 'Aprove primeiro a pauta.']);
             }
 
             $viva = $this->pautas->montar($turmaId, $fase);

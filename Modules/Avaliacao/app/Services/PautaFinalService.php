@@ -105,7 +105,7 @@ class PautaFinalService
     public function exigirRecursoAberto(int $turmaId): void
     {
         if (! $this->definitiva($turmaId, FasePauta::EPOCA_NORMAL)) {
-            throw ValidationException::withMessages(['pauta' => 'A pauta da 1.ª fase ainda não foi aprovada: o recurso só abre depois.']);
+            throw ValidationException::withMessages(['pauta' => 'A pauta ainda não foi aprovada: o recurso só abre depois.']);
         }
 
         if ($this->definitiva($turmaId, FasePauta::RECURSO)) {
@@ -182,7 +182,7 @@ class PautaFinalService
                 return [...$base, 'bloqueios' => ['Esta classe não tem exame de recurso.']];
             }
             if (! $this->definitiva($turmaId, FasePauta::EPOCA_NORMAL)) {
-                return [...$base, 'com_recurso' => true, 'bloqueios' => ['A pauta da 1.ª fase ainda não foi aprovada: o recurso só abre depois.']];
+                return [...$base, 'com_recurso' => true, 'bloqueios' => ['A pauta ainda não foi aprovada: o recurso só abre depois.']];
             }
         }
 

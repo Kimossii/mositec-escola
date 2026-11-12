@@ -66,7 +66,7 @@ class LancarRecursoAction
             // O recurso só abre com a 1.ª fase aprovada, e só para quem ela mandou ao recurso.
             $this->pautas->exigirRecursoAberto($turma->id);
             if (! in_array($inscricao->matricula_id, $this->pautas->matriculasEmRecurso($turma->id), true)) {
-                throw ValidationException::withMessages(['inscricao_disciplina_id' => 'Este aluno não foi ao recurso na pauta da 1.ª fase.']);
+                throw ValidationException::withMessages(['inscricao_disciplina_id' => 'Este aluno não foi mandado ao recurso pela pauta.']);
             }
 
             $recurso = AvaliacaoInstrumento::query()->where('turma_id', $turma->id)->where('disciplina_id', $dto->disciplina_id)->where('tipo', TipoInstrumento::RECURSO->value)->first()
