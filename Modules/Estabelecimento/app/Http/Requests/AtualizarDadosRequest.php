@@ -36,6 +36,7 @@ class AtualizarDadosRequest extends BaseRequest
                     EtapaEnsinoEnum::CRECHE->value,
                     EtapaEnsinoEnum::PRE_ESCOLAR->value,
                     EtapaEnsinoEnum::PRIMARIO->value,
+                    EtapaEnsinoEnum::PRIMEIRO_CICLO->value,
                     EtapaEnsinoEnum::SECUNDARIO->value,
                 ]),
             ],

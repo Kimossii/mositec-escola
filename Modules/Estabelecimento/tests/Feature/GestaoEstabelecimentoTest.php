@@ -229,11 +229,10 @@ class GestaoEstabelecimentoTest extends TestCase
         $this->assertSame([EtapaEnsinoEnum::PRIMARIO->value], $etapas);
     }
 
-    public function test_remove_etapa_com_niveis_academicos_associados_falha(): void
+    public function test_remove_etapa_com_classes_sem_informacao_ligada_retira_tambem_as_classes(): void
     {
         $this->actingAsAdmin();
         $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola', 'tipo' => 1, 'tipo_ensino' => TipoEnsinoEnum::GERAL]);
-        $this->desconfigurar();
         EstabelecimentoEtapaEnsino::create(['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO]);
         EstabelecimentoEtapaEnsino::create(['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO]);
         \Modules\Turma\Models\NivelAcademico::create([
@@ -243,6 +242,31 @@ class GestaoEstabelecimentoTest extends TestCase
             'ordem' => 10,
             'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO,
         ]);
+
+        $this->put('/estabelecimento', $this->dadosValidos(['etapas_ensino' => [EtapaEnsinoEnum::PRIMARIO->value]]))->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('estabelecimento_etapas_ensino', ['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO->value]);
+        $this->assertSoftDeleted('niveis_academicos', ['codigo' => '10C']);
+    }
+
+    public function test_remove_etapa_com_niveis_academicos_associados_falha(): void
+    {
+        $this->actingAsAdmin();
+        $estabelecimento = $this->estabelecimentoDeTeste(['nome' => 'Escola', 'tipo' => 1, 'tipo_ensino' => TipoEnsinoEnum::GERAL]);
+        $this->desconfigurar();
+        EstabelecimentoEtapaEnsino::create(['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO]);
+        EstabelecimentoEtapaEnsino::create(['estabelecimento_id' => $estabelecimento->id, 'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO]);
+        $nivel = \Modules\Turma\Models\NivelAcademico::create([
+            'estabelecimento_id' => $estabelecimento->id,
+            'codigo' => '10C',
+            'nome' => '10ª Classe',
+            'ordem' => 10,
+            'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO,
+        ]);
+        $ano = \Modules\AnoLectivo\Models\AnoLectivo::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => '2026', 'data_inicio' => '2026-01-01', 'data_fim' => '2026-12-31', 'estado' => \Modules\AnoLectivo\Enums\EstadoAnoLectivo::ATIVO]);
+        $turno = \Modules\Turma\Models\Turno::create(['estabelecimento_id' => $estabelecimento->id, 'nome' => 'Manhã']);
+        $curso = \Modules\Curso\Models\Curso::create(['estabelecimento_id' => $estabelecimento->id, 'codigo' => 'GER', 'nome' => 'Geral']);
+        \Modules\Turma\Models\Turma::create(['ano_lectivo_id' => $ano->id, 'nivel_academico_id' => $nivel->id, 'curso_id' => $curso->id, 'turno_id' => $turno->id, 'codigo' => 'T1', 'nome' => 'Turma 1']);
 
         $this->put('/estabelecimento', [
             'nome' => 'Escola',
