@@ -14,6 +14,7 @@ use Modules\Core\Models\ImportacaoLinha;
 use Modules\Core\Tenancy\Jobs\ComTenant;
 use Modules\Core\Traits\LogService;
 use Throwable;
+use Modules\Core\Queue\NaFilaPesada;
 
 /**
  * Cria os registos das linhas válidas, por blocos, sempre pela Action da entidade. Cada linha é uma transacção (registo +
@@ -28,6 +29,7 @@ class ImportarImportacaoJob implements ShouldQueue
     use Dispatchable;
     use InteractsWithQueue;
     use LogService;
+    use NaFilaPesada;
     use Queueable;
 
     private const BLOCO = 500;
@@ -40,6 +42,7 @@ class ImportarImportacaoJob implements ShouldQueue
 
     public function __construct(public int $importacaoId)
     {
+        $this->naFilaPesada();
     }
 
     public function handle(RegistoDeImportadores $registo): void

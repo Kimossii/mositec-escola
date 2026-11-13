@@ -12,6 +12,7 @@ use Modules\Core\Tenancy\Jobs\UnicoPorTenant;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Core\Traits\LogService;
 use Modules\Financeiro\Services\AplicarMultasService;
+use Modules\Core\Queue\NaFilaPesada;
 
 /**
  * Multas por atraso de uma escola (só actua com multas activas). Corre no tenant que o despachou (ComTenant) e só um por escola de cada vez (UnicoPorTenant).
@@ -23,8 +24,14 @@ class AplicarMultasDoTenantJob implements ShouldBeUnique, ShouldQueue
     use LogService;
     use Dispatchable;
     use InteractsWithQueue;
+    use NaFilaPesada;
     use Queueable;
     use UnicoPorTenant;
+
+    public function __construct()
+    {
+        $this->naFilaPesada();
+    }
 
     public int $tries = 3;
 

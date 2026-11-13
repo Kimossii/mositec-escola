@@ -225,7 +225,10 @@ Ver `.env.example` (comentado) e a secção seguinte. Pontos que costumam falhar
 
 - **Migrações e catálogo global:** `php artisan migrate --force && php artisan db:seed --force`. Sem o catálogo (módulos e acções) a criação de escolas falha com «Módulo … em falta no catálogo global». Sem terminal, carregar o catálogo por SQL.
 - **`TRUSTED_PROXIES`** (por exemplo `10.0.0.0/8`): obrigatório atrás do proxy de uma plataforma de alojamento. Sem ele os redirects saem `http://`, o browser bloqueia-os num site https e ficam sem feedback (a senha temporária de uma escola nova nem aparece). Em produção: `SESSION_SECURE_COOKIE=true`.
-- **`QUEUE_CONNECTION`**: sem a variável, o valor por omissão é `database` e os trabalhos (exportações, importações, geração de propinas, multas do dia) ficam parados sem `php artisan queue:work`. Para testes ou escolas pequenas usar `QUEUE_CONNECTION=sync`.
+- **Filas e workers:** sem `QUEUE_CONNECTION` o valor por omissão é `database` e os trabalhos ficam parados sem workers. Para testes ou escolas pequenas usar `QUEUE_CONNECTION=sync` (tudo corre no próprio pedido; a ligação pesada também passa a `sync`). Com fila real há **duas filas na mesma tabela `jobs`**, cada uma com o seu processo no Supervisor:
+  - `default` (ligação `database`, `retry_after` 90): jobs rápidos e feedbacks. `php artisan queue:work --timeout=60`.
+  - `pesado` (ligação `database_pesado`, `retry_after` 3700): exportações, importações, propinas e multas diárias. `php artisan queue:work database_pesado --queue=pesado --timeout=3600`.
+  - `php artisan mosi:filas:estado` mostra as duas e avisa se uma estiver parada. Jobs novos de trabalho longo usam a trait `Modules\Core\Queue\NaFilaPesada`.
 - **Primeiro acesso:** criar o super admin (`php artisan mosi:plataforma:admin:create`; sem terminal, `INSERT` em `super_admins` com `deve_alterar_senha = true`) e criar a escola em `/plataforma/escolas/nova`. A senha temporária aparece **uma só vez**.
 - **Permissões novas:** depois de acrescentar uma acção, `php artisan db:seed --class="Modules\Permissao\Database\Seeders\AcaoSeeder" --force` e `php artisan mosi:tenant:sync-perfis --todos`.
 

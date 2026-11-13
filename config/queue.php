@@ -29,6 +29,13 @@ return [
     |
     */
 
+    /*
+    | Ligação dos jobs pesados (trait NaFilaPesada). Segue o modo `sync` da ligação padrão para que escolas pequenas e
+    | testes continuem sem worker; senão usa `database_pesado`.
+    */
+
+    'ligacao_pesada' => env('QUEUE_PESADA_CONNECTION') ?: (env('QUEUE_CONNECTION', 'database') === 'sync' ? 'sync' : 'database_pesado'),
+
     'connections' => [
 
         'sync' => [
@@ -41,6 +48,18 @@ return [
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
             'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
+            'after_commit' => false,
+        ],
+
+        // Mesma tabela `jobs`, fila própria e `retry_after` acima do maior timeout dos jobs pesados (3600 s). Sem isto o
+        // worker devolveria à fila um job ainda a correr e outro worker pegaria nele. Worker dedicado:
+        // `php artisan queue:work database_pesado --queue=pesado --timeout=3600`.
+        'database_pesado' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'pesado',
+            'retry_after' => (int) env('DB_QUEUE_PESADO_RETRY_AFTER', 3700),
             'after_commit' => false,
         ],
 
