@@ -8,6 +8,7 @@ use Modules\Core\Tenancy\TenantContext;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Turma\Models\NivelAcademico;
+use Modules\Turma\Support\NiveisAcademicosPadrao;
 
 class NivelAcademicoSeeder extends Seeder
 {
@@ -28,123 +29,7 @@ class NivelAcademicoSeeder extends Seeder
                     ->where('tenant_id', $tenantId)
                     ->firstOrFail();
 
-                $niveis = [
-                    // Creche
-                    [
-                        'codigo' => 'CRECHE_I',
-                        'nome' => 'Creche I',
-                        'ordem' => 1,
-                        'etapa_ensino' => EtapaEnsinoEnum::CRECHE,
-                    ],
-                    [
-                        'codigo' => 'CRECHE_II',
-                        'nome' => 'Creche II',
-                        'ordem' => 2,
-                        'etapa_ensino' => EtapaEnsinoEnum::CRECHE,
-                    ],
-
-                    // Pré-Escolar
-                    [
-                        'codigo' => 'PRE_I',
-                        'nome' => 'Iniciação',
-                        'ordem' => 3,
-                        'etapa_ensino' => EtapaEnsinoEnum::PRE_ESCOLAR,
-                    ],
-                    [
-                        'codigo' => 'PRE_II',
-                        'nome' => 'Pré-Escolar I',
-                        'ordem' => 4,
-                        'etapa_ensino' => EtapaEnsinoEnum::PRE_ESCOLAR,
-                    ],
-                    [
-                        'codigo' => 'PRE_III',
-                        'nome' => 'Pré-Escolar II',
-                        'ordem' => 5,
-                        'etapa_ensino' => EtapaEnsinoEnum::PRE_ESCOLAR,
-                    ],
-
-                    // Ensino Primário
-                    [
-                        'codigo' => 'PRI_1',
-                        'nome' => '1.ª Classe',
-                        'ordem' => 6,
-                        'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
-                    ],
-                    [
-                        'codigo' => 'PRI_2',
-                        'nome' => '2.ª Classe',
-                        'ordem' => 7,
-                        'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
-                    ],
-                    [
-                        'codigo' => 'PRI_3',
-                        'nome' => '3.ª Classe',
-                        'ordem' => 8,
-                        'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
-                    ],
-                    [
-                        'codigo' => 'PRI_4',
-                        'nome' => '4.ª Classe',
-                        'ordem' => 9,
-                        'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
-                    ],
-                    [
-                        'codigo' => 'PRI_5',
-                        'nome' => '5.ª Classe',
-                        'ordem' => 10,
-                        'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
-                    ],
-                    [
-                        'codigo' => 'PRI_6',
-                        'nome' => '6.ª Classe',
-                        'ordem' => 11,
-                        'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
-                    ],
-
-                    // Ensino Secundário
-                    [
-                        'codigo' => 'SEC_7',
-                        'nome' => '7.ª Classe',
-                        'ordem' => 12,
-                        'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
-                    ],
-                    [
-                        'codigo' => 'SEC_8',
-                        'nome' => '8.ª Classe',
-                        'ordem' => 13,
-                        'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
-                    ],
-                    [
-                        'codigo' => 'SEC_9',
-                        'nome' => '9.ª Classe',
-                        'ordem' => 14,
-                        'etapa_ensino' => EtapaEnsinoEnum::PRIMARIO,
-                    ],
-                    [
-                        'codigo' => 'SEC_10',
-                        'nome' => '10.ª Classe',
-                        'ordem' => 15,
-                        'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO,
-                    ],
-                    [
-                        'codigo' => 'SEC_11',
-                        'nome' => '11.ª Classe',
-                        'ordem' => 16,
-                        'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO,
-                    ],
-                    [
-                        'codigo' => 'SEC_12',
-                        'nome' => '12.ª Classe',
-                        'ordem' => 17,
-                        'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO,
-                    ],
-                    [
-                        'codigo' => 'SEC_13',
-                        'nome' => '13.ª Classe',
-                        'ordem' => 18,
-                        'etapa_ensino' => EtapaEnsinoEnum::SECUNDARIO,
-                    ],
-                ];
+                $niveis = NiveisAcademicosPadrao::todos();
 
                 DB::transaction(function () use (
                     $niveis,

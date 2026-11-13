@@ -3,6 +3,9 @@
 namespace Modules\Turma\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Modules\Aluno\Models\AlunoEnquadramentoAcademico;
+use Modules\Financeiro\Models\CatalogoAlvo;
+use Modules\Financeiro\Models\PlanoPropinaAlvo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -49,6 +52,26 @@ class NivelAcademico extends Model
     public function turmas(): HasMany
     {
         return $this->hasMany(Turma::class);
+    }
+
+    /**
+     * A classe já tem informação ligada (turmas, planos curriculares, alunos enquadrados, planos de propina ou catálogo)?
+     * Só então não se pode retirar sozinha. As ligações às regras de avaliação são configuração, não contam: saem com a classe.
+     */
+    public function temVinculos(): bool
+    {
+        if ($this->turmas()->exists() || $this->planosCurriculares()->exists()) {
+            return true;
+        }
+
+        // Pelos models (isolados por tenant), nunca por consultas directas às tabelas.
+        foreach ([AlunoEnquadramentoAcademico::class, PlanoPropinaAlvo::class, CatalogoAlvo::class] as $modelo) {
+            if ($modelo::query()->where('nivel_academico_id', $this->id)->exists()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function planosCurriculares(): HasMany

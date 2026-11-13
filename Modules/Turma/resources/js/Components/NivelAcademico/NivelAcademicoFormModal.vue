@@ -52,7 +52,7 @@ function submeter() {
                     <div class="row">
                         <div class="col-md-6 fv-row mb-7">
                             <label class="required fw-semibold fs-6 mb-2">Código</label>
-                            <input v-model="form.codigo" type="text" class="form-control form-control-solid" placeholder="ex: 1C" />
+                            <input v-model="form.codigo" type="text" class="form-control form-control-solid" placeholder="identificador livre da classe" />
                             <div class="text-danger fs-7 mt-1" v-if="errors.codigo">{{ errors.codigo }}</div>
                         </div>
                         <div class="col-md-6 fv-row mb-7">

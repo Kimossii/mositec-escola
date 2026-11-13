@@ -57,6 +57,7 @@ const etapasNaoSuperior = [
     { value: 1, label: 'Creche' },
     { value: 2, label: 'Pré-Escolar' },
     { value: 3, label: 'Ensino Primário' },
+    { value: 6, label: '1.º Ciclo (7.ª a 9.ª classe)' },
     { value: 4, label: 'Ensino Secundário' },
 ];
 
@@ -128,7 +129,7 @@ const completude = computed(() => {
 });
 
 // Resumo (vista): anos de existência, etapas, hora local no fuso da escola e responsável.
-const NOMES_ETAPAS = { 1: 'Creche', 2: 'Pré-Escolar', 3: 'Ensino Primário', 4: 'Ensino Secundário', 5: 'Ensino Superior' };
+const NOMES_ETAPAS = { 1: 'Creche', 2: 'Pré-Escolar', 3: 'Ensino Primário', 4: 'Ensino Secundário', 5: 'Ensino Superior', 6: '1.º Ciclo (7.ª a 9.ª classe)' };
 const anosDeExistencia = computed(() => {
     const ano = Number(props.estabelecimento?.ano_fundacao);
 
@@ -235,6 +236,7 @@ function submeter() {
                                 </template>
                                 <CampoFicha v-else v-model="form.etapas_ensino" label="Etapas de Ensino" type="checkboxes" :options="etapasNaoSuperior" required :editing="editando" :error="errors.etapas_ensino?.[0]" icon="ki-teacher" :icon-paths="2" />
                                 <div v-if="editando && form.tipo_ensino !== TIPO_ENSINO_UNIVERSITARIO" class="text-muted fs-8 mt-2">Os Cursos só existem em escolas com Ensino Secundário. Sem esta etapa, o menu e os campos de curso ficam escondidos (os dados já gravados não se perdem).</div>
+                                <div v-if="editando && form.tipo_ensino !== TIPO_ENSINO_UNIVERSITARIO" class="text-muted fs-8 mt-1">Ao acrescentar uma etapa criam-se as suas classes padrão (da Creche à 9.ª classe). Ao retirá-la saem as suas classes, desde que nenhuma tenha turmas, planos ou alunos associados.</div>
                             </div>
                         </div>
                     </SeccaoFicha>
