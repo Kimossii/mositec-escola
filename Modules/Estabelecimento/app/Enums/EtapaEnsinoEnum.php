@@ -9,6 +9,8 @@ enum EtapaEnsinoEnum: int
     case PRIMARIO = 3;
     case SECUNDARIO = 4;
     case SUPERIOR = 5;
+    /** 7.ª a 9.ª classe: não tem curso (os cursos só existem a partir do Ensino Secundário). */
+    case PRIMEIRO_CICLO = 6;
 
     public function label(): string
     {
@@ -18,6 +20,7 @@ enum EtapaEnsinoEnum: int
             self::PRIMARIO => 'Ensino Primário',
             self::SECUNDARIO => 'Ensino Secundário',
             self::SUPERIOR => 'Ensino Superior',
+            self::PRIMEIRO_CICLO => '1.º Ciclo (7.ª a 9.ª classe)',
         };
     }
 

@@ -250,4 +250,15 @@ class RegraDeAvaliacaoTest extends TestCase
 
         $this->assertSame(0, AvaliacaoRegra::count());
     }
+
+    public function test_retirar_uma_classe_leva_consigo_as_ligacoes_as_regras(): void
+    {
+        $c = $this->cenarioDeAvaliacao('PRI_1');
+        app(GuardarRegraAvaliacaoAction::class)->executar(new RegraAvaliacaoDTO($c['ano']->id, [$c['nivel']->id], 10, '5'));
+        $this->assertSame(1, AvaliacaoRegraNivel::query()->where('nivel_academico_id', $c['nivel']->id)->count());
+
+        $c['nivel']->delete();
+
+        $this->assertSame(0, AvaliacaoRegraNivel::query()->where('nivel_academico_id', $c['nivel']->id)->count());
+    }
 }
