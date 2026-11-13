@@ -92,14 +92,14 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | AnoLectivo      | Anos lectivos (activo, encerrado), períodos; bloqueios quando há planos de propina                                                           | ✅     |
 | Curso           | Cursos e níveis                                                                                                                              | ✅     |
-| Turma           | Turmas, turnos e níveis académicos                                                                                                           | ✅     |
+| Turma           | Turmas, turnos e classes (níveis académicos). As classes padrão (Creche à 9.ª) criam-se e retiram-se com as **etapas de ensino** da escola (Dados do estabelecimento); retirar só é possível se nenhuma tiver informação ligada | ✅     |
 | Disciplina      | Cadastro de disciplinas                                                                                                                      | ✅     |
 | PlanoCurricular | Plano curricular por curso/nível, com confirmação                                                                                            | ✅     |
 | Aluno           | Ficha do aluno (dados pessoais, matrículas, situação de propinas com pesquisa/filtros/paginação, produtos e serviços por pagar)              | ✅     |
 | Matrícula       | Matrículas (pendente, activa, concluída, cancelada, transferida, **trancada**), renovação, inscrição em disciplinas, histórico, bloqueio por dívida de anos anteriores, trancamento com verificação financeira, fim de matrícula com previsão do que é cancelado | ✅     |
 | Horário         | Horários de aulas (calendário)                                                                                                               | 🔧     |
-| Professor       | Cadastro próprio de professores (hoje vive em Utilizadores)                                                                                  | ⏳     |
-| Nota            | Registo e cálculo de notas                                                                                                                   | ⏳     |
+| Docente         | Cadastro de docentes, atribuições (turma × disciplina, com histórico), área do professor; acesso do docente às suas turmas                   | ✅     |
+| Avaliação       | Creche à 9.ª classe: regras por grupo de classes (escala, mínimo, pesos, exame próprio, recurso, sigla da prova, tratamento das negativas), prazos únicos da escola, mini-pauta por trimestre com vista «Resumo», lançamento em lote, avaliação qualitativa (Creche e Pré-Escolar), pautas finais em duas fases (1.ª fase e recurso), boletins, PDF e Excel | ✅     |
 | Frequência      | Controlo de presenças                                                                                                                        | ⏳     |
 
 ## Financeiro
@@ -116,8 +116,8 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 | Dívidas                      | Lista de matrículas com propinas, multas e cobranças por pagar, filtros, totais, exportação CSV                                                                                              | ✅     |
 | Recibos                      | Lista de recibos (um por pagamento) para ver e imprimir                                                                                                                                       | ✅     |
 | Relatórios financeiros       | Recebido por origem, método e mês; dívida por turma; exportação CSV de recebimentos                                                                                                          | ✅     |
-| Descontos e bolsas           | Descontos por aluno, bolsas                                                                                                                                                                   | ⏳     |
-| Negociação de dívidas        | Acordos de prazo, prestações                                                                                                                                                                  | ⏳     |
+| Descontos e bolsas           | Bolsas de estudo (criar, editar, aplicar e terminar) e descontos por aluno                                                                                                                    | ✅     |
+| Negociação de dívidas        | Acordos de pagamento em prestações (criar, cancelar, quebrar)                                                                                                                                  | ✅     |
 | Conversão entre moedas       | Conversão de valores (precisa de `bcmath`)                                                                                                                                                    | ⏳     |
 
 ## Infraestrutura e outros
@@ -130,6 +130,7 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 | Comunicação          | Avisos, mensagens internas, SMS/email, notificações                                     | ⏳     |
 | Biblioteca           | Livros, empréstimos, devoluções                                                         | ⏳     |
 | Auditoria            | Mecanismo de auditoria da escola criado (regras de cobrança); consulta e outros eventos | 🔧     |
+| Logs de aplicação    | `LogService` em todas as Actions: escola, utilizador e pedido em cada registo, sem segredos | ✅     |
 | AppMode / Sincronização | Modos local, híbrido e online; sincronização local/cloud                             | ⏳     |
 
 ## 📂 SIDEBAR
@@ -151,20 +152,21 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 │    ├── ✅ Disciplinas
 │    ├── 🔧 Horários
 │    ├── ⏳ Planos de Aula
-│    ├── ⏳ Avaliações / Notas
-│    ├── ⏳ Pautas
+│    ├── ✅ Avaliações / Notas  (mini-pauta, lançamento em lote, resumo)
+│    ├── ✅ Configuração da avaliação
+│    ├── ✅ Pautas  (1.ª fase e recurso, boletins)
 │    ├── ⏳ Conselho de Turma
-│    └── ⏳ Exames / Recuperações
+│    └── 🔧 Exames / Recuperações  (exame próprio e recurso feitos; recuperação com nota por fazer)
 │
 ├── 🕐  Frequência                    ⏳ (Presenças, Faltas, Justificação, Mapa de Frequência)
-├── 👨‍🏫  Pessoal                       ⏳ (Docentes, Funcionários, Assiduidade, Horários do Pessoal)
+├── 👨‍🏫  Pessoal                       🔧 (✅ Docentes e Atribuições; ⏳ Funcionários, Assiduidade, Horários do Pessoal)
 │
 ├── 💰  Financeiro
 │    ├── ✅ Propinas
 │    ├── ✅ Pagamentos
 │    ├── ✅ Cobranças  (produtos e serviços)
 │    ├── ✅ Dívidas
-│    ├── ⏳ Descontos / Bolsas
+│    ├── ✅ Descontos / Bolsas
 │    ├── ✅ Recibos
 │    └── ✅ Relatórios Financeiros
 │
@@ -216,6 +218,16 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 
 > 🔐 **Acesso:** a área de **Configurações** está disponível apenas para utilizadores com permissões administrativas.
 > Cada entrada só aparece a quem tem a permissão `<módulo>.ver` correspondente.
+
+## Instalar num servidor (deploy)
+
+Ver `.env.example` (comentado) e a secção seguinte. Pontos que costumam falhar:
+
+- **Migrações e catálogo global:** `php artisan migrate --force && php artisan db:seed --force`. Sem o catálogo (módulos e acções) a criação de escolas falha com «Módulo … em falta no catálogo global». Sem terminal, carregar o catálogo por SQL.
+- **`TRUSTED_PROXIES`** (por exemplo `10.0.0.0/8`): obrigatório atrás do proxy de uma plataforma de alojamento. Sem ele os redirects saem `http://`, o browser bloqueia-os num site https e ficam sem feedback (a senha temporária de uma escola nova nem aparece). Em produção: `SESSION_SECURE_COOKIE=true`.
+- **`QUEUE_CONNECTION`**: sem a variável, o valor por omissão é `database` e os trabalhos (exportações, importações, geração de propinas, multas do dia) ficam parados sem `php artisan queue:work`. Para testes ou escolas pequenas usar `QUEUE_CONNECTION=sync`.
+- **Primeiro acesso:** criar o super admin (`php artisan mosi:plataforma:admin:create`; sem terminal, `INSERT` em `super_admins` com `deve_alterar_senha = true`) e criar a escola em `/plataforma/escolas/nova`. A senha temporária aparece **uma só vez**.
+- **Permissões novas:** depois de acrescentar uma acção, `php artisan db:seed --class="Modules\Permissao\Database\Seeders\AcaoSeeder" --force` e `php artisan mosi:tenant:sync-perfis --todos`.
 
 ## Comandos úteis
 
