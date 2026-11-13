@@ -12,6 +12,7 @@ use Modules\Core\Models\PedidoExportacao;
 use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Core\Tenancy\Jobs\ComTenant;
 use Throwable;
+use Modules\Core\Queue\NaFilaPesada;
 
 /** Gera em fila o ficheiro de um PedidoExportacao a partir da tabela guardada no pedido. Uma só tentativa: o utilizador pede de novo. */
 class GerarExportacaoJob implements ShouldQueue
@@ -19,6 +20,7 @@ class GerarExportacaoJob implements ShouldQueue
     use ComTenant;
     use Dispatchable;
     use InteractsWithQueue;
+    use NaFilaPesada;
     use Queueable;
 
     public int $tries = 1;
@@ -27,6 +29,7 @@ class GerarExportacaoJob implements ShouldQueue
 
     public function __construct(public int $pedidoId)
     {
+        $this->naFilaPesada();
     }
 
     /** Pasta (relativa ao tenant) dos pedidos ainda por gerar. */
