@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Diz se a fila tem quem a processe. Em `sync` os jobs correm no próprio pedido (nada a vigiar); em `database` ficam
+ * Diz se as filas têm quem as processe (`default` e `pesado`). Em `sync` os jobs correm no próprio pedido (nada a vigiar); em `database` ficam
  * parados se não houver `queue:work`. Sinal de worker parado: jobs à espera há mais de 5 minutos. Sai com erro nesse caso.
  */
 class FilasEstadoCommand extends Command
@@ -33,16 +33,26 @@ class FilasEstadoCommand extends Command
             return self::SUCCESS;
         }
 
-        $espera = DB::table('jobs')->count();
-        $maisAntigo = DB::table('jobs')->min('available_at');
         $falhados = DB::table('failed_jobs')->count();
-        $minutos = $maisAntigo === null ? 0 : (int) floor((time() - (int) $maisAntigo) / 60);
+        $alerta = false;
 
-        $this->line("Fila «database»: {$espera} job(s) em espera, {$falhados} falhado(s).");
+        // Uma linha por fila: `default` (rápidos) e `pesado` (exportações, importações, rotinas diárias), cada uma com o seu worker.
+        foreach (['default' => 'queue:work', 'pesado' => 'queue:work database_pesado --queue=pesado --timeout=3600'] as $fila => $comando) {
+            $espera = DB::table('jobs')->where('queue', $fila)->count();
+            $maisAntigo = DB::table('jobs')->where('queue', $fila)->min('available_at');
+            $minutos = $maisAntigo === null ? 0 : (int) floor((time() - (int) $maisAntigo) / 60);
 
-        if ($espera > 0 && $minutos >= self::MINUTOS_PARA_ALERTA) {
-            $this->error("Há jobs à espera há {$minutos} min: o worker (`php artisan queue:work`) parece parado.");
+            $this->line("Fila «{$fila}»: {$espera} job(s) em espera.");
 
+            if ($espera > 0 && $minutos >= self::MINUTOS_PARA_ALERTA) {
+                $this->error("Há jobs à espera há {$minutos} min na fila «{$fila}»: o worker (`php artisan {$comando}`) parece parado.");
+                $alerta = true;
+            }
+        }
+
+        $this->line("Falhados: {$falhados}.");
+
+        if ($alerta) {
             return self::FAILURE;
         }
 

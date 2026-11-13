@@ -19,6 +19,7 @@ use Modules\Core\Tenancy\Jobs\UnicoPorTenant;
 use Modules\Core\Traits\LogService;
 use RuntimeException;
 use Throwable;
+use Modules\Core\Queue\NaFilaPesada;
 
 /**
  * Lê o ficheiro em fluxo, guarda cada linha na tabela intermédia e marca-a como válida, com erro ou ignorada (já existe).
@@ -30,6 +31,7 @@ class ValidarImportacaoJob implements ShouldBeUnique, ShouldQueue
     use Dispatchable;
     use InteractsWithQueue;
     use LogService;
+    use NaFilaPesada;
     use Queueable;
     use UnicoPorTenant;
 
@@ -43,6 +45,7 @@ class ValidarImportacaoJob implements ShouldBeUnique, ShouldQueue
 
     public function __construct(public int $importacaoId)
     {
+        $this->naFilaPesada();
     }
 
     public function identificadorUnico(): string

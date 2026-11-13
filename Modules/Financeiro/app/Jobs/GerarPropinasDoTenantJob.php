@@ -11,6 +11,7 @@ use Modules\Core\Tenancy\Jobs\ComTenant;
 use Modules\Core\Tenancy\Jobs\UnicoPorTenant;
 use Modules\Financeiro\Services\RotinaDiariaDePropinasService;
 use RuntimeException;
+use Modules\Core\Queue\NaFilaPesada;
 
 /**
  * Rotina diária de propinas de uma escola (reconciliação + geração automática). Corre no tenant que o despachou (ComTenant) e só um por escola de cada vez (UnicoPorTenant).
@@ -21,8 +22,14 @@ class GerarPropinasDoTenantJob implements ShouldBeUnique, ShouldQueue
     use ComTenant;
     use Dispatchable;
     use InteractsWithQueue;
+    use NaFilaPesada;
     use Queueable;
     use UnicoPorTenant;
+
+    public function __construct()
+    {
+        $this->naFilaPesada();
+    }
 
     public int $tries = 3;
 
