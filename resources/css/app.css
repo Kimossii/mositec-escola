@@ -375,3 +375,44 @@ html[data-bs-theme='light'] .btn.btn-light-warning.active i {
 @media (prefers-reduced-motion: reduce) {
     .mosi-pisca { animation: none; }
 }
+
+/* ===== Telemóvel (< 768px): nada pode obrigar a deslizar a página para o lado ===== */
+@media (max-width: 767.98px) {
+    html, body { overflow-x: hidden; }
+
+    /* Tabelas: se não couberem, deslizam dentro do cartão em vez de alargarem a página.
+       (Os menus «Ações» são `position: fixed`, por isso não ficam cortados.) */
+    table.table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* Cabeçalhos de cartão: título e barra de ferramentas quebram linha e ocupam a largura toda. */
+    .card .card-header { flex-wrap: wrap; gap: 0.5rem; padding-top: 0.75rem; padding-bottom: 0.75rem; min-height: 0; }
+    .card .card-header .card-title,
+    .card .card-header .card-toolbar { width: 100%; max-width: 100%; margin: 0; }
+    .card .card-header .card-title > *,
+    .card .card-header .card-title input.form-control { max-width: 100%; }
+    .card .card-header .card-title input[class*='w-'] { width: 100% !important; }
+    .card .card-header .card-title .position-relative { width: 100%; }
+    .card .card-header .card-toolbar > .d-flex { flex-wrap: wrap; gap: 0.5rem; justify-content: flex-start !important; }
+    .card .card-header .card-toolbar > .d-flex > * { margin: 0 !important; }
+    .card .card-header .card-toolbar [class*='w-175px'],
+    .card .card-header .card-toolbar [class*='w-200px'],
+    .card .card-header .card-toolbar [class*='w-250px'] { width: 100% !important; }
+
+    /* Cabeçalho de página (título + botão de acção): o botão passa para baixo em vez de esmagar o texto. */
+    .app-container > .d-flex.justify-content-between { flex-wrap: wrap; gap: 0.75rem; }
+    .app-container > .d-flex.justify-content-between > :first-child { flex: 1 1 100%; min-width: 0; }
+    .app-container > .d-flex.justify-content-between > .btn,
+    .app-container > .d-flex.justify-content-between > a.btn { flex: 1 1 auto; }
+
+    /* Elementos com largura fixa nunca passam do ecrã. */
+    .modal-dialog { margin: 0.5rem; max-width: calc(100vw - 1rem); }
+    .modal-body { padding: 1rem; }
+    .card-body { padding: 1rem; }
+    img, svg, video, canvas { max-width: 100%; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+
+    /* Alvos de toque de pelo menos ~40px; 16px nos campos evita o zoom automático do iOS ao focar. */
+    .btn { min-height: 40px; }
+    .btn.btn-icon.btn-sm { min-width: 36px; min-height: 36px; }
+    .form-control, .form-select { font-size: 16px; }
+}
