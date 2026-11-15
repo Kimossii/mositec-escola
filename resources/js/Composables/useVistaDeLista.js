@@ -10,11 +10,13 @@ import { router, usePage } from '@inertiajs/vue3';
 export function useVistaDeLista(chave, prefixo) {
     const chaveGuardada = `mosi:vista:${chave}:${usePage().props.auth.user?.id ?? 'anon'}`;
 
-    let inicial = 'lista';
+    // Sem escolha guardada: cards no telemóvel (cabem no ecrã), lista nos restantes.
+    let inicial = window.matchMedia?.('(max-width: 767.98px)').matches ? 'cards' : 'lista';
     try {
-        inicial = localStorage.getItem(chaveGuardada) === 'cards' ? 'cards' : 'lista';
+        const guardada = localStorage.getItem(chaveGuardada);
+        if (guardada === 'cards' || guardada === 'lista') inicial = guardada;
     } catch {
-        // sem armazenamento (modo privado): lista
+        // sem armazenamento (modo privado): vale o defeito
     }
 
     const vista = ref(inicial);
