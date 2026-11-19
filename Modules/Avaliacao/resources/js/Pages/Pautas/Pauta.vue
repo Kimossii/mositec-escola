@@ -22,6 +22,8 @@ const turma = ref(props.selecao.turma);
 const aConfirmar = ref(false);
 const aReabrir = ref(false);
 const aGuardar = ref(false);
+const verHistorico = ref(false);
+const dataHora = (v) => (v ? new Date(v).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }) : '—');
 const erroReabrir = ref('');
 
 const ESTADOS = {
@@ -125,6 +127,34 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                     <div>
                         <div class="fw-bolder mb-1">Ainda não se pode aprovar</div>
                         <div v-for="(b, i) in pauta.bloqueios" :key="i" class="fw-semibold">{{ b }}</div>
+                    </div>
+                </div>
+
+                <div v-if="pauta.historico?.length" class="mb-4 d-print-none">
+                    <button type="button" class="btn btn-sm btn-light" :aria-expanded="verHistorico" @click="verHistorico = !verHistorico">
+                        Histórico ({{ pauta.historico.length }}) {{ verHistorico ? '▴' : '▾' }}
+                    </button>
+                    <div v-if="verHistorico" class="table-responsive mt-3">
+                        <table class="table table-row-dashed align-middle fs-7 mb-0">
+                            <thead>
+                                <tr class="text-muted fw-bold text-uppercase">
+                                    <th>Quando</th>
+                                    <th>Evento</th>
+                                    <th>Versão</th>
+                                    <th>Por</th>
+                                    <th>Motivo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="h in pauta.historico" :key="h.id">
+                                    <td>{{ dataHora(h.ocorrido_em) }}</td>
+                                    <td><span class="badge" :class="h.evento === 0 ? 'badge-light-success' : 'badge-light-danger'">{{ h.evento_descricao }}</span></td>
+                                    <td>v{{ h.versao }}</td>
+                                    <td>{{ h.por ?? '—' }}</td>
+                                    <td>{{ h.motivo ?? '—' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 

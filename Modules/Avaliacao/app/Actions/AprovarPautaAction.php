@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Modules\Avaliacao\Enums\Decisao;
 use Modules\Avaliacao\Enums\EstadoPauta;
+use Modules\Avaliacao\Enums\EventoDaPauta;
 use Modules\Avaliacao\Enums\FasePauta;
 use Modules\Avaliacao\Models\AvaliacaoDecisao;
 use Modules\Avaliacao\Models\AvaliacaoPauta;
@@ -57,6 +58,8 @@ class AprovarPautaAction
             $versao = ($existente?->versao ?? 0) + 1;
             $pauta = $existente ?? new AvaliacaoPauta(['turma_id' => $turmaId, 'fase' => $fase]);
             $pauta->fill(['estado' => EstadoPauta::DEFINITIVA, 'versao' => $versao, 'casas_decimais' => $viva['regra']['casas_decimais'] ?? 2, 'aprovada_por' => auth()->id(), 'aprovada_em' => $this->relogio->agora()])->save();
+
+            $pauta->historico()->create(['evento' => EventoDaPauta::APROVADA, 'versao' => $versao, 'ocorrido_em' => $pauta->aprovada_em, 'criado_por' => auth()->id()]);
 
             foreach ($viva['alunos'] as $aluno) {
                 foreach ($aluno['celulas'] as $celula) {

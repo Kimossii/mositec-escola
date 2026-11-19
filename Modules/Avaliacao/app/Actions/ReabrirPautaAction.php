@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Modules\Avaliacao\DTO\ReabrirPautaDTO;
 use Modules\Avaliacao\Enums\EstadoPauta;
+use Modules\Avaliacao\Enums\EventoDaPauta;
 use Modules\Avaliacao\Enums\FasePauta;
 use Modules\Avaliacao\Models\AvaliacaoPauta;
 use Modules\Core\Traits\LogService;
@@ -48,6 +49,8 @@ class ReabrirPautaAction
             }
 
             $pauta->update(['estado' => EstadoPauta::REABERTA, 'reaberta_por' => auth()->id(), 'reaberta_em' => $this->relogio->agora(), 'motivo_reabertura' => $motivo]);
+
+            $pauta->historico()->create(['evento' => EventoDaPauta::REABERTA, 'versao' => $pauta->versao, 'motivo' => $motivo, 'ocorrido_em' => $pauta->reaberta_em, 'criado_por' => auth()->id()]);
 
             return $pauta;
         }));

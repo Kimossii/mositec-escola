@@ -15,6 +15,7 @@ use Modules\Avaliacao\Enums\TratamentoDeNegativas;
 use Modules\Avaliacao\Models\AvaliacaoDecisao;
 use Modules\Avaliacao\Models\AvaliacaoNegativaTratada;
 use Modules\Avaliacao\Models\AvaliacaoPauta;
+use Modules\Avaliacao\Models\AvaliacaoPautaHistorico;
 use Modules\Avaliacao\Models\AvaliacaoPautaLinha;
 use Modules\Avaliacao\Models\AvaliacaoPautaLinhaQualitativa;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
@@ -152,6 +153,13 @@ class PautaFinalService
             $resultado['estado'] = $pauta === null ? 'provisoria' : 'reaberta';
             $resultado['versao'] = $pauta?->versao;
         }
+
+        // Cada aprovação e reabertura desta pauta, da mais recente para a mais antiga.
+        $resultado['historico'] = $pauta === null ? [] : $pauta->historico()->with('autor:id,name')->orderByDesc('ocorrido_em')->orderByDesc('id')->get()
+            ->map(fn (AvaliacaoPautaHistorico $h) => [
+                'id' => $h->id, 'evento' => $h->evento->value, 'evento_descricao' => $h->evento_descricao, 'versao' => $h->versao, 'motivo' => $h->motivo,
+                'por' => $h->autor?->name, 'ocorrido_em' => $h->ocorrido_em?->toIso8601String(),
+            ])->all();
 
         // As abas da página: o recurso só existe nas classes que o têm.
         $regra = $this->regras->paraTurma(Turma::query()->findOrFail($turmaId));
