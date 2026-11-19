@@ -14,7 +14,7 @@ Este projeto é **apenas para estudo e aprendizado**.
 
 | Camada        | Tecnologia                                                                                   |
 | ------------- | -------------------------------------------------------------------------------------------- |
-| Backend       | PHP 8.2+, Laravel 12, Fortify (autenticação), Sanctum, `nwidart/laravel-modules` 13         |
+| Backend       | PHP 8.4+, Laravel 12, Fortify (autenticação), Sanctum, `nwidart/laravel-modules` 13         |
 | Frontend      | Vue 3, Inertia 3, Vite 7, Tailwind 4 + Bootstrap/Metronic, `vue-sonner`, FullCalendar        |
 | Base de dados | PostgreSQL (produção) e SQLite em memória (testes). Extensão `php-pgsql` necessária          |
 | Testes        | PHPUnit 11 (grupo `pgsql` para os testes que exigem PostgreSQL real)                         |
@@ -231,6 +231,13 @@ Ver `.env.example` (comentado) e a secção seguinte. Pontos que costumam falhar
   - `php artisan mosi:filas:estado` mostra as duas e avisa se uma estiver parada. Jobs novos de trabalho longo usam a trait `Modules\Core\Queue\NaFilaPesada`.
 - **Primeiro acesso:** criar o super admin (`php artisan mosi:plataforma:admin:create`; sem terminal, `INSERT` em `super_admins` com `deve_alterar_senha = true`) e criar a escola em `/plataforma/escolas/nova`. A senha temporária aparece **uma só vez**.
 - **Permissões novas:** depois de acrescentar uma acção, `php artisan mosi:permissoes:atualizar --todos` (corre o `AcaoSeeder` e sincroniza os perfis). Sem isto, o ecrã novo dá 403.
+
+## Backups e saúde do sistema
+
+- **Backups** (`spatie/laravel-backup`): todos os dias, às 03:30 UTC, `backup:run` guarda a **BD inteira** (todas as escolas) e os ficheiros carregados (`storage/app/privado`, `documentos`, `public`) num ZIP; `backup:clean` apaga os antigos e `backup:monitor` avisa por e-mail se o último estiver desactualizado. Precisa do `pg_dump` no servidor e do agendador (`schedule:run`) activo.
+- **Em produção:** `BACKUP_DISK=s3` (fora do servidor) e `BACKUP_ARCHIVE_PASSWORD` definido; sem a senha o backup não se restaura. O disco `backups` local serve só para desenvolvimento.
+- **Restauro:** é sempre da BD completa. Restaurar uma só escola não está previsto (todas partilham as mesmas tabelas por `tenant_id`).
+- **Saúde** (`spatie/laravel-health`): `php artisan health:list` mostra BD, modo debug, agendador, fila `default`, espaço em disco e idade do último backup (só com disco local). A fila `pesado` continua a ser vigiada por `php artisan mosi:filas:estado`. Em desenvolvimento o agendador e a fila costumam estar parados, por isso essas verificações falham: é esperado.
 
 ## Comandos úteis
 

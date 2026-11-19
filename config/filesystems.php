@@ -64,6 +64,15 @@ return [
             'report' => false,
         ],
 
+        // Backups da BD e dos ficheiros carregados (spatie/laravel-backup). Só para desenvolvimento: em produção usar
+        // BACKUP_DISK=s3 (ou outro disco fora do servidor), nunca guardar o único backup na mesma máquina.
+        'backups' => [
+            'driver' => 'local',
+            'root' => storage_path('app/backups'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

@@ -9,6 +9,7 @@ use Modules\Core\Console\LimparExportacoesCommand;
 use Modules\Core\Tenancy\Support\SessaoDatabaseSemTenantSegura;
 use Modules\Core\Providers\RouteServiceProvider;
 use Modules\Core\Support\PesquisaTexto;
+use Modules\Core\Support\SaudeDoSistema;
 use Modules\Core\Tenancy\Jobs\CapturaTenantNoPayload;
 use Modules\Core\Tenancy\Provisioning\ColectorDeCredenciais;
 use Modules\Core\Tenancy\TenantContext;
@@ -50,6 +51,7 @@ class CoreServiceProvider extends BaseModuleServiceProvider
         parent::boot();
 
         PesquisaTexto::registar();
+        SaudeDoSistema::registar();
         CapturaTenantNoPayload::registar();
 
         // Mesmo driver `database` do Laravel, com o handler que não falha sem tenant (ver a classe). O gestor monta a Store

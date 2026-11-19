@@ -15,6 +15,7 @@ const aTerminar = ref(false);
 const NAVEGACAO = [
     { rotulo: 'Painel', href: '/plataforma', exacto: true },
     { rotulo: 'Escolas', href: '/plataforma/escolas' },
+    { rotulo: 'Sistema', href: '/plataforma/sistema' },
 ];
 const caminho = computed(() => String(page.url ?? '').split('?')[0]);
 const activo = (item) => caminho.value === item.href || (!item.exacto && caminho.value.startsWith(`${item.href}/`));
