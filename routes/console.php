@@ -22,3 +22,14 @@ Schedule::command('financeiro:aplicar-multas --todos --fila')->dailyAt('02:30')-
 
 // Exportações em fila: os ficheiros duram 7 dias e os pedidos presos há 30 min falham.
 Schedule::command('exportacoes:limpar --todos')->everyTenMinutes()->withoutOverlapping();
+
+// Backups (spatie/laravel-backup): BD + ficheiros carregados. Horas em UTC (Luanda = UTC+1). Depois das rotinas financeiras das 02:00 e 02:30.
+// Limpar antes de criar; o monitor avisa por e-mail se o último backup estiver desactualizado. Ver o README (Backups).
+Schedule::command('backup:run')->dailyAt('03:30')->withoutOverlapping();
+Schedule::command('backup:clean')->dailyAt('04:00')->withoutOverlapping();
+Schedule::command('backup:monitor')->dailyAt('08:00');
+
+// Saúde do sistema (spatie/laravel-health): as verificações correm todos os minutos e os heartbeats alimentam a do agendador e a da fila.
+Schedule::command('health:check')->everyMinute();
+Schedule::command('health:schedule-check-heartbeat')->everyMinute();
+Schedule::command('health:queue-check-heartbeat')->everyMinute();

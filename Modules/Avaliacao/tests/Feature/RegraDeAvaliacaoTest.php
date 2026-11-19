@@ -181,6 +181,26 @@ class RegraDeAvaliacaoTest extends TestCase
         $this->assertSame(0, AvaliacaoRegraNivel::count(), 'as classes ficam sem regra');
     }
 
+    public function test_uma_regra_em_uso_nao_muda_o_calculo_mas_aceita_o_nome_e_o_que_nao_muda_nada(): void
+    {
+        $c = $this->cenarioDeAvaliacao();
+        $regra = app(GuardarRegraAvaliacaoAction::class)->executar($this->dto($c));
+        \Modules\Avaliacao\Models\AvaliacaoInstrumento::create(['turma_id' => $c['turma']->id, 'disciplina_id' => $c['disciplina']->id, 'periodo_id' => $c['periodos'][1]->id, 'tipo' => \Modules\Avaliacao\Enums\TipoInstrumento::MAC, 'nome' => 'A1', 'obrigatorio' => true]);
+
+        // Guardar de novo o mesmo e mudar só o nome: permitido.
+        app(GuardarRegraAvaliacaoAction::class)->executar($this->dto($c, ['regra_id' => $regra->id, 'nome' => 'Outro nome']));
+        $this->assertSame('Outro nome', $regra->fresh()->nome);
+
+        // Mudar o cálculo: recusado e nada se grava.
+        try {
+            app(GuardarRegraAvaliacaoAction::class)->executar($this->dto($c, ['regra_id' => $regra->id, 'minima' => '6']));
+            $this->fail('A regra já está em uso.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('regra', $e->errors());
+        }
+        $this->assertSame('5.00', (string) $regra->fresh()->nota_minima);
+    }
+
     public function test_uma_regra_ja_usada_nao_se_elimina(): void
     {
         $c = $this->cenarioDeAvaliacao();

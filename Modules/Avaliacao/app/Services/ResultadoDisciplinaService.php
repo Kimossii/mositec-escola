@@ -94,7 +94,8 @@ class ResultadoDisciplinaService
         $encerrado = [];
 
         foreach (self::TRIMESTRES as $n) {
-            foreach (TipoInstrumento::cases() as $tipo) {
+            // Só a MAC e a PT contam para o «prazo encerrado» do cálculo (o exame e o recurso têm as suas regras).
+            foreach ([TipoInstrumento::MAC, TipoInstrumento::PT] as $tipo) {
                 $encerrado[$n][$tipo->name] = isset($periodos[$n])
                     && $this->prazos->prazoEncerrado($periodos[$n]->id, $tipo, $turmaId, $disciplinaId, $docenteId);
             }

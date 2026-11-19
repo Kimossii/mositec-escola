@@ -44,7 +44,7 @@ function guardar() {
                     <div v-if="erro" class="text-danger fs-7 mt-2">{{ erro }}</div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light" @click="emit('fechar')">Cancelar</button>
+                    <button type="button" class="btn btn-light-danger" @click="emit('fechar')">Cancelar</button>
                     <button type="submit" class="btn btn-primary" :disabled="!medida.trim() || aGuardar">{{ aGuardar ? 'A guardar…' : 'Guardar' }}</button>
                 </div>
             </form>

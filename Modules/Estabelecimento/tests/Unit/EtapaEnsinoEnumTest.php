@@ -12,7 +12,7 @@ class EtapaEnsinoEnumTest extends TestCase
         $this->assertSame('Creche', EtapaEnsinoEnum::CRECHE->label());
         $this->assertSame('Pré-Escolar', EtapaEnsinoEnum::PRE_ESCOLAR->label());
         $this->assertSame('Ensino Primário', EtapaEnsinoEnum::PRIMARIO->label());
-        $this->assertSame('Ensino Secundário', EtapaEnsinoEnum::SECUNDARIO->label());
+        $this->assertSame('II Ciclo (10.ª a 13.ª classe)', EtapaEnsinoEnum::SECUNDARIO->label());
         $this->assertSame('Ensino Superior', EtapaEnsinoEnum::SUPERIOR->label());
     }
 

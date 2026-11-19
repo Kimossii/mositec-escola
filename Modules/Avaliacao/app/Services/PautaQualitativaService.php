@@ -40,7 +40,11 @@ class PautaQualitativaService
     {
         $regra = $this->regra($turma);
         $escala = $regra->escala()->first();
-        $base = $this->base($turma, ['qualitativa' => true, 'escala_nome' => $escala->nome]);
+        $base = $this->base($turma, ['qualitativa' => true, 'escala_nome' => $escala?->nome]);
+
+        if ($escala === null) {
+            return [...$base, 'progressao_manual' => false, 'avisos' => [], 'bloqueios' => ['A regra qualitativa desta classe ainda não tem escala: escolha-a na Configuração da avaliação.']];
+        }
 
         $periodos = Periodo::query()->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('tipo', TipoPeriodo::TRIMESTRE)->get()->keyBy('numero');
         $matriculas = Matricula::query()->where('turma_id', $turma->id)->where('estado', EstadoMatriculaEnum::ACTIVA)->with('aluno.dadosPessoa:id,nome_completo')->get();

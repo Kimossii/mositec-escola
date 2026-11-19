@@ -21,6 +21,7 @@ class TenancyArquitecturaTest extends TestCase
     private const EXCEPCOES_DB_TABLE = [
         'Modules/Core/app/Services/GeradorSequencia.php',
         'Modules/Core/app/Console/FilasEstadoCommand.php', // jobs e failed_jobs são tabelas de infra-estrutura, sem tenant
+        'Modules/Core/app/Support/EstadoDasFilas.php', // idem: partilhado pelo comando e pelo painel da Plataforma
     ];
 
     /**

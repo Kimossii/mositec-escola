@@ -113,7 +113,7 @@ function revogar() {
                     </label>
                 </div>
                 <div class="text-end mt-6">
-                    <button type="button" class="btn btn-light-primary me-2" :disabled="processando" @click="fechar">Cancelar</button>
+                    <button type="button" class="btn btn-light-danger me-2" :disabled="processando" @click="fechar">Cancelar</button>
                     <button type="submit" class="btn btn-warning" :disabled="processando">
                         <span v-if="!processando">Suspender escola</span>
                         <span v-else>Aguarde... <Loader size="0.3px" class="align-middle ms-2" /></span>

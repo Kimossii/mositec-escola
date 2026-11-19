@@ -3,7 +3,11 @@ import { computed, nextTick, reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import MenuExportar from '@/Components/Shared/MenuExportar.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
+import HistoricoDaPautaModal from '../../Components/Pautas/HistoricoDaPautaModal.vue';
+import ReabrirPautaModal from '../../Components/Pautas/ReabrirPautaModal.vue';
 import TratarNegativaModal from '../../Components/Notas/TratarNegativaModal.vue';
 import PesquisaDeAlunos from '../../Components/Notas/PesquisaDeAlunos.vue';
 import { filtrarAlunos } from '../../Components/Notas/pesquisa.js';
@@ -19,7 +23,9 @@ defineOptions({ layout: AppLayout });
 const turma = ref(props.selecao.turma);
 const aConfirmar = ref(false);
 const aReabrir = ref(false);
-const motivo = ref('');
+const aGuardar = ref(false);
+const verHistorico = ref(false);
+const erroReabrir = ref('');
 
 const ESTADOS = {
     provisoria: { texto: 'Provisória', classe: 'badge-light-warning' },
@@ -35,16 +41,21 @@ const abrir = (f = 1) => turma.value && router.get('/avaliacao/pautas', { turma:
 const abrirFase = (f) => router.get('/avaliacao/pautas', { turma: turma.value, fase: f }, { preserveState: true });
 
 function aprovar() {
+    aGuardar.value = true;
     router.post(`/avaliacao/pautas/${props.pauta.turma_id}/aprovar`, { fase: fase.value }, {
-        preserveScroll: true, preserveState: true, onError: aoFalhar,
+        preserveScroll: true, preserveState: true, onError: (e) => { aConfirmar.value = false; aoFalhar(e); },
+        onFinish: () => { aGuardar.value = false; },
         onSuccess: () => { aConfirmar.value = false; toast.success(fase.value === 2 ? 'Pauta do recurso aprovada. O processo da turma está fechado.' : 'Pauta aprovada. As notas desta turma ficaram bloqueadas.'); },
     });
 }
 
-function reabrir() {
-    router.post(`/avaliacao/pautas/${props.pauta.turma_id}/reabrir`, { motivo: motivo.value, fase: fase.value }, {
-        preserveScroll: true, preserveState: true, onError: aoFalhar,
-        onSuccess: () => { aReabrir.value = false; motivo.value = ''; toast.success('Pauta reaberta.'); },
+function reabrir(motivoDaReabertura) {
+    aGuardar.value = true;
+    erroReabrir.value = '';
+    router.post(`/avaliacao/pautas/${props.pauta.turma_id}/reabrir`, { motivo: motivoDaReabertura, fase: fase.value }, {
+        preserveScroll: true, preserveState: true, onError: (e) => { erroReabrir.value = Object.values(e)[0]; },
+        onFinish: () => { aGuardar.value = false; },
+        onSuccess: () => { aReabrir.value = false; toast.success('Pauta reaberta.'); },
     });
 }
 
@@ -73,7 +84,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
 </script>
 
 <template>
-    <div class="app-container container-fluid py-6">
+    <div class="app-container container-fluid py-6 avaliacao-pagina">
         <div class="mb-6 d-print-none">
             <h1 class="fs-2 fw-bold mb-1">Pautas finais</h1>
             <div class="text-body-secondary">Resultado final de cada turma. A pauta só é formal depois de aprovada.</div>
@@ -98,8 +109,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                 </div>
                 <div class="card-toolbar gap-2 d-print-none">
                     <button type="button" class="btn btn-sm btn-light" @click="imprimir">Imprimir</button>
-                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/exportar?formato=pdf&fase=${fase}`" class="btn btn-sm btn-light">PDF</a>
-                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/exportar?formato=excel&fase=${fase}`" class="btn btn-sm btn-light">Excel</a>
+                    <MenuExportar :url="`/avaliacao/pautas/${pauta.turma_id}/exportar`" :params="{ fase }" :formatos="['excel', 'pdf']" classe="btn btn-sm btn-light" />
                     <a :href="`/avaliacao/pautas/${pauta.turma_id}/boletins`" class="btn btn-sm btn-light" title="Um boletim por aluno, cada um na sua página">Boletins (PDF)</a>
                     <button v-if="pode.aprovar && pauta.estado !== 'definitiva'" type="button" class="btn btn-sm btn-primary" :disabled="!pauta.pode_aprovar" @click="aConfirmar = true">Aprovar pauta</button>
                     <button v-if="pode.reabrir && pauta.estado === 'definitiva'" type="button" class="btn btn-sm btn-light-danger" @click="aReabrir = true">Reabrir pauta</button>
@@ -122,22 +132,6 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
 
                 <div v-if="pauta.avisos?.length" class="alert alert-info py-3 d-print-none">
                     <div v-for="(av, i) in pauta.avisos" :key="i">• {{ av }}</div>
-                </div>
-
-                <div v-if="aConfirmar" class="border rounded p-4 mb-5 bg-body-secondary d-print-none">
-                    <div class="fw-bold mb-2">Aprovar esta pauta?</div>
-                    <div class="text-body-secondary mb-3">Os resultados passam a definitivos, a decisão de cada aluno fica formalizada e as notas desta turma ficam bloqueadas até a pauta ser reaberta.</div>
-                    <button type="button" class="btn btn-sm btn-primary me-2" @click="aprovar">Confirmar aprovação</button>
-                    <button type="button" class="btn btn-sm btn-light" @click="aConfirmar = false">Cancelar</button>
-                </div>
-
-                <div v-if="aReabrir" class="border rounded p-4 mb-5 bg-body-secondary d-print-none">
-                    <div class="fw-bold mb-2">Reabrir esta pauta</div>
-                    <div class="d-flex flex-wrap gap-3">
-                        <input v-model="motivo" type="text" class="form-control form-control-sm w-300px" placeholder="Motivo da reabertura">
-                        <button type="button" class="btn btn-sm btn-danger" :disabled="!motivo.trim()" @click="reabrir">Reabrir</button>
-                        <button type="button" class="btn btn-sm btn-light" @click="aReabrir = false">Cancelar</button>
-                    </div>
                 </div>
 
                 <div v-if="!pauta.regra" class="alert alert-warning">A escola ainda não configurou a regra de avaliação desta classe.</div>
@@ -166,7 +160,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                             <tr v-for="{ a, n } in alunosFiltrados" :key="a.matricula_id">
                                 <td class="text-body-secondary">{{ n + 1 }}</td>
                                 <td class="text-start fw-semibold text-nowrap">{{ a.nome }}
-                                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/boletins?matricula=${a.matricula_id}`" class="ms-2 fs-8 fw-normal d-print-none" title="Boletim deste aluno">Boletim</a></td>
+                                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/boletins?matricula=${a.matricula_id}`" class="ms-2 fs-7 fw-semibold d-print-none" title="Boletim deste aluno">Boletim</a></td>
                                 <template v-for="d in pauta.disciplinas" :key="d.id">
                                     <template v-if="pauta.com_exame">
                                         <td class="pauta-grupo">{{ a.celulas[d.id]?.mfd ?? '—' }}</td>
@@ -202,14 +196,46 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                     </table>
                 </div>
                 </template>
+
+                <div v-if="pauta.historico?.length" class="mt-5 d-print-none">
+                    <button type="button" class="btn btn-sm btn-primary" @click="verHistorico = true">Ver histórico ({{ pauta.historico.length }})</button>
+                </div>
             </div>
         </div>
 
+        <HistoricoDaPautaModal :show="verHistorico" :historico="pauta?.historico ?? []" @fechar="verHistorico = false" />
+
         <TratarNegativaModal :alvo="aTratar" @fechar="aTratar = null" />
+
+        <ConfirmModal
+            :show="aConfirmar"
+            :titulo="fase === 2 ? 'Aprovar a pauta do recurso?' : 'Aprovar esta pauta?'"
+            :mensagem="fase === 2
+                ? 'A pauta do recurso passa a definitiva e o processo desta turma fica fechado. Só se reabre com permissão e motivo.'
+                : 'Os resultados passam a definitivos, a decisão de cada aluno fica formalizada e as notas desta turma ficam bloqueadas até a pauta ser reaberta.'"
+            texto-confirmar="Confirmar aprovação"
+            variante="primary"
+            :processando="aGuardar"
+            @confirmar="aprovar"
+            @cancelar="aConfirmar = false"
+        />
+
+        <ReabrirPautaModal :show="aReabrir" :processando="aGuardar" :erro="erroReabrir" @confirmar="reabrir" @cancelar="aReabrir = false" />
     </div>
 </template>
 
 <style scoped>
+/* Texto, botões e campos bem legíveis: o cinzento claro do tema deixava tudo apagado (e os campos bloqueados quase invisíveis). */
+.avaliacao-pagina .btn-light { color: var(--bs-body-color); font-weight: 600; background-color: var(--bs-secondary-bg); }
+.avaliacao-pagina .form-control:disabled { opacity: 1; color: var(--bs-body-color); -webkit-text-fill-color: var(--bs-body-color); background-color: var(--bs-secondary-bg); font-weight: 600; }
+.avaliacao-pagina .form-control::placeholder { color: var(--bs-body-color); opacity: 0.6; }
+/* Tema claro: cores de estado mais escuras, para o verde, o vermelho e o azul claros não se perderem no branco. */
+html[data-bs-theme='light'] .avaliacao-pagina .text-success { color: #0F7B3E !important; font-weight: 700; }
+html[data-bs-theme='light'] .avaliacao-pagina .badge-light-success { color: #0B6B33; font-weight: 700; }
+html[data-bs-theme='light'] .avaliacao-pagina .badge-light-warning { color: #8A5A00; font-weight: 700; }
+html[data-bs-theme='light'] .avaliacao-pagina .badge-light-danger,
+html[data-bs-theme='light'] .avaliacao-pagina .btn-light-danger { color: #B4233A; font-weight: 600; }
+html[data-bs-theme='light'] .avaliacao-pagina a:not(.btn) { color: #0B5FB3; font-weight: 600; }
 /* Divisão marcada entre disciplinas (e antes do resultado final), legível nos dois temas. */
 .pauta-grupo { border-left: 2px solid var(--bs-gray-700) !important; }
 .pauta-disciplina { background: var(--bs-gray-200); }

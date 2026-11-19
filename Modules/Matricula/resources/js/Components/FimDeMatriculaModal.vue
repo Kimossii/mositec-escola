@@ -62,7 +62,7 @@ watch(dataFim, verificar);
                 </div>
 
                 <div class="text-end">
-                    <button type="button" class="btn btn-light-primary me-2" :disabled="processando" @click="emit('cancelar')">Cancelar</button>
+                    <button type="button" class="btn btn-light-danger me-2" :disabled="processando" @click="emit('cancelar')">Cancelar</button>
                     <button type="button" class="btn btn-danger" :disabled="processando || aVerificar" @click="emit('confirmar', pedeData ? dataFim : null)">Confirmar</button>
                 </div>
             </div>

@@ -33,7 +33,6 @@ class AtualizarDadosRequest extends BaseRequest
             'etapas_ensino.*' => [
                 'integer',
                 Rule::in([
-                    EtapaEnsinoEnum::CRECHE->value,
                     EtapaEnsinoEnum::PRE_ESCOLAR->value,
                     EtapaEnsinoEnum::PRIMARIO->value,
                     EtapaEnsinoEnum::PRIMEIRO_CICLO->value,

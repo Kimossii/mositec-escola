@@ -188,6 +188,26 @@ class DocumentosPautaTest extends TestCase
         $this->assertStringContainsString('Ana &lt;b&gt; &amp; Filho', $folha);
         $this->assertStringNotContainsString('Ana <b>', $folha);
         $this->assertNotFalse($zip->getFromName('xl/styles.xml'));
+        $this->assertStringContainsString('orientation="landscape"', $folha);   // A4 na horizontal, ajustada à largura
+        $this->assertStringContainsString('fitToWidth="1"', $folha);
+        $zip->close();
+        unlink($caminho);
+    }
+
+    public function test_excel_da_pauta_nunca_cria_formulas_a_partir_de_texto(): void
+    {
+        $d = new DocumentoPauta('PAUTA FINAL', ['=HYPERLINK("http://x")'], null, null, [['CLASSE', '9.ª']], ['N.º', 'Nome do aluno'],
+            [['rotulo' => 'MATEMÁTICA', 'colunas' => ['MFD']]], ['Resultado final'], [['1', '=cmd|x', '10', 'APTO']],
+            [['rotulo' => 'A Directora', 'nome' => '+SOMA(1)', 'cargo' => null]]);
+        $caminho = tempnam(sys_get_temp_dir(), 'xl');
+
+        (new EscritorPautaXlsx)->escrever($d, $caminho);
+
+        $zip = new ZipArchive;
+        $zip->open($caminho);
+        $folha = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $this->assertStringNotContainsString('<f>', $folha);
+        $this->assertStringContainsString('=cmd|x', $folha);
         $zip->close();
         unlink($caminho);
     }

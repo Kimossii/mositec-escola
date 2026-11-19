@@ -9,6 +9,7 @@ use Modules\Avaliacao\DTO\LigacaoDeClassesDTO;
 use Modules\Avaliacao\DTO\RegraAvaliacaoDTO;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
 use Modules\Avaliacao\Models\AvaliacaoRegraNivel;
+use Modules\Avaliacao\Services\RegraEmUsoService;
 use Modules\Avaliacao\Services\RegraPadraoService;
 use Modules\Core\Traits\LogService;
 use Modules\Disciplina\Models\Disciplina;
@@ -19,7 +20,7 @@ class GuardarRegraAvaliacaoAction
 {
     use LogService;
 
-    public function __construct(private LigarClassesARegraAction $ligar, private RegraPadraoService $padrao)
+    public function __construct(private LigarClassesARegraAction $ligar, private RegraPadraoService $padrao, private RegraEmUsoService $emUso)
     {
     }
 
@@ -56,6 +57,10 @@ class GuardarRegraAvaliacaoAction
                     'exame_usa_mfd_arredondada' => $dto->exame_usa_mfd_arredondada,
                 ];
 
+                if ($regra !== null) {
+                    $this->recusarMudancaDeCalculoEmUso($regra, $campos);
+                }
+
                 $regra = $regra === null ? AvaliacaoRegra::create($campos) : tap($regra)->update($campos);
                 $regra->disciplinasChave()->syncWithPivotValues(array_values(array_unique($dto->disciplinas_chave)), ['tenant_id' => $regra->tenant_id]);
                 $this->ligar->executar(new LigacaoDeClassesDTO($dto->ano_lectivo_id, $dto->nivel_ids, false, $regra->id));
@@ -63,6 +68,26 @@ class GuardarRegraAvaliacaoAction
                 return $regra;
             });
         });
+    }
+
+    /** O que muda o cálculo de uma nota. O nome, a sigla da prova, o máximo de negativas e as disciplinas-chave decidem quem vai ao recurso, não o cálculo, e ficam editáveis. */
+    private const CAMPOS_DE_CALCULO = [
+        'escala_maxima', 'nota_minima', 'peso_mac', 'peso_pt', 'peso_mt1', 'peso_mt2', 'peso_mt3', 'peso_mfd_exame', 'peso_exame',
+        'casas_decimais', 'modo_arredondamento', 'tratamento_negativas', 'com_exame', 'com_recurso', 'exame_usa_mfd_arredondada',
+    ];
+
+    /** Com avaliação já feita, mudar o cálculo alteraria retroactivamente todas as pautas e notas: só se muda antes de haver uso. */
+    private function recusarMudancaDeCalculoEmUso(AvaliacaoRegra $regra, array $campos): void
+    {
+        $regra->fill($campos);
+
+        $mudou = array_values(array_intersect(self::CAMPOS_DE_CALCULO, array_keys($regra->getDirty())));
+        $regra->syncOriginal();
+        $regra->refresh();
+
+        if ($mudou !== [] && $this->emUso->emUso($regra)) {
+            throw ValidationException::withMessages(['regra' => 'Esta regra já tem avaliações lançadas: não pode mudar o cálculo (escala, pesos, mínimo, arredondamento, exame, recurso). Crie outra regra para as classes que a devem seguir, ou use apenas o nome e a sigla.']);
+        }
     }
 
     /** A regra indicada ou, sem indicação, a que a primeira classe já segue neste ano. */

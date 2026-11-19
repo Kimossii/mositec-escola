@@ -6,6 +6,7 @@ use Laravel\Sanctum\Sanctum;
 use Modules\Autenticacao\Actions\RevogarAcessosDoTenantAction;
 use Modules\Autenticacao\Console\PodarTokensCommand;
 use Modules\Autenticacao\Console\RecuperarAdministradorCommand;
+use Modules\Autenticacao\Console\AtualizarPermissoesCommand;
 use Modules\Autenticacao\Console\SincronizarPerfisCommand;
 use Modules\Autenticacao\Models\TokenDeAcesso;
 use Modules\Autenticacao\Service\LimitadorLogin;
@@ -36,6 +37,7 @@ class AutenticacaoServiceProvider extends BaseModuleServiceProvider
      */
     protected array $commands = [
         SincronizarPerfisCommand::class,
+        AtualizarPermissoesCommand::class,
         RecuperarAdministradorCommand::class,
         PodarTokensCommand::class,
     ];

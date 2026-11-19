@@ -146,7 +146,7 @@ function confirmar() {
                 </template>
 
                 <div class="text-end mt-6">
-                    <button type="button" class="btn btn-light-primary me-2" :disabled="processando" @click="fechar">Cancelar</button>
+                    <button type="button" class="btn btn-light-danger me-2" :disabled="processando" @click="fechar">Cancelar</button>
                     <button v-if="administradores.length > 0" type="submit" class="btn btn-primary" :disabled="!podeConfirmar">
                         <span v-if="!processando">Recuperar acesso</span>
                         <span v-else>Aguarde... <Loader size="0.3px" class="align-middle ms-2" /></span>

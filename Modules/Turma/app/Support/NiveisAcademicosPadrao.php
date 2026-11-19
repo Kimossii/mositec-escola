@@ -5,9 +5,9 @@ namespace Modules\Turma\Support;
 use Modules\Estabelecimento\Enums\EtapaEnsinoEnum;
 
 /**
- * As classes padrão do ensino geral angolano (Creche a 13.ª). A escola recebe as de cada etapa quando a declara nos dados do
+ * As classes padrão do ensino geral angolano (Pré-Escolar a 13.ª). A escola recebe as de cada etapa quando a declara nos dados do
  * estabelecimento. O código é só um identificador interno: as regras de avaliação por defeito ligam-se por ele, por isso a
- * escola nunca precisa de o escrever. Apenas a Creche até à 9.ª classe se criam automaticamente; a 10.ª à 13.ª ficam fora.
+ * escola nunca precisa de o escrever. Apenas o Pré-Escolar até à 9.ª classe se criam automaticamente; a 10.ª à 13.ª ficam fora.
  */
 class NiveisAcademicosPadrao
 {
@@ -17,8 +17,6 @@ class NiveisAcademicosPadrao
         $classe = fn (string $codigo, string $nome, int $ordem, EtapaEnsinoEnum $etapa, bool $automatico = true) => compact('codigo', 'nome', 'ordem') + ['etapa_ensino' => $etapa, 'automatico' => $automatico];
 
         return [
-            $classe('CRECHE_I', 'Creche I', 1, EtapaEnsinoEnum::CRECHE),
-            $classe('CRECHE_II', 'Creche II', 2, EtapaEnsinoEnum::CRECHE),
             $classe('PRE_I', 'Iniciação', 3, EtapaEnsinoEnum::PRE_ESCOLAR),
             $classe('PRE_II', 'Pré-Escolar I', 4, EtapaEnsinoEnum::PRE_ESCOLAR),
             $classe('PRE_III', 'Pré-Escolar II', 5, EtapaEnsinoEnum::PRE_ESCOLAR),

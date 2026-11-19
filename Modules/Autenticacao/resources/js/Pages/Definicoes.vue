@@ -237,7 +237,7 @@ const totalPermissoes = computed(() => permissoes.value.length);
                                         <span v-if="!aEnviarFoto">Guardar foto</span>
                                         <span v-else>A enviar... <Loader size="0.3px" class="align-middle ms-2" /></span>
                                     </button>
-                                    <button type="button" class="btn btn-light btn-sm" :disabled="aEnviarFoto" @click="cancelarFoto">Cancelar</button>
+                                    <button type="button" class="btn btn-light-danger btn-sm" :disabled="aEnviarFoto" @click="cancelarFoto">Cancelar</button>
                                 </template>
                                 <template v-else>
                                     <button type="button" class="btn btn-light-success btn-sm" @click="entradaFoto.click()">{{ foto ? 'Trocar foto' : 'Escolher foto' }}</button>

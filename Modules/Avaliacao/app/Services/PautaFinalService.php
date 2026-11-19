@@ -15,6 +15,7 @@ use Modules\Avaliacao\Enums\TratamentoDeNegativas;
 use Modules\Avaliacao\Models\AvaliacaoDecisao;
 use Modules\Avaliacao\Models\AvaliacaoNegativaTratada;
 use Modules\Avaliacao\Models\AvaliacaoPauta;
+use Modules\Avaliacao\Models\AvaliacaoPautaHistorico;
 use Modules\Avaliacao\Models\AvaliacaoPautaLinha;
 use Modules\Avaliacao\Models\AvaliacaoPautaLinhaQualitativa;
 use Modules\Avaliacao\Models\AvaliacaoRegra;
@@ -104,6 +105,8 @@ class PautaFinalService
     /** O recurso só abre depois de a 1.ª fase estar aprovada (é ela que diz quem vai) e fecha com a pauta do recurso. */
     public function exigirRecursoAberto(int $turmaId): void
     {
+        $this->bloquearTurma($turmaId);
+
         if (! $this->definitiva($turmaId, FasePauta::EPOCA_NORMAL)) {
             throw ValidationException::withMessages(['pauta' => 'A pauta ainda não foi aprovada: o recurso só abre depois.']);
         }
@@ -122,9 +125,17 @@ class PautaFinalService
             ->where('decisao', Decisao::RECURSO->value)->pluck('matricula_id')->map(fn ($id) => (int) $id)->all();
     }
 
+    /** Partilha com a aprovação e a reabertura o lock da turma: uma nota não entra a meio de uma aprovação (chamado dentro da transacção da Action). */
+    private function bloquearTurma(int $turmaId): void
+    {
+        Turma::query()->whereKey($turmaId)->lockForUpdate()->first();
+    }
+
     /** Recusa alterações às notas de uma turma cuja pauta final está definitiva (é preciso reabri-la primeiro). */
     public function exigirAberta(int $turmaId): void
     {
+        $this->bloquearTurma($turmaId);
+
         if ($this->estaFechada($turmaId)) {
             throw ValidationException::withMessages(['pauta' => 'A pauta final desta turma é definitiva. Peça a sua reabertura para alterar notas.']);
         }
@@ -142,6 +153,13 @@ class PautaFinalService
             $resultado['estado'] = $pauta === null ? 'provisoria' : 'reaberta';
             $resultado['versao'] = $pauta?->versao;
         }
+
+        // Cada aprovação e reabertura desta pauta, da mais recente para a mais antiga.
+        $resultado['historico'] = $pauta === null ? [] : $pauta->historico()->with('autor:id,name')->orderByDesc('ocorrido_em')->orderByDesc('id')->get()
+            ->map(fn (AvaliacaoPautaHistorico $h) => [
+                'id' => $h->id, 'evento' => $h->evento->value, 'evento_descricao' => $h->evento_descricao, 'versao' => $h->versao, 'motivo' => $h->motivo,
+                'por' => $h->autor?->name, 'ocorrido_em' => $h->ocorrido_em?->toIso8601String(),
+            ])->all();
 
         // As abas da página: o recurso só existe nas classes que o têm.
         $regra = $this->regras->paraTurma(Turma::query()->findOrFail($turmaId));
@@ -162,7 +180,10 @@ class PautaFinalService
     {
         $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,nome,codigo'])->findOrFail($turmaId);
         if ($this->qualitativa->aplica($turma)) {
-            return [...$this->qualitativa->montar($turma), 'fase' => FasePauta::EPOCA_NORMAL->value, 'mostra_recurso' => false];
+            $pauta = [...$this->qualitativa->montar($turma), 'fase' => $fase->value, 'mostra_recurso' => false];
+
+            // A avaliação qualitativa não tem recurso: pedir a pauta do recurso nunca a pode aprovar.
+            return $fase === FasePauta::RECURSO ? [...$pauta, 'pode_aprovar' => false, 'bloqueios' => ['Esta classe não tem exame de recurso.']] : $pauta;
         }
 
         $regra = $this->regras->paraTurma($turma);

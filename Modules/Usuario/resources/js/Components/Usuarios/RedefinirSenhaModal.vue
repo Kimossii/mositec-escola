@@ -69,7 +69,7 @@ function fechar() {
                         e as sessões do utilizador serão terminadas.
                     </p>
                     <div class="text-end">
-                        <button type="button" class="btn btn-light-primary me-2" :disabled="processando" @click="fechar">
+                        <button type="button" class="btn btn-light-danger me-2" :disabled="processando" @click="fechar">
                             Cancelar
                         </button>
                         <button type="button" class="btn btn-primary" :disabled="processando" @click="emit('confirmar')">

@@ -50,7 +50,7 @@ const cancelar = () => router.post(`/importacoes/${props.importacao.id}/cancelar
         <div class="d-flex flex-wrap gap-3 mb-6">
             <button v-if="importacao.estado === 2 && importacao.validas > 0" class="btn btn-primary" @click="confirmar">Importar {{ importacao.validas }} registo(s) válido(s)</button>
             <button v-if="importacao.estado === 5 && importacao.validas > 0" class="btn btn-primary" @click="confirmar">Retomar importação</button>
-            <button v-if="importacao.estado === 2 || importacao.estado === 5" class="btn btn-light" @click="cancelar">Cancelar</button>
+            <button v-if="importacao.estado === 2 || importacao.estado === 5" class="btn btn-light-danger" @click="cancelar">Cancelar</button>
             <a v-if="importacao.com_erro || importacao.ignoradas" :href="`/importacoes/${importacao.id}/erros`" class="btn btn-light-primary">Descarregar linhas com problema</a>
             <Link :href="`/importacoes/${importacao.entidade}/nova`" class="btn btn-light">Nova importação</Link>
         </div>

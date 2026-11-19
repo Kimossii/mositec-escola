@@ -39,7 +39,7 @@ class AvaliacaoPermissoesTest extends TestCase
     public function test_nota_declara_as_accoes_de_avaliacao(): void
     {
         $this->assertSame(
-            ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'ver-pauta', 'exportar', 'tratar-negativa'],
+            ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'ver-pauta', 'exportar', 'tratar-negativa', 'ver-proprias'],
             Modulo::NOTA->acoesAplicaveis(),
         );
     }
@@ -49,7 +49,7 @@ class AvaliacaoPermissoesTest extends TestCase
         $admin = $this->utilizador(Perfil::ADMIN_ESCOLA);
         $resolver = app(PermissionResolver::class);
 
-        foreach (Modulo::NOTA->acoesAplicaveis() as $acao) {
+        foreach (array_diff(Modulo::NOTA->acoesAplicaveis(), ['ver-proprias']) as $acao) {
             $this->assertTrue($resolver->can($admin, "nota.{$acao}"), "nota.{$acao}");
         }
     }

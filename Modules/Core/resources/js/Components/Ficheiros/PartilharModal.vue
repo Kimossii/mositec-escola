@@ -72,7 +72,7 @@ function gravar() {
                 </div>
 
                 <div class="text-end">
-                    <button type="button" class="btn btn-light-primary me-2" :disabled="a_gravar" @click="emit('fechar')">Cancelar</button>
+                    <button type="button" class="btn btn-light-danger me-2" :disabled="a_gravar" @click="emit('fechar')">Cancelar</button>
                     <button type="button" class="btn btn-primary" :disabled="a_gravar" @click="gravar">Guardar partilha</button>
                 </div>
             </div>

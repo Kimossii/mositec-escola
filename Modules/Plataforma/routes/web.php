@@ -8,6 +8,7 @@ use Modules\Plataforma\Http\Controllers\CicloDeVidaController;
 use Modules\Plataforma\Http\Controllers\DominioController;
 use Modules\Plataforma\Http\Controllers\EscolaController;
 use Modules\Plataforma\Http\Controllers\PainelController;
+use Modules\Plataforma\Http\Controllers\SistemaController;
 use Modules\Plataforma\Http\Middleware\ExigirTrocaDeSenhaPlataforma;
 use Modules\Plataforma\Http\Middleware\SuperAdminActivo;
 
@@ -44,6 +45,10 @@ Route::middleware(['auth:plataforma', SuperAdminActivo::class, ExigirTrocaDeSenh
     // o contexto em cada visita; a recuperação delega no contrato do Core (que abre o contexto por dentro).
     Route::get('/escolas/{tenant}/administradores', [AdministradorEscolaController::class, 'index'])->name('plataforma.escolas.administradores');
     Route::post('/escolas/{tenant}/administrador/recuperar', [AdministradorEscolaController::class, 'recuperar'])->name('plataforma.escolas.administrador.recuperar');
+
+    // Estado técnico (saúde, backups, filas): dados globais de infraestrutura, sem contexto de escola.
+    Route::get('/sistema', [SistemaController::class, 'index'])->name('plataforma.sistema.index');
+    Route::post('/sistema/verificar', [SistemaController::class, 'verificar'])->name('plataforma.sistema.verificar');
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('plataforma.logout');
 

@@ -13,10 +13,9 @@ export const ETAPA_ENSINO = Object.freeze({
 });
 
 export const ETAPA_ENSINO_OPCOES = [
-    { value: ETAPA_ENSINO.CRECHE, label: 'Creche' },
     { value: ETAPA_ENSINO.PRE_ESCOLAR, label: 'Pré-Escolar' },
     { value: ETAPA_ENSINO.PRIMARIO, label: 'Ensino Primário' },
-    { value: ETAPA_ENSINO.SECUNDARIO, label: 'Ensino Secundário' },
+    { value: ETAPA_ENSINO.SECUNDARIO, label: 'II Ciclo (10.ª a 13.ª classe)' },
     { value: ETAPA_ENSINO.SUPERIOR, label: 'Ensino Superior' },
 ];
 
