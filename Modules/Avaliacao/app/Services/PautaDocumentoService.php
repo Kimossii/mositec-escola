@@ -3,6 +3,7 @@
 namespace Modules\Avaliacao\Services;
 
 use Modules\Avaliacao\Documentos\DocumentoPauta;
+use Modules\Avaliacao\Enums\FasePauta;
 use Modules\Turma\Models\Turma;
 
 /** A pauta final de uma turma no formato dos documentos oficiais: cabeçalho da escola, colunas por tipo e assinaturas. */
@@ -12,9 +13,9 @@ class PautaDocumentoService
     {
     }
 
-    public function paraTurma(int $turmaId): DocumentoPauta
+    public function paraTurma(int $turmaId, FasePauta $fase = FasePauta::EPOCA_NORMAL): DocumentoPauta
     {
-        $pauta = $this->pautas->paraTurma($turmaId);
+        $pauta = $this->pautas->paraTurma($turmaId, $fase);
         $turma = Turma::query()->with(['turno:id,nome', 'anoLectivo:id,nome', 'nivelAcademico:id,nome'])->findOrFail($turmaId);
         $cabecalho = $this->cabecalho->dados();
 

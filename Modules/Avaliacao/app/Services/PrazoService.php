@@ -41,7 +41,11 @@ class PrazoService
             ->sortByDesc(fn (AvaliacaoPrazoExcepcao $e) => [$this->especificidade($e), $e->data_limite->timestamp])
             ->first();
 
-        return CarbonImmutable::parse($excepcao?->data_limite ?? $prazo->data_limite);
+        // Uma excepção só prolonga: se a escola estender depois o prazo geral, ninguém fica com menos do que os colegas.
+        $geral = CarbonImmutable::parse($prazo->data_limite);
+        $especial = $excepcao === null ? null : CarbonImmutable::parse($excepcao->data_limite);
+
+        return $especial !== null && $especial->greaterThan($geral) ? $especial : $geral;
     }
 
     public function prazoEncerrado(int $periodoId, TipoInstrumento $tipo, int $turmaId, int $disciplinaId, ?int $docenteId = null, ?CarbonInterface $hoje = null): bool

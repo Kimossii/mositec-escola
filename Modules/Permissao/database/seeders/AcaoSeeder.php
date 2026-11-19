@@ -39,6 +39,8 @@ class AcaoSeeder extends Seeder
             // Ver a pauta final de uma turma (o resultado de todos os alunos): permissão própria, à parte de `exportar` (PDF, Excel, boletins).
             ['nome' => 'ver-pauta', 'numero' => 19],
             ['nome' => 'tratar-negativa', 'numero' => 20],
+            // O aluno consulta as suas próprias notas (só pautas definitivas).
+            ['nome' => 'ver-proprias', 'numero' => 21],
         ];
 
         foreach ($acoes as $acao) {

@@ -195,7 +195,7 @@ class MiniPautaService
         $comRecurso = $periodo->numero === 3 && $regra->com_recurso;
         $recurso = $comRecurso ? AvaliacaoInstrumento::query()->where('turma_id', $turmaId)->where('disciplina_id', $disciplinaId)->where('tipo', TipoInstrumento::RECURSO->value)->first() : null;
         $notasRecurso = $recurso === null ? collect() : AvaliacaoNota::query()->where('instrumento_id', $recurso->id)->whereIn('inscricao_disciplina_id', $inscricoes->pluck('id'))->get()->keyBy('inscricao_disciplina_id');
-        $elegibilidade = $comRecurso ? $this->elegibilidade->paraTurma($turma, $regra) : [];
+        $elegibilidade = $comRecurso ? $this->elegibilidade->paraMatriculas($turma, $regra, $inscricoes->pluck('matricula_id')->all()) : [];
         // O recurso só abre depois de aprovada a pauta da 1.ª fase, e só para quem ela mandou ao recurso.
         $recursoAberto = $comRecurso && $this->pautas->definitiva($turmaId, FasePauta::EPOCA_NORMAL);
         $emRecurso = $recursoAberto ? $this->pautas->matriculasEmRecurso($turmaId) : [];

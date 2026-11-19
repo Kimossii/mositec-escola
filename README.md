@@ -230,7 +230,7 @@ Ver `.env.example` (comentado) e a secção seguinte. Pontos que costumam falhar
   - `pesado` (ligação `database_pesado`, `retry_after` 3700): exportações, importações, propinas e multas diárias. `php artisan queue:work database_pesado --queue=pesado --timeout=3600`.
   - `php artisan mosi:filas:estado` mostra as duas e avisa se uma estiver parada. Jobs novos de trabalho longo usam a trait `Modules\Core\Queue\NaFilaPesada`.
 - **Primeiro acesso:** criar o super admin (`php artisan mosi:plataforma:admin:create`; sem terminal, `INSERT` em `super_admins` com `deve_alterar_senha = true`) e criar a escola em `/plataforma/escolas/nova`. A senha temporária aparece **uma só vez**.
-- **Permissões novas:** depois de acrescentar uma acção, `php artisan db:seed --class="Modules\Permissao\Database\Seeders\AcaoSeeder" --force` e `php artisan mosi:tenant:sync-perfis --todos`.
+- **Permissões novas:** depois de acrescentar uma acção, `php artisan mosi:permissoes:atualizar --todos` (corre o `AcaoSeeder` e sincroniza os perfis). Sem isto, o ecrã novo dá 403.
 
 ## Comandos úteis
 

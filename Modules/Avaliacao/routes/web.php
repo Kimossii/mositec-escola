@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Avaliacao\Http\Controllers\ConfiguracaoAvaliacaoController;
 use Modules\Avaliacao\Http\Controllers\MiniPautaController;
+use Modules\Avaliacao\Http\Controllers\MinhasNotasController;
 use Modules\Avaliacao\Http\Controllers\PautaController;
 
 // Mini-pauta: lançamento de notas. As acções de escrita validam as permissões e o prazo; aqui só a entrada.
@@ -45,4 +46,10 @@ Route::middleware(['auth'])->prefix('avaliacao/pautas')->name('avaliacao.pautas.
     Route::post('/{turma}/aprovar', [PautaController::class, 'aprovar'])->whereNumber('turma')->middleware('can:nota.aprovar')->name('aprovar');
     Route::post('/{turma}/progressao', [PautaController::class, 'progressao'])->whereNumber('turma')->middleware('can:nota.aprovar')->name('progressao');
     Route::post('/{turma}/reabrir', [PautaController::class, 'reabrir'])->whereNumber('turma')->middleware('can:nota.reabrir')->name('reabrir');
+});
+
+// O aluno consulta as suas notas (só pautas definitivas); o aluno vem da sessão.
+Route::middleware(['auth', 'can:nota.ver-proprias'])->prefix('minhas-notas')->name('minhas-notas.')->group(function () {
+    Route::get('/', [MinhasNotasController::class, 'index'])->name('index');
+    Route::get('/{matricula}/boletim', [MinhasNotasController::class, 'boletim'])->whereNumber('matricula')->middleware('throttle:operacao-pesada')->name('boletim');
 });
