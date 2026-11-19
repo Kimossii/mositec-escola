@@ -5,6 +5,7 @@ import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
+import HistoricoDaPautaModal from '../../Components/Pautas/HistoricoDaPautaModal.vue';
 import ReabrirPautaModal from '../../Components/Pautas/ReabrirPautaModal.vue';
 import TratarNegativaModal from '../../Components/Notas/TratarNegativaModal.vue';
 import PesquisaDeAlunos from '../../Components/Notas/PesquisaDeAlunos.vue';
@@ -23,7 +24,6 @@ const aConfirmar = ref(false);
 const aReabrir = ref(false);
 const aGuardar = ref(false);
 const verHistorico = ref(false);
-const dataHora = (v) => (v ? new Date(v).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }) : '—');
 const erroReabrir = ref('');
 
 const ESTADOS = {
@@ -83,7 +83,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
 </script>
 
 <template>
-    <div class="app-container container-fluid py-6">
+    <div class="app-container container-fluid py-6 avaliacao-pagina">
         <div class="mb-6 d-print-none">
             <h1 class="fs-2 fw-bold mb-1">Pautas finais</h1>
             <div class="text-body-secondary">Resultado final de cada turma. A pauta só é formal depois de aprovada.</div>
@@ -130,34 +130,6 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                     </div>
                 </div>
 
-                <div v-if="pauta.historico?.length" class="mb-4 d-print-none">
-                    <button type="button" class="btn btn-sm btn-light" :aria-expanded="verHistorico" @click="verHistorico = !verHistorico">
-                        Histórico ({{ pauta.historico.length }}) {{ verHistorico ? '▴' : '▾' }}
-                    </button>
-                    <div v-if="verHistorico" class="table-responsive mt-3">
-                        <table class="table table-row-dashed align-middle fs-7 mb-0">
-                            <thead>
-                                <tr class="text-muted fw-bold text-uppercase">
-                                    <th>Quando</th>
-                                    <th>Evento</th>
-                                    <th>Versão</th>
-                                    <th>Por</th>
-                                    <th>Motivo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="h in pauta.historico" :key="h.id">
-                                    <td>{{ dataHora(h.ocorrido_em) }}</td>
-                                    <td><span class="badge" :class="h.evento === 0 ? 'badge-light-success' : 'badge-light-danger'">{{ h.evento_descricao }}</span></td>
-                                    <td>v{{ h.versao }}</td>
-                                    <td>{{ h.por ?? '—' }}</td>
-                                    <td>{{ h.motivo ?? '—' }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
                 <div v-if="pauta.avisos?.length" class="alert alert-info py-3 d-print-none">
                     <div v-for="(av, i) in pauta.avisos" :key="i">• {{ av }}</div>
                 </div>
@@ -188,7 +160,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                             <tr v-for="{ a, n } in alunosFiltrados" :key="a.matricula_id">
                                 <td class="text-body-secondary">{{ n + 1 }}</td>
                                 <td class="text-start fw-semibold text-nowrap">{{ a.nome }}
-                                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/boletins?matricula=${a.matricula_id}`" class="ms-2 fs-8 fw-normal d-print-none" title="Boletim deste aluno">Boletim</a></td>
+                                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/boletins?matricula=${a.matricula_id}`" class="ms-2 fs-7 fw-semibold d-print-none" title="Boletim deste aluno">Boletim</a></td>
                                 <template v-for="d in pauta.disciplinas" :key="d.id">
                                     <template v-if="pauta.com_exame">
                                         <td class="pauta-grupo">{{ a.celulas[d.id]?.mfd ?? '—' }}</td>
@@ -224,8 +196,14 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                     </table>
                 </div>
                 </template>
+
+                <div v-if="pauta.historico?.length" class="mt-5 d-print-none">
+                    <button type="button" class="btn btn-sm btn-primary" @click="verHistorico = true">Ver histórico ({{ pauta.historico.length }})</button>
+                </div>
             </div>
         </div>
+
+        <HistoricoDaPautaModal :show="verHistorico" :historico="pauta?.historico ?? []" @fechar="verHistorico = false" />
 
         <TratarNegativaModal :alvo="aTratar" @fechar="aTratar = null" />
 
@@ -247,6 +225,17 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
 </template>
 
 <style scoped>
+/* Texto, botões e campos bem legíveis: o cinzento claro do tema deixava tudo apagado (e os campos bloqueados quase invisíveis). */
+.avaliacao-pagina .btn-light { color: var(--bs-body-color); font-weight: 600; background-color: var(--bs-secondary-bg); }
+.avaliacao-pagina .form-control:disabled { opacity: 1; color: var(--bs-body-color); -webkit-text-fill-color: var(--bs-body-color); background-color: var(--bs-secondary-bg); font-weight: 600; }
+.avaliacao-pagina .form-control::placeholder { color: var(--bs-body-color); opacity: 0.6; }
+/* Tema claro: cores de estado mais escuras, para o verde, o vermelho e o azul claros não se perderem no branco. */
+html[data-bs-theme='light'] .avaliacao-pagina .text-success { color: #0F7B3E !important; font-weight: 700; }
+html[data-bs-theme='light'] .avaliacao-pagina .badge-light-success { color: #0B6B33; font-weight: 700; }
+html[data-bs-theme='light'] .avaliacao-pagina .badge-light-warning { color: #8A5A00; font-weight: 700; }
+html[data-bs-theme='light'] .avaliacao-pagina .badge-light-danger,
+html[data-bs-theme='light'] .avaliacao-pagina .btn-light-danger { color: #B4233A; font-weight: 600; }
+html[data-bs-theme='light'] .avaliacao-pagina a:not(.btn) { color: #0B5FB3; font-weight: 600; }
 /* Divisão marcada entre disciplinas (e antes do resultado final), legível nos dois temas. */
 .pauta-grupo { border-left: 2px solid var(--bs-gray-700) !important; }
 .pauta-disciplina { background: var(--bs-gray-200); }

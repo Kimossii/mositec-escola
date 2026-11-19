@@ -217,4 +217,18 @@ class PautaAprovacaoTest extends TestCase
     {
         $this->assertSame([], $this->pauta()['historico']);
     }
+
+    public function test_a_mini_pauta_diz_ao_ecra_que_as_notas_estao_bloqueadas_enquanto_a_pauta_estiver_aprovada(): void
+    {
+        $url = '/avaliacao/notas?'.http_build_query(['turma' => $this->c['turma']->id, 'disciplina' => $this->c['disciplina']->id]);
+        $bloqueio = fn () => $this->get($url)->assertOk()->viewData('page')['props']['bloqueio'];
+
+        $this->assertSame(['notas' => false, 'recurso' => false], $bloqueio());
+
+        $this->aprovar();
+        $this->assertSame(['notas' => true, 'recurso' => false], $bloqueio());
+
+        app(ReabrirPautaAction::class)->executar(new ReabrirPautaDTO($this->c['turma']->id, 'Correcção'));
+        $this->assertSame(['notas' => false, 'recurso' => false], $bloqueio());
+    }
 }

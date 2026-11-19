@@ -22,7 +22,7 @@ watch(() => props.show, (aberto) => { if (aberto) motivo.value = ''; });
                     <button type="button" class="btn btn-sm btn-icon btn-active-light-primary" aria-label="Fechar" @click="emit('cancelar')">✕</button>
                 </div>
                 <div class="modal-body">
-                    <div class="text-body-secondary fs-7 mb-4">A pauta volta a provisória e as notas da turma ficam outra vez editáveis. O motivo fica registado.</div>
+                    <div class="mb-4">A pauta volta a provisória e as notas da turma ficam outra vez editáveis. O motivo fica registado.</div>
                     <textarea v-model="motivo" class="form-control" rows="3" maxlength="500" placeholder="Motivo da reabertura" autofocus></textarea>
                     <div v-if="erro" class="text-danger fs-7 mt-2">{{ erro }}</div>
                 </div>

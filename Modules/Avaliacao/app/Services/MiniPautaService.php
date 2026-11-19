@@ -66,6 +66,11 @@ class MiniPautaService
             'selecao' => ['turma' => $turmaId, 'disciplina' => $disciplinaId],
             'pauta' => $pauta,
             'tipos' => $this->tiposDeAvaliacao(),
+            // Com a pauta aprovada as notas ficam fechadas (e o recurso com a pauta do recurso): o ecrã bloqueia a escrita; só se reabrindo a pauta.
+            'bloqueio' => [
+                'notas' => (bool) $turmaId && $this->pautas->definitiva($turmaId, FasePauta::EPOCA_NORMAL),
+                'recurso' => (bool) $turmaId && $this->pautas->definitiva($turmaId, FasePauta::RECURSO),
+            ],
             'pode' => ['anular' => $gate->allows('nota.anular'), 'criar' => $gate->allows('nota.criar'), 'fora_prazo' => $gate->allows('nota.lancar-fora-prazo'), 'tratar_negativa' => $gate->allows('nota.tratar-negativa')],
         ];
     }
