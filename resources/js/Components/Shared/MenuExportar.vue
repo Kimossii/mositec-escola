@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 
@@ -12,6 +12,7 @@ const props = defineProps({
     params: { type: Object, default: () => ({}) }, // filtros do ecrã (valores vazios não vão no pedido)
     rotulo: { type: String, default: 'Exportar' },
     classe: { type: String, default: 'btn btn-light-primary' },
+    formatos: { type: Array, default: () => ['excel', 'pdf', 'csv', 'zip'] }, // quais formatos oferecer
 });
 
 const FORMATOS = [
@@ -21,6 +22,7 @@ const FORMATOS = [
     { chave: 'zip', texto: 'ZIP', nota: 'Excel + PDF + CSV juntos', icone: 'ki-folder', paths: 2, cor: 'warning' },
 ];
 
+const opcoes = computed(() => FORMATOS.filter((f) => props.formatos.includes(f.chave)));
 const aGerar = ref(null);
 
 async function baixar(formato) {
@@ -78,7 +80,7 @@ async function baixar(formato) {
             <i class="ki-duotone ki-down fs-5 ms-1"></i>
         </a>
         <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-250px py-4" data-kt-menu="true">
-            <div v-for="f in FORMATOS" :key="f.chave" class="menu-item px-3">
+            <div v-for="f in opcoes" :key="f.chave" class="menu-item px-3">
                 <a href="#" class="menu-link px-3 py-3" :class="{ 'opacity-50 pe-none': aGerar }" @click.prevent="baixar(f.chave)">
                     <span class="symbol symbol-35px me-3"><span class="symbol-label" :class="`bg-light-${f.cor}`">
                         <i class="ki-duotone fs-3" :class="[f.icone, `text-${f.cor}`]"><span v-for="n in f.paths" :key="n" :class="`path${n}`"></span></i>

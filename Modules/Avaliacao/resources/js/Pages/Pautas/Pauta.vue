@@ -3,6 +3,7 @@ import { computed, nextTick, reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import MenuExportar from '@/Components/Shared/MenuExportar.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import HistoricoDaPautaModal from '../../Components/Pautas/HistoricoDaPautaModal.vue';
@@ -108,8 +109,7 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                 </div>
                 <div class="card-toolbar gap-2 d-print-none">
                     <button type="button" class="btn btn-sm btn-light" @click="imprimir">Imprimir</button>
-                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/exportar?formato=pdf&fase=${fase}`" class="btn btn-sm btn-light">PDF</a>
-                    <a :href="`/avaliacao/pautas/${pauta.turma_id}/exportar?formato=excel&fase=${fase}`" class="btn btn-sm btn-light">Excel</a>
+                    <MenuExportar :url="`/avaliacao/pautas/${pauta.turma_id}/exportar`" :params="{ fase }" :formatos="['excel', 'pdf']" classe="btn btn-sm btn-light" />
                     <a :href="`/avaliacao/pautas/${pauta.turma_id}/boletins`" class="btn btn-sm btn-light" title="Um boletim por aluno, cada um na sua página">Boletins (PDF)</a>
                     <button v-if="pode.aprovar && pauta.estado !== 'definitiva'" type="button" class="btn btn-sm btn-primary" :disabled="!pauta.pode_aprovar" @click="aConfirmar = true">Aprovar pauta</button>
                     <button v-if="pode.reabrir && pauta.estado === 'definitiva'" type="button" class="btn btn-sm btn-light-danger" @click="aReabrir = true">Reabrir pauta</button>

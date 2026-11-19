@@ -3,6 +3,7 @@ import { computed, reactive, ref, watchEffect } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import MenuExportar from '@/Components/Shared/MenuExportar.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import TratarNegativaModal from '../../Components/Notas/TratarNegativaModal.vue';
 import NegativaSelo from '../../Components/Notas/NegativaSelo.vue';
@@ -221,8 +222,7 @@ function eliminar(instrumento) {
                         <button v-for="p in pauta.periodos" :key="p.id" type="button" class="btn btn-sm"
                             :class="p.id === pauta.periodo_id ? 'btn-primary' : 'btn-light'" @click="abrir(turma, disciplina, p.id)">{{ p.nome }}</button>
                     </span>
-                    <a :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&formato=pdf`" class="btn btn-sm btn-light">PDF</a>
-                    <a :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&formato=excel`" class="btn btn-sm btn-light">Excel</a>
+                    <MenuExportar url="/avaliacao/notas/exportar" :params="{ turma, disciplina }" :formatos="['excel', 'pdf']" classe="btn btn-sm btn-light" />
                     <a v-if="pauta.competencias.length" :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&periodo=${pauta.periodo_id}&detalhe=competencias&formato=pdf`" class="btn btn-sm btn-light">Competências (PDF)</a>
                 </div>
             </div>
@@ -289,8 +289,7 @@ function eliminar(instrumento) {
                             :class="p.id === pauta.periodo_id && vista !== 'resumo' ? 'btn-primary' : 'btn-light'" @click="abrir(turma, disciplina, p.id)">{{ p.nome }}</button>
                         <button type="button" class="btn btn-sm" :class="vista === 'resumo' ? 'btn-primary' : 'btn-light'" @click="vista = 'resumo'">Resumo</button>
                     </span>
-                    <a :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&formato=pdf`" class="btn btn-sm btn-light">PDF</a>
-                    <a :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&formato=excel`" class="btn btn-sm btn-light">Excel</a>
+                    <MenuExportar url="/avaliacao/notas/exportar" :params="{ turma, disciplina }" :formatos="['excel', 'pdf']" classe="btn btn-sm btn-light" />
                 </div>
             </div>
 
