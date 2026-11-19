@@ -21,7 +21,7 @@ use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
 /**
- * As etapas de ensino da escola e as classes padrão: acrescentar uma etapa dá-lhe as suas classes (Creche a 9.ª), retirá-la
+ * As etapas de ensino da escola e as classes padrão: acrescentar uma etapa dá-lhe as suas classes (Pré-Escolar a 9.ª), retirá-la
  * retira-as desde que nenhuma tenha informação ligada. O que a escola mudou depois nunca se desfaz.
  */
 class EtapasEClassesPadraoTest extends TestCase
@@ -68,10 +68,10 @@ class EtapasEClassesPadraoTest extends TestCase
 
     public function test_as_etapas_acrescentadas_recebem_as_suas_classes_padrao(): void
     {
-        $this->gravarEtapas([EtapaEnsinoEnum::CRECHE, EtapaEnsinoEnum::PRE_ESCOLAR, EtapaEnsinoEnum::PRIMARIO])->assertSessionHasNoErrors();
+        $this->gravarEtapas([EtapaEnsinoEnum::PRE_ESCOLAR, EtapaEnsinoEnum::PRIMARIO])->assertSessionHasNoErrors();
 
         // Primário = 1.ª a 6.ª; o 1.º Ciclo (7.ª a 9.ª) só vem quando a escola o declara.
-        $this->assertSame(['CRECHE_I', 'CRECHE_II', 'PRE_I', 'PRE_II', 'PRE_III', 'PRI_1', 'PRI_2', 'PRI_3', 'PRI_4', 'PRI_5', 'PRI_6'], $this->codigos());
+        $this->assertSame(['PRE_I', 'PRE_II', 'PRE_III', 'PRI_1', 'PRI_2', 'PRI_3', 'PRI_4', 'PRI_5', 'PRI_6'], $this->codigos());
         $this->assertSame('1.ª Classe', NivelAcademico::where('codigo', 'PRI_1')->value('nome'));
         $this->assertSame(EtapaEnsinoEnum::PRIMARIO, NivelAcademico::where('codigo', 'PRI_6')->first()->etapa_ensino);
     }
@@ -134,12 +134,12 @@ class EtapasEClassesPadraoTest extends TestCase
     public function test_voltar_a_acrescentar_a_etapa_reactiva_as_classes_retiradas_sem_duplicar(): void
     {
         $this->gravarEtapas([EtapaEnsinoEnum::PRIMARIO])->assertSessionHasNoErrors();
-        $this->gravarEtapas([EtapaEnsinoEnum::CRECHE])->assertSessionHasNoErrors();
-        $this->assertSame(['CRECHE_I', 'CRECHE_II'], $this->codigos());
+        $this->gravarEtapas([EtapaEnsinoEnum::PRE_ESCOLAR])->assertSessionHasNoErrors();
+        $this->assertSame(['PRE_I', 'PRE_II', 'PRE_III'], $this->codigos());
 
-        $this->gravarEtapas([EtapaEnsinoEnum::CRECHE, EtapaEnsinoEnum::PRIMARIO])->assertSessionHasNoErrors();
+        $this->gravarEtapas([EtapaEnsinoEnum::PRE_ESCOLAR, EtapaEnsinoEnum::PRIMARIO])->assertSessionHasNoErrors();
 
-        $this->assertCount(8, NivelAcademico::all());
+        $this->assertCount(9, NivelAcademico::all());
         $this->assertSame(6, NivelAcademico::where('etapa_ensino', EtapaEnsinoEnum::PRIMARIO)->count());
     }
 }
