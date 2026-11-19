@@ -300,7 +300,7 @@ function confirmarEliminacao() {
                             </div>
                         </div>
                         <div class="d-flex justify-content-end gap-2">
-                            <button type="button" class="btn btn-light" :disabled="enviando" @click="formAberto = false">
+                            <button type="button" class="btn btn-light-danger" :disabled="enviando" @click="formAberto = false">
                                 Cancelar
                             </button>
                             <button

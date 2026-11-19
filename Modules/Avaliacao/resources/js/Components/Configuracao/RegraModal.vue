@@ -219,7 +219,7 @@ const podeGuardar = computed(() => !!f.nome?.trim() && (!criar.value || f.nivel_
                     </div>
                     <div v-else class="d-flex align-items-center gap-2">
                         <span v-if="criar && !podeGuardar" class="text-muted fs-8 me-2">{{ !f.nome?.trim() ? 'Dê um nome à regra.' : 'Escolha pelo menos uma classe.' }}</span>
-                        <button type="button" class="btn btn-light" :disabled="processando" @click="emit('fechar')">Cancelar</button>
+                        <button type="button" class="btn btn-light-danger" :disabled="processando" @click="emit('fechar')">Cancelar</button>
                         <button type="button" class="btn btn-primary" :disabled="processando || !podeGuardar" @click="emit('guardar', f, qualitativa)">{{ processando ? 'A guardar…' : (criar ? 'Criar regra' : 'Guardar regra') }}</button>
                     </div>
                 </div>

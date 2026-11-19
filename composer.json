@@ -6,7 +6,7 @@
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
+        "php": "^8.4",
         "bacon/bacon-qr-code": "^3.1",
         "dompdf/dompdf": "^3.1",
         "inertiajs/inertia-laravel": "^3.1",
@@ -14,7 +14,10 @@
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^2.10.1",
-        "nwidart/laravel-modules": "^13.0"
+        "nwidart/laravel-modules": "^13.0",
+        "spatie/laravel-backup": "^10.5",
+        "spatie/laravel-health": "^1.42",
+        "spatie/simple-excel": "^3.11"
     },
     "require-dev": {
         "brianium/paratest": "^7.8",

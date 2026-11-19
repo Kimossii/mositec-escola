@@ -4,6 +4,7 @@ namespace Modules\Estabelecimento\Enums;
 
 enum EtapaEnsinoEnum: int
 {
+    /** Já não se oferece (fora do sistema de ensino considerado); o caso fica só para dados antigos. */
     case CRECHE = 1;
     case PRE_ESCOLAR = 2;
     case PRIMARIO = 3;
@@ -18,9 +19,9 @@ enum EtapaEnsinoEnum: int
             self::CRECHE => 'Creche',
             self::PRE_ESCOLAR => 'Pré-Escolar',
             self::PRIMARIO => 'Ensino Primário',
-            self::SECUNDARIO => 'Ensino Secundário',
+            self::SECUNDARIO => 'II Ciclo (10.ª a 13.ª classe)',
             self::SUPERIOR => 'Ensino Superior',
-            self::PRIMEIRO_CICLO => '1.º Ciclo (7.ª a 9.ª classe)',
+            self::PRIMEIRO_CICLO => 'I Ciclo (7.ª a 9.ª classe)',
         };
     }
 

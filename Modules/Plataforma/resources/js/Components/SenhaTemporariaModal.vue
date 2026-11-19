@@ -69,7 +69,7 @@ function fechar() {
                     <h3 class="mb-4">{{ pedido.titulo }}</h3>
                     <p class="text-gray-700 mb-6">{{ pedido.mensagem }}</p>
                     <div class="text-end">
-                        <button type="button" class="btn btn-light-primary me-2" :disabled="processando" @click="fechar">
+                        <button type="button" class="btn btn-light-danger me-2" :disabled="processando" @click="fechar">
                             Cancelar
                         </button>
                         <button type="button" class="btn btn-primary" :disabled="processando" @click="emit('confirmar')">

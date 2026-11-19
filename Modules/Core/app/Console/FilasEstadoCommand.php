@@ -3,7 +3,7 @@
 namespace Modules\Core\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
+use Modules\Core\Support\EstadoDasFilas;
 
 /**
  * Diz se as filas têm quem as processe (`default` e `pesado`). Em `sync` os jobs correm no próprio pedido (nada a vigiar); em `database` ficam
@@ -11,13 +11,11 @@ use Illuminate\Support\Facades\DB;
  */
 class FilasEstadoCommand extends Command
 {
-    private const MINUTOS_PARA_ALERTA = 5;
-
     protected $signature = 'mosi:filas:estado';
 
     protected $description = 'Mostra o modo da fila, os jobs em espera e falhados, e avisa se parece não haver worker a correr';
 
-    public function handle(): int
+    public function handle(EstadoDasFilas $estados): int
     {
         $ligacao = (string) config('queue.default');
 
@@ -33,19 +31,17 @@ class FilasEstadoCommand extends Command
             return self::SUCCESS;
         }
 
-        $falhados = DB::table('failed_jobs')->count();
+        $estado = $estados->obter();
+        $falhados = $estado['falhados'];
         $alerta = false;
+        $comandos = ['default' => 'queue:work', 'pesado' => 'queue:work database_pesado --queue=pesado --timeout=3600'];
 
         // Uma linha por fila: `default` (rápidos) e `pesado` (exportações, importações, rotinas diárias), cada uma com o seu worker.
-        foreach (['default' => 'queue:work', 'pesado' => 'queue:work database_pesado --queue=pesado --timeout=3600'] as $fila => $comando) {
-            $espera = DB::table('jobs')->where('queue', $fila)->count();
-            $maisAntigo = DB::table('jobs')->where('queue', $fila)->min('available_at');
-            $minutos = $maisAntigo === null ? 0 : (int) floor((time() - (int) $maisAntigo) / 60);
+        foreach ($estado['filas'] as $fila) {
+            $this->line("Fila «{$fila['nome']}»: {$fila['em_espera']} job(s) em espera.");
 
-            $this->line("Fila «{$fila}»: {$espera} job(s) em espera.");
-
-            if ($espera > 0 && $minutos >= self::MINUTOS_PARA_ALERTA) {
-                $this->error("Há jobs à espera há {$minutos} min na fila «{$fila}»: o worker (`php artisan {$comando}`) parece parado.");
+            if ($fila['parada']) {
+                $this->error("Há jobs à espera há {$fila['minutos']} min na fila «{$fila['nome']}»: o worker (`php artisan {$comandos[$fila['nome']]}`) parece parado.");
                 $alerta = true;
             }
         }

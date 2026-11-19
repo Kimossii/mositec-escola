@@ -55,6 +55,24 @@ class ExportadorTest extends TestCase
         $this->assertStringContainsString('<v>1500</v>', $folha);
         $this->assertStringContainsString('=HYPERLINK', $folha); // texto inline: o Excel não o executa
         $this->assertStringContainsString('inlineStr', $folha);
+        $this->assertStringNotContainsString('<f>', $folha); // nenhuma célula é fórmula, mesmo que o texto comece por «=»
+    }
+
+    public function test_excel_escrito_e_lido_de_volta_com_titulo_cabecalho_filtro_e_linha_fixa(): void
+    {
+        $resposta = app(Exportador::class)->responder($this->tabela(), 'excel', 'Utilizadores');
+        $caminho = $resposta->getFile()->getPathname();
+
+        $linhas = iterator_to_array((new \Modules\Core\Importacao\LeitorDeFicheiro)->linhas($caminho, 'xlsx'));
+        $this->assertSame(['Nome', 'Valor', 'Nota'], $linhas[3]);          // cabeçalho na linha 3, depois do título e do subtítulo
+        $this->assertSame('1500', $linhas[4][1]);                          // número lido como número
+
+        $zip = new ZipArchive;
+        $zip->open($caminho);
+        $folha = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $this->assertStringContainsString('<autoFilter ref="A3:C', $folha);
+        $this->assertStringContainsString('ySplit="3"', $folha);
+        $this->assertStringContainsString('state="frozen"', $folha);
     }
 
     public function test_pdf_comeca_por_assinatura_pdf(): void

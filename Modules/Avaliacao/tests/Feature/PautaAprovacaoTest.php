@@ -180,4 +180,55 @@ class PautaAprovacaoTest extends TestCase
         $this->assertSame(['7.0600', '7.2200'], AvaliacaoPautaLinha::orderBy('versao')->pluck('mfd')->all());
         $this->assertSame('7.22', $this->pauta()['alunos'][0]['celulas'][$this->c['disciplina']->id]['mfd']);
     }
+
+    public function test_cada_aprovacao_e_reabertura_fica_no_historico_com_quem_quando_e_motivo(): void
+    {
+        $this->aprovar();
+        app(ReabrirPautaAction::class)->executar(new ReabrirPautaDTO($this->c['turma']->id, 'Nota do 3.º trimestre mal lançada'));
+        $this->aprovar();
+
+        $h = $this->pauta()['historico'];
+
+        // Do mais recente para o mais antigo: a 2.ª aprovação (v2), a reabertura com o motivo, e a 1.ª aprovação (v1).
+        $this->assertSame(['Aprovada', 'Reaberta', 'Aprovada'], array_column($h, 'evento_descricao'));
+        $this->assertSame([2, 1, 1], array_column($h, 'versao'));
+        $this->assertSame([null, 'Nota do 3.º trimestre mal lançada', null], array_column($h, 'motivo'));
+        $this->assertNotContains(null, array_column($h, 'por'));
+        $this->assertNotContains(null, array_column($h, 'ocorrido_em'));
+    }
+
+    public function test_o_historico_da_pauta_so_se_acrescenta(): void
+    {
+        $this->aprovar();
+        $registo = \Modules\Avaliacao\Models\AvaliacaoPautaHistorico::firstOrFail();
+
+        try {
+            $registo->update(['motivo' => 'adulterado']);
+            $this->fail('Devia recusar a edição.');
+        } catch (\LogicException) {
+            $this->assertNull($registo->fresh()->motivo);
+        }
+
+        $this->expectException(\LogicException::class);
+        $registo->delete();
+    }
+
+    public function test_pauta_provisoria_nao_tem_historico(): void
+    {
+        $this->assertSame([], $this->pauta()['historico']);
+    }
+
+    public function test_a_mini_pauta_diz_ao_ecra_que_as_notas_estao_bloqueadas_enquanto_a_pauta_estiver_aprovada(): void
+    {
+        $url = '/avaliacao/notas?'.http_build_query(['turma' => $this->c['turma']->id, 'disciplina' => $this->c['disciplina']->id]);
+        $bloqueio = fn () => $this->get($url)->assertOk()->viewData('page')['props']['bloqueio'];
+
+        $this->assertSame(['notas' => false, 'recurso' => false], $bloqueio());
+
+        $this->aprovar();
+        $this->assertSame(['notas' => true, 'recurso' => false], $bloqueio());
+
+        app(ReabrirPautaAction::class)->executar(new ReabrirPautaDTO($this->c['turma']->id, 'Correcção'));
+        $this->assertSame(['notas' => false, 'recurso' => false], $bloqueio());
+    }
 }

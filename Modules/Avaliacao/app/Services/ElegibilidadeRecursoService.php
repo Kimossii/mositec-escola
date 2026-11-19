@@ -34,6 +34,15 @@ class ElegibilidadeRecursoService
     }
 
     /**
+     * @param  list<int>  $matriculaIds só estas matrículas (a elegibilidade de cada uma usa todas as suas disciplinas)
+     * @return array<int, array{reprovadas: list<int>, elegivel: bool, motivo: ?string, texto: ?string}> indexado pela matrícula
+     */
+    public function paraMatriculas(Turma $turma, AvaliacaoRegra $regra, array $matriculaIds): array
+    {
+        return $this->calcular($turma, $regra, $matriculaIds);
+    }
+
+    /**
      * @return array<int, array{reprovadas: list<int>, elegivel: bool, motivo: ?string, texto: ?string}> indexado pela matrícula
      */
     public function paraTurma(Turma $turma, AvaliacaoRegra $regra): array

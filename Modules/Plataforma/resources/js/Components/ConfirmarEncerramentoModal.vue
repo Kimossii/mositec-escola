@@ -69,7 +69,7 @@ function confirmar() {
                 />
                 <div v-if="erro" class="text-danger fs-7 mt-1">{{ erro }}</div>
                 <div class="text-end mt-6">
-                    <button type="button" class="btn btn-light-primary me-2" :disabled="processando" @click="emit('cancelar')">
+                    <button type="button" class="btn btn-light-danger me-2" :disabled="processando" @click="emit('cancelar')">
                         Cancelar
                     </button>
                     <button type="submit" class="btn btn-danger" :disabled="!coincide || processando">

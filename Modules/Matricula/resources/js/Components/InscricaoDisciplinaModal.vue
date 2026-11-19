@@ -236,7 +236,7 @@ function confirmarEliminacao() {
                         <button type="button" class="btn btn-primary" :disabled="!planoCurricularDisciplinaId || inscrevendo" @click="inscrever">
                             Inscrever
                         </button>
-                        <button type="button" class="btn btn-light" :disabled="inscrevendo" @click="formAberto = false">
+                        <button type="button" class="btn btn-light-danger" :disabled="inscrevendo" @click="formAberto = false">
                             Cancelar
                         </button>
                     </div>

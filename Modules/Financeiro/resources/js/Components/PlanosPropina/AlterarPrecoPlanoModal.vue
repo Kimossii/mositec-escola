@@ -148,7 +148,7 @@ function confirmar() {
                     <div v-if="erro('plano')" class="alert alert-danger py-3 fs-7">{{ erro('plano') }}</div>
 
                     <div class="text-end mt-5">
-                        <button type="button" class="btn btn-light me-2" @click="emit('cancelar')">Cancelar</button>
+                        <button type="button" class="btn btn-light-danger me-2" @click="emit('cancelar')">Cancelar</button>
                         <button type="submit" class="btn btn-primary" :disabled="!podePreVisualizar || aCalcular">
                             {{ aCalcular ? 'A calcular…' : 'Pré-visualizar' }}
                         </button>

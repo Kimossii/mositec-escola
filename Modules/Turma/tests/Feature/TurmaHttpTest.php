@@ -142,7 +142,7 @@ class TurmaHttpTest extends TestCase
 
         $nivel->refresh();
         $this->assertSame(EtapaEnsinoEnum::SECUNDARIO, $nivel->etapa_ensino);
-        $this->assertSame('Ensino Secundário', $nivel->etapa_ensino_descricao);
+        $this->assertSame('II Ciclo (10.ª a 13.ª classe)', $nivel->etapa_ensino_descricao);
     }
 
     public function test_criar_nivel_academico_sem_etapa_ensino_falha_com_erro_de_validacao(): void

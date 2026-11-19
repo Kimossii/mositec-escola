@@ -68,6 +68,10 @@ class SincronizarPerfisDeSistemaAction
             Modulo::AREA_PROFESSOR->value => ['ver'],
             Modulo::NOTA->value => ['ver', 'listar', 'criar', 'editar', 'tratar-negativa'],
         ],
+        // Conta de aluno: só consulta as suas notas (permissões fixas, sem overrides).
+        Perfil::ALUNO->value => [
+            Modulo::NOTA->value => ['ver-proprias'],
+        ],
     ];
 
     public function executar(): void

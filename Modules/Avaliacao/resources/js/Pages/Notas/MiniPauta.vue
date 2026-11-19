@@ -3,6 +3,7 @@ import { computed, reactive, ref, watchEffect } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import MenuExportar from '@/Components/Shared/MenuExportar.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import TratarNegativaModal from '../../Components/Notas/TratarNegativaModal.vue';
 import NegativaSelo from '../../Components/Notas/NegativaSelo.vue';
@@ -15,6 +16,7 @@ const props = defineProps({
     pauta: { type: Object, default: null },
     tipos: { type: Array, required: true }, // [{ valor, nome }]
     pode: { type: Object, required: true }, // { anular, criar, fora_prazo }
+    bloqueio: { type: Object, default: () => ({ notas: false, recurso: false }) }, // { notas, recurso }: pauta aprovada
 });
 defineOptions({ layout: AppLayout });
 
@@ -110,9 +112,12 @@ const alteracoes = computed(() => {
 
 const pendente = (chave, original, tabela) => chave in tabela && limpar(tabela[chave]) !== '' && limpar(tabela[chave]) !== (original ?? '');
 const aGuardar = ref(false);
+// Pauta aprovada: nada se escreve até ser reaberta (o servidor também o recusa).
+const notasBloqueadas = computed(() => props.bloqueio.notas);
+const recursoBloqueado = computed(() => props.bloqueio.notas || props.bloqueio.recurso);
 
 function guardarTudo() {
-    if (aGuardar.value || alteracoes.value.total === 0) return;
+    if (notasBloqueadas.value || aGuardar.value || alteracoes.value.total === 0) return;
     const { notas, exames: ex, recursos: rec } = alteracoes.value;
     aGuardar.value = true;
     router.post('/avaliacao/notas/lote', { turma_id: turma.value, disciplina_id: disciplina.value, notas, exames: ex, recursos: rec }, {
@@ -124,6 +129,7 @@ function guardarTudo() {
 }
 
 function confirmarAnulacao() {
+    if (notasBloqueadas.value) return;
     router.post(`/avaliacao/notas/${aAnular.value.nota_id}/anular`, { ...anulacao }, {
         preserveScroll: true,
         preserveState: true,
@@ -143,6 +149,7 @@ const nivelDe = (a) => qual[a.inscricao_id]?.nivel ?? a.nivel_id ?? '';
 const obsDe = (a) => qual[a.inscricao_id]?.obs ?? a.observacao ?? '';
 
 function guardarQualitativa(a, campo, valor) {
+    if (notasBloqueadas.value) return;
     qual[a.inscricao_id] = { nivel: nivelDe(a), obs: obsDe(a), [campo]: valor };
     const nivel = qual[a.inscricao_id].nivel;
     if (!nivel) return;
@@ -157,6 +164,7 @@ const comp = reactive({}); // `${inscricao}-${competencia}` -> nível escolhido 
 const nivelDaCompetencia = (a, c) => comp[`${a.inscricao_id}-${c.id}`] ?? a.competencias[c.id] ?? '';
 
 function guardarCompetencia(a, c, nivelId) {
+    if (notasBloqueadas.value) return;
     comp[`${a.inscricao_id}-${c.id}`] = nivelId;
     router.post('/avaliacao/notas/competencias', {
         inscricao_disciplina_id: a.inscricao_id, competencia_id: c.id, periodo_id: props.pauta.periodo_id, escala_nivel_id: nivelId,
@@ -167,12 +175,13 @@ function guardarCompetencia(a, c, nivelId) {
 const aplicarSugestao = (a) => guardarQualitativa(a, 'nivel', a.sugestao.nivel_id);
 
 function eliminar(instrumento) {
+    if (notasBloqueadas.value) return;
     router.delete(`/avaliacao/notas/instrumentos/${instrumento.id}`, { preserveScroll: true, preserveState: true, onError: aoFalhar, onSuccess: () => toast.success('Avaliação eliminada.') });
 }
 </script>
 
 <template>
-    <div class="app-container container-fluid py-6">
+    <div class="app-container container-fluid py-6 avaliacao-pagina">
         <div class="mb-6">
             <h1 class="fs-2 fw-bold mb-1">Avaliações / Notas</h1>
             <div class="text-body-secondary">Lançamento de notas e cálculo da média trimestral.</div>
@@ -213,12 +222,14 @@ function eliminar(instrumento) {
                         <button v-for="p in pauta.periodos" :key="p.id" type="button" class="btn btn-sm"
                             :class="p.id === pauta.periodo_id ? 'btn-primary' : 'btn-light'" @click="abrir(turma, disciplina, p.id)">{{ p.nome }}</button>
                     </span>
-                    <a :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&formato=pdf`" class="btn btn-sm btn-light">PDF</a>
-                    <a :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&formato=excel`" class="btn btn-sm btn-light">Excel</a>
+                    <MenuExportar url="/avaliacao/notas/exportar" :params="{ turma, disciplina }" :formatos="['excel', 'pdf']" classe="btn btn-sm btn-light" />
                     <a v-if="pauta.competencias.length" :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&periodo=${pauta.periodo_id}&detalhe=competencias&formato=pdf`" class="btn btn-sm btn-light">Competências (PDF)</a>
                 </div>
             </div>
             <div class="card-body pt-3">
+                <div v-if="notasBloqueadas" class="d-flex align-items-center gap-3 rounded bg-warning p-4 mb-4 fw-semibold" style="color: #181C32;">
+                    <span>🔒 A pauta final desta turma foi aprovada: as notas estão bloqueadas. Só se podem alterar depois de a pauta ser reaberta.</span>
+                </div>
                 <div v-if="pauta.prazo" class="fs-7 text-body-secondary mb-4">Prazo de lançamento: <strong :class="pauta.prazo.encerrado ? 'text-danger' : ''">{{ pauta.prazo.data_limite }}</strong></div>
                 <div v-if="pauta.prazo?.encerrado" class="alert alert-warning py-3 d-flex flex-wrap align-items-center gap-3">
                     <span v-if="pode.fora_prazo">O prazo terminou. Para lançar fora do prazo, indique o motivo:</span>
@@ -238,13 +249,13 @@ function eliminar(instrumento) {
                                     <td class="text-body-secondary">{{ n + 1 }}</td>
                                     <td class="fw-semibold">{{ a.nome }}</td>
                                     <td>
-                                        <SelectSolid :model-value="nivelDe(a)" :options="opcoesNiveis" pequeno placeholder="—" @update:model-value="(v) => guardarQualitativa(a, 'nivel', Number(v))" />
-                                        <div v-if="a.sugestao && a.sugestao.nivel_id !== nivelDe(a)" class="fs-8 text-body-secondary mt-1">
+                                        <SelectSolid :model-value="nivelDe(a)" :options="opcoesNiveis" pequeno placeholder="—" :disabled="notasBloqueadas" @update:model-value="(v) => guardarQualitativa(a, 'nivel', Number(v))" />
+                                        <div v-if="!notasBloqueadas && a.sugestao && a.sugestao.nivel_id !== nivelDe(a)" class="fs-8 text-body-secondary mt-1">
                                             Sugestão: <strong>{{ a.sugestao.designacao }}</strong> ({{ a.sugestao.avaliadas }} de {{ a.sugestao.total }} competências)
                                             <a href="#" class="ms-1" @click.prevent="aplicarSugestao(a)">Aplicar</a>
                                         </div>
                                     </td>
-                                    <td><input :value="obsDe(a)" type="text" class="form-control form-control-sm" placeholder="Observação do educador (opcional)" :disabled="!nivelDe(a)"
+                                    <td><input :value="obsDe(a)" type="text" class="form-control form-control-sm" placeholder="Observação do educador (opcional)" :disabled="!nivelDe(a) || notasBloqueadas"
                                         @blur="$event.target.value !== (a.observacao ?? '') && guardarQualitativa(a, 'obs', $event.target.value)"></td>
                                     <td v-if="pauta.competencias.length" class="text-center">
                                         <a href="#" class="fs-7" @click.prevent="abertas[a.inscricao_id] = !abertas[a.inscricao_id]">{{ Object.keys(a.competencias).length }}/{{ pauta.competencias.length }} {{ abertas[a.inscricao_id] ? '▴' : '▾' }}</a>
@@ -255,7 +266,7 @@ function eliminar(instrumento) {
                                     <td :colspan="pauta.competencias.length ? 4 : 3" class="bg-body-secondary">
                                         <div v-for="c in pauta.competencias" :key="c.id" class="d-flex flex-wrap align-items-center gap-3 py-1">
                                             <span class="flex-grow-1 fs-7">{{ c.descricao }}</span>
-                                            <SelectSolid :model-value="nivelDaCompetencia(a, c)" :options="opcoesNiveis" pequeno placeholder="—" class="w-200px" @update:model-value="(v) => guardarCompetencia(a, c, Number(v))" />
+                                            <SelectSolid :model-value="nivelDaCompetencia(a, c)" :options="opcoesNiveis" pequeno placeholder="—" class="w-200px" :disabled="notasBloqueadas" @update:model-value="(v) => guardarCompetencia(a, c, Number(v))" />
                                         </div>
                                     </td>
                                 </tr>
@@ -278,8 +289,7 @@ function eliminar(instrumento) {
                             :class="p.id === pauta.periodo_id && vista !== 'resumo' ? 'btn-primary' : 'btn-light'" @click="abrir(turma, disciplina, p.id)">{{ p.nome }}</button>
                         <button type="button" class="btn btn-sm" :class="vista === 'resumo' ? 'btn-primary' : 'btn-light'" @click="vista = 'resumo'">Resumo</button>
                     </span>
-                    <a :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&formato=pdf`" class="btn btn-sm btn-light">PDF</a>
-                    <a :href="`/avaliacao/notas/exportar?turma=${turma}&disciplina=${disciplina}&formato=excel`" class="btn btn-sm btn-light">Excel</a>
+                    <MenuExportar url="/avaliacao/notas/exportar" :params="{ turma, disciplina }" :formatos="['excel', 'pdf']" classe="btn btn-sm btn-light" />
                 </div>
             </div>
 
@@ -332,6 +342,13 @@ function eliminar(instrumento) {
                     <span>{{ negativasTotal }} aluno(s) com negativa nesta disciplina<template v-if="pauta.regra.trata_negativas"> · {{ negativasPorTratar }} por tratar</template><template v-else> · {{ pauta.regra.consequencia_negativa }}</template></span>
                 </div>
 
+                <div v-if="notasBloqueadas" class="d-flex align-items-center gap-3 rounded bg-warning p-4 mb-4 fw-semibold" style="color: #181C32;">
+                    <span>🔒 A pauta final desta turma foi aprovada: as notas estão bloqueadas. Só se podem alterar depois de a pauta ser reaberta.</span>
+                </div>
+                <div v-else-if="bloqueio.recurso" class="d-flex align-items-center gap-3 rounded bg-warning p-4 mb-4 fw-semibold" style="color: #181C32;">
+                    <span>🔒 A pauta do recurso foi aprovada: as notas do recurso estão bloqueadas. Só se podem alterar depois de ela ser reaberta.</span>
+                </div>
+
                 <div v-if="algumEncerrado" class="alert alert-warning py-3 d-flex flex-wrap align-items-center gap-3">
                     <span v-if="pode.fora_prazo">O prazo terminou para parte das avaliações. Para lançar fora do prazo, indique o motivo:</span>
                     <span v-else>O prazo terminou para parte das avaliações. Nessas já não é possível lançar notas.</span>
@@ -350,7 +367,7 @@ function eliminar(instrumento) {
                         <span v-if="pauta.instrumentos.length && alteracoes.total" class="text-warning fw-bold">{{ alteracoes.total }} nota(s) por guardar</span>
                         <i v-if="pauta.instrumentos.length" class="ki-duotone ki-information-5 fs-3 text-body-secondary" style="cursor: help;" title="Escreva as notas e carregue em «Guardar notas» (ou Enter)."><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div v-if="!notasBloqueadas" class="d-flex gap-2">
                         <button type="button" class="btn btn-sm btn-light-primary" :disabled="!tiposPossiveis.length"
                             :title="tiposPossiveis.length ? '' : 'Não há mais avaliações a criar neste trimestre.'" @click="modalNova = true">+ Nova avaliação</button>
                         <button v-if="pauta.instrumentos.length" type="button" class="btn btn-sm btn-primary" :disabled="!alteracoes.total || aGuardar" @click="guardarTudo">
@@ -368,7 +385,7 @@ function eliminar(instrumento) {
                                 <th>Aluno</th>
                                 <th v-for="i in pauta.instrumentos" :key="i.id" class="text-center text-nowrap">
                                     <span :title="i.tipo_descricao">{{ i.sigla }}</span>
-                                    <a v-if="pode.criar" href="#" class="text-danger ms-1" title="Eliminar avaliação" @click.prevent="eliminar(i)">×</a>
+                                    <a v-if="pode.criar && !notasBloqueadas" href="#" class="text-danger ms-1" title="Eliminar avaliação" @click.prevent="eliminar(i)">×</a>
                                     <div v-if="!i.obrigatorio" class="fw-normal fs-8">facultativa</div>
                                 </th>
                                 <th class="text-center">MAC</th>
@@ -385,9 +402,9 @@ function eliminar(instrumento) {
                                 <td class="fw-semibold">{{ a.nome }}</td>
                                 <td v-for="i in pauta.instrumentos" :key="i.id" class="text-center" style="min-width: 7rem">
                                     <div class="d-flex align-items-center justify-content-center gap-1">
-                                        <input :value="textoDaCelula(a, i)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px"
+                                        <input :value="textoDaCelula(a, i)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px" :disabled="notasBloqueadas"
                                             :class="[a.notas[i.id]?.estado === ESTADO_ANULADA ? 'text-body-secondary' : '', pendente(`${a.inscricao_id}-${i.id}`, a.notas[i.id]?.valor, valores) ? 'border-warning bg-light-warning' : '']" @input="valores[`${a.inscricao_id}-${i.id}`] = $event.target.value" @keyup.enter="guardarTudo">
-                                        <a v-if="pode.anular && a.notas[i.id] && a.notas[i.id].estado !== 1 && a.notas[i.id].estado !== 2" href="#" class="text-body-secondary" title="Anular"
+                                        <a v-if="!notasBloqueadas && pode.anular && a.notas[i.id] && a.notas[i.id].estado !== 1 && a.notas[i.id].estado !== 2" href="#" class="text-body-secondary" title="Anular"
                                             @click.prevent="aAnular = { nota_id: a.notas[i.id].id, aluno: a.nome, instrumento: i.nome }">⊘</a>
                                     </div>
                                     <div v-if="a.notas[i.id] && a.notas[i.id].estado !== 0" class="fs-8 text-body-secondary">{{ a.notas[i.id].estado_descricao }}</div>
@@ -399,9 +416,9 @@ function eliminar(instrumento) {
                                 <template v-if="pauta.exame">
                                     <td class="text-center" style="min-width: 7rem">
                                         <div class="d-flex align-items-center justify-content-center gap-1">
-                                            <input :value="textoExame(a)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px"
+                                            <input :value="textoExame(a)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px" :disabled="notasBloqueadas"
                                                 :class="pendente(a.inscricao_id, a.ne?.valor, exames) ? 'border-warning bg-light-warning' : ''" @input="exames[a.inscricao_id] = $event.target.value" @keyup.enter="guardarTudo">
-                                            <a v-if="pode.anular && a.ne && a.ne.estado === 0" href="#" class="text-body-secondary" title="Anular"
+                                            <a v-if="!notasBloqueadas && pode.anular && a.ne && a.ne.estado === 0" href="#" class="text-body-secondary" title="Anular"
                                                 @click.prevent="aAnular = { nota_id: a.ne.id, aluno: a.nome, instrumento: 'Exame' }">⊘</a>
                                         </div>
                                         <div v-if="a.ne && a.ne.estado !== 0" class="fs-8 text-body-secondary">{{ a.ne.estado_descricao }}</div>
@@ -411,10 +428,10 @@ function eliminar(instrumento) {
                                 <template v-if="pauta.recurso">
                                     <td class="text-center" style="min-width: 7rem">
                                         <div v-if="a.recurso_necessario" class="d-flex align-items-center justify-content-center gap-1">
-                                            <input :value="textoRecurso(a)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px" :disabled="!a.recurso_pode_lancar"
+                                            <input :value="textoRecurso(a)" type="text" inputmode="decimal" class="form-control form-control-sm text-center w-70px"   :disabled="!a.recurso_pode_lancar || recursoBloqueado"
                                                 :title="a.recurso_pode_lancar ? '' : (pauta.recurso.aberto ? 'Este aluno não foi ao recurso' : 'O recurso abre depois de aprovada a pauta')"
                                                 :class="pendente(a.inscricao_id, a.ner?.valor, recursos) ? 'border-warning bg-light-warning' : ''" @input="recursos[a.inscricao_id] = $event.target.value" @keyup.enter="guardarTudo">
-                                            <a v-if="pode.anular && a.ner && a.ner.estado === 0" href="#" class="text-body-secondary" title="Anular"
+                                            <a v-if="!recursoBloqueado && pode.anular && a.ner && a.ner.estado === 0" href="#" class="text-body-secondary" title="Anular"
                                                 @click.prevent="aAnular = { nota_id: a.ner.id, aluno: a.nome, instrumento: 'Exame de recurso' }">⊘</a>
                                         </div>
                                         <span v-else class="text-body-secondary" :title="a.recurso_motivo">—</span>
@@ -449,7 +466,7 @@ function eliminar(instrumento) {
                         </label>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-light" @click="aAnular = null">Cancelar</button>
+                        <button type="button" class="btn btn-light-danger" @click="aAnular = null">Cancelar</button>
                         <button type="submit" class="btn btn-danger" :disabled="!anulacao.motivo.trim()">Anular</button>
                     </div>
                 </form>
@@ -468,7 +485,7 @@ function eliminar(instrumento) {
                         <SelectSolid v-model="novo.tipo" :options="opcoesTipos" />
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-light" @click="modalNova = false">Cancelar</button>
+                        <button type="button" class="btn btn-light-danger" @click="modalNova = false">Cancelar</button>
                         <button type="submit" class="btn btn-primary">Adicionar</button>
                     </div>
                 </form>
@@ -478,6 +495,17 @@ function eliminar(instrumento) {
 </template>
 
 <style scoped>
+/* Texto, botões e campos bem legíveis: o cinzento claro do tema deixava tudo apagado (e os campos bloqueados quase invisíveis). */
+.avaliacao-pagina .btn-light { color: var(--bs-body-color); font-weight: 600; background-color: var(--bs-secondary-bg); }
+.avaliacao-pagina .form-control:disabled { opacity: 1; color: var(--bs-body-color); -webkit-text-fill-color: var(--bs-body-color); background-color: var(--bs-secondary-bg); font-weight: 600; }
+.avaliacao-pagina .form-control::placeholder { color: var(--bs-body-color); opacity: 0.6; }
+/* Tema claro: cores de estado mais escuras, para o verde, o vermelho e o azul claros não se perderem no branco. */
+html[data-bs-theme='light'] .avaliacao-pagina .text-success { color: #0F7B3E !important; font-weight: 700; }
+html[data-bs-theme='light'] .avaliacao-pagina .badge-light-success { color: #0B6B33; font-weight: 700; }
+html[data-bs-theme='light'] .avaliacao-pagina .badge-light-warning { color: #8A5A00; font-weight: 700; }
+html[data-bs-theme='light'] .avaliacao-pagina .badge-light-danger,
+html[data-bs-theme='light'] .avaliacao-pagina .btn-light-danger { color: #B4233A; font-weight: 600; }
+html[data-bs-theme='light'] .avaliacao-pagina a:not(.btn) { color: #0B5FB3; font-weight: 600; }
 /* Os selects estão dentro da tabela: o contentor com scroll horizontal cortava a lista de opções (com poucas linhas parecia que o select não abria). */
 @media (min-width: 768px) {
     .tabela-com-selects { overflow: visible !important; }

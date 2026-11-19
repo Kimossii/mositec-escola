@@ -2,9 +2,10 @@
 
 namespace Modules\Core\Importacao;
 
+use DateTimeInterface;
 use Generator;
 use RuntimeException;
-use XMLReader;
+use Spatie\SimpleExcel\SimpleExcelReader;
 use ZipArchive;
 
 /**
@@ -64,122 +65,71 @@ class LeitorDeFicheiro
         return $valor === '' ? null : $valor;
     }
 
-    /** @return Generator<int, list<?string>> */
+    /**
+     * Lê a primeira folha em fluxo (spatie/simple-excel sobre OpenSpout). A chave é o número da linha no ficheiro (as linhas
+     * vazias contam, para os erros apontarem a linha certa). Datas vêm como `aaaa-mm-dd` (ou `aaaa-mm-dd hh:mm:ss` com hora).
+     *
+     * @return Generator<int, list<?string>>
+     */
     private function xlsx(string $caminho): Generator
+    {
+        $this->recusarFicheiroDescomprimidoEnorme($caminho);
+
+        try {
+            $folha = SimpleExcelReader::create($caminho, 'xlsx')->noHeaderRow()->preserveEmptyRows()->getRows();
+            $numero = 0;
+
+            foreach ($folha as $celulas) {
+                $numero++;
+                $linha = array_map(fn ($valor) => $this->valorDaCelula($valor), array_values($celulas));
+
+                // Sem células vazias à direita: a linha acaba na última coluna preenchida.
+                while ($linha !== [] && end($linha) === null) {
+                    array_pop($linha);
+                }
+
+                yield $numero => $linha;
+            }
+        } catch (\OpenSpout\Common\Exception\IOException|\OpenSpout\Reader\Exception\ReaderException) {
+            throw new RuntimeException('O ficheiro Excel está corrompido ou não é um .xlsx.');
+        }
+    }
+
+    /** Protecção contra «zip bombs»: o tamanho descomprimido de tudo o que o ZIP traz tem de caber no limite. */
+    private function recusarFicheiroDescomprimidoEnorme(string $caminho): void
     {
         $zip = new ZipArchive;
         if ($zip->open($caminho) !== true) {
             throw new RuntimeException('O ficheiro Excel está corrompido ou não é um .xlsx.');
         }
 
-        $folha = $this->caminhoDaPrimeiraFolha($zip);
-        $tamanho = $zip->statName($folha)['size'] ?? 0;
-        if ($tamanho === 0 || $tamanho > self::MAXIMO_XML_BYTES) {
-            throw new RuntimeException('O ficheiro Excel está vazio ou é demasiado grande. Use CSV.');
+        $total = 0;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $total += (int) ($zip->statIndex($i)['size'] ?? 0);
         }
-
-        $partilhadas = $this->textosPartilhados($zip);
         $zip->close();
 
-        $xml = new XMLReader;
-        $xml->open('zip://'.$caminho.'#'.$folha);
-
-        while ($xml->read()) {
-            if ($xml->nodeType !== XMLReader::ELEMENT || $xml->name !== 'row') {
-                continue;
-            }
-
-            $numero = (int) $xml->getAttribute('r');
-            $celulas = [];
-            $linhaXml = $xml->readOuterXml();
-            $linha = simplexml_load_string($linhaXml);
-
-            foreach ($linha->c ?? [] as $c) {
-                $coluna = $this->indiceDaColuna((string) $c['r']);
-                $tipo = (string) $c['t'];
-                $valor = match ($tipo) {
-                    's' => $partilhadas[(int) $c->v] ?? null,
-                    'inlineStr' => $this->textoInline($c),
-                    default => isset($c->v) ? (string) $c->v : null,
-                };
-                $valor = $valor === null ? null : trim($valor);
-                $celulas[$coluna] = $valor === '' ? null : $valor;
-            }
-
-            $maximo = $celulas === [] ? -1 : max(array_keys($celulas));
-            $completa = [];
-            for ($i = 0; $i <= $maximo; $i++) {
-                $completa[] = $celulas[$i] ?? null;
-            }
-
-            yield $numero => $completa;
+        if ($total === 0 || $total > self::MAXIMO_XML_BYTES) {
+            throw new RuntimeException('O ficheiro Excel está vazio ou é demasiado grande. Use CSV.');
         }
-
-        $xml->close();
     }
 
-    private function caminhoDaPrimeiraFolha(ZipArchive $zip): string
+    private function valorDaCelula(mixed $valor): ?string
     {
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $nome = $zip->getNameIndex($i);
-            if (preg_match('#^xl/worksheets/sheet\d+\.xml$#', $nome) === 1) {
-                $folhas[] = $nome;
-            }
+        if ($valor instanceof DateTimeInterface) {
+            return $valor->format($valor->format('H:i:s') === '00:00:00' ? 'Y-m-d' : 'Y-m-d H:i:s');
         }
 
-        if (empty($folhas)) {
-            throw new RuntimeException('O ficheiro Excel não tem nenhuma folha.');
-        }
+        $texto = match (true) {
+            $valor === null => null,
+            is_bool($valor) => $valor ? '1' : '0',
+            // Um número inteiro guardado como decimal (ex.: um BI numérico 123456789.0) vem sem «.0».
+            is_float($valor) => $valor === floor($valor) && abs($valor) < 1e15 ? (string) (int) $valor : rtrim(rtrim(sprintf('%.15F', $valor), '0'), '.'),
+            default => (string) $valor,
+        };
 
-        sort($folhas, SORT_NATURAL);
+        $texto = $texto === null ? null : trim($texto);
 
-        return $folhas[0];
-    }
-
-    /** @return list<string> */
-    private function textosPartilhados(ZipArchive $zip): array
-    {
-        $conteudo = $zip->getFromName('xl/sharedStrings.xml');
-        if ($conteudo === false) {
-            return [];
-        }
-
-        $textos = [];
-        $lista = simplexml_load_string($conteudo);
-        foreach ($lista->si ?? [] as $si) {
-            $texto = isset($si->t) ? (string) $si->t : '';
-            foreach ($si->r ?? [] as $parte) {
-                $texto .= (string) $parte->t;
-            }
-            $textos[] = $texto;
-        }
-
-        return $textos;
-    }
-
-    private function textoInline(\SimpleXMLElement $c): ?string
-    {
-        if (! isset($c->is)) {
-            return null;
-        }
-
-        $texto = isset($c->is->t) ? (string) $c->is->t : '';
-        foreach ($c->is->r ?? [] as $parte) {
-            $texto .= (string) $parte->t;
-        }
-
-        return $texto;
-    }
-
-    /** «C7» → 2 (A = 0). */
-    private function indiceDaColuna(string $referencia): int
-    {
-        preg_match('/^[A-Z]+/', strtoupper($referencia), $m);
-        $indice = 0;
-        foreach (str_split($m[0] ?? 'A') as $letra) {
-            $indice = $indice * 26 + (ord($letra) - 64);
-        }
-
-        return $indice - 1;
+        return $texto === '' ? null : $texto;
     }
 }

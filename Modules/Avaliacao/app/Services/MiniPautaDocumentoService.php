@@ -131,7 +131,7 @@ class MiniPautaDocumentoService
             linhasCabecalho: $cabecalho['linhas'],
             lema: $cabecalho['lema'],
             logotipo: $cabecalho['logotipo'],
-            meta: [['ÁREA', (string) $disciplina->nome], ['CLASSE', (string) $turma->nivelAcademico?->nome], ['TURMA', (string) $turma->nome], ['ANO LECTIVO', (string) $turma->anoLectivo?->nome], ['ESCALA', (string) $regra->escala->nome]],
+            meta: [['ÁREA', (string) $disciplina->nome], ['CLASSE', (string) $turma->nivelAcademico?->nome], ['TURMA', (string) $turma->nome], ['ANO LECTIVO', (string) $turma->anoLectivo?->nome], ['ESCALA', (string) $regra->escala?->nome]],
             fixas: ['N.º', 'Nome da criança'],
             grupos: [
                 ['rotulo' => 'I TRIMESTRE', 'colunas' => ['Avaliação']], ['rotulo' => 'II TRIMESTRE', 'colunas' => ['Avaliação']],

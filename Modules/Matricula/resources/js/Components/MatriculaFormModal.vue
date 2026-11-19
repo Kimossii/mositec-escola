@@ -42,6 +42,13 @@ const turmaSeleccionada = computed(() => props.turmasDisponiveis.find((t) => t.i
 
 const erroTurmaLocal = ref('');
 
+const inicioAnoLectivo = computed(() => {
+    const data = turmaSeleccionada.value?.ano_lectivo?.data_inicio?.slice(0, 10);
+    if (!data) return null;
+    const [ano, mes, dia] = data.split('-');
+    return `${dia}/${mes}/${ano}`;
+});
+
 watch(() => props.show, (show) => {
     if (!show) return;
 
@@ -194,6 +201,9 @@ function submeter() {
                         <div class="fv-row mb-7">
                             <label class="required fw-semibold fs-6 mb-2">Data da Matrícula</label>
                             <input v-model="form.data_matricula" type="date" class="form-control form-control-solid" />
+                            <div v-if="inicioAnoLectivo" class="text-muted fs-7 mt-1">
+                                O ano lectivo abriu a {{ inicioAnoLectivo }}.
+                            </div>
                             <div class="text-danger fs-7 mt-1" v-if="errors.data_matricula">{{ errors.data_matricula }}</div>
                         </div>
 

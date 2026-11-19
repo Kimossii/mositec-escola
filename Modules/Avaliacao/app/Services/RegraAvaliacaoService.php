@@ -11,6 +11,9 @@ use Modules\Turma\Models\Turma;
 /** A regra de avaliação de uma turma: a regra do ano lectivo a que a classe da turma está ligada. */
 class RegraAvaliacaoService
 {
+    /** @var array<int, true> anos cujas regras já foram garantidas neste pedido */
+    private array $garantidos = [];
+
     public function __construct(private GarantirRegrasDoAnoAction $garantir)
     {
     }
@@ -32,7 +35,10 @@ class RegraAvaliacaoService
 
     private function ligacao(Turma $turma): ?AvaliacaoRegraNivel
     {
-        $this->garantir->executar($turma->ano_lectivo_id);
+        if (! isset($this->garantidos[$turma->ano_lectivo_id])) {
+            $this->garantir->executar($turma->ano_lectivo_id);
+            $this->garantidos[$turma->ano_lectivo_id] = true;
+        }
 
         return AvaliacaoRegraNivel::query()
             ->where('ano_lectivo_id', $turma->ano_lectivo_id)->where('nivel_academico_id', $turma->nivel_academico_id)

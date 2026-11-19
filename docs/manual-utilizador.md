@@ -13,7 +13,7 @@ Para quem usa o sistema pela primeira vez. Demora cerca de 30 minutos. Siga os p
 ## 2. Preparar a escola (uma vez)
 Menu **Configurações** e **Académico**. Siga esta ordem:
 
-1. **Configurações → Estabelecimento → Dados da Escola:** carregue em *Editar dados*, preencha o nome, o tipo e **marque as etapas de ensino** que a escola tem. Guarde. As classes (Creche à 9.ª) criam-se sozinhas.
+1. **Configurações → Estabelecimento → Dados da Escola:** carregue em *Editar dados*, preencha o nome, o tipo e **marque as etapas de ensino** que a escola tem. Guarde. As classes (Pré-Escolar à 9.ª) criam-se sozinhas.
 2. **Configurações → Ano Lectivo:** crie o ano lectivo e active-o. Depois cadastre os **3 trimestres**: abra o ano lectivo (clique no nome), no separador *Períodos* carregue em **Novo Período** e preencha *Nome* (ex.: 1.º Trimestre), *Tipo* = Trimestre, *Número* (1, 2 ou 3) e as datas de início e de fim. Guarde e repita para o 2.º e o 3.º. As datas têm de ficar dentro do ano lectivo e os trimestres não se podem sobrepor. Para corrigir, use *Editar* na linha do período.
 3. **Académico → Turmas:** crie um **turno** (por exemplo, Manhã) e uma **turma** numa classe.
 4. **Pedagógico → Disciplinas:** crie 2 ou 3 disciplinas. Depois, no **plano curricular** da classe, associe-as.

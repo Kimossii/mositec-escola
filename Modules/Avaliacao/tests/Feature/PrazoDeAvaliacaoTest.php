@@ -98,6 +98,17 @@ class PrazoDeAvaliacaoTest extends TestCase
         $this->assertSame('2026-04-25', $this->limite());
     }
 
+    public function test_excepcao_antiga_nao_encurta_o_prazo_quando_a_escola_o_estende(): void
+    {
+        $prazo = $this->prazo('2026-04-10');
+        $this->actingAs($this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com'));
+        $this->prolongarPrazo($prazo->id, '2026-04-15', 'Doença', turmaId: $this->c['turma']->id);
+
+        $this->definirPrazo($this->c['periodos'][1]->id, TipoInstrumento::MAC, '2026-04-25');
+
+        $this->assertSame('2026-04-25', $this->limite());
+    }
+
     public function test_prazo_no_proprio_dia_ainda_nao_esta_encerrado(): void
     {
         $this->prazo('2026-04-10');

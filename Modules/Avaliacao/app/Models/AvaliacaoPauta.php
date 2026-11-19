@@ -57,6 +57,11 @@ class AvaliacaoPauta extends Model
         return $this->hasMany(AvaliacaoPautaLinha::class, 'pauta_id');
     }
 
+    public function historico(): HasMany
+    {
+        return $this->hasMany(AvaliacaoPautaHistorico::class, 'pauta_id');
+    }
+
     public function decisoes(): HasMany
     {
         return $this->hasMany(AvaliacaoDecisao::class, 'pauta_id');

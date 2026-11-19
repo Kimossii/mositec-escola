@@ -495,6 +495,7 @@ const pedagogico = {
         { href: '/avaliacao/notas', title: 'Avaliações / Notas', permissao: 'nota.ver' },
         { href: '/avaliacao/configuracao', title: 'Configuração da avaliação', permissao: 'nota.configurar' },
         { href: '/avaliacao/pautas', title: 'Pautas', permissao: 'nota.ver-pauta' },
+        { href: '/minhas-notas', title: 'As minhas notas', permissao: 'nota.ver-proprias' },
         // { href: '#', title: 'Conselho de Turma' },
         // { href: '#', title: 'Exames / Recuperações' },
     ],

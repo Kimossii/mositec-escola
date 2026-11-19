@@ -9,13 +9,13 @@ use Modules\Avaliacao\Enums\EstadoNota;
 use Modules\Avaliacao\Models\AvaliacaoInstrumento;
 use Modules\Avaliacao\Models\AvaliacaoNota;
 use Modules\Avaliacao\Services\AcessoAMiniPautaService;
+use Modules\Avaliacao\Services\InscricaoDaAvaliacaoService;
 use Modules\Avaliacao\Services\AutorizaLancamentoService;
 use Modules\Avaliacao\Services\DocenteDoUtilizadorService;
 use Modules\Avaliacao\Services\PautaFinalService;
 use Modules\Avaliacao\Services\PrazoService;
 use Modules\Avaliacao\Services\RegraAvaliacaoService;
 use Modules\Core\Traits\LogService;
-use Modules\Matricula\Models\InscricaoDisciplina;
 use Modules\Turma\Models\Turma;
 
 /**
@@ -34,6 +34,7 @@ class LancarNotaAction
         private AutorizaLancamentoService $autorizacao,
         private PautaFinalService $pautas,
         private AcessoAMiniPautaService $acesso,
+        private InscricaoDaAvaliacaoService $inscricoes,
     ) {
     }
 
@@ -51,7 +52,7 @@ class LancarNotaAction
         $regra = $this->regras->paraTurma($turma)
             ?? throw ValidationException::withMessages(['instrumento_id' => 'A escola ainda não configurou a regra de avaliação desta classe.']);
 
-        $this->validarInscricao($instrumento, $dto->inscricao_disciplina_id);
+        $this->inscricoes->exigir($dto->inscricao_disciplina_id, $instrumento->turma_id, $instrumento->disciplina_id);
         $this->validarValor($dto->valor, $regra->escala_maxima);
 
         $nota = AvaliacaoNota::query()
@@ -84,16 +85,6 @@ class LancarNotaAction
         ]);
 
         return $nota;
-    }
-
-    private function validarInscricao(AvaliacaoInstrumento $instrumento, int $inscricaoId): void
-    {
-        $inscricao = InscricaoDisciplina::query()->with(['matricula', 'planoCurricularDisciplina'])->findOrFail($inscricaoId);
-
-        if ($inscricao->matricula->turma_id !== $instrumento->turma_id
-            || $inscricao->planoCurricularDisciplina->disciplina_id !== $instrumento->disciplina_id) {
-            throw ValidationException::withMessages(['inscricao_disciplina_id' => 'O aluno não está inscrito nesta disciplina e turma.']);
-        }
     }
 
     private function validarValor(string $valor, int $escalaMaxima): void
