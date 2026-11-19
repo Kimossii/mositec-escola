@@ -4,6 +4,8 @@ import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
+import ReabrirPautaModal from '../../Components/Pautas/ReabrirPautaModal.vue';
 import TratarNegativaModal from '../../Components/Notas/TratarNegativaModal.vue';
 import PesquisaDeAlunos from '../../Components/Notas/PesquisaDeAlunos.vue';
 import { filtrarAlunos } from '../../Components/Notas/pesquisa.js';
@@ -19,7 +21,8 @@ defineOptions({ layout: AppLayout });
 const turma = ref(props.selecao.turma);
 const aConfirmar = ref(false);
 const aReabrir = ref(false);
-const motivo = ref('');
+const aGuardar = ref(false);
+const erroReabrir = ref('');
 
 const ESTADOS = {
     provisoria: { texto: 'Provisória', classe: 'badge-light-warning' },
@@ -35,16 +38,21 @@ const abrir = (f = 1) => turma.value && router.get('/avaliacao/pautas', { turma:
 const abrirFase = (f) => router.get('/avaliacao/pautas', { turma: turma.value, fase: f }, { preserveState: true });
 
 function aprovar() {
+    aGuardar.value = true;
     router.post(`/avaliacao/pautas/${props.pauta.turma_id}/aprovar`, { fase: fase.value }, {
-        preserveScroll: true, preserveState: true, onError: aoFalhar,
+        preserveScroll: true, preserveState: true, onError: (e) => { aConfirmar.value = false; aoFalhar(e); },
+        onFinish: () => { aGuardar.value = false; },
         onSuccess: () => { aConfirmar.value = false; toast.success(fase.value === 2 ? 'Pauta do recurso aprovada. O processo da turma está fechado.' : 'Pauta aprovada. As notas desta turma ficaram bloqueadas.'); },
     });
 }
 
-function reabrir() {
-    router.post(`/avaliacao/pautas/${props.pauta.turma_id}/reabrir`, { motivo: motivo.value, fase: fase.value }, {
-        preserveScroll: true, preserveState: true, onError: aoFalhar,
-        onSuccess: () => { aReabrir.value = false; motivo.value = ''; toast.success('Pauta reaberta.'); },
+function reabrir(motivoDaReabertura) {
+    aGuardar.value = true;
+    erroReabrir.value = '';
+    router.post(`/avaliacao/pautas/${props.pauta.turma_id}/reabrir`, { motivo: motivoDaReabertura, fase: fase.value }, {
+        preserveScroll: true, preserveState: true, onError: (e) => { erroReabrir.value = Object.values(e)[0]; },
+        onFinish: () => { aGuardar.value = false; },
+        onSuccess: () => { aReabrir.value = false; toast.success('Pauta reaberta.'); },
     });
 }
 
@@ -124,22 +132,6 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
                     <div v-for="(av, i) in pauta.avisos" :key="i">• {{ av }}</div>
                 </div>
 
-                <div v-if="aConfirmar" class="border rounded p-4 mb-5 bg-body-secondary d-print-none">
-                    <div class="fw-bold mb-2">Aprovar esta pauta?</div>
-                    <div class="text-body-secondary mb-3">Os resultados passam a definitivos, a decisão de cada aluno fica formalizada e as notas desta turma ficam bloqueadas até a pauta ser reaberta.</div>
-                    <button type="button" class="btn btn-sm btn-primary me-2" @click="aprovar">Confirmar aprovação</button>
-                    <button type="button" class="btn btn-sm btn-light" @click="aConfirmar = false">Cancelar</button>
-                </div>
-
-                <div v-if="aReabrir" class="border rounded p-4 mb-5 bg-body-secondary d-print-none">
-                    <div class="fw-bold mb-2">Reabrir esta pauta</div>
-                    <div class="d-flex flex-wrap gap-3">
-                        <input v-model="motivo" type="text" class="form-control form-control-sm w-300px" placeholder="Motivo da reabertura">
-                        <button type="button" class="btn btn-sm btn-danger" :disabled="!motivo.trim()" @click="reabrir">Reabrir</button>
-                        <button type="button" class="btn btn-sm btn-light" @click="aReabrir = false">Cancelar</button>
-                    </div>
-                </div>
-
                 <div v-if="!pauta.regra" class="alert alert-warning">A escola ainda não configurou a regra de avaliação desta classe.</div>
                 <div v-else-if="!pauta.alunos.length" class="text-center text-body-secondary py-8">{{ fase === 2 ? 'Nenhum aluno está em recurso.' : 'A turma não tem alunos com matrícula activa.' }}</div>
 
@@ -206,6 +198,21 @@ const textoDecisao = (a) => a.decisao?.rotulo ?? (a.negativas?.some((n) => !n.me
         </div>
 
         <TratarNegativaModal :alvo="aTratar" @fechar="aTratar = null" />
+
+        <ConfirmModal
+            :show="aConfirmar"
+            :titulo="fase === 2 ? 'Aprovar a pauta do recurso?' : 'Aprovar esta pauta?'"
+            :mensagem="fase === 2
+                ? 'A pauta do recurso passa a definitiva e o processo desta turma fica fechado. Só se reabre com permissão e motivo.'
+                : 'Os resultados passam a definitivos, a decisão de cada aluno fica formalizada e as notas desta turma ficam bloqueadas até a pauta ser reaberta.'"
+            texto-confirmar="Confirmar aprovação"
+            variante="primary"
+            :processando="aGuardar"
+            @confirmar="aprovar"
+            @cancelar="aConfirmar = false"
+        />
+
+        <ReabrirPautaModal :show="aReabrir" :processando="aGuardar" :erro="erroReabrir" @confirmar="reabrir" @cancelar="aReabrir = false" />
     </div>
 </template>
 

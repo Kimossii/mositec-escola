@@ -248,7 +248,7 @@ function aplicar() {
                         entre {{ dataCurta(paraAplicar.data_inicio) }} e {{ dataCurta(paraAplicar.data_fim) }}. As já pagas ou parcialmente pagas não mudam.
                     </p>
                     <div class="text-end">
-                        <button type="button" class="btn btn-light me-2" :disabled="processando" @click="paraAplicar = null">Cancelar</button>
+                        <button type="button" class="btn btn-light-danger me-2" :disabled="processando" @click="paraAplicar = null">Cancelar</button>
                         <button type="button" class="btn btn-primary" :disabled="processando" @click="aplicar">Aplicar</button>
                     </div>
                 </div>

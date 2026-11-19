@@ -106,7 +106,7 @@ function submeter() {
                             <div class="text-danger fs-7 mt-1" v-if="errors.logotipo">{{ errors.logotipo[0] }}</div>
 
                             <div class="d-flex justify-content-end gap-2 mt-6">
-                                <button v-if="ficheiro" type="button" class="btn btn-light" :disabled="processing" @click="cancelar">Cancelar</button>
+                                <button v-if="ficheiro" type="button" class="btn btn-light-danger" :disabled="processing" @click="cancelar">Cancelar</button>
                                 <button type="submit" class="btn btn-primary" :disabled="processing || !ficheiro">Guardar logótipo</button>
                             </div>
                         </form>

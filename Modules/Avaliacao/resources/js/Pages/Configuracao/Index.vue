@@ -338,7 +338,7 @@ function mover(i, delta) {
                     <div class="d-flex gap-2 mt-3">
                         <button type="button" class="btn btn-sm btn-light" @click="editor.niveis.push({ id: null, codigo: '', designacao: '' })">Adicionar nível</button>
                         <button type="button" class="btn btn-sm btn-primary" @click="guardarEscala">Guardar escala</button>
-                        <button type="button" class="btn btn-sm btn-light" @click="editor = null">Cancelar</button>
+                        <button type="button" class="btn btn-sm btn-light-danger" @click="editor = null">Cancelar</button>
                     </div>
                 </div>
                 </div>

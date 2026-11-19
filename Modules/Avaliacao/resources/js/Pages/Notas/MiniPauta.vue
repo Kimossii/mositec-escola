@@ -449,7 +449,7 @@ function eliminar(instrumento) {
                         </label>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-light" @click="aAnular = null">Cancelar</button>
+                        <button type="button" class="btn btn-light-danger" @click="aAnular = null">Cancelar</button>
                         <button type="submit" class="btn btn-danger" :disabled="!anulacao.motivo.trim()">Anular</button>
                     </div>
                 </form>
@@ -468,7 +468,7 @@ function eliminar(instrumento) {
                         <SelectSolid v-model="novo.tipo" :options="opcoesTipos" />
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-light" @click="modalNova = false">Cancelar</button>
+                        <button type="button" class="btn btn-light-danger" @click="modalNova = false">Cancelar</button>
                         <button type="submit" class="btn btn-primary">Adicionar</button>
                     </div>
                 </form>

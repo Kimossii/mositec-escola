@@ -131,18 +131,42 @@ class ImportacaoDeCursosTest extends TestCase
         $linhas = iterator_to_array((new LeitorDeFicheiro)->linhas($resposta->baseResponse->getFile()->getPathname(), 'xlsx'));
         $this->assertContains(['Código*', 'Nome*', 'Descrição'], $linhas);
 
-        // Como o Excel grava: textos em sharedStrings, folha com namespace por omissão.
+        // Como o Excel grava: pacote completo, textos em sharedStrings, folha com namespace por omissão, uma linha vazia pelo meio,
+        // uma data (série 45000 + estilo de data) e um número inteiro guardado como decimal.
+        $ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
         $caminho = tempnam(sys_get_temp_dir(), 'x').'.xlsx';
         $zip = new ZipArchive;
         $zip->open($caminho, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        $zip->addFromString('xl/sharedStrings.xml', '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><si><t>Código</t></si><si><t>Nome</t></si><si><t>INF</t></si><si><r><t>Infor</t></r><r><t>mática</t></r></si></sst>');
-        $zip->addFromString('xl/worksheets/sheet1.xml', '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c></row><row r="2"><c r="A2" t="s"><v>2</v></c><c r="C2"><v>7</v></c></row></sheetData></worksheet>');
+        $zip->addFromString('[Content_Types].xml', '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>');
+        $zip->addFromString('_rels/.rels', '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+        $zip->addFromString('xl/workbook.xml', '<workbook xmlns="'.$ns.'" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Folha1" sheetId="1" r:id="rId1"/></sheets></workbook>');
+        $zip->addFromString('xl/_rels/workbook.xml.rels', '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
+        $zip->addFromString('xl/styles.xml', '<styleSheet xmlns="'.$ns.'"><fonts count="1"><font><sz val="11"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs></styleSheet>');
+        $zip->addFromString('xl/sharedStrings.xml', '<sst xmlns="'.$ns.'"><si><t>Código</t></si><si><t>Nome</t></si><si><t>INF</t></si><si><r><t>Infor</t></r><r><t>mática</t></r></si></sst>');
+        $zip->addFromString('xl/worksheets/sheet1.xml', '<worksheet xmlns="'.$ns.'"><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c></row><row r="2"><c r="A2" t="s"><v>2</v></c><c r="C2"><v>7</v></c></row><row r="4"><c r="A4" t="s"><v>3</v></c><c r="B4" s="1"><v>45000</v></c><c r="C4"><v>123456789.0</v></c></row></sheetData></worksheet>');
         $zip->close();
 
         $lidas = iterator_to_array((new LeitorDeFicheiro)->linhas($caminho, 'xlsx'));
         $this->assertSame(['Código', 'Nome'], $lidas[1]);
         $this->assertSame(['INF', null, '7'], $lidas[2]);
+        $this->assertSame([], $lidas[3]);                                        // a linha vazia conta, para os erros apontarem a linha certa
+        $this->assertSame(['Informática', '2023-03-15', '123456789'], $lidas[4]); // texto com partes, data legível e inteiro sem «.0»
         unlink($caminho);
+    }
+
+    public function test_ficheiro_que_nao_e_xlsx_e_recusado_com_mensagem_clara(): void
+    {
+        $caminho = tempnam(sys_get_temp_dir(), 'x').'.xlsx';
+        file_put_contents($caminho, 'isto não é um zip');
+
+        try {
+            iterator_to_array((new LeitorDeFicheiro)->linhas($caminho, 'xlsx'));
+            $this->fail('Devia recusar.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('corrompido', $e->getMessage());
+        } finally {
+            unlink($caminho);
+        }
     }
 
     /** Medição de escala. Só corre com IMPORT_ESCALA=<linhas> (ex.: 20000); fora disso fica saltado. */

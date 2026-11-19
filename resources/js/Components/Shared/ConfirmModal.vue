@@ -18,7 +18,7 @@ const emit = defineEmits(['confirmar', 'cancelar']);
                 <h3 class="mb-4">{{ titulo }}</h3>
                 <p class="text-gray-700 mb-6">{{ mensagem }}</p>
                 <div class="text-end">
-                    <button type="button" class="btn btn-light-primary me-2" :disabled="processando" @click="emit('cancelar')">
+                    <button type="button" class="btn btn-light-danger me-2" :disabled="processando" @click="emit('cancelar')">
                         Cancelar
                     </button>
                     <button type="button" :class="['btn', `btn-${variante}`]" :disabled="processando" @click="emit('confirmar')">

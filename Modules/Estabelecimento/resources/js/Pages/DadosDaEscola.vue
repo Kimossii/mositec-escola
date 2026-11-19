@@ -308,7 +308,7 @@ function submeter() {
             <div v-if="editando" class="barra-edicao">
                 <span class="text-gray-700 fw-semibold fs-7 d-none d-md-inline">A editar os dados da escola</span>
                 <div class="d-flex gap-2 ms-auto">
-                    <button type="button" class="btn btn-light" :disabled="processing" @click="cancelar">Cancelar</button>
+                    <button type="button" class="btn btn-light-danger" :disabled="processing" @click="cancelar">Cancelar</button>
                     <button type="submit" class="btn btn-success" :disabled="processing">Guardar alterações</button>
                 </div>
             </div>

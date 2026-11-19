@@ -101,7 +101,7 @@ function submeter() {
                 </template>
 
                 <div class="text-end">
-                    <button type="button" class="btn btn-light-primary me-2" :disabled="processando" @click="emit('fechar')">Cancelar</button>
+                    <button type="button" class="btn btn-light-danger me-2" :disabled="processando" @click="emit('fechar')">Cancelar</button>
                     <button type="button" class="btn btn-primary" :disabled="!podeSubmeter" @click="submeter">
                         {{ aTrancar ? 'Trancar' : 'Reactivar' }}
                     </button>

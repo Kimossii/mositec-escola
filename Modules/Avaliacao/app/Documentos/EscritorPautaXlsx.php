@@ -2,13 +2,28 @@
 
 namespace Modules\Avaliacao\Documentos;
 
-use RuntimeException;
-use ZipArchive;
+use Modules\Core\Exportacao\CelulasSeguras;
+use OpenSpout\Common\Entity\Cell\EmptyCell;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Common\Entity\Style\Border;
+use OpenSpout\Common\Entity\Style\BorderName;
+use OpenSpout\Common\Entity\Style\BorderPart;
+use OpenSpout\Common\Entity\Style\BorderStyle;
+use OpenSpout\Common\Entity\Style\BorderWidth;
+use OpenSpout\Common\Entity\Style\CellAlignment;
+use OpenSpout\Common\Entity\Style\CellVerticalAlignment;
+use OpenSpout\Common\Entity\Style\Color;
+use OpenSpout\Common\Entity\Style\Style;
+use OpenSpout\Writer\XLSX\Options;
+use OpenSpout\Writer\XLSX\Options\PageOrientation;
+use OpenSpout\Writer\XLSX\Options\PageSetup;
+use OpenSpout\Writer\XLSX\Options\PaperSize;
+use OpenSpout\Writer\XLSX\Writer;
 
 /**
- * Excel (.xlsx) no formato das pautas oficiais, sem dependências (só a extensão zip): cabeçalho centrado e unido, grupos de
- * colunas com células unidas, bordas, e assinaturas. O texto vai como «inline string», que o Excel nunca interpreta como
- * fórmula. Os números ficam como texto: a pauta imprime-se tal como está, com as casas decimais da escola.
+ * Excel (.xlsx, OpenSpout) no formato das pautas oficiais: cabeçalho centrado e unido, grupos de colunas com células unidas,
+ * bordas, assinaturas e página A4 na horizontal ajustada à largura. O texto nunca é fórmula. Os números ficam como texto: a
+ * pauta imprime-se tal como está, com as casas decimais da escola. O desenho é deste ficheiro; o OpenSpout só escreve o formato.
  */
 class EscritorPautaXlsx
 {
@@ -26,40 +41,73 @@ class EscritorPautaXlsx
 
     public function escrever(DocumentoPauta $doc, string $caminho): void
     {
-        $zip = new ZipArchive;
-        if ($zip->open($caminho, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new RuntimeException('Não foi possível criar o ficheiro Excel.');
+        [$linhas, $unir] = $this->desenhar($doc);
+
+        // A fonte por omissão do livro (Arial 10) define a unidade das larguras de coluna: tem de ser a da pauta, senão a folha fica mais larga.
+        $opcoes = new Options(FALLBACK_STYLE: (new Style())->withFontName('Arial')->withFontSize(10), pageSetup: new PageSetup(PageOrientation::LANDSCAPE, PaperSize::A4, fitToHeight: 0, fitToWidth: 1));
+        $writer = new Writer($opcoes);
+        $writer->openToFile($caminho);
+
+        $folha = $writer->getCurrentSheet();
+        $folha->setName('Pauta');
+        foreach (range(1, $doc->totalDeColunas()) as $c) {
+            $folha->setColumnWidth((float) ($c - 1 === $doc->indiceDoNome() ? 36 : ($c === 1 ? 5 : 8)), $c);
         }
 
-        $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>');
-        $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
-        $zip->addFromString('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Pauta" sheetId="1" r:id="rId1"/></sheets></workbook>');
-        $zip->addFromString('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
-        $zip->addFromString('xl/styles.xml', $this->estilos());
-        $zip->addFromString('xl/worksheets/sheet1.xml', $this->folha($doc));
-        $zip->close();
+        $estilos = $this->estilos();
+        $ultima = $linhas === [] ? 0 : max(array_keys($linhas));
+        for ($n = 1; $n <= $ultima; $n++) {
+            $writer->addRow(new Row($this->celulasDaLinha($linhas[$n] ?? [], $estilos)));
+        }
+
+        // As uniões só se declaram depois de a folha ter linhas.
+        foreach ($unir as [$c1, $r1, $c2, $r2]) {
+            $opcoes->mergeCells($c1 - 1, $r1, $c2 - 1, $r2, $folha->getIndex());
+        }
+
+        $writer->close();
     }
 
-    private function estilos(): string
+    /**
+     * @param  list<array{0: int, 1: string, 2: int}>  $celulas  [coluna (a partir de 1), texto, estilo]
+     * @param  array<int, Style>  $estilos
+     * @return list<\OpenSpout\Common\Entity\Cell>
+     */
+    private function celulasDaLinha(array $celulas, array $estilos): array
     {
-        $centro = '<alignment horizontal="center" vertical="center" wrapText="1"/>';
+        $porColuna = [];
+        foreach ($celulas as [$coluna, $texto, $estilo]) {
+            $porColuna[$coluna] = CelulasSeguras::de($texto, $estilos[$estilo]);
+        }
 
-        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            .'<fonts count="3"><font><sz val="10"/><name val="Arial"/></font><font><b/><sz val="10"/><name val="Arial"/></font><font><b/><sz val="13"/><name val="Arial"/></font></fonts>'
-            .'<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'
-            .'<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"/><right style="thin"/><top style="thin"/><bottom style="thin"/><diagonal/></border></borders>'
-            .'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-            .'<cellXfs count="6">'
-            .'<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
-            .'<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1">'.$centro.'</xf>'
-            .'<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1">'.$centro.'</xf>'
-            .'<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1">'.$centro.'</xf>'
-            .'<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1">'.$centro.'</xf>'
-            .'<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
-            .'</cellXfs></styleSheet>';
+        $saida = [];
+        for ($c = 1; $c <= ($porColuna === [] ? 1 : max(array_keys($porColuna))); $c++) {
+            $saida[] = $porColuna[$c] ?? new EmptyCell(null);
+        }
+
+        return $saida;
     }
 
-    private function folha(DocumentoPauta $doc): string
+    /** @return array<int, Style> */
+    private function estilos(): array
+    {
+        $base = (new Style())->withFontName('Arial')->withFontSize(10);
+        $centro = fn (Style $s) => $s->withCellAlignment(CellAlignment::CENTER)->withCellVerticalAlignment(CellVerticalAlignment::CENTER)->withShouldWrapText(true);
+        $fina = fn (BorderName $nome) => new BorderPart($nome, Color::BLACK, BorderWidth::THIN, BorderStyle::SOLID);
+        $bordas = new Border($fina(BorderName::LEFT), $fina(BorderName::RIGHT), $fina(BorderName::TOP), $fina(BorderName::BOTTOM));
+
+        return [
+            self::ESTILO_NORMAL => $base,
+            self::ESTILO_TITULO => $centro($base->withFontBold(true)->withFontSize(13)),
+            self::ESTILO_OFICIAL => $centro($base->withFontBold(true)),
+            self::ESTILO_CABECALHO => $centro($base->withFontBold(true)->withBorder($bordas)),
+            self::ESTILO_CELULA => $centro($base->withBorder($bordas)),
+            self::ESTILO_NOME => $base->withBorder($bordas)->withCellAlignment(CellAlignment::LEFT)->withCellVerticalAlignment(CellVerticalAlignment::CENTER),
+        ];
+    }
+
+    /** @return array{0: array<int, list<array{0: int, 1: string, 2: int}>>, 1: list<array{0: int, 1: int, 2: int, 3: int}>} */
+    private function desenhar(DocumentoPauta $doc): array
     {
         $total = $doc->totalDeColunas();
         $linhas = [];
@@ -68,7 +116,7 @@ class EscritorPautaXlsx
 
         $larga = function (string $texto, int $estilo) use (&$linhas, &$unir, &$r, $total): void {
             $linhas[$r] = [[1, $texto, $estilo]];
-            $unir[] = 'A'.$r.':'.$this->coluna($total).$r;
+            $unir[] = [1, $r, $total, $r];
             $r++;
         };
 
@@ -88,7 +136,7 @@ class EscritorPautaXlsx
         foreach ($doc->fixas as $rotulo) {
             $linhas[$topo][] = [$c, $rotulo, self::ESTILO_CABECALHO];
             $linhas[$base][] = [$c, '', self::ESTILO_CABECALHO];
-            $unir[] = $this->coluna($c).$topo.':'.$this->coluna($c).$base;
+            $unir[] = [$c, $topo, $c, $base];
             $c++;
         }
         foreach ($doc->grupos as $grupo) {
@@ -98,14 +146,14 @@ class EscritorPautaXlsx
                 $linhas[$base][] = [$c + $k, $grupo['colunas'][$k], self::ESTILO_CABECALHO];
             }
             if ($n > 1) {
-                $unir[] = $this->coluna($c).$topo.':'.$this->coluna($c + $n - 1).$topo;
+                $unir[] = [$c, $topo, $c + $n - 1, $topo];
             }
             $c += $n;
         }
         foreach ($doc->finais as $rotulo) {
             $linhas[$topo][] = [$c, $rotulo, self::ESTILO_CABECALHO];
             $linhas[$base][] = [$c, '', self::ESTILO_CABECALHO];
-            $unir[] = $this->coluna($c).$topo.':'.$this->coluna($c).$base;
+            $unir[] = [$c, $topo, $c, $base];
             $c++;
         }
         $r += 2;
@@ -133,50 +181,6 @@ class EscritorPautaXlsx
             $r += 4;
         }
 
-        return $this->xml($linhas, $unir, $doc);
-    }
-
-    /** @param  array<int, list<array{0: int, 1: string, 2: int}>>  $linhas */
-    private function xml(array $linhas, array $unir, DocumentoPauta $doc): string
-    {
-        ksort($linhas);
-        $total = $doc->totalDeColunas();
-        $colunas = '';
-        foreach (range(1, $total) as $c) {
-            $largura = $c - 1 === $doc->indiceDoNome() ? 36 : ($c === 1 ? 5 : 8);
-            $colunas .= '<col min="'.$c.'" max="'.$c.'" width="'.$largura.'" customWidth="1"/>';
-        }
-
-        $dados = '';
-        foreach ($linhas as $numero => $celulas) {
-            usort($celulas, fn (array $x, array $y) => $x[0] <=> $y[0]);
-            $dados .= '<row r="'.$numero.'">';
-            foreach ($celulas as [$coluna, $texto, $estilo]) {
-                $ref = $this->coluna($coluna).$numero;
-                $dados .= $texto === ''
-                    ? '<c r="'.$ref.'" s="'.$estilo.'"/>'
-                    : '<c r="'.$ref.'" s="'.$estilo.'" t="inlineStr"><is><t xml:space="preserve">'.htmlspecialchars($texto, ENT_XML1 | ENT_QUOTES, 'UTF-8').'</t></is></c>';
-            }
-            $dados .= '</row>';
-        }
-
-        $merges = $unir === [] ? '' : '<mergeCells count="'.count($unir).'">'.implode('', array_map(fn (string $m) => '<mergeCell ref="'.$m.'"/>', $unir)).'</mergeCells>';
-
-        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            .'<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><cols>'.$colunas.'</cols><sheetData>'.$dados.'</sheetData>'.$merges
-            .'<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>';
-    }
-
-    /** 1 → A, 27 → AA */
-    private function coluna(int $n): string
-    {
-        $letras = '';
-        while ($n > 0) {
-            $resto = ($n - 1) % 26;
-            $letras = chr(65 + $resto).$letras;
-            $n = intdiv($n - 1, 26);
-        }
-
-        return $letras;
+        return [$linhas, $unir];
     }
 }
