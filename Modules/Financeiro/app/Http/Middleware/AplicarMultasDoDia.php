@@ -4,6 +4,7 @@ namespace Modules\Financeiro\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Modules\Core\Licenciamento\Contracts\ModulosDisponiveis;
 use Modules\Financeiro\Services\AplicarMultasDiariasService;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -13,13 +14,13 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class AplicarMultasDoDia
 {
-    public function __construct(private AplicarMultasDiariasService $multas)
+    public function __construct(private AplicarMultasDiariasService $multas, private ModulosDisponiveis $modulos)
     {
     }
 
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->isMethod('GET') && $request->user() !== null) {
+        if ($request->isMethod('GET') && $request->user() !== null && $this->modulos->disponivel('financeiro')) {
             $this->multas->executarSeNecessario();
         }
 

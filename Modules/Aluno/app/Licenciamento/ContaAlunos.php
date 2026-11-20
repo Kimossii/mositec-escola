@@ -4,9 +4,10 @@ namespace Modules\Aluno\Licenciamento;
 
 use Modules\Aluno\Models\Aluno;
 use Modules\Core\Licenciamento\Contracts\ContaRecursoLicenciado;
+use Modules\Core\Enums\Estado;
 use Modules\Core\Licenciamento\Enums\Recurso;
 
-/** Alunos do tenant actual (o escopo de tenancy do modelo filtra). */
+/** Alunos ATIVOS do tenant actual (o escopo de tenancy filtra); inativos não gastam vaga. */
 class ContaAlunos implements ContaRecursoLicenciado
 {
     public function recurso(): Recurso
@@ -16,6 +17,6 @@ class ContaAlunos implements ContaRecursoLicenciado
 
     public function contar(): int
     {
-        return Aluno::query()->count();
+        return Aluno::query()->where('estado', Estado::ATIVO->value)->count();
     }
 }

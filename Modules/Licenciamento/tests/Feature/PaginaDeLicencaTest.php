@@ -82,7 +82,7 @@ class PaginaDeLicencaTest extends TestCase
                 ->where('licenca_estado.limites.0.utilizacao', 0)
                 ->where('licenca_estado.limites.1.recurso', 'utilizadores')
                 ->where('licenca_estado.limites.1.limite', null)
-                ->where('licenca_estado.limites.1.utilizacao', 1));
+                ->where('licenca_estado.limites.1.utilizacao', 0)); // o administrador (único utilizador do teste) não conta
     }
 
     public function test_admin_cola_licenca_valida_e_fica_activa(): void

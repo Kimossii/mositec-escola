@@ -14,6 +14,7 @@ use Modules\Licenciamento\Tests\Support\ComLicencaDeTeste;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
+use Modules\Usuario\Actions\AlternarEstadoUsuarioAction;
 use Modules\Usuario\Actions\UsuarioAction;
 use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Enums\TipoLogin;
@@ -137,7 +138,7 @@ class LimitesDeLicencaTest extends TestCase
         // 1 não-aluno + 1 a criar = 2: cabe, apesar das 3 contas de aluno.
         $this->limites()->garantir(Recurso::UTILIZADORES);
 
-        $this->criarUser('b@x.test', Perfil::ADMIN_ESCOLA);
+        $this->criarUser('b@x.test', Perfil::FUNCIONARIO);
         $this->expectException(LimiteDeLicencaExcedido::class);
         $this->limites()->garantir(Recurso::UTILIZADORES);
     }
@@ -145,7 +146,7 @@ class LimitesDeLicencaTest extends TestCase
     public function test_usuario_action_aplica_o_limite_so_a_contas_que_nao_sao_de_aluno(): void
     {
         $this->instalarComLimites(null, 1);
-        $this->criarUser('a@x.test', Perfil::ADMIN_ESCOLA);
+        $this->criarUser('a@x.test', Perfil::FUNCIONARIO);
         $dto = fn (Perfil $perfil, string $email) => new UsuarioDTO(name: 'N', password: 'segredo123', perfil: $perfil, tipoLogin: TipoLogin::EMAIL, email: $email);
 
         // Conta de aluno não gasta utilizadores, mesmo com o limite já cheio.
@@ -165,6 +166,37 @@ class LimitesDeLicencaTest extends TestCase
         // Só o professor (mesmo com o perfil Aluno acrescentado) conta: 1 + 1 > 1.
         $this->expectException(LimiteDeLicencaExcedido::class);
         $this->limites()->garantir(Recurso::UTILIZADORES);
+    }
+
+    public function test_administrador_e_contas_inativas_nao_gastam_utilizadores_e_reactivar_respeita_o_limite(): void
+    {
+        $this->instalarComLimites(null, 1);
+        $this->criarUser('admin@x.test', Perfil::ADMIN_ESCOLA);
+        $prof = $this->criarUser('prof@x.test', Perfil::PROFESSOR)->fresh();
+
+        // Administrador não conta: só o professor ocupa a única vaga.
+        $this->assertSame(1, $this->limites()->utilizacao(Recurso::UTILIZADORES));
+
+        // Inativo liberta a vaga.
+        app(AlternarEstadoUsuarioAction::class)->executar($prof);
+        $this->assertSame(0, $this->limites()->utilizacao(Recurso::UTILIZADORES));
+
+        $this->criarUser('func@x.test', Perfil::FUNCIONARIO);
+
+        // Reactivar o professor ultrapassaria o limite.
+        $this->expectException(LimiteDeLicencaExcedido::class);
+        app(AlternarEstadoUsuarioAction::class)->executar($prof->fresh());
+    }
+
+    public function test_aluno_inativo_nao_conta_para_o_limite_de_alunos(): void
+    {
+        $this->instalarComLimites(2);
+        $this->criarAlunos(2);
+        Aluno::query()->first()->update(['estado' => 0]);
+
+        $this->assertSame(1, $this->limites()->utilizacao(Recurso::ALUNOS));
+        $this->limites()->garantir(Recurso::ALUNOS);
+        $this->addToAssertionCount(1);
     }
 
     public function test_a_mensagem_nao_vaza_dados_de_outro_tenant(): void

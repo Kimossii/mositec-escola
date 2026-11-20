@@ -2,7 +2,12 @@
 
 namespace Modules\Usuario\Actions;
 
+use Illuminate\Support\Facades\DB;
+use Modules\Core\Enums\Estado;
+use Modules\Core\Licenciamento\Contracts\GarantiaDeLimites;
+use Modules\Core\Licenciamento\Enums\Recurso;
 use Modules\Core\Traits\AlternaEstado;
+use Modules\Permissao\Enums\Perfil;
 use Modules\Usuario\Models\User;
 use Modules\Core\Traits\LogService;
 
@@ -12,6 +17,8 @@ class AlternarEstadoUsuarioAction
 
     use AlternaEstado;
 
+    public function __construct(private GarantiaDeLimites $limites) {}
+
     /** Regista a operação (conclusão ou falha) e delega em `executarSemRegisto()`. */
     public function executar(User $user): User
     {
@@ -20,6 +27,24 @@ class AlternarEstadoUsuarioAction
 
     private function executarSemRegisto(User $user): User
     {
-        return $this->alternarEstado($user);
+        return DB::transaction(function () use ($user) {
+            if ((int) $user->estado !== Estado::ATIVO->value && $this->ocupaVagaDeUtilizador($user)) {
+                $this->limites->garantir(Recurso::UTILIZADORES);
+            }
+
+            return $this->alternarEstado($user);
+        });
+    }
+
+    /** Mesma regra de ContaUtilizadores: só conta quem tem perfil que não seja Aluno, sem ser Administrador. */
+    private function ocupaVagaDeUtilizador(User $user): bool
+    {
+        $perfis = $user->roles()->pluck('nome');
+
+        if ($perfis->contains(Perfil::ADMIN_ESCOLA->value)) {
+            return false;
+        }
+
+        return $perfis->isEmpty() || $perfis->contains(fn ($nome) => $nome !== Perfil::ALUNO->value);
     }
 }
