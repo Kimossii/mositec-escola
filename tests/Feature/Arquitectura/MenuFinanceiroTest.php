@@ -40,8 +40,8 @@ class MenuFinanceiroTest extends TestCase
 
         $this->assertStringContainsString('<SidebarAccordion :item="financeiro" heading="Financeiro" />', $template);
         $this->assertSame(1, preg_match("#const financeiro = \{(.*?)\n\}#s", $script, $bloco), 'const financeiro tem de estar activo.');
-        $this->assertStringContainsString("{ href: '/financeiro/propinas', title: 'Propinas', permissao: 'propina.ver' }", $bloco[1]);
-        $this->assertStringContainsString("{ href: '/financeiro/pagamentos', title: 'Pagamentos', permissao: 'pagamento.ver' }", $bloco[1]);
+        $this->assertStringContainsString("{ href: '/financeiro/propinas', title: 'Propinas', modulo: 'financeiro', permissao: 'propina.ver' }", $bloco[1]);
+        $this->assertStringContainsString("{ href: '/financeiro/pagamentos', title: 'Pagamentos', modulo: 'financeiro', permissao: 'pagamento.ver' }", $bloco[1]);
         $this->assertSame(8, preg_match_all('/href:/', $bloco[1]), 'Propinas, Pagamentos, Cobranças, Dívidas, Recibos e Relatórios activos.');
     }
 
@@ -50,8 +50,8 @@ class MenuFinanceiroTest extends TestCase
         $composable = $this->semComentariosJs($this->ficheiro('resources/js/Composables/useFinanceiroMenu.js'));
         $header = $this->ficheiro('resources/js/Components/Layout/HeaderMenu.vue');
 
-        $this->assertStringContainsString("{ href: '/financeiro/propinas', label: 'Propinas', permissao: 'propina.ver' }", $composable);
-        $this->assertStringContainsString("{ href: '/financeiro/pagamentos', label: 'Pagamentos', permissao: 'pagamento.ver' }", $composable);
+        $this->assertStringContainsString("{ href: '/financeiro/propinas', label: 'Propinas', modulo: 'financeiro', permissao: 'propina.ver' }", $composable);
+        $this->assertStringContainsString("{ href: '/financeiro/pagamentos', label: 'Pagamentos', modulo: 'financeiro', permissao: 'pagamento.ver' }", $composable);
         $this->assertSame(8, preg_match_all('/href:/', $composable));
         $this->assertStringContainsString("import FinanceiroMenu from './menus/FinanceiroMenu.vue'", $header);
         $this->assertStringContainsString("import { useFinanceiroMenu } from '@/Composables/useFinanceiroMenu'", $header);

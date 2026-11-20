@@ -16,7 +16,10 @@ class TenancyEsquemaTest extends TestCase
     use RefreshDatabase;
 
     /** Tabelas de gestão que referem um tenant sem serem dados de tenant. */
-    private const GLOBAIS_COM_TENANT_ID = ['domains'];
+    private const GLOBAIS_COM_TENANT_ID = ['domains', 'licenciamento_direitos'];
+
+    /** Globais com tenant_id propositadamente SEM chave estrangeira: o módulo Licenciamento é independente (só importa o Core). */
+    private const GLOBAIS_SEM_CHAVE_PARA_TENANTS = ['licenciamento_direitos'];
 
     /** @return string[] */
     private function tabelas(): array
@@ -211,7 +214,7 @@ class TenancyEsquemaTest extends TestCase
                 fn (array $fk) => $fk['foreign_table'] === 'tenants' && $fk['columns'] === ['tenant_id']
             );
 
-            if (! $temChave) {
+            if (! $temChave && ! in_array($tabela, self::GLOBAIS_SEM_CHAVE_PARA_TENANTS, true)) {
                 $erros[] = "{$tabela}: falta a chave estrangeira tenant_id → tenants.";
             }
         }

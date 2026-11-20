@@ -15,6 +15,8 @@ const aTerminar = ref(false);
 const NAVEGACAO = [
     { rotulo: 'Painel', href: '/plataforma', exacto: true },
     { rotulo: 'Escolas', href: '/plataforma/escolas' },
+    { rotulo: 'Planos', href: '/plataforma/planos' },
+    { rotulo: 'Licenças', href: '/plataforma/licencas' },
     { rotulo: 'Sistema', href: '/plataforma/sistema' },
 ];
 const caminho = computed(() => String(page.url ?? '').split('?')[0]);

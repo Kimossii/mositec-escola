@@ -146,8 +146,9 @@ class TenancyArquitecturaTest extends TestCase
     }
 
     /**
-     * A Plataforma só conhece o Core (contratos e tipos) e o módulo Tenant (Plano 13, D1/D6);
-     * nunca módulos de negócio (Usuario, Permissao, Autenticacao, módulos académicos...).
+     * A Plataforma só conhece o Core (contratos e tipos), o módulo Tenant (Plano 13, D1/D6) e o Licenciamento
+     * (painel de planos e licenças, Licenciamento Fase 1; este nunca a conhece a ela); nunca módulos de negócio
+     * (Usuario, Permissao, Autenticacao, módulos académicos...).
      */
     public function test_a_plataforma_so_importa_core_e_tenant(): void
     {
@@ -158,12 +159,12 @@ class TenancyArquitecturaTest extends TestCase
                 continue;
             }
 
-            if (preg_match('/(?<![\\\\\w])Modules\\\\(?!Core\\\\|Tenant\\\\|Plataforma\\\\)\w+/', $conteudo, $achado) === 1) {
+            if (preg_match('/(?<![\\\\\w])Modules\\\\(?!Core\\\\|Tenant\\\\|Licenciamento\\\\|Plataforma\\\\)\w+/', $conteudo, $achado) === 1) {
                 $violacoes[] = "{$caminho}: {$achado[0]}";
             }
         }
 
-        $this->assertSame([], $violacoes, "A Plataforma só pode importar Core e Tenant:\n" . implode("\n", $violacoes));
+        $this->assertSame([], $violacoes, "A Plataforma só pode importar Core, Tenant e Licenciamento:\n" . implode("\n", $violacoes));
     }
 
     /** O Core, o Tenant e os módulos da escola não conhecem a Plataforma (só o seeder raiz a compõe). */
@@ -424,6 +425,10 @@ class TenancyArquitecturaTest extends TestCase
         'Modules/Plataforma/app/Console/CriarSuperAdminCommand.php',
         'Modules/Plataforma/app/Console/RedefinirSuperAdminCommand.php',
         'Modules/Financeiro/app/Console/CambioPlataformaCommand.php',
+        // Licenciamento: operam sobre TODAS as escolas desta instalação de uma vez (activação/transição), por serviços/Actions que usam o CatalogoDeTenants; --tenant/--todos não faz sentido.
+        'Modules/Licenciamento/app/Console/GerarChavesCommand.php',
+        'Modules/Licenciamento/app/Console/EscolasSemLicencaCommand.php',
+        'Modules/Licenciamento/app/Console/EmitirTransicaoCommand.php',
         'Modules/Core/app/Console/FilasEstadoCommand.php', // lê jobs/failed_jobs (infra-estrutura da fila, partilhada por todas as escolas)
     ];
 
@@ -699,7 +704,7 @@ class TenancyArquitecturaTest extends TestCase
             }
 
             // Só importa Core e Tenant (e o próprio módulo).
-            $this->assertSame(0, preg_match('/(?<![\\\\\w])Modules\\\\(?!Core\\\\|Tenant\\\\|Plataforma\\\\)\w+/', $conteudo), "{$caminho}: importa um módulo que não é Core nem Tenant.");
+            $this->assertSame(0, preg_match('/(?<![\\\\\w])Modules\\\\(?!Core\\\\|Tenant\\\\|Licenciamento\\\\|Plataforma\\\\)\w+/', $conteudo), "{$caminho}: importa um módulo que não é Core, Tenant nem Licenciamento.");
 
             if (str_starts_with($caminho, 'Modules/Plataforma/app/Http/Controllers/')) {
                 $controllers++;

@@ -39,12 +39,12 @@ const gruposConfiguracoes = [
     {
         title: 'Financeiro',
         links: [
-            { href: '/financeiro/configuracao/moeda-cambio', label: 'Moeda e Câmbio', permissao: 'moeda-cambio.ver' },
-            { href: '/financeiro/configuracao/planos-propina', label: 'Planos de Propina', permissao: 'plano-propina.ver' },
-            { href: '/financeiro/configuracao/pausas-cobranca', label: 'Pausas de Cobrança', permissao: 'pausa-cobranca.ver' },
-            { href: '/financeiro/configuracao/regras-cobranca', label: 'Regras de Cobrança', permissao: 'regra-cobranca.ver' },
-            { href: '/financeiro/configuracao/metodos-pagamento', label: 'Métodos de Pagamento', permissao: 'metodo-pagamento.ver' },
-            { href: '/financeiro/configuracao/produtos-servicos', label: 'Produtos / Serviços', permissao: 'catalogo-financeiro.ver' },
+            { href: '/financeiro/configuracao/moeda-cambio', label: 'Moeda e Câmbio', modulo: 'financeiro', permissao: 'moeda-cambio.ver' },
+            { href: '/financeiro/configuracao/planos-propina', label: 'Planos de Propina', modulo: 'financeiro', permissao: 'plano-propina.ver' },
+            { href: '/financeiro/configuracao/pausas-cobranca', label: 'Pausas de Cobrança', modulo: 'financeiro', permissao: 'pausa-cobranca.ver' },
+            { href: '/financeiro/configuracao/regras-cobranca', label: 'Regras de Cobrança', modulo: 'financeiro', permissao: 'regra-cobranca.ver' },
+            { href: '/financeiro/configuracao/metodos-pagamento', label: 'Métodos de Pagamento', modulo: 'financeiro', permissao: 'metodo-pagamento.ver' },
+            { href: '/financeiro/configuracao/produtos-servicos', label: 'Produtos / Serviços', modulo: 'financeiro', permissao: 'catalogo-financeiro.ver' },
         ],
     },
     // Por implementar — descomentar quando o módulo Sistema existir:

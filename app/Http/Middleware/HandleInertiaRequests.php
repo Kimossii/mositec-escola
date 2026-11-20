@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Inertia\Middleware;
 use App\Services\DashboardService;
+use Modules\Core\Contracts\IdentificaAdministradorDaEscola;
 use Modules\Core\Models\PartilhaExportacao;
+use Modules\Licenciamento\Services\DireitosService;
 use Modules\Core\Models\PedidoExportacao;
 use Modules\Core\Support\HistoricoCifrado;
 use Modules\Autenticacao\Service\FotoDoUtilizadorService;
@@ -78,6 +80,12 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // Aviso de licença: só o administrador o vê (a verificação do perfil só corre se houver aviso, ou seja, nunca com a flag inactiva).
+        $aviso = app(DireitosService::class)->avisoDeExpiracao();
+        $licenca = $aviso !== null && $request->user() && app(IdentificaAdministradorDaEscola::class)->eAdministrador($request->user())
+            ? $aviso
+            : null;
+
         return [
             ...parent::share($request),
             // Só o que o frontend realmente lê (UserMenu.vue: name, email) —
@@ -110,6 +118,9 @@ class HandleInertiaRequests extends Middleware
                 : 0),
             // A escola trabalha com cursos? Esconde o menu, filtros e campos de curso das que só têm Creche, Pré-Escolar ou Primário.
             'usa_cursos' => $request->user() ? Estabelecimento::current()->usaCursos() : true,
+            'licenca' => $licenca,
+            // Módulos licenciáveis que a escola pode usar (só aliases, para esconder menus): nunca datas nem limites.
+            'modulosContratados' => $request->user() ? app(DireitosService::class)->modulosContratados() : [],
             'permissoes' => $request->user()
                 ? app(PermissionResolver::class)->conjuntoConcedido($request->user())
                 : [],

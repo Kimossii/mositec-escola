@@ -4,6 +4,9 @@ namespace Modules\Usuario\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Modules\Core\Licenciamento\Contracts\GarantiaDeLimites;
+use Modules\Core\Licenciamento\Enums\Recurso;
+use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
 use Modules\Usuario\DTO\UsuarioDTO;
 use Modules\Usuario\Enums\TipoLogin;
@@ -15,11 +18,17 @@ class UsuarioAction
 {
     public function __construct(
         private GeradorMatriculaService $geradorMatricula,
+        private GarantiaDeLimites $limites,
     ) {}
 
     public function criar(UsuarioDTO $dto): User
     {
         return DB::transaction(function () use ($dto) {
+            // Contas de aluno têm o seu próprio limite (Recurso::ALUNOS, aplicado ao criar o aluno), não gastam utilizadores.
+            if ($dto->perfil !== Perfil::ALUNO) {
+                $this->limites->garantir(Recurso::UTILIZADORES);
+            }
+
             $user = User::create([
                 'name' => $dto->name,
                 'email' => $dto->tipoLogin === TipoLogin::EMAIL ? $dto->email : null,

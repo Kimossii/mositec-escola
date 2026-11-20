@@ -2,7 +2,9 @@
 
 namespace Modules\Permissao\Providers;
 
+use Modules\Core\Contracts\IdentificaAdministradorDaEscola;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
+use Modules\Permissao\Support\IdentificadorDeAdministrador;
 use Modules\Permissao\Provisioning\ProvisionarPerfis;
 use Modules\Core\Providers\BaseModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
@@ -46,6 +48,7 @@ class PermissaoServiceProvider extends BaseModuleServiceProvider
         $this->app->tag([ProvisionarPerfis::class], ProvisionaTenant::ETIQUETA);
 
         $this->app->scoped(PermissionResolver::class);
+        $this->app->bind(IdentificaAdministradorDaEscola::class, IdentificadorDeAdministrador::class);
     }
 
     public function boot(): void

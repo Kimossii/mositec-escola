@@ -11,6 +11,8 @@ use Modules\Core\Tenancy\Http\Middleware\ExigirTenantNoContexto;
 use Modules\Core\Tenancy\Http\Middleware\ResolverTenant;
 use Modules\Core\Tenancy\Support\ProxiesConfiaveis;
 use Modules\Estabelecimento\Http\Middleware\ExigirConfiguracaoInicial;
+use Modules\Licenciamento\Http\Middleware\ExigirModuloContratado;
+use Modules\Licenciamento\Http\Middleware\GateDeLicenca;
 use Modules\Plataforma\Http\Middleware\ApenasHostCentral;
 use Modules\Plataforma\Http\Middleware\ConfigurarSessaoPlataforma;
 use Modules\Plataforma\Http\Middleware\ExigirTrocaDeSenhaPlataforma;
@@ -63,19 +65,30 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(before: \Illuminate\Routing\Middleware\SubstituteBindings::class, prepend: SuperAdminActivo::class);
         $middleware->prependToPriorityList(before: \Illuminate\Routing\Middleware\SubstituteBindings::class, prepend: ExigirTrocaDeSenhaPlataforma::class);
 
+        // O gate da licença corre antes de resolver os bindings das rotas: com a licença bloqueada, um 404 («esse aluno não
+        // existe») ou o conteúdo de um binding nunca se distingue do 503 genérico.
+        $middleware->prependToPriorityList(before: \Illuminate\Routing\Middleware\SubstituteBindings::class, prepend: GateDeLicenca::class);
+
         // O login de um visitante no painel é o do painel; a escola mantém o comportamento por omissão (route('login')).
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('plataforma', 'plataforma/*') ? route('plataforma.login') : null);
+
+        // `licenca.modulo:<alias>` nas rotas dos módulos licenciáveis (depois de `auth`): módulo não contratado = 404 neutro.
+        $middleware->alias(['licenca.modulo' => ExigirModuloContratado::class]);
 
         $middleware->api([
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             ExigirTrocaDeSenha::class,
+            // Licença bloqueada: depois do Sanctum (que já autenticou), antes do resto. Só a escola; a plataforma e a consola ficam de fora.
+            GateDeLicenca::class,
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
         // VerificarTenantDaSessao antes do Inertia: nunca partilhar os dados
-        // de um utilizador de outra escola.
+        // de um utilizador de outra escola. GateDeLicenca logo a seguir, também antes do Inertia: com a licença
+        // bloqueada o pedido nem chega a partilhar dados.
         $middleware->web(append: [
             VerificarTenantDaSessao::class,
+            GateDeLicenca::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             ExigirTrocaDeSenha::class,
             ExigirConfiguracaoInicial::class,
@@ -83,6 +96,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // A licença colada/carregada nunca é devolvida à sessão (`_old_input`) quando a validação falha.
+        $exceptions->dontFlash(['token', 'ficheiro']);
+
         // Qualquer excepção não tratada (controller, middleware, serviço…) é registada com a escola, o utilizador e o pedido:
         // assim, onde quer que o processo morra, o log diz de quem era e o que estava a pedir (sem query string nem corpo).
         $exceptions->context(function (): array {

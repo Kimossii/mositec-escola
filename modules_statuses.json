@@ -16,5 +16,6 @@
     "Plataforma": true,
     "Financeiro": true,
     "Docente": true,
-    "Avaliacao": true
+    "Avaliacao": true,
+    "Licenciamento": true
 }

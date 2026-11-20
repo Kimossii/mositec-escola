@@ -8,7 +8,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import ListaComVistas from '@/Components/Shared/ListaComVistas.vue';
 import FiltrosRecolhiveis from '@/Components/Shared/FiltrosRecolhiveis.vue';
 import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
-import { can } from '@/Composables/usePermissoes';
+import { can, moduloContratado } from '@/Composables/usePermissoes';
 import { useUsaCursos } from '@/Composables/useUsaCursos';
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
@@ -374,7 +374,7 @@ async function alternarLinha(aluno) {
                                                 <div class="fs-7 mb-1"><span class="text-muted">Telefone Principal:</span> {{ aluno.dados_pessoa?.telefone ?? '—' }}</div>
                                                 <div class="fs-7"><span class="text-muted">Telefone Alternativo:</span> {{ aluno.dados_pessoa?.telefone_alternativo ?? '—' }}</div>
 
-                                                <div class="border border-dashed rounded p-3 mt-4">
+                                                <div v-if="moduloContratado('financeiro')" class="border border-dashed rounded p-3 mt-4">
                                                     <div class="d-flex align-items-center gap-2">
                                                         <i class="ki-duotone ki-dollar fs-3 text-muted"><span class="path1"></span><span class="path2"></span></i>
                                                         <span class="fs-7 fw-bold">Situação de Propinas</span>

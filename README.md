@@ -239,6 +239,20 @@ Ver `.env.example` (comentado) e a secção seguinte. Pontos que costumam falhar
 - **Restauro:** é sempre da BD completa. Restaurar uma só escola não está previsto (todas partilham as mesmas tabelas por `tenant_id`).
 - **Saúde** (`spatie/laravel-health`): `php artisan health:list` mostra BD, modo debug, agendador, fila `default`, espaço em disco e idade do último backup (só com disco local). A fila `pesado` continua a ser vigiada por `php artisan mosi:filas:estado`. Em desenvolvimento o agendador e a fila costumam estar parados, por isso essas verificações falham: é esperado.
 
+### Licenciamento: activação
+
+Ligar `LICENCIAMENTO_ACTIVO` sem preparação bloqueia todas as escolas sem licença (os não administradores perdem a sessão). Ordem segura:
+
+1. `composer dump-autoload` e `php artisan migrate` (o módulo Licenciamento tem de estar em `modules_statuses.json`).
+2. Só na instalação central: `php artisan licenciamento:gerar-chaves --kid=k1` (mostra o par; **não grava nada**).
+3. A chave **pública** vai para `config/licenciamento.php` > `chaves_publicas`, sob o `kid`, e distribui-se com a aplicação (todas as instalações). Define `LICENCIAMENTO_KID` no `.env`.
+4. A chave **privada** vai só para um ficheiro fora da raiz web (conteúdo = a chave em base64, permissões 600); no `.env` só o caminho: `LICENCIAMENTO_CHAVE_PRIVADA_FICHEIRO`. Nunca no `.env`, no git nem em conversas.
+5. Criar os planos no painel da Plataforma (Licenças > Planos).
+6. `php artisan licenciamento:emitir-transicao --plano=ID --dias=N [--escola=MOSI-000001 ...] --dry-run` para ver, e sem `--dry-run` para emitir uma licença online a cada escola sem licença válida (as revogadas ficam de fora).
+7. `php artisan licenciamento:escolas-sem-licenca` deve sair com código 0 (nenhuma escola ficaria bloqueada).
+8. Só então `LICENCIAMENTO_ACTIVO=true`.
+9. Clientes self-hosted: enviam à MosiTec o **código da instalação** que o administrador vê em `/licenca`; recebem o texto/ficheiro da licença e instalam-no na mesma página.
+
 ## Comandos úteis
 
 ```bash

@@ -1,6 +1,6 @@
 <script setup>
-import { reactive, ref } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { onMounted, reactive, ref } from 'vue';
+import { router, usePage } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
 import PainelDeMarca from '../Components/PainelDeMarca.vue';
@@ -13,6 +13,12 @@ const form = reactive({
 const processing = ref(false);
 const errors = ref({});
 const showPassword = ref(false);
+
+// Erro vindo de fora do formulário (ex.: sessão terminada pelo servidor): mostra-o como toast ao abrir a página.
+onMounted(() => {
+    const erro = usePage().props.errors?.autorizacao;
+    if (erro) toast.error(erro);
+});
 
 function submit() {
     processing.value = true;
