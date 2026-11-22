@@ -136,6 +136,27 @@
                 </div>
             </div>
 
+            <!-- Sistema (só o administrador da escola) -->
+            <div v-if="sistemaSeccoesVisiveis.length" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="bottom-start"
+                :class="['menu-item', 'menu-lg-down-accordion', 'me-0', 'me-lg-2', { here: sistemaActivo, show: sistemaActivo }]">
+                <span class="menu-link">
+                    <span class="menu-icon">
+                        <i class="ki-duotone ki-shield-tick fs-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                    </span>
+
+                    <span class="menu-title">Sistema</span>
+
+                    <span class="menu-arrow d-lg-none"></span>
+                </span>
+
+                <div class="menu-sub menu-sub-lg-down-accordion menu-sub-lg-dropdown p-0">
+                    <SistemaMenu />
+                </div>
+            </div>
+
             <!-- Layouts -->
             <!-- <div
                 data-kt-menu-trigger="{default: 'click', lg: 'hover'}"
@@ -222,12 +243,14 @@ import PessoalMenu from './menus/PessoalMenu.vue'
 import PagesMenu from './menus/PedagogicoMenu.vue'
 import ConfiguracoesMenu from './menus/ConfiguracoesMenu.vue'
 import FinanceiroMenu from './menus/FinanceiroMenu.vue'
+import SistemaMenu from './menus/SistemaMenu.vue'
 // import LayoutsMenu from './menus/LayoutsMenu.vue'
 import { useAcademicoMenu } from '@/Composables/useAcademicoMenu'
 import { usePessoalMenu } from '@/Composables/usePessoalMenu'
 import { usePedagogicoMenu } from '@/Composables/usePedagogicoMenu'
 import { useConfiguracoesMenu } from '@/Composables/useConfiguracoesMenu'
 import { useFinanceiroMenu } from '@/Composables/useFinanceiroMenu'
+import { useSistemaMenu } from '@/Composables/useSistemaMenu'
 import { useActiveMenu } from '@/composables/useActiveMenu'
 
 const { seccoesVisiveis: academicoSeccoesVisiveis } = useAcademicoMenu()
@@ -235,6 +258,7 @@ const { seccoesVisiveis: pessoalSeccoesVisiveis } = usePessoalMenu()
 const { seccoesVisiveis: pedagogicoSeccoesVisiveis } = usePedagogicoMenu()
 const { gruposVisiveis: configuracoesGruposVisiveis } = useConfiguracoesMenu()
 const { seccoesVisiveis: financeiroSeccoesVisiveis } = useFinanceiroMenu()
+const { seccoesVisiveis: sistemaSeccoesVisiveis } = useSistemaMenu()
 const { isActive, isGroupActive } = useActiveMenu()
 
 // Cada composable devolve secções/grupos ({ links: [...] }) — achatamos para
@@ -244,5 +268,6 @@ const academicoActivo = computed(() => isGroupActive(academicoSeccoesVisiveis.va
 const pessoalActivo = computed(() => isGroupActive(pessoalSeccoesVisiveis.value.flatMap((s) => s.links)))
 const pedagogicoActivo = computed(() => isGroupActive(pedagogicoSeccoesVisiveis.value.flatMap((s) => s.links)))
 const financeiroActivo = computed(() => isGroupActive(financeiroSeccoesVisiveis.value.flatMap((s) => s.links)))
+const sistemaActivo = computed(() => isGroupActive(sistemaSeccoesVisiveis.value.flatMap((s) => s.links)))
 const configuracoesActivo = computed(() => isGroupActive(configuracoesGruposVisiveis.value.flatMap((g) => g.links)))
 </script>

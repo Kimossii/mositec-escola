@@ -42,6 +42,8 @@ class ExigirConfiguracaoInicial
         return $rota === null
             || $rota->getName() === 'logout'
             || $request->routeIs('estabelecimento.*')
+            // Escola nova com a licença por instalar: o administrador tem de poder chegar à página da licença (senão gate e este ciclam).
+            || $request->routeIs('licenca.*')
             // A troca obrigatória de senha tem prioridade: sem esta isenção os dois middlewares redireccionam em ciclo.
             || $request->routeIs('senha.alterar', 'senha.alterar.store');
     }

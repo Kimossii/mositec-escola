@@ -9,6 +9,9 @@
         <SidebarMenuWrapper />
     </Teleport>
 
+    <!-- Aviso de licença (só o administrador, só em modo de aviso) -->
+    <AvisoDeLicenca />
+
     <!-- Slot recebe o conteúdo da página -->
     <slot />
 
@@ -19,6 +22,7 @@
 import { onMounted } from 'vue'
 import AppHeader from '@/Components/Layout/AppHeader.vue'
 import SidebarMenuWrapper from '@/Components/Layout/SidebarMenuWrapper.vue'
+import AvisoDeLicenca from '../../../Modules/Licenciamento/resources/js/Components/AvisoDeLicenca.vue'
 import Footer from '@/Components/Shared/Footer.vue'
 
 onMounted(() => {

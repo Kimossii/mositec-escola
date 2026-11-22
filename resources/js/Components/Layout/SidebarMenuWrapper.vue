@@ -350,6 +350,9 @@
                 </div>
             </div>
 
+            <!-- ── Section: Sistema (só o administrador da escola) ── -->
+            <SidebarAccordion :item="sistema" heading="Sistema" />
+
             <!-- Customers -->
             <!-- <SidebarAccordion :item="customers" /> -->
 
@@ -492,10 +495,10 @@ const pedagogico = {
         { href: '/disciplinas', title: 'Disciplinas', permissao: 'disciplina.ver' },
         { href: '/horarios', title: 'Horários', permissao: 'horario.ver' },
         // { href: '#', title: 'Planos de Aula' },
-        { href: '/avaliacao/notas', title: 'Avaliações / Notas', permissao: 'nota.ver' },
-        { href: '/avaliacao/configuracao', title: 'Configuração da avaliação', permissao: 'nota.configurar' },
-        { href: '/avaliacao/pautas', title: 'Pautas', permissao: 'nota.ver-pauta' },
-        { href: '/minhas-notas', title: 'As minhas notas', permissao: 'nota.ver-proprias' },
+        { href: '/avaliacao/notas', title: 'Avaliações / Notas', modulo: 'avaliacao', permissao: 'nota.ver' },
+        { href: '/avaliacao/configuracao', title: 'Configuração da avaliação', modulo: 'avaliacao', permissao: 'nota.configurar' },
+        { href: '/avaliacao/pautas', title: 'Pautas', modulo: 'avaliacao', permissao: 'nota.ver-pauta' },
+        { href: '/minhas-notas', title: 'As minhas notas', modulo: 'avaliacao', permissao: 'nota.ver-proprias' },
         // { href: '#', title: 'Conselho de Turma' },
         // { href: '#', title: 'Exames / Recuperações' },
     ],
@@ -541,20 +544,30 @@ const pessoal = {
     ],
 }
 
+// ── Sistema — só o administrador da escola (por agora a licença) ──
+const sistema = {
+    title: 'Sistema',
+    icon: 'ki-shield-tick',
+    paths: 2,
+    items: [
+        { href: '/licenca', title: 'Licença', soAdministrador: true },
+    ],
+}
+
 // ── Financeiro (operação) — os restantes itens entram com as respectivas fases ──
 const financeiro = {
     title: 'Financeiro',
     icon: 'ki-dollar',
     paths: 3,
     items: [
-        { href: '/financeiro/propinas', title: 'Propinas', permissao: 'propina.ver' },
-        { href: '/financeiro/pagamentos', title: 'Pagamentos', permissao: 'pagamento.ver' },
-        { href: '/financeiro/cobrancas', title: 'Cobranças', permissao: 'cobranca.ver' },
-        { href: '/financeiro/dividas', title: 'Dívidas', permissao: 'propina.ver' },
-        { href: '/financeiro/bolsas', title: 'Bolsas', permissao: 'bolsa.ver' },
-        { href: '/financeiro/acordos', title: 'Acordos de dívida', permissao: 'acordo.ver' },
-        { href: '/financeiro/recibos', title: 'Recibos', permissao: 'pagamento.ver' },
-        { href: '/financeiro/relatorios', title: 'Relatórios financeiros', permissao: 'pagamento.exportar' },
+        { href: '/financeiro/propinas', title: 'Propinas', modulo: 'financeiro', permissao: 'propina.ver' },
+        { href: '/financeiro/pagamentos', title: 'Pagamentos', modulo: 'financeiro', permissao: 'pagamento.ver' },
+        { href: '/financeiro/cobrancas', title: 'Cobranças', modulo: 'financeiro', permissao: 'cobranca.ver' },
+        { href: '/financeiro/dividas', title: 'Dívidas', modulo: 'financeiro', permissao: 'propina.ver' },
+        { href: '/financeiro/bolsas', title: 'Bolsas', modulo: 'financeiro', permissao: 'bolsa.ver' },
+        { href: '/financeiro/acordos', title: 'Acordos de dívida', modulo: 'financeiro', permissao: 'acordo.ver' },
+        { href: '/financeiro/recibos', title: 'Recibos', modulo: 'financeiro', permissao: 'pagamento.ver' },
+        { href: '/financeiro/relatorios', title: 'Relatórios financeiros', modulo: 'financeiro', permissao: 'pagamento.exportar' },
         // { href: '#', title: 'Dívidas' },
         // { href: '#', title: 'Descontos / Bolsas' },
         // { href: '#', title: 'Recibos' },
@@ -930,11 +943,11 @@ const configuracoesMenu = [
     {
         title: 'Financeiro',
         items: [
-            { href: '/financeiro/configuracao/moeda-cambio', title: 'Moeda e Câmbio', permissao: 'moeda-cambio.ver' },
-            { href: '/financeiro/configuracao/planos-propina', title: 'Planos de Propina', permissao: 'plano-propina.ver' },
-            { href: '/financeiro/configuracao/regras-cobranca', title: 'Regras de Cobrança', permissao: 'regra-cobranca.ver' },
-            { href: '/financeiro/configuracao/metodos-pagamento', title: 'Métodos de Pagamento', permissao: 'metodo-pagamento.ver' },
-            { href: '/financeiro/configuracao/produtos-servicos', title: 'Produtos / Serviços', permissao: 'catalogo-financeiro.ver' },
+            { href: '/financeiro/configuracao/moeda-cambio', title: 'Moeda e Câmbio', modulo: 'financeiro', permissao: 'moeda-cambio.ver' },
+            { href: '/financeiro/configuracao/planos-propina', title: 'Planos de Propina', modulo: 'financeiro', permissao: 'plano-propina.ver' },
+            { href: '/financeiro/configuracao/regras-cobranca', title: 'Regras de Cobrança', modulo: 'financeiro', permissao: 'regra-cobranca.ver' },
+            { href: '/financeiro/configuracao/metodos-pagamento', title: 'Métodos de Pagamento', modulo: 'financeiro', permissao: 'metodo-pagamento.ver' },
+            { href: '/financeiro/configuracao/produtos-servicos', title: 'Produtos / Serviços', modulo: 'financeiro', permissao: 'catalogo-financeiro.ver' },
         ],
     },
     // Por implementar — descomentar quando o módulo Sistema existir:

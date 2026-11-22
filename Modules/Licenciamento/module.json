@@ -1,0 +1,11 @@
+{
+    "name": "Licenciamento",
+    "alias": "licenciamento",
+    "description": "Licenciamento MosiTec: licenças assinadas, direitos locais e limites por plano.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Licenciamento\\Providers\\LicenciamentoServiceProvider"
+    ],
+    "files": []
+}

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Modules\Aluno\Models\Aluno;
 use Modules\Aluno\Services\AlunoConsultaService;
+use Modules\Core\Licenciamento\Contracts\ModulosDisponiveis;
 use Modules\Financeiro\Services\MoedaDoTenant;
 use Modules\Financeiro\Services\PagamentoConsultaService;
 use Modules\Financeiro\Support\Dinheiro;
@@ -24,6 +25,7 @@ class PesquisaGlobalService
         private AlunoConsultaService $alunos,
         private PagamentoConsultaService $pagamentos,
         private MoedaDoTenant $moeda,
+        private ModulosDisponiveis $modulos,
     ) {
     }
 
@@ -61,7 +63,7 @@ class PesquisaGlobalService
                 ])->all();
         }
 
-        if ($user->can('pagamento.ver')) {
+        if ($this->podeVerFinanceiro($user, 'pagamento.ver')) {
             $grupos['Pagamentos'] = $this->pagamentos->listar(['pesquisa' => $termo], self::POR_GRUPO)->getCollection()
                 ->map(fn (array $p) => [
                     'titulo' => 'Pagamento '.$p['numero'],
@@ -72,5 +74,11 @@ class PesquisaGlobalService
         }
 
         return array_filter($grupos);
+    }
+
+    /** Bloco do módulo Financeiro: precisa da permissão E de o módulo estar contratado (licença). */
+    private function podeVerFinanceiro(User $user, string $permissao): bool
+    {
+        return $this->modulos->disponivel('financeiro') && $user->can($permissao);
     }
 }

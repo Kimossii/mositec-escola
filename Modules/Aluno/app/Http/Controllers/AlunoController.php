@@ -14,6 +14,7 @@ use Modules\Aluno\Services\GestaoAlunoService;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Contracts\SituacaoDePropinasDoAluno;
 use Modules\Core\Enums\Estado;
+use Modules\Core\Licenciamento\Contracts\ModulosDisponiveis;
 use Modules\Core\Services\ProvinciaMunicipioService;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Matricula\Services\MatriculaConsultaService;
@@ -26,6 +27,7 @@ class AlunoController extends Controller
         private MatriculaConsultaService $matriculaConsulta,
         private ProvinciaMunicipioService $provinciaMunicipio,
         private SituacaoDePropinasDoAluno $propinas,
+        private ModulosDisponiveis $modulos,
     ) {
     }
 
@@ -43,7 +45,7 @@ class AlunoController extends Controller
         }
 
         $alunos = $this->consulta->listar($filtros);
-        $podeVerPropinas = $request->user()?->can('propina.ver') ?? false;
+        $podeVerPropinas = ($request->user()?->can('propina.ver') ?? false) && $this->modulos->disponivel('financeiro');
 
         return Inertia::render('Aluno/Index', [
             // Diferido: os cartões chegam depois de a lista abrir.
@@ -78,7 +80,7 @@ class AlunoController extends Controller
         ];
 
         $matriculasActivas = $this->matriculaConsulta->matriculasActivasNoAnoLectivo($aluno);
-        $podeVerPropinas = $request->user()?->can('propina.ver') ?? false;
+        $podeVerPropinas = ($request->user()?->can('propina.ver') ?? false) && $this->modulos->disponivel('financeiro');
 
         return Inertia::render('Aluno/Show', [
             'aluno' => $aluno->load('dadosPessoa'),
@@ -95,7 +97,7 @@ class AlunoController extends Controller
             'municipiosPorProvincia' => $this->provinciaMunicipio->municipiosPorProvincia(),
             'podeVerPropinas' => $podeVerPropinas,
             'situacaoPropinas' => $podeVerPropinas ? $this->propinas->doAluno($aluno->id) : null,
-            'podeRegistarPagamento' => $request->user()?->can('pagamento.criar') ?? false,
+            'podeRegistarPagamento' => $podeVerPropinas && ($request->user()?->can('pagamento.criar') ?? false),
             'moeda' => $podeVerPropinas ? $this->propinas->moeda() : null,
         ]);
     }

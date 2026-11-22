@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Route as RotaRegistada;
 use Illuminate\Support\Facades\Route;
+use Modules\Licenciamento\Http\Middleware\ApenasAdministradorDaEscola;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -146,7 +147,8 @@ class RotasEscritaAutorizadasTest extends TestCase
     private function temMiddlewareCan(RotaRegistada $rota): bool
     {
         foreach ($rota->gatherMiddleware() as $middleware) {
-            if (str_starts_with($middleware, 'can:')) {
+            // `ApenasAdministradorDaEscola`: só o administrador da escola (via IdentificaAdministradorDaEscola, 404 aos restantes) — é a autorização da página da licença.
+            if (is_string($middleware) && (str_starts_with($middleware, 'can:') || $middleware === ApenasAdministradorDaEscola::class)) {
                 return true;
             }
         }

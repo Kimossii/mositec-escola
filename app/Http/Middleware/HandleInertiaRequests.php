@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Inertia\Middleware;
 use App\Services\DashboardService;
+use Modules\Core\Contracts\IdentificaAdministradorDaEscola;
 use Modules\Core\Models\PartilhaExportacao;
+use Modules\Licenciamento\Services\DireitosService;
 use Modules\Core\Models\PedidoExportacao;
 use Modules\Core\Support\HistoricoCifrado;
 use Modules\Autenticacao\Service\FotoDoUtilizadorService;
@@ -78,6 +80,11 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // Aviso de licença: só o administrador o vê (a verificação do perfil só corre se houver aviso, ou seja, nunca com a flag inactiva).
+        $eAdministradorDaEscola = $request->user() !== null && app(IdentificaAdministradorDaEscola::class)->eAdministrador($request->user());
+        $aviso = app(DireitosService::class)->avisoDeExpiracao();
+        $licenca = $aviso !== null && $eAdministradorDaEscola ? $aviso : null;
+
         return [
             ...parent::share($request),
             // Só o que o frontend realmente lê (UserMenu.vue: name, email) —
@@ -110,6 +117,11 @@ class HandleInertiaRequests extends Middleware
                 : 0),
             // A escola trabalha com cursos? Esconde o menu, filtros e campos de curso das que só têm Creche, Pré-Escolar ou Primário.
             'usa_cursos' => $request->user() ? Estabelecimento::current()->usaCursos() : true,
+            'licenca' => $licenca,
+            // Mostra o item «Licença» em Configurações (a página em si só responde ao administrador da escola).
+            'eAdministradorDaEscola' => $eAdministradorDaEscola,
+            // Módulos licenciáveis que a escola pode usar (só aliases, para esconder menus): nunca datas nem limites.
+            'modulosContratados' => $request->user() ? app(DireitosService::class)->modulosContratados() : [],
             'permissoes' => $request->user()
                 ? app(PermissionResolver::class)->conjuntoConcedido($request->user())
                 : [],

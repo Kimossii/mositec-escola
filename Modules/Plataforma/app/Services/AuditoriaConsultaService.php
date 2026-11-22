@@ -4,6 +4,7 @@ namespace Modules\Plataforma\Services;
 
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Plataforma\Models\RegistoDeAuditoria;
+use Modules\Plataforma\Models\SuperAdmin;
 
 /**
  * Leitura do rasto da Plataforma (`plataforma_auditoria`, tabela global).
@@ -39,5 +40,18 @@ class AuditoriaConsultaService
             ->orderByDesc('id')
             ->limit($limite)
             ->get();
+    }
+
+    /**
+     * Nome de cada Super Admin pedido, por id (para mostrar o autor de eventos que só guardam o id).
+     *
+     * @param  iterable<int|null>  $ids
+     * @return array<int, string>
+     */
+    public function nomesDosAutores(iterable $ids): array
+    {
+        $ids = collect($ids)->filter()->unique()->values()->all();
+
+        return $ids === [] ? [] : SuperAdmin::query()->whereIn('id', $ids)->pluck('name', 'id')->all();
     }
 }

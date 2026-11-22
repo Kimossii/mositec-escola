@@ -21,7 +21,7 @@ class AlterarEstadoAlunoActionTest extends TestCase
         $pessoa = DadosPessoa::create(['nome_completo' => 'Ana Silva', 'numero_identificacao' => 'BI0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
         $aluno = Aluno::create(['estabelecimento_id' => $estabelecimento->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
 
-        $actualizado = (new AlterarEstadoAlunoAction())->executar($aluno, Estado::INATIVO);
+        $actualizado = app(AlterarEstadoAlunoAction::class)->executar($aluno, Estado::INATIVO);
 
         $this->assertSame(Estado::INATIVO->value, $actualizado->estado);
         $this->assertSame('Inativo', $actualizado->estado_descricao);

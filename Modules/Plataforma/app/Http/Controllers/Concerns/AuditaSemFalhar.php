@@ -16,7 +16,7 @@ trait AuditaSemFalhar
     /**
      * @param  array<string, mixed>  $detalhe
      */
-    private function auditar(RegistarAuditoriaAction $auditoria, Request $request, string $accao, string $codigoTenant, array $detalhe = []): void
+    private function auditar(RegistarAuditoriaAction $auditoria, Request $request, string $accao, ?string $codigoTenant, array $detalhe = []): void
     {
         try {
             $auditoria->executar(new RegistoAuditoriaDTO($request->user('plataforma'), $accao, $codigoTenant, $detalhe));

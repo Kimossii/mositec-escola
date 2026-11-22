@@ -27,12 +27,12 @@ class MenuAvaliacaoTest extends TestCase
         $sidebar = $this->ficheiro('resources/js/Components/Layout/SidebarMenuWrapper.vue');
         $cabecalho = $this->ficheiro('resources/js/Composables/usePedagogicoMenu.js');
 
-        $this->assertStringContainsString("\n        { href: '/avaliacao/notas', title: 'Avaliações / Notas', permissao: 'nota.ver' },", $sidebar);
-        $this->assertStringContainsString("\n        { href: '/avaliacao/configuracao', title: 'Configuração da avaliação', permissao: 'nota.configurar' },", $sidebar);
-        $this->assertStringContainsString("\n        { href: '/avaliacao/pautas', title: 'Pautas', permissao: 'nota.ver-pauta' },", $sidebar);
-        $this->assertStringContainsString("\n            { href: '/avaliacao/pautas', label: 'Pautas', permissao: 'nota.ver-pauta' },", $cabecalho);
-        $this->assertStringContainsString("\n            { href: '/avaliacao/notas', label: 'Avaliações / Notas', permissao: 'nota.ver' },", $cabecalho);
-        $this->assertStringContainsString("\n            { href: '/avaliacao/configuracao', label: 'Configuração da avaliação', permissao: 'nota.configurar' },", $cabecalho);
+        $this->assertStringContainsString("\n        { href: '/avaliacao/notas', title: 'Avaliações / Notas', modulo: 'avaliacao', permissao: 'nota.ver' },", $sidebar);
+        $this->assertStringContainsString("\n        { href: '/avaliacao/configuracao', title: 'Configuração da avaliação', modulo: 'avaliacao', permissao: 'nota.configurar' },", $sidebar);
+        $this->assertStringContainsString("\n        { href: '/avaliacao/pautas', title: 'Pautas', modulo: 'avaliacao', permissao: 'nota.ver-pauta' },", $sidebar);
+        $this->assertStringContainsString("\n            { href: '/avaliacao/pautas', label: 'Pautas', modulo: 'avaliacao', permissao: 'nota.ver-pauta' },", $cabecalho);
+        $this->assertStringContainsString("\n            { href: '/avaliacao/notas', label: 'Avaliações / Notas', modulo: 'avaliacao', permissao: 'nota.ver' },", $cabecalho);
+        $this->assertStringContainsString("\n            { href: '/avaliacao/configuracao', label: 'Configuração da avaliação', modulo: 'avaliacao', permissao: 'nota.configurar' },", $cabecalho);
     }
 
     public function test_admin_ve_os_dois_itens_e_o_professor_so_as_notas(): void

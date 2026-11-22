@@ -8,6 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Modules\Core\Importacao\RegistoDeImportadores;
 use Modules\Core\Models\Importacao;
 use Modules\Core\Models\ImportacaoLinha;
@@ -74,6 +75,9 @@ class ImportarImportacaoJob implements ShouldQueue
                         $id = $importador->criar($linha->dados);
                         $linha->update(['estado' => ImportacaoLinha::IMPORTADA, 'registo_id' => $id]);
                     });
+                } catch (ValidationException $e) {
+                    // Regra de negócio com mensagem própria (ex.: limite da licença): chega à linha tal como os erros de validação.
+                    $linha->update(['estado' => ImportacaoLinha::ERRO, 'erros' => collect($e->errors())->flatten()->values()->all()]);
                 } catch (Throwable $e) {
                     report($e);
                     $linha->update(['estado' => ImportacaoLinha::ERRO, 'erros' => ['Não foi possível criar este registo. Confirme os dados desta linha.']]);

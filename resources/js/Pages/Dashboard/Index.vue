@@ -5,7 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import CalendarioVencimentos from '@/Components/Dashboard/CalendarioVencimentos.vue';
 import GraficoApex from '@/Components/Shared/GraficoApex.vue';
 import IndicadoresDiferidos from '@/Components/Shared/IndicadoresDiferidos.vue';
-import { can } from '@/Composables/usePermissoes';
+import { can, moduloContratado } from '@/Composables/usePermissoes';
 import { formatarDinheiro } from '../../../../Modules/Financeiro/resources/js/Support/dinheiro';
 
 defineOptions({ layout: AppLayout });
@@ -98,11 +98,11 @@ const opcoesPrevisao = computed(() => {
 });
 
 const atalhos = computed(() => [
-    { texto: 'Registar pagamento', link: '/financeiro/pagamentos/novo', permissao: 'pagamento.criar' },
-    { texto: 'Novo acordo de dívida', link: '/financeiro/acordos/novo', permissao: 'acordo.criar' },
+    { texto: 'Registar pagamento', link: '/financeiro/pagamentos/novo', modulo: 'financeiro', permissao: 'pagamento.criar' },
+    { texto: 'Novo acordo de dívida', link: '/financeiro/acordos/novo', modulo: 'financeiro', permissao: 'acordo.criar' },
     { texto: 'Alunos', link: '/alunos', permissao: 'aluno.ver' },
     { texto: 'Matrículas', link: '/matriculas', permissao: 'matricula.ver' },
-].filter((a) => can(a.permissao)));
+].filter((a) => can(a.permissao) && moduloContratado(a.modulo)));
 </script>
 
 <template>
@@ -187,7 +187,7 @@ const atalhos = computed(() => [
                                 <div class="d-flex align-items-center gap-3 flex-shrink-0">
                                     <span class="badge" :class="a.nivel === 'alto' ? 'badge-light-danger' : 'badge-light-warning'">{{ a.nivel === 'alto' ? 'Alto' : 'Médio' }}</span>
                                     <span class="fw-bold text-gray-800">{{ dinheiro(a.total) }}</span>
-                                    <Link v-if="can('acordo.criar')" :href="`/financeiro/acordos/novo?matricula=${a.matricula_id}`" class="btn btn-sm btn-light-success">Propor acordo</Link>
+                                    <Link v-if="can('acordo.criar') && moduloContratado('financeiro')" :href="`/financeiro/acordos/novo?matricula=${a.matricula_id}`" class="btn btn-sm btn-light-success">Propor acordo</Link>
                                 </div>
                             </div>
                         </div>

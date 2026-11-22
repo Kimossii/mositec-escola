@@ -2,7 +2,7 @@
 import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Link } from '@inertiajs/vue3'
-import { can } from '@/Composables/usePermissoes'
+import { can, moduloContratado } from '@/Composables/usePermissoes'
 
 // Pesquisa global: resultados reais (alunos, matrículas, pagamentos) vindos de /pesquisa, mais atalhos «Ir para…»
 // filtrados por permissão. Abre com clique ou Ctrl+K.
@@ -11,14 +11,14 @@ const IR_PARA = [
     { texto: 'Alunos', link: '/alunos', permissao: 'aluno.ver' },
     { texto: 'Matrículas', link: '/matriculas', permissao: 'matricula.ver' },
     { texto: 'Turmas', link: '/turmas', permissao: 'turmas.ver' },
-    { texto: 'Propinas', link: '/financeiro/propinas', permissao: 'propina.ver' },
-    { texto: 'Dívidas', link: '/financeiro/dividas', permissao: 'propina.ver' },
-    { texto: 'Pagamentos', link: '/financeiro/pagamentos', permissao: 'pagamento.ver' },
-    { texto: 'Recibos', link: '/financeiro/recibos', permissao: 'pagamento.ver' },
-    { texto: 'Acordos de dívida', link: '/financeiro/acordos', permissao: 'acordo.ver' },
-    { texto: 'Cobranças', link: '/financeiro/cobrancas', permissao: 'cobranca.ver' },
-    { texto: 'Bolsas', link: '/financeiro/bolsas', permissao: 'bolsa.ver' },
-    { texto: 'Relatórios financeiros', link: '/financeiro/relatorios', permissao: 'pagamento.ver' },
+    { texto: 'Propinas', link: '/financeiro/propinas', modulo: 'financeiro', permissao: 'propina.ver' },
+    { texto: 'Dívidas', link: '/financeiro/dividas', modulo: 'financeiro', permissao: 'propina.ver' },
+    { texto: 'Pagamentos', link: '/financeiro/pagamentos', modulo: 'financeiro', permissao: 'pagamento.ver' },
+    { texto: 'Recibos', link: '/financeiro/recibos', modulo: 'financeiro', permissao: 'pagamento.ver' },
+    { texto: 'Acordos de dívida', link: '/financeiro/acordos', modulo: 'financeiro', permissao: 'acordo.ver' },
+    { texto: 'Cobranças', link: '/financeiro/cobrancas', modulo: 'financeiro', permissao: 'cobranca.ver' },
+    { texto: 'Bolsas', link: '/financeiro/bolsas', modulo: 'financeiro', permissao: 'bolsa.ver' },
+    { texto: 'Relatórios financeiros', link: '/financeiro/relatorios', modulo: 'financeiro', permissao: 'pagamento.ver' },
 ]
 
 const gatilho = ref(null)
@@ -36,7 +36,7 @@ const atalhos = computed(() => {
     const t = termo.value.trim().toLowerCase()
 
     return IR_PARA
-        .filter((a) => can(a.permissao))
+        .filter((a) => can(a.permissao) && moduloContratado(a.modulo))
         .filter((a) => !t || a.texto.toLowerCase().includes(t))
         .slice(0, tem.value ? 4 : 8)
 })
