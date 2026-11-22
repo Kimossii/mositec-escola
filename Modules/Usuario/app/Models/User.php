@@ -5,6 +5,7 @@ namespace Modules\Usuario\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Modules\Core\Tenancy\PertenceAoTenant;
 use Modules\Core\Tenancy\TenantContext;
@@ -20,6 +21,7 @@ class User extends Authenticatable
     use PertenceAoTenant;
     use HasApiTokens, Notifiable;
     use SincronizaEstadoDescricao;
+    use TwoFactorAuthenticatable;
 
     protected $table = 'users';
 
@@ -38,6 +40,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected $casts = [

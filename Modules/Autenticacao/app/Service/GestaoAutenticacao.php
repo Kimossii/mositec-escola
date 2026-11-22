@@ -11,19 +11,29 @@ class GestaoAutenticacao
 {
     use LogService;
 
-    public function __construct(private LimitadorLogin $limitador)
+    public function __construct(private LimitadorLogin $limitador, private ValidadorDeCredenciais $validador)
     {
     }
 
     public function login(Request $request, $identificador, #[SensitiveParameter] $password, $remember = false)
     {
         $limiterResponse = $this->checkLoginAttempts($request, $identificador, $password, $remember);
-        if ($limiterResponse !== true) {
+        if (is_array($limiterResponse)) {
             $this->logWarning('Falha no login', ['identificador' => $identificador, 'ip' => $request->ip(), 'motivo' => $limiterResponse['message']]);
             return $limiterResponse;
         }
 
-        $user = Auth::user();
+        $user = $limiterResponse;
+
+        // Com 2FA a senha certa ainda não autentica: a sessão só abre depois do desafio (POST /two-factor-challenge).
+        if ($user->hasEnabledTwoFactorAuthentication()) {
+            $this->logInfo('Senha validada; falta o segundo factor', ['user_id' => $user->id, 'ip' => $request->ip()]);
+            $this->limitador->limparConta($request);
+
+            return ['success' => true, 'user' => $user, 'requer_2fa' => true, 'code' => 200];
+        }
+
+        Auth::login($user, $remember);
         $this->logInfo('Login realizado com sucesso', ['user_id' => $user->id, 'identificador' => $identificador, 'ip' => $request->ip()]);
 
         $this->limitador->limparConta($request);
@@ -31,6 +41,7 @@ class GestaoAutenticacao
         return [
             'success' => true,
             'user' => $user,
+            'requer_2fa' => false,
             'code' => 200
         ];
     }
@@ -53,7 +64,11 @@ class GestaoAutenticacao
 
         $campo = str_contains($identificador, '@') ? 'email' : 'numero_matricula';
 
-        if (!Auth::attempt([$campo => $identificador, 'password' => $password], $remember)) {
+        // Valida sem iniciar sessão: quem tem 2FA só entra depois do desafio.
+        $credenciais = [$campo => $identificador, 'password' => $password];
+        $utilizador = $this->validador->validar($credenciais);
+
+        if ($utilizador === null) {
             $this->limitador->registarFalha($request);
             $this->logWarning('Credenciais inválidas', [
                 'identificador' => $identificador,
@@ -66,6 +81,17 @@ class GestaoAutenticacao
             ];
         }
 
-        return true;
+        // Só depois de a senha estar certa (não revela contas desactivadas a quem não a sabe).
+        if ((int) $utilizador->estado !== 1) {
+            $this->logWarning('Login recusado: conta desactivada', ['user_id' => $utilizador->id, 'ip' => $request->ip()]);
+
+            return [
+                'success' => false,
+                'message' => 'Esta conta está desactivada. Contacte o administrador da escola.',
+                'code' => 403,
+            ];
+        }
+
+        return $utilizador;
     }
 }

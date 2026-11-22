@@ -45,7 +45,7 @@ Este ficheiro é o registo de decisão do que se implementa **agora** e do que f
 | F6 | Médio | P | Alertas de validade de documentos | `data_validade` já existe; tarefa agendada mais notificação | Por decidir | [ ] |
 | F7 | Médio | M | Exportações e importação | PDF da ficha do aluno, comprovativo de matrícula, importação de alunos por CSV | Por decidir | [ ] |
 | F8 | Médio | M | Painel com indicadores | Contagens por ano, curso e estado | Por decidir | [ ] |
-| F9 | Médio | P | Autenticação de dois factores para administradores | Fortify já está instalado | Por decidir | [ ] |
+| F9 | Médio | P | Autenticação de dois factores | Fase 1 (escola, sempre opcional, TOTP offline) feita 2026-11-22 — ver `docs/2fa.md`; Fase 2 (super admin) pendente | Agora | [~] |
 | F10 | Alto | G | Portal do encarregado e do aluno | Aproveita `EncarregadoAluno` | Por decidir | [ ] |
 
 ---

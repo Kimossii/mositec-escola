@@ -8,12 +8,17 @@ use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\Autenticacao\Service\SessoesDoUtilizadorService;
 use Modules\Autenticacao\Support\DescricaoDoDispositivo;
+use Modules\Autenticacao\Tests\Support\ComDoisFactores;
+use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
+use Modules\Permissao\Enums\Perfil;
+use Modules\Permissao\Models\Role;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
 class DefinicoesTest extends TestCase
 {
     use RefreshDatabase;
+    use ComDoisFactores;
 
     private function utilizador(string $email): User
     {
@@ -87,5 +92,36 @@ class DefinicoesTest extends TestCase
         $this->assertSame(['navegador' => 'Edge', 'sistema' => 'Windows', 'tipo' => 'computador'], DescricaoDoDispositivo::de('Mozilla/5.0 (Windows NT 10.0) Chrome/120 Safari/537 Edg/120'));
         $this->assertSame(['navegador' => 'Safari', 'sistema' => 'iOS', 'tipo' => 'telemovel'], DescricaoDoDispositivo::de('Mozilla/5.0 (iPhone; CPU iPhone OS 17) AppleWebKit Safari/604'));
         $this->assertSame('Navegador desconhecido', DescricaoDoDispositivo::de(null)['navegador']);
+    }
+
+    public function test_definicoes_expoe_estado_do_2fa_sem_segredo(): void
+    {
+        $ana = $this->utilizador('ana@example.com');
+
+        $this->actingAs($ana)->get('/definicoes?aba=seguranca')->assertInertia(fn (Assert $page) => $page
+            ->where('doisFactores.activo', false)
+            ->missing('doisFactores.segredo'));
+
+        $this->comDoisFactores($ana);
+
+        $this->actingAs($ana->fresh())->get('/definicoes?aba=seguranca')->assertInertia(fn (Assert $page) => $page
+            ->where('doisFactores.activo', true)
+            ->missing('doisFactores.segredo')
+            ->missing('auth.user.two_factor_secret'));
+    }
+
+    public function test_sugere_2fa_so_a_administradores_que_ainda_nao_o_activaram(): void
+    {
+        $this->seed(PermissaoDatabaseSeeder::class);
+        $admin = $this->utilizador('admin@example.com');
+        $admin->roles()->attach(Role::where('nome', Perfil::ADMIN_ESCOLA->value)->firstOrFail()->id);
+        $professor = $this->utilizador('prof@example.com');
+        $professor->roles()->attach(Role::where('nome', Perfil::PROFESSOR->value)->firstOrFail()->id);
+
+        $this->actingAs($admin)->get('/definicoes?aba=seguranca')->assertInertia(fn (Assert $page) => $page->where('doisFactores.sugerir', true));
+        $this->actingAs($professor)->get('/definicoes?aba=seguranca')->assertInertia(fn (Assert $page) => $page->where('doisFactores.sugerir', false));
+
+        $this->comDoisFactores($admin);
+        $this->actingAs($admin->fresh())->get('/definicoes?aba=seguranca')->assertInertia(fn (Assert $page) => $page->where('doisFactores.sugerir', false));
     }
 }

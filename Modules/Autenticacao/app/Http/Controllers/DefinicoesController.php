@@ -7,13 +7,14 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Modules\Autenticacao\Actions\TerminarOutrasSessoesAction;
 use Modules\Autenticacao\Actions\TerminarSessaoAction;
+use Modules\Autenticacao\Service\DoisFactoresDoUtilizadorService;
 use Modules\Autenticacao\Service\SessoesDoUtilizadorService;
 
 class DefinicoesController extends Controller
 {
     private const ABAS = ['perfil', 'seguranca', 'aparencia', 'permissoes'];
 
-    public function __construct(private SessoesDoUtilizadorService $sessoes)
+    public function __construct(private SessoesDoUtilizadorService $sessoes, private DoisFactoresDoUtilizadorService $doisFactores)
     {
     }
 
@@ -24,6 +25,7 @@ class DefinicoesController extends Controller
         return Inertia::render('Autenticacao/Definicoes', [
             'aba' => in_array($request->query('aba'), self::ABAS, true) ? $request->query('aba') : 'perfil',
             'membroDesde' => $utilizador->created_at?->toDateString(),
+            'doisFactores' => $this->doisFactores->estado($utilizador),
             'sessoes' => $this->sessoes->listar($utilizador, $request->session()->getId()),
         ]);
     }

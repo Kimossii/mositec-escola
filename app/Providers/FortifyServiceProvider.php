@@ -8,7 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
+use Laravel\Fortify\Contracts\TwoFactorLoginResponse;
 use Laravel\Fortify\Fortify;
+use Modules\Autenticacao\Http\Responses\DoisFactoresLoginResponse;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -17,7 +19,7 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(TwoFactorLoginResponse::class, DoisFactoresLoginResponse::class);
     }
 
     /**

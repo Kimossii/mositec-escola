@@ -20,6 +20,8 @@ Route::middleware(['auth'])->prefix('usuarios')->group(function () {
     Route::patch('/{user}/estado', [UsuarioController::class, 'alternarEstado'])->name('usuario.alternarEstado');
     Route::patch('/{user}/redefinir-senha', [UsuarioController::class, 'redefinirSenha'])
         ->middleware('can:senha-utilizador.editar')->name('usuario.redefinirSenha');
+    Route::patch('/{user}/redefinir-2fa', [UsuarioController::class, 'redefinirDoisFactores'])
+        ->middleware('can:senha-utilizador.editar')->name('usuario.redefinirDoisFactores');
 
     Route::group(['prefix' => 'alunos'], function () {
         Route::get('/', [UsuarioController::class, 'alunos'])->middleware('can:usuario.ver')->name('usuario.alunos');
