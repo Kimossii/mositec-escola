@@ -24,7 +24,7 @@ class AvaliadorDeLicencaTest extends TestCase
             'nbf' => '2026-01-01T00:00:00+00:00',
             'exp' => '2027-01-01T00:00:00+00:00',
             'tol' => 7,
-            'lim' => ['alunos' => 500, 'utilizadores' => null, 'estabelecimentos' => 1],
+            'lim' => ['alunos' => 500, 'utilizadores' => null],
             'mod' => ['financeiro', 'avaliacao'],
             'modalidade' => 1,
             'fmt' => 1,
@@ -153,7 +153,7 @@ class AvaliadorDeLicencaTest extends TestCase
     public function test_limites_sao_opcionais_e_tem_modulo(): void
     {
         $d = $this->direitos(['lim' => ['alunos' => 10]]);
-        $this->assertSame(['alunos' => 10, 'utilizadores' => null, 'estabelecimentos' => null], $d->limites);
+        $this->assertSame(['alunos' => 10, 'utilizadores' => null], $d->limites);
         $this->assertSame(Modalidade::ONLINE, $d->modalidade);
         $this->assertTrue($d->temModulo('financeiro'));
         $this->assertFalse($d->temModulo('outro'));

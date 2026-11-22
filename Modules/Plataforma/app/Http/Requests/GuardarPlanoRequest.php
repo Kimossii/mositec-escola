@@ -26,7 +26,6 @@ class GuardarPlanoRequest extends FormRequest
             'modalidade' => ['required', 'integer', 'in:' . implode(',', array_column(Modalidade::cases(), 'value'))],
             'limite_alunos' => ['nullable', 'integer', 'min:0', 'max:2000000000'],
             'limite_utilizadores' => ['nullable', 'integer', 'min:0', 'max:2000000000'],
-            'limite_estabelecimentos' => ['nullable', 'integer', 'min:0', 'max:2000000000'],
             'tolerancia_dias' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'aviso_dias' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'modulos' => ['nullable', 'array'],
@@ -59,7 +58,6 @@ class GuardarPlanoRequest extends FormRequest
             limites: [
                 'alunos' => $inteiro('limite_alunos'),
                 'utilizadores' => $inteiro('limite_utilizadores'),
-                'estabelecimentos' => $inteiro('limite_estabelecimentos'),
             ],
             toleranciaDias: $inteiro('tolerancia_dias'),
             avisoDias: $inteiro('aviso_dias'),

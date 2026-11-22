@@ -61,7 +61,7 @@ trait ComLicencaDeTeste
             'nbf' => '2026-01-01T00:00:00+00:00',
             'exp' => '2027-01-01T00:00:00+00:00',
             'tol' => 7,
-            'lim' => ['alunos' => 500, 'utilizadores' => null, 'estabelecimentos' => 1],
+            'lim' => ['alunos' => 500, 'utilizadores' => null],
             'mod' => ['financeiro', 'avaliacao'],
             'modalidade' => 1,
             'fmt' => 1,

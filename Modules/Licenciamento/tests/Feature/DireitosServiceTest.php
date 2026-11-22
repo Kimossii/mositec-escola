@@ -88,7 +88,7 @@ class DireitosServiceTest extends TestCase
 
     public function test_editar_a_coluna_claims_nao_concede_direitos(): void
     {
-        $this->instalar($this->tokenDeTeste(['lim' => ['alunos' => 5, 'utilizadores' => null, 'estabelecimentos' => 1]]));
+        $this->instalar($this->tokenDeTeste(['lim' => ['alunos' => 5, 'utilizadores' => null]]));
         DB::table('licenciamento_direitos')->update(['claims' => json_encode(['lim' => ['alunos' => null], 'mod' => ['financeiro', 'avaliacao', 'x']])]);
 
         $direitos = $this->servico()->doTenantActual();

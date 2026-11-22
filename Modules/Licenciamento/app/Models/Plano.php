@@ -11,7 +11,7 @@ class Plano extends Model
     protected $table = 'licenciamento_planos';
 
     protected $fillable = [
-        'nome', 'descricao', 'limite_alunos', 'limite_utilizadores', 'limite_estabelecimentos',
+        'nome', 'descricao', 'limite_alunos', 'limite_utilizadores',
         'tolerancia_dias', 'aviso_dias', 'modulos', 'validade_dias', 'modalidade',
     ];
 

@@ -32,7 +32,6 @@ const form = reactive({
     validade_dias: props.planos[0]?.validade_dias ?? 365,
     limite_alunos: '',
     limite_utilizadores: '',
-    limite_estabelecimentos: '',
     tolerancia_dias: '',
     aviso_dias: '',
     modulos: [],
@@ -51,7 +50,6 @@ function aplicarPlano(plano) {
     form.validade_dias = plano.validade_dias;
     form.limite_alunos = vazio(plano.limite_alunos);
     form.limite_utilizadores = vazio(plano.limite_utilizadores);
-    form.limite_estabelecimentos = vazio(plano.limite_estabelecimentos);
     form.tolerancia_dias = vazio(plano.tolerancia_dias);
     form.aviso_dias = vazio(plano.aviso_dias);
     form.modulos = [...plano.modulos];
@@ -74,7 +72,7 @@ const opcoesEscola = computed(() => [
     ...props.escolas.map((e) => ({ value: e.codigo, label: `${e.codigo} — ${e.nome}` })),
 ]);
 
-const CAMPOS = ['plano', 'plano_id', 'escola', 'instalacao', 'modalidade', 'validade_dias', 'limite_alunos', 'limite_utilizadores', 'limite_estabelecimentos', 'limites', 'tolerancia_dias', 'aviso_dias', 'modulos', 'licenca'];
+const CAMPOS = ['plano', 'plano_id', 'escola', 'instalacao', 'modalidade', 'validade_dias', 'limite_alunos', 'limite_utilizadores', 'limites', 'tolerancia_dias', 'aviso_dias', 'modulos', 'licenca'];
 const errosGerais = () => Object.entries(errors.value).filter(([campo]) => !CAMPOS.includes(campo)).map(([, mensagem]) => mensagem);
 
 function alternarModulo(alias, marcado) {
@@ -174,20 +172,15 @@ function submit() {
                 <h4 class="mb-1">Limites</h4>
                 <div class="text-muted fs-7 mb-4">Deixe um campo vazio para «sem limite».</div>
                 <div class="row g-6 mb-2">
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-6">
                         <label class="fw-semibold fs-6 mb-2" for="licenca-alunos">Alunos</label>
                         <input id="licenca-alunos" v-model="form.limite_alunos" type="number" min="0" inputmode="numeric" name="limite_alunos" placeholder="Sem limite" class="form-control form-control-solid" :class="{ 'is-invalid': errors.limite_alunos }" />
                         <div v-if="errors.limite_alunos" class="text-danger fs-7 mt-1">{{ errors.limite_alunos }}</div>
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-6">
                         <label class="fw-semibold fs-6 mb-2" for="licenca-utilizadores">Utilizadores (sem alunos)</label>
                         <input id="licenca-utilizadores" v-model="form.limite_utilizadores" type="number" min="0" inputmode="numeric" name="limite_utilizadores" placeholder="Sem limite" class="form-control form-control-solid" :class="{ 'is-invalid': errors.limite_utilizadores }" />
                         <div v-if="errors.limite_utilizadores" class="text-danger fs-7 mt-1">{{ errors.limite_utilizadores }}</div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <label class="fw-semibold fs-6 mb-2" for="licenca-estabelecimentos">Estabelecimentos</label>
-                        <input id="licenca-estabelecimentos" v-model="form.limite_estabelecimentos" type="number" min="0" inputmode="numeric" name="limite_estabelecimentos" placeholder="Sem limite" class="form-control form-control-solid" :class="{ 'is-invalid': errors.limite_estabelecimentos }" />
-                        <div v-if="errors.limite_estabelecimentos" class="text-danger fs-7 mt-1">{{ errors.limite_estabelecimentos }}</div>
                     </div>
                 </div>
                 <div v-if="errors.limites" class="text-danger fs-7 mb-4">{{ errors.limites }}</div>

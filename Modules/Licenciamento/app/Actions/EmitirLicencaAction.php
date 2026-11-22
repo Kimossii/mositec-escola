@@ -134,7 +134,6 @@ class EmitirLicencaAction
                 'estado_comercial' => EstadoComercial::ACTIVA,
                 'limite_alunos' => $limites['alunos'],
                 'limite_utilizadores' => $limites['utilizadores'],
-                'limite_estabelecimentos' => $limites['estabelecimentos'],
                 'tolerancia_dias' => $tolerancia,
                 'aviso_dias' => $aviso,
                 'modulos' => $modulos,

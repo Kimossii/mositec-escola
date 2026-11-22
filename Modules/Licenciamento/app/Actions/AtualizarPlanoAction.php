@@ -48,7 +48,6 @@ class AtualizarPlanoAction
             'descricao' => $dto->descricao,
             'limite_alunos' => $dto->limites['alunos'] ?? null,
             'limite_utilizadores' => $dto->limites['utilizadores'] ?? null,
-            'limite_estabelecimentos' => $dto->limites['estabelecimentos'] ?? null,
             'tolerancia_dias' => $dto->toleranciaDias,
             'aviso_dias' => $dto->avisoDias,
             'modulos' => array_values(array_unique($dto->modulos)),

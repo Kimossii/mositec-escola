@@ -98,8 +98,7 @@ const errosGerais = () => errosForaDosCampos(page.props.errors, ['motivo', 'tole
                         <div class="text-muted fs-7 fw-semibold">Limites</div>
                         <div class="fw-bold text-gray-800">
                             Alunos: {{ rotuloLimite(licenca.limites.alunos) }}<br />
-                            Utilizadores: {{ rotuloLimite(licenca.limites.utilizadores) }}<br />
-                            Estabelecimentos: {{ rotuloLimite(licenca.limites.estabelecimentos) }}
+                            Utilizadores: {{ rotuloLimite(licenca.limites.utilizadores) }}
                         </div>
                     </div>
                     <div class="col-12 col-md-8">

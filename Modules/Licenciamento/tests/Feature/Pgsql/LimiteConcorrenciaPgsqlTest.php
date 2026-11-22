@@ -25,7 +25,7 @@ class LimiteConcorrenciaPgsqlTest extends PgsqlConcorrenciaTestCase
     {
         $this->prepararLicencas();
         $this->congelarRelogioDeTeste();
-        app(InstalarLicencaAction::class)->executar($this->tenant->id, $this->tenant->codigo, $this->tokenDeTeste(['lim' => ['alunos' => 1, 'utilizadores' => null, 'estabelecimentos' => 1]]));
+        app(InstalarLicencaAction::class)->executar($this->tenant->id, $this->tenant->codigo, $this->tokenDeTeste(['lim' => ['alunos' => 1, 'utilizadores' => null]]));
 
         DB::beginTransaction();
         try {

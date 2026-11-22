@@ -20,8 +20,8 @@ final readonly class DireitosDaLicenca
 
     public const MAX_LIMITE = 10_000_000;
 
-    /** Chaves dos limites; null = sem limite. Recurso cobre alunos/utilizadores; estabelecimentos só viaja no documento. */
-    private const LIMITES = ['alunos', 'utilizadores', 'estabelecimentos'];
+    /** Chaves dos limites; null = sem limite. Chaves desconhecidas (ex.: o antigo 'estabelecimentos') são ignoradas. */
+    private const LIMITES = ['alunos', 'utilizadores'];
 
     /**
      * @param  array<string,?int>  $limites

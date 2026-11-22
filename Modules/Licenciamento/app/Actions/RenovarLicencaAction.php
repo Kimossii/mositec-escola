@@ -57,7 +57,6 @@ class RenovarLicencaAction
             $limites = [
                 'alunos' => $actual->limite_alunos,
                 'utilizadores' => $actual->limite_utilizadores,
-                'estabelecimentos' => $actual->limite_estabelecimentos,
             ];
 
             $nova = $this->emitir->executar($this->ciclo->dtoDe($actual, [

@@ -118,7 +118,6 @@ class CicloDeVidaDaLicenca
             'limites' => [
                 'alunos' => $licenca->limite_alunos,
                 'utilizadores' => $licenca->limite_utilizadores,
-                'estabelecimentos' => $licenca->limite_estabelecimentos,
             ],
             'toleranciaDias' => $licenca->tolerancia_dias,
             'avisoDias' => $licenca->aviso_dias,

@@ -7,7 +7,7 @@ use Modules\Licenciamento\Documento\DireitosDaLicenca;
 /** Regras comuns a planos e licenças: limites, tolerância/aviso e módulos (validados contra a configuração, que é extensível). */
 class ValidaDireitosComerciais
 {
-    public const CHAVES_LIMITES = ['alunos', 'utilizadores', 'estabelecimentos'];
+    public const CHAVES_LIMITES = ['alunos', 'utilizadores'];
 
     /**
      * @param  array<string,?int>  $limites

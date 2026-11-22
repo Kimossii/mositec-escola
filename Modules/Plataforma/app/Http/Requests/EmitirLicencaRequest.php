@@ -13,7 +13,7 @@ use Modules\Licenciamento\Enums\Modalidade;
  */
 class EmitirLicencaRequest extends FormRequest
 {
-    private const CHAVES_DE_LIMITE = ['alunos', 'utilizadores', 'estabelecimentos'];
+    private const CHAVES_DE_LIMITE = ['alunos', 'utilizadores'];
 
     public function authorize(): bool
     {
@@ -30,7 +30,6 @@ class EmitirLicencaRequest extends FormRequest
             'validade_dias' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'limite_alunos' => ['nullable', 'integer', 'min:0', 'max:2000000000'],
             'limite_utilizadores' => ['nullable', 'integer', 'min:0', 'max:2000000000'],
-            'limite_estabelecimentos' => ['nullable', 'integer', 'min:0', 'max:2000000000'],
             'tolerancia_dias' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'aviso_dias' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'modulos' => ['nullable', 'array'],

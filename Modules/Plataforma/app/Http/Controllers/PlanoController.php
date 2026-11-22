@@ -91,7 +91,6 @@ class PlanoController extends Controller
             'validade_dias' => $plano->validade_dias,
             'limite_alunos' => $plano->limite_alunos,
             'limite_utilizadores' => $plano->limite_utilizadores,
-            'limite_estabelecimentos' => $plano->limite_estabelecimentos,
             'tolerancia_dias' => $plano->tolerancia_dias,
             'aviso_dias' => $plano->aviso_dias,
             'modulos' => $plano->modulos,

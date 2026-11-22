@@ -26,7 +26,6 @@ const form = reactive({
     modalidade: props.plano?.modalidade ?? 1,
     limite_alunos: vazio(props.plano?.limite_alunos),
     limite_utilizadores: vazio(props.plano?.limite_utilizadores),
-    limite_estabelecimentos: vazio(props.plano?.limite_estabelecimentos),
     tolerancia_dias: vazio(props.plano?.tolerancia_dias),
     aviso_dias: vazio(props.plano?.aviso_dias),
     modulos: [...(props.plano?.modulos ?? [])],
@@ -35,7 +34,7 @@ const processing = ref(false);
 const errors = ref({});
 
 const opcoesModalidade = computed(() => props.modalidades.map((m) => ({ value: m.value, label: m.label })));
-const CAMPOS = ['nome', 'descricao', 'validade_dias', 'modalidade', 'limite_alunos', 'limite_utilizadores', 'limite_estabelecimentos', 'tolerancia_dias', 'aviso_dias', 'modulos', 'limites'];
+const CAMPOS = ['nome', 'descricao', 'validade_dias', 'modalidade', 'limite_alunos', 'limite_utilizadores', 'tolerancia_dias', 'aviso_dias', 'modulos', 'limites'];
 const errosGerais = () => Object.entries(errors.value).filter(([campo]) => !CAMPOS.includes(campo)).map(([, mensagem]) => mensagem);
 
 function alternarModulo(alias, marcado) {
@@ -114,20 +113,15 @@ function submit() {
                 <h4 class="mb-1">Limites</h4>
                 <div class="text-muted fs-7 mb-4">Deixe um campo vazio para «sem limite».</div>
                 <div class="row g-6 mb-2">
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-6">
                         <label class="fw-semibold fs-6 mb-2" for="plano-alunos">Alunos</label>
                         <input id="plano-alunos" v-model="form.limite_alunos" type="number" min="0" inputmode="numeric" name="limite_alunos" placeholder="Sem limite" class="form-control form-control-solid" :class="{ 'is-invalid': errors.limite_alunos }" />
                         <div v-if="errors.limite_alunos" class="text-danger fs-7 mt-1">{{ errors.limite_alunos }}</div>
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-6">
                         <label class="fw-semibold fs-6 mb-2" for="plano-utilizadores">Utilizadores (sem alunos)</label>
                         <input id="plano-utilizadores" v-model="form.limite_utilizadores" type="number" min="0" inputmode="numeric" name="limite_utilizadores" placeholder="Sem limite" class="form-control form-control-solid" :class="{ 'is-invalid': errors.limite_utilizadores }" />
                         <div v-if="errors.limite_utilizadores" class="text-danger fs-7 mt-1">{{ errors.limite_utilizadores }}</div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <label class="fw-semibold fs-6 mb-2" for="plano-estabelecimentos">Estabelecimentos</label>
-                        <input id="plano-estabelecimentos" v-model="form.limite_estabelecimentos" type="number" min="0" inputmode="numeric" name="limite_estabelecimentos" placeholder="Sem limite" class="form-control form-control-solid" :class="{ 'is-invalid': errors.limite_estabelecimentos }" />
-                        <div v-if="errors.limite_estabelecimentos" class="text-danger fs-7 mt-1">{{ errors.limite_estabelecimentos }}</div>
                     </div>
                 </div>
                 <div v-if="errors.limites" class="text-danger fs-7 mb-6">{{ errors.limites }}</div>

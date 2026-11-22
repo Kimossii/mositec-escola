@@ -36,7 +36,7 @@ class LimitesDeLicencaTest extends TestCase
 
     private function instalarComLimites(?int $alunos, ?int $utilizadores = null): void
     {
-        $lim = ['alunos' => $alunos, 'utilizadores' => $utilizadores, 'estabelecimentos' => 1];
+        $lim = ['alunos' => $alunos, 'utilizadores' => $utilizadores];
         app(InstalarLicencaAction::class)->executar($this->tenant->id, $this->tenant->codigo, $this->tokenDeTeste(['lim' => $lim]));
     }
 

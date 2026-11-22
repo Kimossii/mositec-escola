@@ -14,7 +14,6 @@ return new class extends Migration {
             $table->text('descricao')->nullable();
             $table->unsignedInteger('limite_alunos')->nullable();
             $table->unsignedInteger('limite_utilizadores')->nullable();
-            $table->unsignedInteger('limite_estabelecimentos')->nullable();
             $table->unsignedSmallInteger('tolerancia_dias')->nullable();
             $table->unsignedSmallInteger('aviso_dias')->nullable();
             $table->json('modulos');
