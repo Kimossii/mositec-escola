@@ -4,6 +4,8 @@ namespace Modules\Docente\Providers;
 
 use Modules\AnoLectivo\Support\DependenciasRegistadasDoAnoLectivo;
 use Modules\Core\Contracts\ProcuraDocenteParaConta;
+use Modules\Core\Contracts\VerificaProfessorLeccionaAluno;
+use Modules\Docente\Services\VerificaProfessorLeccionaAlunoService;
 use Modules\Core\Contracts\VerificaAtribuicaoDocente;
 use Modules\Docente\Console\SincronizarDocentesCommand;
 use Modules\Docente\Services\ProcuraDocenteParaContaService;
@@ -33,6 +35,7 @@ class DocenteServiceProvider extends BaseModuleServiceProvider
 
         $this->app->bind(VerificaAtribuicaoDocente::class, VerificaAtribuicaoDocenteService::class);
         $this->app->bind(ProcuraDocenteParaConta::class, ProcuraDocenteParaContaService::class);
+        $this->app->bind(VerificaProfessorLeccionaAluno::class, VerificaProfessorLeccionaAlunoService::class);
         $this->app->tag([DependenciasDeAtribuicoesDocentes::class], DependenciasRegistadasDoAnoLectivo::ETIQUETA);
     }
 

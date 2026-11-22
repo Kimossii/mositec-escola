@@ -4,7 +4,9 @@ namespace Modules\Usuario\Providers;
 
 use Modules\Core\Licenciamento\Contracts\ContaRecursoLicenciado;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
+use Illuminate\Support\Facades\Gate;
 use Modules\Usuario\Licenciamento\ContaUtilizadores;
+use Modules\Usuario\Policies\DocumentoPessoaPolicy;
 use Modules\Usuario\Provisioning\ProvisionarTiposDocumento;
 use Modules\Core\Providers\BaseModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
@@ -50,6 +52,8 @@ class UsuarioServiceProvider extends BaseModuleServiceProvider
         parent::boot();
         // Carrega as migrations do módulo
         $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
+
+        Gate::define('verDocumentosPessoa', [DocumentoPessoaPolicy::class, 'verDocumentos']);
     }
 
     /**

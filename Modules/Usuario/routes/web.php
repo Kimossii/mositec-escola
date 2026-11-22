@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Usuario\Http\Controllers\AcessoDocumentoPessoaController;
 use Modules\Usuario\Http\Controllers\DocumentoPessoaController;
 use Modules\Usuario\Http\Controllers\UsuarioController;
 
@@ -57,9 +58,9 @@ Route::middleware(['auth'])->prefix('usuarios')->group(function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dados-pessoais/{dadosPessoa}/documentos', [DocumentoPessoaController::class, 'index'])
-        ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.index');
+        ->middleware(['can:documento-pessoa.ver', 'throttle:operacao-pesada'])->name('documentos-pessoa.index');
     Route::get('/dados-pessoais/{dadosPessoa}/documentos-inativos', [DocumentoPessoaController::class, 'inativos'])
-        ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.inativos');
+        ->middleware(['can:documento-pessoa.ver', 'throttle:operacao-pesada'])->name('documentos-pessoa.inativos');
     Route::post('/dados-pessoais/{dadosPessoa}/documentos', [DocumentoPessoaController::class, 'store'])
         ->middleware('can:documento-pessoa.criar')->name('documentos-pessoa.store');
     Route::delete('/documentos-pessoa/{documento}', [DocumentoPessoaController::class, 'destroy'])
@@ -69,7 +70,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/documentos-pessoa/{documento}/download', [DocumentoPessoaController::class, 'download'])
         ->middleware(['can:documento-pessoa.ver', 'throttle:operacao-pesada'])->name('documentos-pessoa.download');
     Route::get('/documentos-pessoa/{documento}/visualizar', [DocumentoPessoaController::class, 'visualizar'])
-        ->middleware('can:documento-pessoa.ver')->name('documentos-pessoa.visualizar');
+        ->middleware(['can:documento-pessoa.ver', 'throttle:operacao-pesada'])->name('documentos-pessoa.visualizar');
+    Route::get('/acessos-documentos', [AcessoDocumentoPessoaController::class, 'index'])
+        ->middleware('can:acesso-documento-pessoa.ver')->name('acessos-documentos.index');
     Route::get('/tipos-documentos', [DocumentoPessoaController::class, 'tipos'])
         ->middleware('can:documento-pessoa.criar')->name('documentos-pessoa.tipos');
 });

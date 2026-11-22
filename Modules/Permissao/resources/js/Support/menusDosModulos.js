@@ -42,6 +42,7 @@ export const MENU_DE = {
     infraestrutura: { menu: 'Infraestrutura', entrada: 'Salas' },
 
     licenca: { menu: 'Sistema', entrada: 'Licenças' },
+    'acesso-documento-pessoa': { menu: 'Sistema', entrada: 'Acessos a documentos' },
 };
 
 /**

@@ -551,6 +551,7 @@ const sistema = {
     paths: 2,
     items: [
         { href: '/licenca', title: 'Licença', soAdministrador: true },
+        { href: '/acessos-documentos', title: 'Acessos a documentos', permissao: 'acesso-documento-pessoa.ver' },
     ],
 }
 

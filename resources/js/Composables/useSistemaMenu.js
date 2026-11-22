@@ -8,6 +8,7 @@ const seccoesSistema = [
         title: 'Sistema',
         links: [
             { href: '/licenca', label: 'Licença', soAdministrador: true },
+            { href: '/acessos-documentos', label: 'Acessos a documentos', permissao: 'acesso-documento-pessoa.ver' },
         ],
     },
 ];
