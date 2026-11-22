@@ -7,7 +7,7 @@ use Modules\Avaliacao\Http\Controllers\MinhasNotasController;
 use Modules\Avaliacao\Http\Controllers\PautaController;
 
 // Mini-pauta: lançamento de notas. As acções de escrita validam as permissões e o prazo; aqui só a entrada.
-Route::middleware(['auth'])->prefix('avaliacao/notas')->name('avaliacao.notas.')->group(function () {
+Route::middleware(['auth', 'licenca.modulo:avaliacao'])->prefix('avaliacao/notas')->name('avaliacao.notas.')->group(function () {
     Route::get('/', [MiniPautaController::class, 'index'])->middleware('can:nota.ver')->name('index');
     Route::get('/exportar', [MiniPautaController::class, 'exportar'])->middleware(['can:nota.ver', 'throttle:operacao-pesada'])->name('exportar');
     Route::post('/', [MiniPautaController::class, 'lancar'])->middleware('can:nota.criar')->name('lancar');
@@ -23,7 +23,7 @@ Route::middleware(['auth'])->prefix('avaliacao/notas')->name('avaliacao.notas.')
 });
 
 // Configuração: regra por classe, prazos e excepções. Só quem tem `nota.configurar` (prolongar exige também `nota.prolongar-prazo`).
-Route::middleware(['auth', 'can:nota.configurar'])->prefix('avaliacao/configuracao')->name('avaliacao.configuracao.')->group(function () {
+Route::middleware(['auth', 'licenca.modulo:avaliacao', 'can:nota.configurar'])->prefix('avaliacao/configuracao')->name('avaliacao.configuracao.')->group(function () {
     Route::get('/', [ConfiguracaoAvaliacaoController::class, 'index'])->name('index');
     Route::post('/regras', [ConfiguracaoAvaliacaoController::class, 'guardarRegra'])->name('regras.guardar');
     Route::post('/regras/defeito', [ConfiguracaoAvaliacaoController::class, 'criarRegrasPorDefeito'])->name('regras.defeito');
@@ -39,7 +39,7 @@ Route::middleware(['auth', 'can:nota.configurar'])->prefix('avaliacao/configurac
 });
 
 // Pauta final: ver tem a sua permissão (`nota.ver-pauta`); exportar e boletins `nota.exportar`; aprovar e reabrir têm permissões próprias.
-Route::middleware(['auth'])->prefix('avaliacao/pautas')->name('avaliacao.pautas.')->group(function () {
+Route::middleware(['auth', 'licenca.modulo:avaliacao'])->prefix('avaliacao/pautas')->name('avaliacao.pautas.')->group(function () {
     Route::get('/', [PautaController::class, 'index'])->middleware('can:nota.ver-pauta')->name('index');
     Route::get('/{turma}/exportar', [PautaController::class, 'exportar'])->whereNumber('turma')->middleware(['can:nota.exportar', 'throttle:operacao-pesada'])->name('exportar');
     Route::get('/{turma}/boletins', [PautaController::class, 'boletins'])->whereNumber('turma')->middleware(['can:nota.exportar', 'throttle:operacao-pesada'])->name('boletins');
@@ -49,7 +49,7 @@ Route::middleware(['auth'])->prefix('avaliacao/pautas')->name('avaliacao.pautas.
 });
 
 // O aluno consulta as suas notas (só pautas definitivas); o aluno vem da sessão.
-Route::middleware(['auth', 'can:nota.ver-proprias'])->prefix('minhas-notas')->name('minhas-notas.')->group(function () {
+Route::middleware(['auth', 'licenca.modulo:avaliacao', 'can:nota.ver-proprias'])->prefix('minhas-notas')->name('minhas-notas.')->group(function () {
     Route::get('/', [MinhasNotasController::class, 'index'])->name('index');
     Route::get('/{matricula}/boletim', [MinhasNotasController::class, 'boletim'])->whereNumber('matricula')->middleware('throttle:operacao-pesada')->name('boletim');
 });

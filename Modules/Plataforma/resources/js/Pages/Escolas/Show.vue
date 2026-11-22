@@ -1,6 +1,6 @@
 <script setup>
 import { onBeforeUnmount, ref, watch } from 'vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import LayoutPlataforma from '../../Components/LayoutPlataforma.vue';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import EstadoBadge from '../../Components/EstadoBadge.vue';
@@ -9,11 +9,14 @@ import DominiosCard from '../../Components/DominiosCard.vue';
 import RecuperarAdministradorModal from '../../Components/RecuperarAdministradorModal.vue';
 import SenhaTemporariaModal from '../../Components/SenhaTemporariaModal.vue';
 import { formatarDataHora } from '../../Composables/formatarData';
+import ValidadeBadge from '../../Components/ValidadeBadge.vue';
+import { formatarData } from '../../Composables/formatarData';
 import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 defineProps({
     escola: { type: Object, required: true },
     auditoria: { type: Array, default: () => [] },
+    licenca: { type: Object, default: null },
 });
 defineOptions({ layout: LayoutPlataforma });
 
@@ -110,6 +113,26 @@ onBeforeUnmount(() => {
         </div>
 
         <DominiosCard :escola="escola" />
+
+        <div class="card mb-6">
+            <div class="card-header"><h3 class="card-title">Licença</h3></div>
+            <div class="card-body">
+                <div v-if="licenca" class="d-flex flex-wrap justify-content-between align-items-center gap-3" data-testid="licenca-da-escola">
+                    <div>
+                        <div class="d-flex align-items-center gap-3 mb-1">
+                            <ValidadeBadge :validade="licenca.validade" />
+                            <span class="fw-bold text-gray-800">{{ licenca.plano ?? 'Plano removido' }}</span>
+                        </div>
+                        <div class="text-muted fs-7">Expira em {{ formatarData(licenca.expira_em) }} · {{ licenca.estado_comercial_descricao }}</div>
+                    </div>
+                    <Link :href="`/plataforma/licencas/${licenca.id}`" class="btn btn-light-primary">Ver licença</Link>
+                </div>
+                <div v-else class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <span class="text-muted">Esta escola não tem licença em vigor.</span>
+                    <Link :href="`/plataforma/licencas/emitir?escola=${escola.codigo}`" class="btn btn-light-primary">Emitir licença</Link>
+                </div>
+            </div>
+        </div>
 
         <div class="card">
             <div class="card-header"><h3 class="card-title">Actividade recente</h3></div>

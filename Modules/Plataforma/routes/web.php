@@ -7,7 +7,9 @@ use Modules\Plataforma\Http\Controllers\AdministradorEscolaController;
 use Modules\Plataforma\Http\Controllers\CicloDeVidaController;
 use Modules\Plataforma\Http\Controllers\DominioController;
 use Modules\Plataforma\Http\Controllers\EscolaController;
+use Modules\Plataforma\Http\Controllers\LicencaController;
 use Modules\Plataforma\Http\Controllers\PainelController;
+use Modules\Plataforma\Http\Controllers\PlanoController;
 use Modules\Plataforma\Http\Controllers\SistemaController;
 use Modules\Plataforma\Http\Middleware\ExigirTrocaDeSenhaPlataforma;
 use Modules\Plataforma\Http\Middleware\SuperAdminActivo;
@@ -49,6 +51,26 @@ Route::middleware(['auth:plataforma', SuperAdminActivo::class, ExigirTrocaDeSenh
     // Estado técnico (saúde, backups, filas): dados globais de infraestrutura, sem contexto de escola.
     Route::get('/sistema', [SistemaController::class, 'index'])->name('plataforma.sistema.index');
     Route::post('/sistema/verificar', [SistemaController::class, 'verificar'])->name('plataforma.sistema.verificar');
+
+    // Planos e licenças (lado do emissor). Os caminhos estáticos (`novo`, `emitir`) TÊM de vir antes dos
+    // com parâmetro: senão `{plano}`/`{licenca}` os interpretaria como um id. Sem chave de emissão a página
+    // explica-o e os POST de emissão respondem com a mesma mensagem (nunca 500).
+    Route::get('/planos', [PlanoController::class, 'index'])->name('plataforma.planos.index');
+    Route::get('/planos/novo', [PlanoController::class, 'create'])->name('plataforma.planos.create');
+    Route::post('/planos', [PlanoController::class, 'store'])->name('plataforma.planos.store');
+    Route::get('/planos/{plano}/editar', [PlanoController::class, 'edit'])->name('plataforma.planos.edit');
+    Route::put('/planos/{plano}', [PlanoController::class, 'update'])->name('plataforma.planos.update');
+
+    Route::get('/licencas', [LicencaController::class, 'index'])->name('plataforma.licencas.index');
+    Route::get('/licencas/emitir', [LicencaController::class, 'emitir'])->name('plataforma.licencas.emitir');
+    Route::post('/licencas', [LicencaController::class, 'store'])->name('plataforma.licencas.store');
+    Route::get('/licencas/{licenca}', [LicencaController::class, 'show'])->name('plataforma.licencas.show');
+    Route::get('/licencas/{licenca}/descarregar', [LicencaController::class, 'descarregar'])->name('plataforma.licencas.descarregar');
+    Route::post('/licencas/{licenca}/renovar', [LicencaController::class, 'renovar'])->name('plataforma.licencas.renovar');
+    Route::post('/licencas/{licenca}/estender', [LicencaController::class, 'estender'])->name('plataforma.licencas.estender');
+    Route::post('/licencas/{licenca}/suspender', [LicencaController::class, 'suspender'])->name('plataforma.licencas.suspender');
+    Route::post('/licencas/{licenca}/reactivar', [LicencaController::class, 'reactivar'])->name('plataforma.licencas.reactivar');
+    Route::post('/licencas/{licenca}/cancelar', [LicencaController::class, 'cancelar'])->name('plataforma.licencas.cancelar');
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('plataforma.logout');
 

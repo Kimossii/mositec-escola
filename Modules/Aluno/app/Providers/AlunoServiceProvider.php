@@ -2,12 +2,14 @@
 
 namespace Modules\Aluno\Providers;
 
+use Modules\Aluno\Licenciamento\ContaAlunos;
 use Modules\Aluno\Services\ProcuraAlunoParaContaService;
 use Modules\Aluno\Services\ProcuraFotosDeAlunosService;
 use Modules\Core\Contracts\ProcuraAlunoParaConta;
 use Modules\Aluno\Importacao\AlunoImportador;
 use Modules\Core\Contracts\ProcuraFotosDeAlunos;
 use Modules\Core\Importacao\RegistoDeImportadores;
+use Modules\Core\Licenciamento\Contracts\ContaRecursoLicenciado;
 use Modules\Core\Providers\BaseModuleServiceProvider;
 
 class AlunoServiceProvider extends BaseModuleServiceProvider
@@ -27,6 +29,7 @@ class AlunoServiceProvider extends BaseModuleServiceProvider
 
         $this->app->bind(ProcuraAlunoParaConta::class, ProcuraAlunoParaContaService::class);
         $this->app->bind(ProcuraFotosDeAlunos::class, ProcuraFotosDeAlunosService::class);
+        $this->app->tag([ContaAlunos::class], ContaRecursoLicenciado::TAG);
     }
 
     public function boot(): void

@@ -1,0 +1,22 @@
+{
+    "name": "nwidart/licenciamento",
+    "description": "",
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Licenciamento\\": "app/",
+            "Modules\\Licenciamento\\Database\\Factories\\": "database/factories/",
+            "Modules\\Licenciamento\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Licenciamento\\Tests\\": "tests/"
+        }
+    }
+}

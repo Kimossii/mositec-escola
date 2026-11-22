@@ -6,6 +6,7 @@ use Modules\Aluno\Services\AlunoConsultaService;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
+use Modules\Core\Licenciamento\Contracts\ModulosDisponiveis;
 use Modules\Financeiro\Services\AcordoConsultaService;
 use Modules\Financeiro\Services\DividasConsultaService;
 use Modules\Financeiro\Services\PagamentoConsultaService;
@@ -33,6 +34,7 @@ class DashboardService
         private AcordoConsultaService $acordos,
         private RelogioDoTenant $relogio,
         private MoedaDoTenant $moeda,
+        private ModulosDisponiveis $modulos,
     ) {
     }
 
@@ -56,13 +58,13 @@ class DashboardService
             $cartoes[] = ['rotulo' => 'Matrículas pendentes', 'valor' => $matriculas['pendentes'], 'tipo' => 'numero', 'nota' => 'por activar', 'cor' => 'warning'];
         }
 
-        if ($user->can('pagamento.ver')) {
+        if ($this->podeVerFinanceiro($user, 'pagamento.ver')) {
             $hoje = $this->relogio->hoje();
             $mes = $this->pagamentos->indicadores(['data_de' => $hoje->startOfMonth()->toDateString(), 'data_ate' => $hoje->toDateString()]);
             $cartoes[] = ['rotulo' => 'Cobrado este mês', 'valor' => $mes['recebido'], 'tipo' => 'dinheiro', 'nota' => "{$mes['pagamentos']} pagamento(s)", 'cor' => 'success'];
         }
 
-        if ($user->can('propina.ver')) {
+        if ($this->podeVerFinanceiro($user, 'propina.ver')) {
             $dividas = $this->dividas->totais($filtros);
             $cartoes[] = ['rotulo' => 'Em dívida', 'valor' => $dividas['total'], 'tipo' => 'dinheiro', 'nota' => "{$dividas['matriculas']} matrícula(s) com dívida", 'cor' => 'danger'];
         }
@@ -80,12 +82,12 @@ class DashboardService
         $ano = $this->anoActivoId();
         $itens = [];
 
-        if ($user->can('propina.ver')) {
+        if ($this->podeVerFinanceiro($user, 'propina.ver')) {
             $propinas = $this->propinas->indicadores(['ano_lectivo_id' => $ano]);
             $itens[] = ['rotulo' => 'Propinas em atraso', 'quantidade' => $propinas['em_atraso_n'], 'valor' => $propinas['em_atraso_valor'], 'cor' => 'danger', 'link' => '/financeiro/propinas?estado=7'];
         }
 
-        if ($user->can('acordo.ver')) {
+        if ($this->podeVerFinanceiro($user, 'acordo.ver')) {
             $itens[] = ['rotulo' => 'Acordos de dívida em atraso', 'quantidade' => $this->acordos->indicadores()['em_atraso'], 'valor' => null, 'cor' => 'danger', 'link' => '/financeiro/acordos'];
         }
 
@@ -111,7 +113,7 @@ class DashboardService
         $filtros = ['ano_lectivo_id' => $this->anoActivoId()];
         $graficos = [];
 
-        if ($user->can('propina.ver')) {
+        if ($this->podeVerFinanceiro($user, 'propina.ver')) {
             $graficos['propinas_mes'] = $this->propinas->porMes($filtros);
         }
 
@@ -125,7 +127,7 @@ class DashboardService
     /** @return list<array{numero: string, data: string|null, valor: int, aluno: string|null}> */
     public function ultimosPagamentos(User $user): array
     {
-        return $user->can('pagamento.ver') ? $this->pagamentos->ultimos() : [];
+        return $this->podeVerFinanceiro($user, 'pagamento.ver') ? $this->pagamentos->ultimos() : [];
     }
 
     /**
@@ -140,7 +142,7 @@ class DashboardService
         $hoje = $this->relogio->hoje();
         $frases = [];
 
-        if ($user->can('pagamento.ver')) {
+        if ($this->podeVerFinanceiro($user, 'pagamento.ver')) {
             $semana = $this->pagamentos->indicadores(['data_de' => $hoje->startOfWeek()->toDateString(), 'data_ate' => $hoje->toDateString()]);
             $anterior = $this->pagamentos->indicadores(['data_de' => $hoje->startOfWeek()->subWeek()->toDateString(), 'data_ate' => $hoje->subWeek()->toDateString()]);
             $variacao = $anterior['recebido'] > 0 ? (int) round(($semana['recebido'] - $anterior['recebido']) / $anterior['recebido'] * 100) : null;
@@ -150,7 +152,7 @@ class DashboardService
                 : 'Ainda não entrou nenhum pagamento esta semana.';
         }
 
-        if ($user->can('propina.ver')) {
+        if ($this->podeVerFinanceiro($user, 'propina.ver')) {
             $porTurma = $this->dividas->linhas($ano)->groupBy('turma_rotulo_completo')->map(fn ($l) => (int) $l->sum('total'))->sortDesc();
             $total = (int) $porTurma->sum();
 
@@ -175,7 +177,7 @@ class DashboardService
             }
         }
 
-        if ($user->can('acordo.ver')) {
+        if ($this->podeVerFinanceiro($user, 'acordo.ver')) {
             $aVencer = $this->acordos->aVencer($hoje->toDateString());
             if ($aVencer['quantidade'] > 0) {
                 $frases[] = '**'.$aVencer['quantidade'].($aVencer['quantidade'] === 1 ? ' prestação' : ' prestações').'** de acordos vence'.($aVencer['quantidade'] === 1 ? '' : 'm').' nos próximos 7 dias ('.$this->dinheiro($aVencer['valor']).').';
@@ -193,7 +195,7 @@ class DashboardService
      */
     public function risco(User $user, int $limite = 6): array
     {
-        if (! $user->can('propina.ver')) {
+        if (! $this->podeVerFinanceiro($user, 'propina.ver')) {
             return ['total' => 0, 'valor' => 0, 'alunos' => []];
         }
 
@@ -221,13 +223,13 @@ class DashboardService
     /** @return array<string, mixed>|null */
     public function previsao(User $user): ?array
     {
-        return $user->can('propina.ver') ? $this->propinas->previsaoDeCaixa() : null;
+        return $this->podeVerFinanceiro($user, 'propina.ver') ? $this->propinas->previsaoDeCaixa() : null;
     }
 
     /** @return array<string, mixed>|null */
     public function calendario(User $user, ?string $mes = null): ?array
     {
-        return $user->can('propina.ver') ? $this->propinas->calendarioDoMes($mes) : null;
+        return $this->podeVerFinanceiro($user, 'propina.ver') ? $this->propinas->calendarioDoMes($mes) : null;
     }
 
     private function dinheiro(int $unidadesMenores): string
@@ -251,5 +253,11 @@ class DashboardService
             ->when($ano !== null, fn ($q) => $q->where('ano_lectivo_id', $ano))
             ->whereNotIn('id', $comAlunos)
             ->count();
+    }
+
+    /** Bloco do módulo Financeiro: precisa da permissão E de o módulo estar contratado (licença). */
+    private function podeVerFinanceiro(User $user, string $permissao): bool
+    {
+        return $this->modulos->disponivel('financeiro') && $user->can($permissao);
     }
 }

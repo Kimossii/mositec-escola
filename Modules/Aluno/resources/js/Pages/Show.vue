@@ -6,7 +6,7 @@ import axios from 'axios';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { can } from '@/Composables/usePermissoes';
+import { can, moduloContratado } from '@/Composables/usePermissoes';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import AlunoFormModal from '../Components/AlunoFormModal.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
@@ -675,7 +675,7 @@ function confirmarEliminacao() {
             </div>
         </div>
 
-        <div class="card mt-6">
+        <div v-if="moduloContratado('financeiro')" class="card mt-6">
             <div class="card-header">
                 <h3 class="card-title fw-bold">Situação de propinas</h3>
                 <div class="card-toolbar">

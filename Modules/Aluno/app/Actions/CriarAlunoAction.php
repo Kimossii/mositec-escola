@@ -6,6 +6,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Modules\Aluno\DTO\AlunoDTO;
 use Modules\Aluno\Models\Aluno;
+use Modules\Core\Licenciamento\Contracts\GarantiaDeLimites;
+use Modules\Core\Licenciamento\Enums\Recurso;
 use Modules\Core\Tenancy\CaminhoTenant;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Usuario\Models\DadosPessoa;
@@ -18,6 +20,7 @@ class CriarAlunoAction
 
     public function __construct(
         private GeradorMatriculaService $geradorMatricula,
+        private GarantiaDeLimites $limites,
     ) {
     }
 
@@ -30,6 +33,8 @@ class CriarAlunoAction
     private function executarSemRegisto(AlunoDTO $dto, ?UploadedFile $foto = null): Aluno
     {
         return DB::transaction(function () use ($dto, $foto) {
+            $this->limites->garantir(Recurso::ALUNOS);
+
             $dadosPessoa = $dto->dadosPessoaId
                 ? DadosPessoa::findOrFail($dto->dadosPessoaId)
                 : DadosPessoa::create([

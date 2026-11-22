@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
+use Modules\Licenciamento\Services\LicencasConsultaService;
 use Modules\Plataforma\Actions\RegistarAuditoriaAction;
 use Modules\Plataforma\DTO\RegistoAuditoriaDTO;
 use Modules\Plataforma\Http\Requests\CriarEscolaRequest;
 use Modules\Plataforma\Models\RegistoDeAuditoria;
 use Modules\Plataforma\Services\AuditoriaConsultaService;
+use Modules\Plataforma\Support\ApresentadorDeLicencas;
 use Modules\Tenant\Actions\CriarTenantAction;
 use Modules\Tenant\DTO\CriarTenantDTO;
 use Modules\Tenant\Exceptions\DadosDeTenantInvalidos;
@@ -45,9 +47,10 @@ class EscolaController extends Controller
         ]);
     }
 
-    public function show(Tenant $tenant, TenantConsultaService $consulta, AuditoriaConsultaService $auditoria)
+    public function show(Tenant $tenant, TenantConsultaService $consulta, AuditoriaConsultaService $auditoria, LicencasConsultaService $licencas, ApresentadorDeLicencas $apresentador)
     {
         $escola = $consulta->detalhe($tenant);
+        $licenca = $licencas->actualDaEscola($escola->codigo);
 
         return Inertia::render('Plataforma/Escolas/Show', [
             'escola' => [
@@ -71,6 +74,8 @@ class EscolaController extends Controller
                     'definivel_como_principal' => ! $dominio->is_principal && $consulta->accoesPermitidas($escola)['gerir_dominios'],
                 ])->values(),
             ],
+            // Licença em vigor (activa ou suspensa) ou null; nunca leva o token.
+            'licenca' => $licenca === null ? null : $apresentador->resumo($licenca, $licencas->nomesDosPlanos()),
             'auditoria' => $auditoria->recentesDaEscola($escola->codigo)->map(fn (RegistoDeAuditoria $registo) => [
                 'id' => $registo->id,
                 'accao' => $registo->accao,

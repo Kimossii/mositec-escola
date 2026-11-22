@@ -2,7 +2,9 @@
 
 namespace Modules\Usuario\Providers;
 
+use Modules\Core\Licenciamento\Contracts\ContaRecursoLicenciado;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
+use Modules\Usuario\Licenciamento\ContaUtilizadores;
 use Modules\Usuario\Provisioning\ProvisionarTiposDocumento;
 use Modules\Core\Providers\BaseModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
@@ -40,6 +42,7 @@ class UsuarioServiceProvider extends BaseModuleServiceProvider
         parent::register();
 
         $this->app->tag([ProvisionarTiposDocumento::class], ProvisionaTenant::ETIQUETA);
+        $this->app->tag([ContaUtilizadores::class], ContaRecursoLicenciado::TAG);
     }
 
     public function boot(): void

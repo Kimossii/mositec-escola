@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('codigo', '503')
+@section('titulo', 'Ocorreu um erro')
+@section('mensagem', 'Ocorreu um erro. Tente mais tarde.')
+@section('imagem', 'mosi-erro')

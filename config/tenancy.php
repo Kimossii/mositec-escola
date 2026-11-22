@@ -56,6 +56,11 @@ return [
         'licencas', // legado; ver spec §18
         'super_admins', // Plataforma MosiTec: operadores, sem escola
         'plataforma_auditoria', // Plataforma MosiTec: rasto das acções, sobrevive aos tenants
+        'licenciamento_direitos', // Licenciamento: direitos por tenant (tenant_id sem FK, módulo independente)
+        'licenciamento_instalacao', // Licenciamento: identidade desta instalação
+        'licenciamento_planos', // Licenciamento (emissor): catálogo de planos
+        'licenciamento_licencas', // Licenciamento (emissor): licenças emitidas (tenant_local_id sem FK)
+        'licenciamento_eventos', // Licenciamento (emissor): histórico append-only
         'cambios_plataforma', // Financeiro: câmbio padrão da plataforma, partilhado por todas as escolas
     ],
 
