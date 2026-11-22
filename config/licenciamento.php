@@ -2,15 +2,16 @@
 
 return [
     /*
-    | Interruptor geral. Desligado, o gate e os limites são inertes (as escolas actuais não bloqueiam no deploy).
+    | Licenciamento sempre activo, em qualquer ambiente. Deliberadamente fixo no código e SEM variável de ambiente:
+    | desligá-lo não pode ser uma linha no .env. Os testes sobrepõem-no com config([...]).
     */
-    'activo' => (bool) env('LICENCIAMENTO_ACTIVO', false),
+    'activo' => true,
 
     /*
     | Chaves públicas Ed25519 que verificam as licenças, por `kid` => chave em base64. Suporta rotação de chaves.
     */
     'chaves_publicas' => [
-        // 'k1' => 'base64...',
+        'k1' => 'KjjDAVj8nv6TQkv/Lz9Ilp7oWu923m2mxG22xtD36Zg=',
     ],
 
     /*

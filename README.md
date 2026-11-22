@@ -241,7 +241,7 @@ Ver `.env.example` (comentado) e a secção seguinte. Pontos que costumam falhar
 
 ### Licenciamento: activação
 
-Ligar `LICENCIAMENTO_ACTIVO` sem preparação bloqueia todas as escolas sem licença (os não administradores perdem a sessão). Ordem segura:
+O licenciamento está **sempre activo** (fixo em `config/licenciamento.php`, sem variável de ambiente). Fazer deploy sem preparação bloqueia todas as escolas sem licença (os não administradores perdem a sessão). Ordem segura:
 
 1. `composer dump-autoload` e `php artisan migrate` (o módulo Licenciamento tem de estar em `modules_statuses.json`).
 2. Só na instalação central: `php artisan licenciamento:gerar-chaves --kid=k1` (mostra o par; **não grava nada**).
@@ -250,7 +250,7 @@ Ligar `LICENCIAMENTO_ACTIVO` sem preparação bloqueia todas as escolas sem lice
 5. Criar os planos no painel da Plataforma (Licenças > Planos).
 6. `php artisan licenciamento:emitir-transicao --plano=ID --dias=N [--escola=MOSI-000001 ...] --dry-run` para ver, e sem `--dry-run` para emitir uma licença online a cada escola sem licença válida (as revogadas ficam de fora).
 7. `php artisan licenciamento:escolas-sem-licenca` deve sair com código 0 (nenhuma escola ficaria bloqueada).
-8. Só então `LICENCIAMENTO_ACTIVO=true`.
+8. Só então fazer o deploy desta versão.
 9. Clientes self-hosted: enviam à MosiTec o **código da instalação** que o administrador vê em `/licenca`; recebem o texto/ficheiro da licença e instalam-no na mesma página.
 
 ## Comandos úteis

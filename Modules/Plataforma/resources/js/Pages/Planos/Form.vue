@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import Loader from '@/Components/Shared/Loader.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import LayoutPlataforma from '../../Components/LayoutPlataforma.vue';
@@ -31,6 +32,7 @@ const form = reactive({
     modulos: [...(props.plano?.modulos ?? [])],
 });
 const processing = ref(false);
+const aConfirmar = ref(false);
 const errors = ref({});
 
 const opcoesModalidade = computed(() => props.modalidades.map((m) => ({ value: m.value, label: m.label })));
@@ -39,6 +41,10 @@ const errosGerais = () => Object.entries(errors.value).filter(([campo]) => !CAMP
 
 function alternarModulo(alias, marcado) {
     form.modulos = marcado ? [...form.modulos, alias] : form.modulos.filter((m) => m !== alias);
+}
+
+function pedirConfirmacao() {
+    aConfirmar.value = true;
 }
 
 function submit() {
@@ -51,6 +57,7 @@ function submit() {
         },
         onFinish: () => {
             processing.value = false;
+            aConfirmar.value = false;
         },
     };
 
@@ -68,7 +75,7 @@ function submit() {
         </div>
 
         <div class="card">
-            <form class="card-body" novalidate @submit.prevent="submit">
+            <form class="card-body" novalidate @submit.prevent="pedirConfirmacao">
                 <div v-if="errosGerais().length" class="alert alert-danger">
                     <div v-for="mensagem in errosGerais()" :key="mensagem">{{ mensagem }}</div>
                 </div>
@@ -144,5 +151,16 @@ function submit() {
                 </div>
             </form>
         </div>
+
+        <ConfirmModal
+            :show="aConfirmar"
+            :titulo="plano ? 'Guardar plano' : 'Criar plano'"
+            :mensagem="plano ? 'As alterações aplicam-se às próximas licenças emitidas com este plano; as já emitidas não mudam. Deseja guardar?' : 'O plano fica disponível para emitir licenças. Deseja criá-lo?'"
+            :texto-confirmar="plano ? 'Guardar' : 'Criar'"
+            variante="primary"
+            :processando="processing"
+            @confirmar="submit"
+            @cancelar="aConfirmar = false"
+        />
     </div>
 </template>

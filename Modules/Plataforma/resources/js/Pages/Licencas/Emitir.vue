@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import Loader from '@/Components/Shared/Loader.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import BotaoVoltar from '@/Components/Shared/BotaoVoltar.vue';
 import LayoutPlataforma from '../../Components/LayoutPlataforma.vue';
@@ -38,6 +39,7 @@ const form = reactive({
     ligacao_obrigatoria: false,
 });
 const processing = ref(false);
+const aConfirmar = ref(false);
 const errors = ref({});
 
 const planoActual = computed(() => props.planos.find((p) => p.id === form.plano_id) ?? null);
@@ -79,6 +81,10 @@ function alternarModulo(alias, marcado) {
     form.modulos = marcado ? [...form.modulos, alias] : form.modulos.filter((m) => m !== alias);
 }
 
+function pedirConfirmacao() {
+    aConfirmar.value = true;
+}
+
 function submit() {
     processing.value = true;
     errors.value = {};
@@ -94,6 +100,7 @@ function submit() {
         },
         onFinish: () => {
             processing.value = false;
+            aConfirmar.value = false;
         },
     });
 }
@@ -113,7 +120,7 @@ function submit() {
         </div>
 
         <div v-else class="card">
-            <form class="card-body" novalidate @submit.prevent="submit">
+            <form class="card-body" novalidate @submit.prevent="pedirConfirmacao">
                 <div v-if="errosGerais().length" class="alert alert-danger" role="alert">
                     <div v-for="mensagem in errosGerais()" :key="mensagem">{{ mensagem }}</div>
                 </div>
@@ -204,5 +211,16 @@ function submit() {
                 </div>
             </form>
         </div>
+
+        <ConfirmModal
+            :show="aConfirmar"
+            titulo="Emitir licença"
+            :mensagem="`Vai ser emitida uma licença nova com os direitos indicados${planoActual ? ' (plano ' + planoActual.nome + ')' : ''}. Fica registada no histórico e não pode ser apagada, só suspensa ou cancelada. Deseja continuar?`"
+            texto-confirmar="Emitir"
+            variante="primary"
+            :processando="processing"
+            @confirmar="submit"
+            @cancelar="aConfirmar = false"
+        />
     </div>
 </template>

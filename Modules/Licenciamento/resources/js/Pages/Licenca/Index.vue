@@ -4,6 +4,7 @@ import { Link, router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Loader from '@/Components/Shared/Loader.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 import { copiarParaAreaDeTransferencia } from '@/Composables/useCopiar';
 
 const props = defineProps({
@@ -32,6 +33,7 @@ const ficheiro = ref(null);
 const inputFicheiro = ref(null);
 const erros = ref({});
 const aEnviar = ref(false);
+const aConfirmar = ref(false);
 
 function escolherFicheiro(e) {
     ficheiro.value = e.target.files?.[0] ?? null;
@@ -43,6 +45,11 @@ function limpar() {
     if (inputFicheiro.value) inputFicheiro.value.value = '';
 }
 const podeEnviar = computed(() => !aEnviar.value && (ficheiro.value !== null || token.value.trim() !== ''));
+
+// O envio só acontece depois de o utilizador confirmar no modal.
+function pedirConfirmacao() {
+    if (podeEnviar.value) aConfirmar.value = true;
+}
 
 function instalar() {
     if (!podeEnviar.value) return;
@@ -62,6 +69,7 @@ function instalar() {
         },
         onFinish: () => {
             aEnviar.value = false;
+            aConfirmar.value = false;
         },
     });
 }
@@ -204,7 +212,7 @@ async function copiarCodigo() {
                         <h3 class="card-title fs-6 fw-bold text-uppercase text-gray-600">Instalar ou renovar licença</h3>
                     </div>
                     <div class="card-body">
-                        <form @submit.prevent="instalar">
+                        <form @submit.prevent="pedirConfirmacao">
                             <label for="licenca-token" class="fw-semibold fs-6 mb-2">Cole o texto da licença</label>
                             <textarea id="licenca-token" v-model="token" rows="5" class="form-control form-control-solid font-monospace" :class="{ 'is-invalid': erros.token }" autocomplete="off" spellcheck="false" :disabled="aEnviar"></textarea>
 
@@ -227,5 +235,16 @@ async function copiarCodigo() {
                 </div>
             </div>
         </div>
+
+        <ConfirmModal
+            :show="aConfirmar"
+            titulo="Instalar licença"
+            mensagem="A licença indicada vai ser instalada e passa a valer nesta instalação, substituindo a actual. Deseja continuar?"
+            texto-confirmar="Instalar"
+            variante="primary"
+            :processando="aEnviar"
+            @confirmar="instalar"
+            @cancelar="aConfirmar = false"
+        />
     </div>
 </template>
