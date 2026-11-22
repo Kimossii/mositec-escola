@@ -21,6 +21,10 @@ abstract class TestCase extends BaseTestCase
         // têm de correr sempre sem cifra, venha o .env de onde vier.
         config(['session.encrypt' => false]);
 
+        // O licenciamento é sempre activo em produção (fixo em config/licenciamento.php); nos testes fica inerte, para as
+        // suites dos outros módulos não levarem 503/redirect do gate. Os testes do Licenciamento voltam a ligá-lo com config().
+        config(['licenciamento.activo' => false]);
+
         $this->prepararTenantDeTeste();
     }
 
