@@ -26,6 +26,7 @@ class RecuperarAdministradorAction
 
     public function __construct(
         private readonly RedefinirSenhaUsuarioAction $redefinir,
+        private readonly DesactivarDoisFactoresAction $desactivarDoisFactores,
         private readonly GeradorSenhaTemporaria $senhas,
     ) {}
 
@@ -70,6 +71,8 @@ class RecuperarAdministradorAction
 
         $admin = $administradores->first();
         $senha = $this->redefinir->executar($admin, null, $this->senhas->gerar());
+        // Quem perdeu o acesso pode ter perdido também a aplicação de códigos: o 2FA é reposto com a senha.
+        $this->desactivarDoisFactores->executar($admin, null);
 
         return new CredencialInicial($admin->email, $senha);
     }

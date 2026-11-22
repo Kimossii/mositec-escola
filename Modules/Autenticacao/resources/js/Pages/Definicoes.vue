@@ -11,6 +11,7 @@ import { definirTema, temaActual } from '@/Composables/useTema';
 import { MENU_DE, ORDEM_DOS_MENUS } from '../../../../Permissao/resources/js/Support/menusDosModulos';
 import CampoSenha from '../Components/CampoSenha.vue';
 import ForcaDaSenha from '../Components/ForcaDaSenha.vue';
+import DoisFactores from '../Components/DoisFactores.vue';
 
 defineOptions({ layout: AppLayout });
 
@@ -18,6 +19,7 @@ const props = defineProps({
     aba: { type: String, default: 'perfil' },
     membroDesde: { type: String, default: null },
     sessoes: { type: Array, default: () => [] },
+    doisFactores: { type: Object, default: () => ({ activo: false, sugerir: false }) },
 });
 
 const user = usePage().props.auth.user;
@@ -281,6 +283,8 @@ const totalPermissoes = computed(() => permissoes.value.length);
                             </form>
                         </div>
                     </div>
+
+                    <DoisFactores :activo="doisFactores.activo" :sugerir="doisFactores.sugerir" />
 
                     <div class="card">
                         <div class="card-header">

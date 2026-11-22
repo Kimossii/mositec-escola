@@ -9,7 +9,7 @@ const props = defineProps({
     usuario: { type: Object, required: true },
     compacto: { type: Boolean, default: false }, // só o ícone de três pontos (cards)
 });
-const emit = defineEmits(['visualizar', 'editar', 'alternar-estado', 'redefinir-senha', 'eliminar']);
+const emit = defineEmits(['visualizar', 'editar', 'alternar-estado', 'redefinir-senha', 'repor-dois-factores', 'eliminar']);
 const pagina = usePage();
 
 // Mexer num utilizador com perfil Admin Escola é sempre autorizacao.*, nunca usuario.* sozinho — mesma fronteira do backend (UserPolicy).
@@ -23,6 +23,8 @@ function podeRedefinirSenha() {
 
     return !eAdmin() || can('autorizacao.editar');
 }
+// Repor o 2FA: mesma fronteira da senha, e só quando a conta tem mesmo 2FA activo.
+const podeReporDoisFactores = () => props.usuario.tem_dois_factores === true && podeRedefinirSenha();
 </script>
 
 <template>
@@ -77,6 +79,15 @@ function podeRedefinirSenha() {
                             <a href="#" class="menu-link px-3" @click.prevent="emit('redefinir-senha', usuario)">
                                 <AcaoIcone acao="redefinirSenha" class="me-2" />
                                 Redefinir senha
+                            </a>
+                        </div>
+                        <!--end::Menu item-->
+
+                        <!--begin::Menu item-->
+                        <div v-if="podeReporDoisFactores()" class="menu-item px-3">
+                            <a href="#" class="menu-link px-3" @click.prevent="emit('repor-dois-factores', usuario)">
+                                <AcaoIcone acao="reporDoisFactores" class="me-2" />
+                                Repor 2FA
                             </a>
                         </div>
                         <!--end::Menu item-->

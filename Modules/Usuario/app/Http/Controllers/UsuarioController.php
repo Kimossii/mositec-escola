@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
+use Modules\Autenticacao\Actions\DesactivarDoisFactoresAction;
 use Modules\Autenticacao\Service\FotoDoUtilizadorService;
 use Modules\Core\Exportacao\Exportador;
 use Modules\Permissao\Enums\Perfil;
@@ -163,6 +164,14 @@ class UsuarioController extends Controller
             // Cifrada: o payload da sessão (driver database) nunca guarda a senha em claro.
             'senha' => Crypt::encryptString($senha),
         ]);
+    }
+
+    public function redefinirDoisFactores(Request $request, User $user, DesactivarDoisFactoresAction $action)
+    {
+        $this->authorize('redefinirDoisFactores', $user);
+        $action->executar($user, $request->user());
+
+        return back()->with('success', 'Autenticação em dois factores reposta. O utilizador pode voltar a activá-la quando quiser.');
     }
 
     /**

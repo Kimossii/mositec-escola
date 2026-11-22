@@ -184,4 +184,26 @@ class LoginTest extends TestCase
         $this->assertTrue(Auth::check());
         $this->assertTrue(Auth::user()->educandos->contains($filho));
     }
+
+    public function test_conta_inexistente_demora_tanto_como_uma_existente_com_senha_errada(): void
+    {
+        // Sem igualar o tempo, um email inexistente responderia sem bcrypt e denunciaria que a conta não existe.
+        $inicio = microtime(true);
+        $this->post('/login', ['login' => 'nao-existe@example.com', 'password' => 'qualquer-coisa-123']);
+
+        $this->assertGreaterThanOrEqual(0.15, microtime(true) - $inicio);
+    }
+
+    public function test_login_actualiza_o_hash_da_senha_quando_o_custo_mudou(): void
+    {
+        $user = User::create(['name' => 'Ana', 'email' => 'ana@example.com', 'password' => 'senha-segura-123']);
+        $hashAntigo = \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->value('password');
+        \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->update(['password' => password_hash('senha-segura-123', PASSWORD_BCRYPT, ['cost' => 4])]);
+        config(['hashing.bcrypt.rounds' => 12, 'hashing.bcrypt.verify' => false]);
+
+        $this->post('/login', ['login' => 'ana@example.com', 'password' => 'senha-segura-123'])->assertRedirect('/');
+
+        $novo = \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->value('password');
+        $this->assertStringStartsWith('$2y$12$', $novo);
+    }
 }

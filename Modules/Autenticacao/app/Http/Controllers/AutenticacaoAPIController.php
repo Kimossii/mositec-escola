@@ -4,6 +4,7 @@ namespace Modules\Autenticacao\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Modules\Autenticacao\Http\Requests\DesafioDoisFactoresApiRequest;
 use Modules\Autenticacao\Http\Requests\ValidarUsuarioApiRequest;
 use Modules\Autenticacao\Service\GestaoAutenticacaoAPI;
 
@@ -15,6 +16,14 @@ class AutenticacaoAPIController extends Controller
     public function login(ValidarUsuarioApiRequest $request)
     {
         $resposta = app(GestaoAutenticacaoAPI::class)->login($request, $request->email, $request->password);
+        return response()->json($resposta, $resposta['code'] ?? 200);
+    }
+
+    /** Segundo passo do login para quem tem 2FA: troca o `desafio` + código por token. */
+    public function desafio(DesafioDoisFactoresApiRequest $request)
+    {
+        $resposta = app(GestaoAutenticacaoAPI::class)->concluirDesafio($request, $request->desafio, $request->code, $request->recovery_code);
+
         return response()->json($resposta, $resposta['code'] ?? 200);
     }
 
