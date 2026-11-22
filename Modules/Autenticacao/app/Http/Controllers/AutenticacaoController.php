@@ -23,6 +23,16 @@ class AutenticacaoController extends Controller
         return Inertia::render('Autenticacao/Login')->rootView('layouts.guest');
     }
 
+    /** Passo 2 do login para quem tem 2FA. Só abre depois de a senha estar validada (sessão com `login.id`). */
+    public function desafio(Request $request)
+    {
+        if (! $request->session()->has('login.id')) {
+            return redirect()->route('login');
+        }
+
+        return Inertia::render('Autenticacao/DesafioDoisFactores')->rootView('layouts.guest');
+    }
+
     public function store(LoginRequest $request, GestaoAutenticacao $gestaoAutenticacao)
     {
         $resposta = $gestaoAutenticacao->login(
@@ -34,6 +44,14 @@ class AutenticacaoController extends Controller
 
         if (!$resposta['success']) {
             return back()->withErrors(['login' => $resposta['message']])->onlyInput('login');
+        }
+
+        if ($resposta['requer_2fa']) {
+            // Fixação de sessão: id novo antes de guardar quem está a meio do login (formato esperado pelo Fortify).
+            $request->session()->regenerate();
+            $request->session()->put(['login.id' => $resposta['user']->getKey(), 'login.remember' => $request->boolean('remember')]);
+
+            return Inertia::location('/two-factor-challenge');
         }
 
         $request->session()->regenerate();

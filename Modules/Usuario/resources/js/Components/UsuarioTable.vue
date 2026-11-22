@@ -30,13 +30,34 @@ async function editar(usuario) {
     emit('editar', dados);
 }
 
+// Desactivar pede confirmação (termina logo as sessões do utilizador); activar é imediato.
+const usuarioParaDesactivar = ref(null);
+const aDesactivar = ref(false);
+
 function alternarEstado(usuario) {
+    if (usuario.estado === ESTADO.ATIVO) {
+        usuarioParaDesactivar.value = usuario;
+        return;
+    }
+    enviarAlternancia(usuario);
+}
+
+function confirmarDesactivacao() {
+    aDesactivar.value = true;
+    enviarAlternancia(usuarioParaDesactivar.value, () => {
+        aDesactivar.value = false;
+        usuarioParaDesactivar.value = null;
+    });
+}
+
+function enviarAlternancia(usuario, aoTerminar = () => {}) {
     router.patch(`/usuarios/${usuario.id}/estado`, {}, {
         preserveScroll: true,
         onSuccess: () => toast.success(
             usuario.estado === ESTADO.ATIVO ? 'Utilizador desativado.' : 'Utilizador ativado.',
         ),
         onError: (erros) => toast.error(Object.values(erros)[0]),
+        onFinish: aoTerminar,
     });
 }
 
@@ -78,6 +99,22 @@ function confirmarRedefinicao() {
             toast.error(Object.values(erros)[0]);
         },
         onFinish: () => { redefinindo.value = false; },
+    });
+}
+
+const usuarioParaReporDoisFactores = ref(null);
+const aReporDoisFactores = ref(false);
+
+function confirmarReposicaoDoisFactores() {
+    aReporDoisFactores.value = true;
+    router.patch(`/usuarios/${usuarioParaReporDoisFactores.value.id}/redefinir-2fa`, {}, {
+        preserveScroll: true,
+        onSuccess: () => toast.success('2FA reposto. O utilizador pode voltar a activá-lo.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
+        onFinish: () => {
+            aReporDoisFactores.value = false;
+            usuarioParaReporDoisFactores.value = null;
+        },
     });
 }
 
@@ -134,6 +171,7 @@ function confirmarEliminacao() {
                 @editar="editar"
                 @alternar-estado="alternarEstado"
                 @redefinir-senha="pedirRedefinicao"
+                @repor-dois-factores="(u) => (usuarioParaReporDoisFactores = u)"
                 @eliminar="pedirEliminacao"
             />
         </div>
@@ -187,6 +225,7 @@ function confirmarEliminacao() {
                         @editar="editar"
                         @alternar-estado="alternarEstado"
                         @redefinir-senha="pedirRedefinicao"
+                @repor-dois-factores="(u) => (usuarioParaReporDoisFactores = u)"
                         @eliminar="pedirEliminacao"
                     />
                 </td>
@@ -201,6 +240,25 @@ function confirmarEliminacao() {
         :processando="redefinindo"
         @confirmar="confirmarRedefinicao"
         @fechar="fecharRedefinicao"
+    />
+
+    <ConfirmModal
+        :show="!!usuarioParaDesactivar"
+        titulo="Desativar utilizador"
+        :mensagem="`Tem a certeza de que quer desativar ${usuarioParaDesactivar?.name}? As sessões abertas dele são terminadas e deixa de conseguir entrar até ser ativado de novo.`"
+        texto-confirmar="Desativar"
+        :processando="aDesactivar"
+        @confirmar="confirmarDesactivacao"
+        @cancelar="usuarioParaDesactivar = null"
+    />
+
+    <ConfirmModal
+        :show="!!usuarioParaReporDoisFactores"
+        titulo="Repor autenticação em dois factores"
+        :mensagem="`Repor o 2FA de ${usuarioParaReporDoisFactores?.name}? Termina as sessões dele e deixa de pedir o código no login até voltar a activá-lo.`"
+        :processando="aReporDoisFactores"
+        @confirmar="confirmarReposicaoDoisFactores"
+        @cancelar="usuarioParaReporDoisFactores = null"
     />
 
     <ConfirmModal

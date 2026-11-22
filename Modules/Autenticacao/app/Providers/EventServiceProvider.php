@@ -3,6 +3,13 @@
 namespace Modules\Autenticacao\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Laravel\Fortify\Events\RecoveryCodeReplaced;
+use Laravel\Fortify\Events\TwoFactorAuthenticationConfirmed;
+use Laravel\Fortify\Events\TwoFactorAuthenticationDisabled;
+use Laravel\Fortify\Events\TwoFactorAuthenticationEnabled;
+use Laravel\Fortify\Events\ValidTwoFactorAuthenticationCodeProvided;
+use Modules\Autenticacao\Listeners\BloquearContaInactivaNoDesafio;
+use Modules\Autenticacao\Listeners\RegistarEventoDoisFactores;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -11,14 +18,20 @@ class EventServiceProvider extends ServiceProvider
      *
      * @var array<string, array<int, string>>
      */
-    protected $listen = [];
+    protected $listen = [
+        TwoFactorAuthenticationEnabled::class => [RegistarEventoDoisFactores::class],
+        TwoFactorAuthenticationConfirmed::class => [RegistarEventoDoisFactores::class],
+        TwoFactorAuthenticationDisabled::class => [RegistarEventoDoisFactores::class],
+        RecoveryCodeReplaced::class => [RegistarEventoDoisFactores::class],
+        ValidTwoFactorAuthenticationCodeProvided::class => [BloquearContaInactivaNoDesafio::class],
+    ];
 
     /**
      * Indicates if events should be discovered.
      *
      * @var bool
      */
-    protected static $shouldDiscoverEvents = true;
+    protected static $shouldDiscoverEvents = false;
 
     /**
      * Configure the proper event listeners for email verification.

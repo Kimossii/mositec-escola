@@ -3,6 +3,8 @@
 namespace Modules\Usuario\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Modules\Autenticacao\Models\SessaoDeUtilizador;
 use Modules\Core\Enums\Estado;
 use Modules\Core\Licenciamento\Contracts\GarantiaDeLimites;
 use Modules\Core\Licenciamento\Enums\Recurso;
@@ -32,8 +34,23 @@ class AlternarEstadoUsuarioAction
                 $this->limites->garantir(Recurso::UTILIZADORES);
             }
 
-            return $this->alternarEstado($user);
+            $user = $this->alternarEstado($user);
+
+            // Desactivar corta o acesso já: quem estava dentro não fica até a sessão expirar.
+            if ((int) $user->estado !== Estado::ATIVO->value) {
+                $this->terminarAcessos($user);
+            }
+
+            return $user;
         });
+    }
+
+    /** Sessões web, tokens da API e cookie «lembrar-me» (que reabriria a sessão no pedido seguinte). */
+    private function terminarAcessos(User $user): void
+    {
+        $user->tokens()->delete();
+        SessaoDeUtilizador::where('user_id', $user->id)->delete();
+        $user->forceFill(['remember_token' => Str::random(60)])->save();
     }
 
     /** Mesma regra de ContaUtilizadores: só conta quem tem perfil que não seja Aluno, sem ser Administrador. */

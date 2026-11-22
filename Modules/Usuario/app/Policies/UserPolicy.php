@@ -26,8 +26,19 @@ class UserPolicy
 
     public function redefinirSenha(User $authUser, User $user): Response
     {
+        return $this->gerirCredenciais($authUser, $user, 'a sua própria senha', 'a senha');
+    }
+
+    /** Repor o 2FA de outra conta: as mesmas regras de redefinir a senha (permissão, nunca a própria, admins só por admins). */
+    public function redefinirDoisFactores(User $authUser, User $user): Response
+    {
+        return $this->gerirCredenciais($authUser, $user, 'o seu próprio 2FA', 'o 2FA');
+    }
+
+    private function gerirCredenciais(User $authUser, User $user, string $proprio, string $objecto): Response
+    {
         if ($authUser->is($user)) {
-            return Response::deny('Não pode redefinir a sua própria senha.');
+            return Response::deny("Não pode redefinir {$proprio}.");
         }
 
         if (! $authUser->can('senha-utilizador.editar')) {
@@ -42,7 +53,7 @@ class UserPolicy
             ->exists();
 
         if ($alvoPrivilegiado && ! $autorEAdmin) {
-            return Response::deny('Só um Administrador da Escola pode redefinir a senha de uma conta com privilégios de administração.');
+            return Response::deny("Só um Administrador da Escola pode redefinir {$objecto} de uma conta com privilégios de administração.");
         }
 
         return Response::allow();

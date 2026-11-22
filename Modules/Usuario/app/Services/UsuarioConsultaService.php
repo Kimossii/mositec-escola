@@ -220,6 +220,7 @@ class UsuarioConsultaService
             'perfis' => $user->roles->pluck('descricao')->all(),
             'e_aluno' => $user->roles->contains('nome', Perfil::ALUNO->value),
             'estado' => $user->estado,
+            'tem_dois_factores' => $user->hasEnabledTwoFactorAuthentication(),
             'ultimo_acesso' => null,
             'online' => false,
             'created_at' => $user->created_at->format('d M Y, H:i'),

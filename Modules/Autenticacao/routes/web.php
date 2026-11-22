@@ -9,6 +9,8 @@ use Modules\Autenticacao\Http\Controllers\FotoDoUtilizadorController;
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AutenticacaoController::class, 'login'])->name('login');
     Route::post('/login', [AutenticacaoController::class, 'store'])->name('login.store');
+    // O POST é do Fortify (`two-factor.login.store`); a vista é nossa (fortify.views = false).
+    Route::get('/two-factor-challenge', [AutenticacaoController::class, 'desafio'])->name('two-factor.login');
 });
 
 Route::middleware('auth')->group(function () {

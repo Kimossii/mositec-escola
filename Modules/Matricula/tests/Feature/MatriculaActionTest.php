@@ -82,13 +82,15 @@ class MatriculaActionTest extends TestCase
         ]);
     }
 
+    private static int $sequenciaMatricula = 0;
+
     private function criarTurma(AnoLectivo $anoLectivo, NivelAcademico $nivel, ?Curso $curso = null, int $estado = 1): Turma
     {
         return Turma::create([
             'ano_lectivo_id' => $anoLectivo->id,
             'nivel_academico_id' => $nivel->id,
             'curso_id' => $curso?->id,
-            'codigo' => 'T' . random_int(1000, 9999),
+            'codigo' => 'T' . ++self::$sequenciaMatricula,
             'nome' => 'Turma Teste',
             'estado' => $estado,
         ]);
@@ -105,7 +107,7 @@ class MatriculaActionTest extends TestCase
         return Aluno::create([
             'estabelecimento_id' => $estabelecimento->id,
             'dados_pessoa_id' => $pessoa->id,
-            'numero_matricula' => '2026-' . random_int(1000, 9999),
+            'numero_matricula' => '2026-' . str_pad((string) ++self::$sequenciaMatricula, 6, '0', STR_PAD_LEFT),
         ]);
     }
 
@@ -148,7 +150,7 @@ class MatriculaActionTest extends TestCase
             'estabelecimento_id' => $estabelecimento->id,
             'curso_id' => $curso?->id,
             'nivel_academico_id' => $nivel->id,
-            'codigo' => 'PL' . random_int(100000, 999999),
+            'codigo' => 'PL' . ++self::$sequenciaMatricula,
             'nome' => 'Plano Curricular Teste',
         ]);
 
