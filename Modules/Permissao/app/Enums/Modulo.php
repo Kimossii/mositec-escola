@@ -35,6 +35,7 @@ enum Modulo: int
     case ATRIBUICAO_DOCENTE = 28;
     case DOCENTE = 29;
     case AREA_PROFESSOR = 30;
+    case ACESSO_DOCUMENTO_PESSOA = 31;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -73,6 +74,8 @@ enum Modulo: int
             self::NOTA => ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'ver-pauta', 'exportar', 'tratar-negativa', 'ver-proprias'],
             // Área do Professor: só consulta das suas turmas e alunos.
             self::AREA_PROFESSOR => ['ver'],
+            // Registo de acessos aos documentos pessoais: só consulta (o registo nunca se edita nem se apaga).
+            self::ACESSO_DOCUMENTO_PESSOA => ['ver', 'listar'],
             // `trancar` cobre trancar e reactivar uma matrícula.
             self::MATRICULA => [...self::ACOES_BASE, 'trancar'],
             default => self::ACOES_BASE,
@@ -113,6 +116,7 @@ enum Modulo: int
             self::ATRIBUICAO_DOCENTE => 'atribuicao-docente',
             self::DOCENTE => 'docente',
             self::AREA_PROFESSOR => 'area-professor',
+            self::ACESSO_DOCUMENTO_PESSOA => 'acesso-documento-pessoa',
         };
     }
 
@@ -161,6 +165,7 @@ enum Modulo: int
             self::ATRIBUICAO_DOCENTE => 'Atribuição Docente',
             self::DOCENTE => 'Docente',
             self::AREA_PROFESSOR => 'Área do Professor',
+            self::ACESSO_DOCUMENTO_PESSOA => 'Acessos a Documentos',
         };
     }
 }

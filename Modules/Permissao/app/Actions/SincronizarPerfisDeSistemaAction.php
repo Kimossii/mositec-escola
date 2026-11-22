@@ -39,6 +39,7 @@ class SincronizarPerfisDeSistemaAction
             Modulo::CURSO->value => ['ver', 'criar', 'editar'],
             Modulo::PLANO_CURRICULAR->value => ['ver', 'criar', 'editar'],
             Modulo::DOCUMENTO_PESSOA->value => ['ver', 'criar', 'editar', 'eliminar'],
+            Modulo::ACESSO_DOCUMENTO_PESSOA->value => ['ver', 'listar'],
             Modulo::SENHA_UTILIZADOR->value => ['editar'],
             Modulo::DISCIPLINA->value => ['ver', 'criar', 'editar'],
             Modulo::ALUNO->value => ['ver', 'criar', 'editar'],

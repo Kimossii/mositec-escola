@@ -84,7 +84,7 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 | Autenticação    | Login, logout, recuperação de senha, redefinição de senha (Fortify)                                                                     | ✅     |
 | Usuário         | Listas por tipo (todos, alunos, professores, funcionários, encarregados, administradores), registo por assistente, documentos pessoais | ✅     |
 | Permissão       | Perfis, permissões por módulo × acção (grelha agrupada por menu), permissões por utilizador, perfis de sistema fixos                   | ✅     |
-| Licença         | Validação do uso do sistema e limite de utilizadores                                                                                    | ⏳     |
+| Licenciamento   | Licenças e planos (painel da Plataforma), página `/licenca` do administrador (código da instalação, instalar licença, prazo, bloqueio e limites de uso), bloqueio das escolas sem licença válida | ✅     |
 
 ## Académico
 
@@ -208,7 +208,8 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
      │    ├── ✅ Métodos de Pagamento
      │    └── ✅ Produtos / Serviços
      │
-     └── 🔧  Sistema                  ⏳
+     └── 🔧  Sistema
+          ├── ✅ Licença  (só administrador da escola)
           ├── Parâmetros Gerais
           ├── Sessões Activas
           ├── Histórico de Logins
@@ -263,10 +264,10 @@ php artisan financeiro:aplicar-multas --todos   # aplica as multas por atraso (c
 php artisan financeiro:cambio-plataforma AOA 925,50   # câmbio padrão da plataforma
 
 # Qualidade
-php artisan test                                # suite completa
+php artisan test                                # suite completa (o licenciamento fica desligado nos testes, em tests/TestCase.php)
 php artisan test --group=pgsql                  # testes que exigem PostgreSQL real (base de testes dedicada)
 vendor/bin/pint                                 # formatação PHP
 ```
 
-> A suite tem alguns testes conhecidos que falham por razões de ambiente (extensão GD em falta para as fotos de
-> alunos) ou que apontam dívida técnica antiga dos testes de arquitectura; não são regressões do código novo.
+> A suite completa passa (≈4194 testes). Em máquinas sem a extensão GD, os testes das fotos de alunos falham por
+> razões de ambiente. O CI (`.github/workflows/ci.yml`) corre com PHP 8.4, o mínimo exigido pelo `composer.json`.
