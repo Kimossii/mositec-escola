@@ -5,6 +5,7 @@ import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
 import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
+import { can } from '@/Composables/usePermissoes';
 import { ESTADO, estadoBadgeClass } from '../Models/Estado';
 
 const props = defineProps({
@@ -27,9 +28,10 @@ async function carregar() {
     carregando.value = true;
     try {
         const url = mostrarInativos.value ? `${baseUrl()}-inativos` : baseUrl();
+        // Os tipos só servem para adicionar (exigem `documento-pessoa.criar`): quem só pode ver não os pede.
         const [listaResp, tiposResp] = await Promise.all([
             axios.get(url),
-            axios.get('/tipos-documentos'),
+            can('documento-pessoa.criar') ? axios.get('/tipos-documentos') : Promise.resolve({ data: { tipos: [] } }),
         ]);
         documentos.value = listaResp.data.documentos;
         tipos.value = tiposResp.data.tipos;

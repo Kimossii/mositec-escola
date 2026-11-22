@@ -4,6 +4,7 @@ namespace Modules\Core\Tenancy;
 
 use DateInterval;
 use DateTimeInterface;
+use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -33,6 +34,12 @@ class CacheTenant
     public function add(string $chave, mixed $valor, DateTimeInterface|DateInterval|int|null $ttl = null): bool
     {
         return Cache::add($this->chave($chave), $valor, $ttl);
+    }
+
+    /** Trinco atómico por tenant (o driver da cache tem de suportar locks). */
+    public function lock(string $chave, int $segundos): Lock
+    {
+        return Cache::lock($this->chave($chave), $segundos);
     }
 
     public function forever(string $chave, mixed $valor): bool
