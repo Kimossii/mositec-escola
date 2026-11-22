@@ -13,9 +13,12 @@ export function moduloContratado(modulo) {
 // é sempre visível (ex.: placeholders "#"); um link com `permissao`
 // só aparece se can() a conceder. Mesma fonte de verdade do backend,
 // nunca um segundo sistema de autorização no frontend.
+// `soAdministrador` mostra o link só ao administrador da escola.
 // `soComCursos` esconde o link numa escola sem cursos (só Creche, Pré-Escolar ou Primário).
 export function podeVer(link) {
     if (link.soComCursos && usePage().props.usa_cursos === false) return false;
+
+    if (link.soAdministrador && !usePage().props.eAdministradorDaEscola) return false;
 
     if (!moduloContratado(link.modulo)) return false;
 

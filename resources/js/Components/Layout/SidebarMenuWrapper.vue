@@ -350,6 +350,9 @@
                 </div>
             </div>
 
+            <!-- ── Section: Sistema (só o administrador da escola) ── -->
+            <SidebarAccordion :item="sistema" heading="Sistema" />
+
             <!-- Customers -->
             <!-- <SidebarAccordion :item="customers" /> -->
 
@@ -538,6 +541,16 @@ const pessoal = {
         // { href: '#', title: 'Funcionários' },
         // { href: '#', title: 'Assiduidade do Pessoal' },
         // { href: '#', title: 'Horários do Pessoal' },
+    ],
+}
+
+// ── Sistema — só o administrador da escola (por agora a licença) ──
+const sistema = {
+    title: 'Sistema',
+    icon: 'ki-shield-tick',
+    paths: 2,
+    items: [
+        { href: '/licenca', title: 'Licença', soAdministrador: true },
     ],
 }
 
