@@ -79,6 +79,20 @@ class AtribuicaoDocente extends Model
             ->where(fn (Builder $q) => $q->whereNull('data_fim')->orWhereDate('data_fim', '>=', $dia));
     }
 
+    /**
+     * Vigente na data E dentro da vigência efectiva: turma não eliminada e ano lectivo que ainda não terminou
+     * (uma data_fim nula vale o fim do ano). Fonte única, usada pela verificação e pelas consultas do Horário.
+     */
+    public function scopeEmVigorEfectivo(Builder $query, CarbonInterface $data): Builder
+    {
+        $dia = $data->toDateString();
+
+        return $query->emVigor($data)
+            // Turma eliminada (soft delete) já não conta: o scope de SoftDeletes da Turma exclui-a.
+            ->whereHas('turma')
+            ->whereHas('anoLectivo', fn (Builder $ano) => $ano->whereDate('data_fim', '>=', $dia));
+    }
+
     /** Estado derivado das datas (não é guardado): 'agendada' | 'em_curso' | 'terminada'. */
     public function estadoNaData(CarbonInterface $data): string
     {

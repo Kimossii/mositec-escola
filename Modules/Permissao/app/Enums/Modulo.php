@@ -36,6 +36,7 @@ enum Modulo: int
     case DOCENTE = 29;
     case AREA_PROFESSOR = 30;
     case ACESSO_DOCUMENTO_PESSOA = 31;
+    case GRELHA_HORARIA = 32;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -74,6 +75,8 @@ enum Modulo: int
             self::NOTA => ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'ver-pauta', 'exportar', 'tratar-negativa', 'ver-proprias'],
             // Área do Professor: só consulta das suas turmas e alunos.
             self::AREA_PROFESSOR => ['ver'],
+            // Grelha semanal de aulas: encerra-se (histórico) e só se elimina uma entrada ainda por começar.
+            self::GRELHA_HORARIA => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar'],
             // Registo de acessos aos documentos pessoais: só consulta (o registo nunca se edita nem se apaga).
             self::ACESSO_DOCUMENTO_PESSOA => ['ver', 'listar'],
             // `trancar` cobre trancar e reactivar uma matrícula.
@@ -117,6 +120,7 @@ enum Modulo: int
             self::DOCENTE => 'docente',
             self::AREA_PROFESSOR => 'area-professor',
             self::ACESSO_DOCUMENTO_PESSOA => 'acesso-documento-pessoa',
+            self::GRELHA_HORARIA => 'grelha-horaria',
         };
     }
 
@@ -166,6 +170,7 @@ enum Modulo: int
             self::DOCENTE => 'Docente',
             self::AREA_PROFESSOR => 'Área do Professor',
             self::ACESSO_DOCUMENTO_PESSOA => 'Acessos a Documentos',
+            self::GRELHA_HORARIA => 'Grelha de Horários',
         };
     }
 }

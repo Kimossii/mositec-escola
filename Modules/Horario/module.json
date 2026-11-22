@@ -1,0 +1,11 @@
+{
+    "name": "Horario",
+    "alias": "horario",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Horario\\Providers\\HorarioServiceProvider"
+    ],
+    "files": []
+}

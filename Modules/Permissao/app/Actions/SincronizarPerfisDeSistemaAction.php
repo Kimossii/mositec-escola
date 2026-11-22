@@ -58,12 +58,14 @@ class SincronizarPerfisDeSistemaAction
             Modulo::ACORDO->value => ['ver', 'listar', 'criar', 'cancelar'],
             Modulo::ATRIBUICAO_DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar', 'exportar'],
             Modulo::DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'eliminar', 'exportar'],
+            Modulo::GRELHA_HORARIA->value => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar'],
             Modulo::NOTA->value => ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'ver-pauta', 'exportar', 'tratar-negativa'],
         ],
         Perfil::FUNCIONARIO->value => [
             Modulo::USUARIO->value => ['ver', 'criar', 'editar'],
             Modulo::ATRIBUICAO_DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'encerrar'],
             Modulo::DOCENTE->value => ['ver', 'listar', 'criar', 'editar'],
+            Modulo::GRELHA_HORARIA->value => ['ver', 'listar', 'criar', 'editar', 'encerrar'],
         ],
         Perfil::PROFESSOR->value => [
             Modulo::AREA_PROFESSOR->value => ['ver'],

@@ -17,5 +17,6 @@
     "Financeiro": true,
     "Docente": true,
     "Avaliacao": true,
-    "Licenciamento": true
+    "Licenciamento": true,
+    "Horario": true
 }
