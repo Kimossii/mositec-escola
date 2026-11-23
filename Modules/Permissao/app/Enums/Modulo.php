@@ -37,6 +37,7 @@ enum Modulo: int
     case AREA_PROFESSOR = 30;
     case ACESSO_DOCUMENTO_PESSOA = 31;
     case GRELHA_HORARIA = 32;
+    case FREQUENCIA = 33;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -77,6 +78,8 @@ enum Modulo: int
             self::AREA_PROFESSOR => ['ver'],
             // Grelha semanal de aulas: encerra-se (histórico) e só se elimina uma entrada ainda por começar.
             self::GRELHA_HORARIA => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar'],
+            // Frequência: o professor marca (`criar`/`editar`) dentro da janela; fora dela só `corrigir-fora-prazo`; o aluno vê as suas (`ver-proprias`).
+            self::FREQUENCIA => ['ver', 'listar', 'criar', 'editar', 'justificar', 'corrigir-fora-prazo', 'configurar', 'ver-proprias'],
             // Registo de acessos aos documentos pessoais: só consulta (o registo nunca se edita nem se apaga).
             self::ACESSO_DOCUMENTO_PESSOA => ['ver', 'listar'],
             // `trancar` cobre trancar e reactivar uma matrícula.
@@ -121,6 +124,7 @@ enum Modulo: int
             self::AREA_PROFESSOR => 'area-professor',
             self::ACESSO_DOCUMENTO_PESSOA => 'acesso-documento-pessoa',
             self::GRELHA_HORARIA => 'grelha-horaria',
+            self::FREQUENCIA => 'frequencia',
         };
     }
 
@@ -171,6 +175,7 @@ enum Modulo: int
             self::AREA_PROFESSOR => 'Área do Professor',
             self::ACESSO_DOCUMENTO_PESSOA => 'Acessos a Documentos',
             self::GRELHA_HORARIA => 'Grelha de Horários',
+            self::FREQUENCIA => 'Frequência',
         };
     }
 }

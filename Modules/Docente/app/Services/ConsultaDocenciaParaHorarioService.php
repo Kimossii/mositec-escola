@@ -67,15 +67,49 @@ class ConsultaDocenciaParaHorarioService implements ConsultaDocenciaParaHorario
 
     public function paresEmVigorDoUtilizador(int $utilizadorId, CarbonInterface $data): array
     {
+        $docenteId = $this->docenteDoUtilizador($utilizadorId);
+
+        return $docenteId === null ? [] : $this->paresEmVigorDoDocente($docenteId, $data);
+    }
+
+    /** O docente do tenant com a mesma pessoa que a conta; null se a conta não tiver pessoa ou docente. */
+    private function docenteDoUtilizador(int $utilizadorId): ?int
+    {
         $pessoaId = User::query()->whereKey($utilizadorId)->value('dados_pessoa_id');
 
         if ($pessoaId === null) {
-            return [];
+            return null;
         }
 
         $docenteId = Docente::query()->where('dados_pessoa_id', $pessoaId)->value('id');
 
-        return $docenteId === null ? [] : $this->paresEmVigorDoDocente((int) $docenteId, $data);
+        return $docenteId === null ? null : (int) $docenteId;
+    }
+
+    public function paresDoUtilizadorNoIntervalo(int $utilizadorId, string $inicio, string $fim): array
+    {
+        $docenteId = $this->docenteDoUtilizador($utilizadorId);
+
+        if ($docenteId === null) {
+            return [];
+        }
+
+        return AtribuicaoDocente::query()
+            ->where('docente_id', $docenteId)
+            ->whereDate('data_inicio', '<=', $fim)
+            ->where(fn ($q) => $q->whereNull('data_fim')->orWhereDate('data_fim', '>=', $inicio))
+            ->whereHas('turma')
+            ->orderBy('data_inicio')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (AtribuicaoDocente $a) => [
+                'turma_id' => (int) $a->turma_id,
+                'disciplina_id' => (int) $a->disciplina_id,
+                'inicio' => max($inicio, $a->data_inicio->toDateString()),
+                'fim' => min($fim, $a->data_fim?->toDateString() ?? $fim),
+            ])
+            ->values()
+            ->all();
     }
 
     public function docentesActivos(): array

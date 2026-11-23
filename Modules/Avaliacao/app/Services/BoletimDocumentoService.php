@@ -5,6 +5,7 @@ namespace Modules\Avaliacao\Services;
 use Modules\Avaliacao\Enums\FasePauta;
 use Illuminate\Validation\ValidationException;
 use Modules\Avaliacao\Documentos\DocumentoBoletim;
+use Modules\Core\Contracts\ConsultaFaltasDoAluno;
 use Modules\Avaliacao\Models\AvaliacaoQualitativa;
 use Modules\Matricula\Models\Matricula;
 use Modules\Turma\Models\Turma;
@@ -20,6 +21,7 @@ class BoletimDocumentoService
         private PautaFinalService $pautas,
         private PautaDocumentoService $colunasDaPauta,
         private CabecalhoDocumentoService $cabecalho,
+        private ConsultaFaltasDoAluno $faltas,
     ) {
     }
 
@@ -61,6 +63,14 @@ class BoletimDocumentoService
             $colunas = [$qualitativa ? 'Área' : 'Disciplina', ...$rotulos];
             $linhas = array_map(fn (array $d) => [$d['nome'], ...array_map(fn (string $campo) => (string) ($aluno['celulas'][$d['id']][$campo] ?? ''), $campos)], $pauta['disciplinas']);
 
+            // Faltas (só se a escola faz chamadas): por disciplina numa coluna, ou em dias na identificação (Pré-Escolar e Primário).
+            $faltas = $this->faltas->resumoDaMatricula($aluno['matricula_id']);
+            $faltasEmDias = $faltas['com_chamadas'] && $faltas['unidade'] === 'dias';
+            if ($faltas['com_chamadas'] && ! $faltasEmDias) {
+                $colunas[] = 'Faltas';
+                $linhas = array_map(fn (array $linha, array $d) => [...$linha, (string) ($faltas['por_disciplina'][$d['id']]['total'] ?? 0)], $linhas, $pauta['disciplinas']);
+            }
+
             return new DocumentoBoletim(
                 titulo: 'BOLETIM DE AVALIAÇÃO'.($qualitativa ? ' — EDUCAÇÃO PRÉ-ESCOLAR' : ''),
                 linhasCabecalho: $cabecalho['linhas'],
@@ -73,6 +83,7 @@ class BoletimDocumentoService
                     ['Turma', (string) $turma->nome],
                     $turma->turno?->nome ? ['Período', (string) $turma->turno->nome] : null,
                     ['Ano lectivo', (string) $turma->anoLectivo?->nome],
+                    $faltasEmDias ? ['Faltas (dias)', "{$faltas['total']} ({$faltas['justificadas']} justificadas)"] : null,
                 ])),
                 colunas: $colunas,
                 linhas: $linhas,

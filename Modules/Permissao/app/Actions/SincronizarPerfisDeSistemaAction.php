@@ -59,6 +59,7 @@ class SincronizarPerfisDeSistemaAction
             Modulo::ATRIBUICAO_DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar', 'exportar'],
             Modulo::DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'eliminar', 'exportar'],
             Modulo::GRELHA_HORARIA->value => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar'],
+            Modulo::FREQUENCIA->value => ['ver', 'listar', 'criar', 'editar', 'justificar', 'corrigir-fora-prazo', 'configurar'],
             Modulo::NOTA->value => ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'ver-pauta', 'exportar', 'tratar-negativa'],
         ],
         Perfil::FUNCIONARIO->value => [
@@ -66,14 +67,17 @@ class SincronizarPerfisDeSistemaAction
             Modulo::ATRIBUICAO_DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'encerrar'],
             Modulo::DOCENTE->value => ['ver', 'listar', 'criar', 'editar'],
             Modulo::GRELHA_HORARIA->value => ['ver', 'listar', 'criar', 'editar', 'encerrar'],
+            Modulo::FREQUENCIA->value => ['ver', 'listar', 'criar', 'editar', 'justificar', 'corrigir-fora-prazo'],
         ],
         Perfil::PROFESSOR->value => [
             Modulo::AREA_PROFESSOR->value => ['ver'],
+            Modulo::FREQUENCIA->value => ['ver', 'criar', 'editar', 'justificar'],
             Modulo::NOTA->value => ['ver', 'listar', 'criar', 'editar', 'tratar-negativa'],
         ],
         // Conta de aluno: só consulta as suas notas (permissões fixas, sem overrides).
         Perfil::ALUNO->value => [
             Modulo::NOTA->value => ['ver-proprias'],
+            Modulo::FREQUENCIA->value => ['ver-proprias'],
         ],
     ];
 

@@ -18,5 +18,6 @@
     "Docente": true,
     "Avaliacao": true,
     "Licenciamento": true,
-    "Horario": true
+    "Horario": true,
+    "Frequencia": true
 }

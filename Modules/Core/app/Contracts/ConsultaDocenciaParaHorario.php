@@ -42,6 +42,16 @@ interface ConsultaDocenciaParaHorario
     public function paresEmVigorDoUtilizador(int $utilizadorId, CarbonInterface $data): array;
 
     /**
+     * Os pares (turma, disciplina) que o utilizador leccionou em algum momento de [inicio, fim] (AAAA-MM-DD,
+     * inclusivos), cada um com o período em que os leccionou, recortado a esse intervalo (titular ou substituto).
+     * Serve para saber que chamadas deviam ter sido dele em dias passados, mesmo que a atribuição já tenha acabado
+     * ou só tenha começado depois.
+     *
+     * @return list<array{turma_id: int, disciplina_id: int, inicio: string, fim: string}>
+     */
+    public function paresDoUtilizadorNoIntervalo(int $utilizadorId, string $inicio, string $fim): array;
+
+    /**
      * Docentes activos do tenant, por ordem alfabética do nome.
      *
      * @return list<array{id: int, nome: string}>

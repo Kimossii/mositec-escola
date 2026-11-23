@@ -129,4 +129,20 @@ class ConsultaDocenciaParaHorarioTest extends TestCase
         ], $r);
         $this->assertSame([], $this->contrato()->titularesNoIntervalo($c['turma']->id, $c['outraDisciplina']->id, '2026-03-01', '2026-06-30'));
     }
+
+    public function test_pares_do_utilizador_no_intervalo_vem_recortados_e_sem_duplicar(): void
+    {
+        $c = $this->cenarioDeDocencia();
+        $docente = $this->criarDocente('Com Conta', comAcesso: true);
+        $this->atribuir($c, $docente, PapelDocente::TITULAR, '2026-01-01', '2026-03-10');
+        $this->atribuir($c, $docente, PapelDocente::SUBSTITUTO, '2026-03-20', null, $c['outraDisciplina']->id);
+
+        $r = $this->contrato()->paresDoUtilizadorNoIntervalo($docente->utilizador()->id, '2026-03-05', '2026-03-31');
+
+        $this->assertSame([
+            ['turma_id' => $c['turma']->id, 'disciplina_id' => $c['disciplina']->id, 'inicio' => '2026-03-05', 'fim' => '2026-03-10'],
+            ['turma_id' => $c['turma']->id, 'disciplina_id' => $c['outraDisciplina']->id, 'inicio' => '2026-03-20', 'fim' => '2026-03-31'],
+        ], $r);
+        $this->assertSame([], $this->contrato()->paresDoUtilizadorNoIntervalo($this->criarProfessor('sem@example.com')->id, '2026-03-05', '2026-03-31'));
+    }
 }

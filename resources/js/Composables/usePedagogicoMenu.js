@@ -12,6 +12,8 @@ const seccoesPedagogico = [
             { href: '/disciplinas', label: 'Disciplinas', permissao: 'disciplina.ver' },
             { href: '/horarios', label: 'Horários', permissao: 'horario.ver' },
             { href: '/grelha-horaria', label: 'Grelha de horários', permissao: 'grelha-horaria.ver' },
+            { href: '/frequencia/pendentes', label: 'Frequência', permissao: 'frequencia.listar' },
+            { href: '/minhas-faltas', label: 'As minhas faltas', permissao: 'frequencia.ver-proprias' },
             // { href: '#', label: 'Planos de Aula' },
             { href: '/avaliacao/notas', label: 'Avaliações / Notas', modulo: 'avaliacao', permissao: 'nota.ver' },
             { href: '/avaliacao/configuracao', label: 'Configuração da avaliação', modulo: 'avaliacao', permissao: 'nota.configurar' },
