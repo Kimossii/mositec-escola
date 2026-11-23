@@ -24,6 +24,19 @@ class EventoCalendarioController extends Controller
         return redirect()->back()->with('success', 'Evento de calendário criado com sucesso.');
     }
 
+    public function importarFeriadosNacionais(AnoLectivo $anoLectivo)
+    {
+        $this->authorize('ano-lectivo.criar');
+
+        $r = $this->service->importarFeriadosNacionais($anoLectivo);
+
+        $mensagem = $r['criados'] === 0
+            ? 'Os feriados nacionais já estavam todos no calendário.'
+            : ($r['criados'] === 1 ? '1 feriado nacional adicionado ao calendário.' : "{$r['criados']} feriados nacionais adicionados ao calendário.");
+
+        return redirect()->back()->with('success', $mensagem);
+    }
+
     public function update(AtualizarEventoCalendarioRequest $request, EventoCalendario $evento)
     {
         $this->authorize('ano-lectivo.editar');
