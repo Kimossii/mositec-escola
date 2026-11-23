@@ -144,25 +144,44 @@ function confirmarEliminacao() {
 }
 
 const modalHorariosAberto = ref(false);
-const turnoParaHorarios = ref(null);
+// Guarda-se só o id: o turno mostrado no modal vem sempre das props, que o Inertia refresca depois de adicionar um
+// horário (uma cópia do objecto ficaria desactualizada até recarregar a página).
+const turnoParaHorariosId = ref(null);
+const turnoParaHorarios = computed(() => props.turnos.data.find((t) => t.id === turnoParaHorariosId.value) ?? null);
 const processingHorario = ref(false);
 const errorsHorario = ref({});
 
 function abrirHorarios(turno) {
-    turnoParaHorarios.value = turno;
+    turnoParaHorariosId.value = turno.id;
     errorsHorario.value = {};
     modalHorariosAberto.value = true;
 }
 
 function fecharHorarios() {
     modalHorariosAberto.value = false;
-    turnoParaHorarios.value = null;
+    turnoParaHorariosId.value = null;
+}
+
+const horarioParaRemover = ref(null); // a ligação (turno_horario) a retirar, à espera de confirmação
+const removendoHorario = ref(false);
+
+function confirmarRemocaoDeHorario() {
+    removendoHorario.value = true;
+    router.delete(`/turnos/${turnoParaHorariosId.value}/horarios/${horarioParaRemover.value.id}`, {
+        preserveScroll: true,
+        onSuccess: () => toast.success('Horário retirado do turno.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
+        onFinish: () => {
+            removendoHorario.value = false;
+            horarioParaRemover.value = null;
+        },
+    });
 }
 
 function adicionarHorario(payload) {
     processingHorario.value = true;
     errorsHorario.value = {};
-    router.post(`/turnos/${turnoParaHorarios.value.id}/horarios`, payload, {
+    router.post(`/turnos/${turnoParaHorariosId.value}/horarios`, payload, {
         preserveScroll: true,
         onSuccess: () => toast.success('Horário adicionado ao turno com sucesso.'),
         onError: (erros) => {
@@ -295,7 +314,18 @@ function adicionarHorario(payload) {
             :processing="processingHorario"
             :errors="errorsHorario"
             @adicionar="adicionarHorario"
+            @remover="(th) => (horarioParaRemover = th)"
             @fechar="fecharHorarios"
+        />
+
+        <ConfirmModal
+            :show="!!horarioParaRemover"
+            titulo="Retirar horário do turno"
+            :mensagem="`Retirar ${horarioParaRemover?.horario?.nome} deste turno? O horário continua no catálogo; só deixa de fazer parte do turno.`"
+            texto-confirmar="Retirar"
+            :processando="removendoHorario"
+            @confirmar="confirmarRemocaoDeHorario"
+            @cancelar="horarioParaRemover = null"
         />
 
         <ConfirmModal

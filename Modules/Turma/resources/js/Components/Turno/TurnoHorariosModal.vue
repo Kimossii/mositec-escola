@@ -1,6 +1,8 @@
 <script setup>
-import { reactive } from 'vue';
+import { reactive, watch } from 'vue';
+import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import SelectSolid from '@/Components/Shared/SelectSolid.vue';
+import { can } from '@/Composables/usePermissoes';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -9,12 +11,22 @@ const props = defineProps({
     processing: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
 });
-const emit = defineEmits(['adicionar', 'fechar']);
+const emit = defineEmits(['adicionar', 'remover', 'fechar']);
 
 const form = reactive({
     horario_id: '',
     ordem: 1,
 });
+
+// Ao abrir, e sempre que a lista do turno muda (um horário acabou de ser adicionado), o formulário volta ao início:
+// sem horário escolhido e com a ordem seguinte à última.
+const proximaOrdem = () => Math.max(0, ...(props.turno?.turno_horarios ?? []).map((th) => Number(th.ordem) || 0)) + 1;
+
+watch(() => [props.show, props.turno?.id, props.turno?.turno_horarios?.length], () => {
+    if (!props.show) return;
+    form.horario_id = '';
+    form.ordem = proximaOrdem();
+}, { immediate: true });
 
 const opcoesHorario = () =>
     props.horariosDisponiveis.map((h) => ({ value: h.id, label: `${h.nome} (${h.hora_inicio} - ${h.hora_fim})` }));
@@ -36,12 +48,18 @@ function submeter() {
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th class="min-w-50px">Ordem</th>
                             <th>Horário</th>
+                            <th v-if="can('turmas.editar')" class="w-50px"></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="th in turno.turno_horarios" :key="th.id">
                             <td>{{ th.ordem }}</td>
                             <td>{{ th.horario?.nome }} ({{ th.horario?.hora_inicio }} - {{ th.horario?.hora_fim }})</td>
+                            <td v-if="can('turmas.editar')" class="text-end">
+                                <button type="button" class="btn btn-icon btn-sm btn-light" title="Retirar do turno" :disabled="processing" @click="emit('remover', th)">
+                                    <AcaoIcone acao="remover" />
+                                </button>
+                            </td>
                         </tr>
                     </tbody>
                 </table>

@@ -3,6 +3,8 @@
 namespace Modules\Horario\Providers;
 
 use Modules\Core\Providers\BaseModuleServiceProvider;
+use Modules\Horario\Support\TempoEmUsoNaGrelha;
+use Modules\Turma\Support\DependenciasRegistadasDoTurno;
 
 class HorarioServiceProvider extends BaseModuleServiceProvider
 {
@@ -13,6 +15,13 @@ class HorarioServiceProvider extends BaseModuleServiceProvider
     protected array $providers = [
         RouteServiceProvider::class,
     ];
+
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->tag([TempoEmUsoNaGrelha::class], DependenciasRegistadasDoTurno::ETIQUETA);
+    }
 
     public function boot(): void
     {
