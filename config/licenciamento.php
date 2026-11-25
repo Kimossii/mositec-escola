@@ -21,6 +21,8 @@ return [
     */
     'emissor' => [
         'chave_privada_ficheiro' => env('LICENCIAMENTO_CHAVE_PRIVADA_FICHEIRO', ''),
+        // Alternativa ao ficheiro (hospedagem sem volumes): chave em base64 numa variável SECRETA do painel. O ficheiro tem prioridade.
+        'chave_privada' => env('LICENCIAMENTO_CHAVE_PRIVADA', ''),
         'kid' => env('LICENCIAMENTO_KID', ''),
     ],
 
