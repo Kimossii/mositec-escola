@@ -6,8 +6,8 @@ use Modules\Licenciamento\Exceptions\EmissorIndisponivel;
 use SensitiveParameter;
 
 /**
- * Acesso à chave privada de emissão (só a instalação central a tem). A chave vive num FICHEIRO fora da raiz web (o config
- * só guarda o caminho) e é lida no momento de assinar: nunca fica em config, propriedades, logs nem devolvida fora de
+ * Acesso à chave privada de emissão (só a instalação central a tem). A chave vive de preferência num FICHEIRO fora da raiz web (o config
+ * só guarda o caminho); sem acesso a ficheiros, aceita-se a variável secreta LICENCIAMENTO_CHAVE_PRIVADA (base64) e é lida no momento de assinar: nunca fica em config, propriedades, logs nem devolvida fora de
  * `chavePrivada()`, que só o emissor chama para assinar.
  */
 class EmissorDeLicencas
@@ -60,13 +60,20 @@ class EmissorDeLicencas
     private function lerChave(): ?string
     {
         $caminho = config('licenciamento.emissor.chave_privada_ficheiro');
-        if (! is_string($caminho) || $caminho === '' || ! is_file($caminho) || ! is_readable($caminho)) {
-            return null;
+        if (is_string($caminho) && $caminho !== '') {
+            if (! is_file($caminho) || ! is_readable($caminho)) {
+                return null;
+            }
+
+            $conteudo = @file_get_contents($caminho);
+
+            return is_string($conteudo) ? $this->decodificar(trim($conteudo)) : null;
         }
 
-        $conteudo = @file_get_contents($caminho);
+        // Alternativa para hospedagens sem acesso a ficheiros/volumes: a chave em base64 numa variável de ambiente secreta.
+        $emVariavel = config('licenciamento.emissor.chave_privada');
 
-        return is_string($conteudo) ? $this->decodificar(trim($conteudo)) : null;
+        return is_string($emVariavel) && trim($emVariavel) !== '' ? $this->decodificar(trim($emVariavel)) : null;
     }
 
     private function decodificar(#[SensitiveParameter] string $base64): ?string
