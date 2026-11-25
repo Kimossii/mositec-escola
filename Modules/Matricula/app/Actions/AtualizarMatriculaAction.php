@@ -10,6 +10,9 @@ use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\ValidadorMatriculaService;
 use Modules\Matricula\Support\DependenciasRegistadasDaMatricula;
 use Modules\Turma\Models\Turma;
+use Modules\Core\Actions\RegistarAuditoriaTenantAction;
+use Modules\Core\DTO\AuditoriaTenantDTO;
+use Modules\Matricula\Support\InstantaneoDeMatricula;
 use Modules\Core\Traits\LogService;
 
 class AtualizarMatriculaAction
@@ -19,6 +22,7 @@ class AtualizarMatriculaAction
     public function __construct(
         private ValidadorMatriculaService $validador,
         private DependenciasRegistadasDaMatricula $dependencias,
+        private RegistarAuditoriaTenantAction $auditoria,
     ) {
     }
 
@@ -69,6 +73,7 @@ class AtualizarMatriculaAction
                 throw ValidationException::withMessages([$mudaTurmaOuAno ? 'turma_id' : 'data_matricula' => $motivo]);
             }
 
+            $antes = InstantaneoDeMatricula::de($matricula);
             $matricula->update([
                 'turma_id' => $turma->id,
                 'ano_lectivo_id' => $turma->ano_lectivo_id,
@@ -77,7 +82,10 @@ class AtualizarMatriculaAction
                 'editado_por' => $utilizadorId,
             ]);
 
-            return $matricula->fresh();
+            $matricula = $matricula->fresh();
+            $this->auditoria->executar(new AuditoriaTenantDTO('matricula.actualizada', 'matriculas', (int) $matricula->id, $antes, InstantaneoDeMatricula::de($matricula), $utilizadorId));
+
+            return $matricula;
         });
     }
 }

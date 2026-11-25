@@ -2,18 +2,25 @@
 
 namespace Modules\Permissao\Actions;
 
+use Illuminate\Support\Facades\DB;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Exceptions\PerfilDeAlunoFixo;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Support\PermissaoCache;
 use Modules\Usuario\Models\User;
+use Modules\Core\Actions\RegistarAuditoriaTenantAction;
+use Modules\Core\DTO\AuditoriaTenantDTO;
+use Modules\Permissao\Support\InstantaneosDeAuditoria;
 use Modules\Core\Traits\LogService;
 
 class AtribuirPerfilAction
 {
     use LogService;
 
-    public function __construct(private readonly PermissaoCache $cache)
+    public function __construct(
+        private readonly PermissaoCache $cache,
+        private readonly RegistarAuditoriaTenantAction $auditoria,
+    )
     {
     }
 
@@ -31,7 +38,11 @@ class AtribuirPerfilAction
             throw PerfilDeAlunoFixo::semPerfisExtra();
         }
 
-        $user->roles()->syncWithoutDetaching([$roleId]);
-        $this->cache->esquecerUtilizador($user->id);
+        DB::transaction(function () use ($user, $roleId) {
+            $antes = InstantaneosDeAuditoria::perfisDoUtilizador($user);
+            $user->roles()->syncWithoutDetaching([$roleId]);
+            $this->cache->esquecerUtilizador($user->id);
+            $this->auditoria->executar(new AuditoriaTenantDTO('perfil.atribuido', 'users', (int) $user->id, ['perfis' => $antes], ['perfis' => InstantaneosDeAuditoria::perfisDoUtilizador($user)]));
+        });
     }
 }

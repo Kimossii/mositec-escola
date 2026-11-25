@@ -5,8 +5,12 @@ namespace Modules\Core\Providers;
 use Illuminate\Support\Facades\Session;
 use Modules\Core\Console\FilasEstadoCommand;
 use Modules\Core\Importacao\RegistoDeImportadores;
+use Modules\Core\Contracts\ConsultaChamadasPendentes;
+use Modules\Core\Contracts\ConsultaFaltasDoAluno;
 use Modules\Core\Contracts\IdentificaAdministradorDaEscola;
 use Modules\Core\Contracts\NinguemEAdministrador;
+use Modules\Core\Support\SemFrequencia\FaltasDoAlunoVazias;
+use Modules\Core\Support\SemFrequencia\SemChamadasPendentes;
 use Modules\Core\Licenciamento\Contracts\GarantiaDeLimites;
 use Modules\Core\Licenciamento\Contracts\ModulosDisponiveis;
 use Modules\Core\Licenciamento\Contracts\SemLimites;
@@ -49,6 +53,9 @@ class CoreServiceProvider extends BaseModuleServiceProvider
         // Sem o módulo Licenciamento não há limites; ele sobrepõe este binding (bindIf: vale qualquer ordem de registo).
         $this->app->bindIf(GarantiaDeLimites::class, SemLimites::class);
         $this->app->bindIf(ModulosDisponiveis::class, TodosOsModulos::class);
+        // Sem o módulo Frequencia não há faltas nem chamadas por fazer; ele sobrepõe estes bindings (qualquer ordem de registo).
+        $this->app->bindIf(ConsultaFaltasDoAluno::class, FaltasDoAlunoVazias::class);
+        $this->app->bindIf(ConsultaChamadasPendentes::class, SemChamadasPendentes::class);
         // O Permissao sobrepõe este binding; sem ele ninguém é administrador (em vez de falhar cada pedido web).
         $this->app->bindIf(IdentificaAdministradorDaEscola::class, NinguemEAdministrador::class);
 

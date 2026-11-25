@@ -132,6 +132,19 @@ const eventoDataInicial = ref(null);
 const eventoProcessing = ref(false);
 const eventoErrors = ref({});
 
+// A mensagem diz quantos feriados entraram (ou que já lá estavam todos), por isso vem do servidor, no flash da resposta.
+const importandoFeriados = ref(false);
+
+function importarFeriadosNacionais() {
+    importandoFeriados.value = true;
+    router.post(`/ano-lectivos/${props.anoLectivo.id}/feriados-nacionais`, {}, {
+        preserveScroll: true,
+        onSuccess: (page) => toast.success(page.props.flash?.success ?? 'Feriados nacionais importados.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
+        onFinish: () => { importandoFeriados.value = false; },
+    });
+}
+
 function abrirCriacaoEvento(dataISO) {
     eventoEmEdicao.value = null;
     eventoDataInicial.value = dataISO;
@@ -220,6 +233,16 @@ function guardarEvento(payload) {
 
         <div v-if="abaAtual === 'calendario'" class="card">
             <div class="card-header d-flex justify-content-end align-items-center">
+                <button
+                    v-if="can('ano-lectivo.criar')"
+                    class="btn btn-light-primary btn-sm me-2"
+                    :disabled="importandoFeriados"
+                    title="Acrescenta os feriados nacionais de Angola que caem neste ano lectivo (os que já lá estão não se repetem)"
+                    @click="importarFeriadosNacionais"
+                >
+                    <span v-if="importandoFeriados">A importar...</span>
+                    <span v-else>Importar feriados nacionais</span>
+                </button>
                 <button v-if="can('ano-lectivo.criar')" class="btn btn-primary btn-sm" @click="abrirCriacaoEvento(anoLectivo.data_inicio)">Novo Evento</button>
             </div>
             <div class="card-body">

@@ -40,5 +40,6 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{turno}', [TurnoController::class, 'destroy'])->middleware('can:turmas.eliminar')->name('destroy');
 
         Route::post('/{turno}/horarios', [TurnoController::class, 'adicionarHorario'])->middleware('can:turmas.editar')->name('horarios.store');
+        Route::delete('/{turno}/horarios/{turnoHorario}', [TurnoController::class, 'removerHorario'])->whereNumber(['turno', 'turnoHorario'])->middleware('can:turmas.editar')->name('horarios.destroy');
     });
 });

@@ -494,6 +494,9 @@ const pedagogico = {
     items: [
         { href: '/disciplinas', title: 'Disciplinas', permissao: 'disciplina.ver' },
         { href: '/horarios', title: 'Horários', permissao: 'horario.ver' },
+        { href: '/grelha-horaria', title: 'Grelha de horários', permissao: 'grelha-horaria.ver' },
+        { href: '/frequencia/pendentes', title: 'Frequência', permissao: 'frequencia.listar' },
+        { href: '/minhas-faltas', title: 'As minhas faltas', permissao: 'frequencia.ver-proprias' },
         // { href: '#', title: 'Planos de Aula' },
         { href: '/avaliacao/notas', title: 'Avaliações / Notas', modulo: 'avaliacao', permissao: 'nota.ver' },
         { href: '/avaliacao/configuracao', title: 'Configuração da avaliação', modulo: 'avaliacao', permissao: 'nota.configurar' },
@@ -527,6 +530,8 @@ const areaProfessor = {
     items: [
         { href: '/professor/turmas', title: 'As minhas turmas', permissao: 'area-professor.ver' },
         { href: '/professor/alunos', title: 'Os meus alunos', permissao: 'area-professor.ver' },
+        { href: '/professor/horario', title: 'O meu horário', permissao: 'area-professor.ver' },
+        { href: '/frequencia', title: 'As minhas chamadas', permissao: 'frequencia.criar' },
     ],
 }
 
@@ -552,6 +557,7 @@ const sistema = {
     items: [
         { href: '/licenca', title: 'Licença', soAdministrador: true },
         { href: '/acessos-documentos', title: 'Acessos a documentos', permissao: 'acesso-documento-pessoa.ver' },
+        { href: '/auditoria', title: 'Auditoria', permissao: 'auditoria.ver' },
     ],
 }
 

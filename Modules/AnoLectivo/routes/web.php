@@ -15,6 +15,7 @@ Route::middleware(['auth'])->prefix('ano-lectivos')->name('ano-lectivos.')->grou
 
     Route::post('/{anoLectivo}/periodos', [PeriodoController::class, 'store'])->middleware('can:ano-lectivo.criar')->name('periodos.store');
     Route::post('/{anoLectivo}/eventos-calendario', [EventoCalendarioController::class, 'store'])->middleware('can:ano-lectivo.criar')->name('eventos.store');
+    Route::post('/{anoLectivo}/feriados-nacionais', [EventoCalendarioController::class, 'importarFeriadosNacionais'])->middleware('can:ano-lectivo.criar')->name('feriados-nacionais');
 });
 
 Route::middleware(['auth'])->group(function () {

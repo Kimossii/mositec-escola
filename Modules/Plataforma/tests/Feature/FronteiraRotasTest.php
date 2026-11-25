@@ -190,7 +190,7 @@ class FronteiraRotasTest extends TestCase
         }
 
         sort($publicas);
-        $this->assertSame(['plataforma.login', 'plataforma.login.store'], $publicas, 'As únicas rotas públicas são o login (GET e POST).');
+        $this->assertSame(['plataforma.desafio', 'plataforma.desafio.store', 'plataforma.login', 'plataforma.login.store'], $publicas, 'As únicas rotas públicas são o login e o desafio de 2FA (GET e POST).');
     }
 
     public function test_o_grupo_plataforma_nunca_inclui_middleware_da_escola(): void

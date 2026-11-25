@@ -9,6 +9,9 @@ use Modules\Permissao\Support\AcoesAplicaveis;
 use Modules\Permissao\Support\PermissaoCache;
 use Modules\Permissao\Exceptions\PerfilDeAlunoFixo;
 use Modules\Usuario\Models\User;
+use Modules\Core\Actions\RegistarAuditoriaTenantAction;
+use Modules\Core\DTO\AuditoriaTenantDTO;
+use Modules\Permissao\Support\InstantaneosDeAuditoria;
 use Modules\Core\Traits\LogService;
 
 class SincronizarPermissoesUtilizadorAction
@@ -19,6 +22,7 @@ class SincronizarPermissoesUtilizadorAction
         private readonly PermissaoCache $cache,
         private readonly AcoesAplicaveis $aplicaveis,
         private readonly GarantirAdministradorEfetivoAction $garantirAdministrador,
+        private readonly RegistarAuditoriaTenantAction $auditoria,
     ) {
     }
 
@@ -38,6 +42,7 @@ class SincronizarPermissoesUtilizadorAction
             ->map(fn ($p) => "{$p->modulo_id}-{$p->acao_id}")->all());
 
         DB::transaction(function () use ($user, $celulas) {
+            $antes = InstantaneosDeAuditoria::permissoesDoUtilizador($user);
             UserPermissao::where('users_id', $user->id)->delete();
 
             $tenantId = app(TenantContext::class)->id();
@@ -58,6 +63,8 @@ class SincronizarPermissoesUtilizadorAction
 
             $this->cache->esquecerUtilizador($user->id);
             $this->garantirAdministrador->verificar();
+            [$antes, $depois] = InstantaneosDeAuditoria::alinhar($antes, InstantaneosDeAuditoria::permissoesDoUtilizador($user));
+            $this->auditoria->executar(new AuditoriaTenantDTO('permissoes_utilizador.sincronizadas', 'users', (int) $user->id, $antes, $depois));
         });
     }
 }

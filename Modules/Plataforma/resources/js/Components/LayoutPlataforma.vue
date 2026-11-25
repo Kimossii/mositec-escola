@@ -18,6 +18,7 @@ const NAVEGACAO = [
     { rotulo: 'Planos', href: '/plataforma/planos' },
     { rotulo: 'Licenças', href: '/plataforma/licencas' },
     { rotulo: 'Sistema', href: '/plataforma/sistema' },
+    { rotulo: 'Segurança', href: '/plataforma/seguranca' },
 ];
 const caminho = computed(() => String(page.url ?? '').split('?')[0]);
 const activo = (item) => caminho.value === item.href || (!item.exacto && caminho.value.startsWith(`${item.href}/`));

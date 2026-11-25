@@ -40,6 +40,7 @@ class SincronizarPerfisDeSistemaAction
             Modulo::PLANO_CURRICULAR->value => ['ver', 'criar', 'editar'],
             Modulo::DOCUMENTO_PESSOA->value => ['ver', 'criar', 'editar', 'eliminar'],
             Modulo::ACESSO_DOCUMENTO_PESSOA->value => ['ver', 'listar'],
+            Modulo::AUDITORIA->value => ['ver', 'listar'],
             Modulo::SENHA_UTILIZADOR->value => ['editar'],
             Modulo::DISCIPLINA->value => ['ver', 'criar', 'editar'],
             Modulo::ALUNO->value => ['ver', 'criar', 'editar'],
@@ -58,20 +59,26 @@ class SincronizarPerfisDeSistemaAction
             Modulo::ACORDO->value => ['ver', 'listar', 'criar', 'cancelar'],
             Modulo::ATRIBUICAO_DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar', 'exportar'],
             Modulo::DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'eliminar', 'exportar'],
+            Modulo::GRELHA_HORARIA->value => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar'],
+            Modulo::FREQUENCIA->value => ['ver', 'listar', 'criar', 'editar', 'justificar', 'corrigir-fora-prazo', 'configurar'],
             Modulo::NOTA->value => ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'ver-pauta', 'exportar', 'tratar-negativa'],
         ],
         Perfil::FUNCIONARIO->value => [
             Modulo::USUARIO->value => ['ver', 'criar', 'editar'],
             Modulo::ATRIBUICAO_DOCENTE->value => ['ver', 'listar', 'criar', 'editar', 'encerrar'],
             Modulo::DOCENTE->value => ['ver', 'listar', 'criar', 'editar'],
+            Modulo::GRELHA_HORARIA->value => ['ver', 'listar', 'criar', 'editar', 'encerrar'],
+            Modulo::FREQUENCIA->value => ['ver', 'listar', 'criar', 'editar', 'justificar', 'corrigir-fora-prazo'],
         ],
         Perfil::PROFESSOR->value => [
             Modulo::AREA_PROFESSOR->value => ['ver'],
+            Modulo::FREQUENCIA->value => ['ver', 'criar', 'editar', 'justificar'],
             Modulo::NOTA->value => ['ver', 'listar', 'criar', 'editar', 'tratar-negativa'],
         ],
         // Conta de aluno: só consulta as suas notas (permissões fixas, sem overrides).
         Perfil::ALUNO->value => [
             Modulo::NOTA->value => ['ver-proprias'],
+            Modulo::FREQUENCIA->value => ['ver-proprias'],
         ],
     ];
 

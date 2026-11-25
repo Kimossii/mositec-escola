@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\DB;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Support\PermissaoCache;
 use Modules\Usuario\Models\User;
+use Modules\Core\Actions\RegistarAuditoriaTenantAction;
+use Modules\Core\DTO\AuditoriaTenantDTO;
+use Modules\Permissao\Support\InstantaneosDeAuditoria;
 use Modules\Core\Traits\LogService;
 
 class RemoverPerfilAction
@@ -15,6 +18,7 @@ class RemoverPerfilAction
     public function __construct(
         private readonly PermissaoCache $cache,
         private readonly GarantirAdministradorEfetivoAction $garantirAdministrador,
+        private readonly RegistarAuditoriaTenantAction $auditoria,
     ) {
     }
 
@@ -27,9 +31,11 @@ class RemoverPerfilAction
     private function executarSemRegisto(User $user, Role $role): void
     {
         DB::transaction(function () use ($user, $role) {
+            $antes = InstantaneosDeAuditoria::perfisDoUtilizador($user);
             $user->roles()->detach($role->id);
             $this->cache->esquecerUtilizador($user->id);
             $this->garantirAdministrador->verificar();
+            $this->auditoria->executar(new AuditoriaTenantDTO('perfil.removido', 'users', (int) $user->id, ['perfis' => $antes], ['perfis' => InstantaneosDeAuditoria::perfisDoUtilizador($user)]));
         });
     }
 }

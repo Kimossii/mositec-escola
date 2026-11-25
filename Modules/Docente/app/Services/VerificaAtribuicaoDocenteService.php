@@ -90,12 +90,6 @@ class VerificaAtribuicaoDocenteService implements VerificaAtribuicaoDocente
     /** @return Builder<AtribuicaoDocente> */
     private function emVigorEfectivo(CarbonInterface $data): Builder
     {
-        $dia = $data->toDateString();
-
-        return AtribuicaoDocente::query()
-            ->emVigor($data)
-            // Turma eliminada (soft delete) já não conta: o scope de SoftDeletes da Turma exclui-a.
-            ->whereHas('turma')
-            ->whereHas('anoLectivo', fn (Builder $ano) => $ano->whereDate('data_fim', '>=', $dia));
+        return AtribuicaoDocente::query()->emVigorEfectivo($data);
     }
 }

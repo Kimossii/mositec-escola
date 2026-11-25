@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\DB;
 use Modules\Core\Traits\AlternaEstado;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Support\PermissaoCache;
+use Modules\Core\Actions\RegistarAuditoriaTenantAction;
+use Modules\Core\DTO\AuditoriaTenantDTO;
+use Modules\Permissao\Support\InstantaneosDeAuditoria;
 use Modules\Core\Traits\LogService;
 
 class AlternarEstadoPerfilAction
@@ -17,6 +20,7 @@ class AlternarEstadoPerfilAction
     public function __construct(
         private readonly PermissaoCache $cache,
         private readonly GarantirAdministradorEfetivoAction $garantirAdministrador,
+        private readonly RegistarAuditoriaTenantAction $auditoria,
     ) {
     }
 
@@ -29,9 +33,11 @@ class AlternarEstadoPerfilAction
     private function executarSemRegisto(Role $role): Role
     {
         return DB::transaction(function () use ($role) {
+            $antes = InstantaneosDeAuditoria::perfil($role);
             $resultado = $this->alternarEstado($role);
             $this->cache->invalidarTudo();
             $this->garantirAdministrador->verificar();
+            $this->auditoria->executar(new AuditoriaTenantDTO('perfil.estado_alterado', 'roles', (int) $role->id, $antes, InstantaneosDeAuditoria::perfil($role)));
 
             return $resultado;
         });
