@@ -54,6 +54,10 @@ Route::middleware(['auth'])->prefix('usuarios')->group(function () {
     Route::group(['prefix' => 'encarregados'], function () {
         Route::get('/', [UsuarioController::class, 'encarregados'])->middleware('can:usuario.ver')->name('usuario.encarregados');
         Route::post('/cadastrar', [UsuarioController::class, 'store'])->name('usuario.encarregados.store');
+        // Procura exacta, pela matrícula oficial, do aluno a ligar a um encarregado (nome para o ecrã mostrar).
+        // Quem cria ou edita utilizadores (ver ProcurarEducandoRequest); throttle contra enumeração de matrículas.
+        Route::get('/procurar-educando', [UsuarioController::class, 'procurarEducando'])
+            ->middleware('throttle:30,1')->name('usuario.encarregados.procurar-educando');
     });
 
 });

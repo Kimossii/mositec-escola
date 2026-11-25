@@ -104,9 +104,11 @@ class UsuarioTenancyTest extends TestCase
     public function test_encarregado_e_educando_gravam_o_tenant_no_pivot(): void
     {
         $encarregado = $this->utilizador('enc@example.com');
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Aluno', 'numero_identificacao' => 'BI-9', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
         $aluno = $this->utilizador('aluno@example.com');
+        $aluno->forceFill(['dados_pessoa_id' => $pessoa->id])->save();
 
-        $encarregado->educandos()->attach($aluno->id, ['parentesco' => 'Pai']);
+        $encarregado->educandos()->attach($pessoa->id, ['parentesco' => 'Pai']);
 
         $this->assertSame(1, $encarregado->educandos()->count());
         $this->assertSame($this->tenant->id, (int) $encarregado->educandos()->first()->pivot->tenant_id);

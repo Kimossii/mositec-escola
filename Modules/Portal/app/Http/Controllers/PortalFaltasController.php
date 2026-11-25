@@ -20,8 +20,8 @@ class PortalFaltasController extends Controller
         $educando = $request->attributes->get('educando');
 
         return Inertia::render('Frequencia/MinhasFaltas', [
-            'blocos' => $this->consulta->minhasFaltas($educando),
-            'educando' => ['id' => $educando->id, 'nome' => $educando->name],
+            'blocos' => $this->consulta->faltasDaPessoa($educando->dados_pessoa_id),
+            'educando' => ['id' => $educando->id, 'nome' => $educando->dadosPessoa?->nome_completo],
         ]);
     }
 }

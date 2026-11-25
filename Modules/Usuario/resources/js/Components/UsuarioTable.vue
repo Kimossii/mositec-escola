@@ -201,6 +201,7 @@ function confirmarEliminacao() {
                         <a href="#" class="text-gray-800 text-hover-primary fw-bold mb-1" @click.prevent="emit('visualizar', usuario)">{{ usuario.name }}</a>
                         <span class="text-muted fs-7">{{ usuario.email }}</span>
                         <span v-if="usuario.matricula" class="text-muted fs-8">Nº {{ usuario.matricula }}</span>
+                        <span v-if="usuario.educandos?.length" class="text-muted fs-8">Educandos: {{ usuario.educandos.join(', ') }}</span>
                     </div>
                     <!--begin::User details-->
                 </td>

@@ -4,6 +4,7 @@ namespace Modules\Usuario\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -19,8 +20,8 @@ class EncarregadoAlunoRelationTest extends TestCase
             'password' => Hash::make('segredo123'),
         ]);
 
-        $filho1 = User::create(['name' => 'Filho Um', 'numero_matricula' => '2026-0001', 'password' => Hash::make('x')]);
-        $filho2 = User::create(['name' => 'Filho Dois', 'numero_matricula' => '2026-0002', 'password' => Hash::make('x')]);
+        $filho1 = DadosPessoa::create(['nome_completo' => 'Filho Um', 'numero_identificacao' => 'BI-1', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        $filho2 = DadosPessoa::create(['nome_completo' => 'Filho Dois', 'numero_identificacao' => 'BI-2', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
 
         $encarregado->educandos()->attach([$filho1->id, $filho2->id]);
 

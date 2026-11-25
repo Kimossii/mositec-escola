@@ -122,12 +122,9 @@ class CriarUsuarioTest extends TestCase
     {
         $this->actingAsStaff();
 
-        $aluno = User::create([
-            'name' => 'Filho',
-            'numero_matricula' => '2026-0001',
-            'tipo_login' => TipoLogin::MATRICULA,
-            'password' => Hash::make('segredo123'),
-        ]);
+        // O filho só tem a ficha de aluno: o encarregado liga-se à ficha, sem o aluno precisar de conta de login.
+        $pessoa = DadosPessoa::create(['nome_completo' => 'Filho', 'numero_identificacao' => 'BI-0001', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+        Aluno::create(['estabelecimento_id' => Estabelecimento::current()->id, 'dados_pessoa_id' => $pessoa->id, 'numero_matricula' => '2026-0001']);
 
         $response = $this->post('/usuarios/cadastrarUsuario', [
             'name' => 'Encarregado',
@@ -142,7 +139,7 @@ class CriarUsuarioTest extends TestCase
         $response->assertRedirect();
 
         $encarregado = User::where('email', 'encarregado@example.com')->first();
-        $this->assertTrue($encarregado->educandos->contains($aluno));
+        $this->assertSame([$pessoa->id], $encarregado->educandos->pluck('id')->all());
         $this->assertTrue($encarregado->roles->contains('nome', Perfil::ENCARREGADO->value));
     }
 
@@ -187,7 +184,7 @@ class CriarUsuarioTest extends TestCase
 
         $encarregado = User::where('email', 'encarregado.fluxo@example.com')->first();
         $this->assertNotNull($encarregado);
-        $this->assertTrue($encarregado->educandos->contains($aluno));
+        $this->assertTrue($encarregado->educandos->contains('id', $aluno->dados_pessoa_id));
     }
 
     public function test_celulas_enviadas_no_cadastro_sao_ignoradas(): void

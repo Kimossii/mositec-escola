@@ -480,7 +480,7 @@ class UtilizadorAlunoPorMatriculaTest extends TestCase
         ])->assertRedirect();
 
         $encarregado = User::where('email', 'enc@example.com')->firstOrFail();
-        $this->assertSame(['2026-0001'], $encarregado->educandos->pluck('numero_matricula')->all());
+        $this->assertSame([Aluno::where('numero_matricula', '2026-0001')->value('dados_pessoa_id')], $encarregado->educandos->pluck('id')->all());
     }
 
     public function test_o_contrato_esta_ligado_a_implementacao_do_modulo_aluno(): void

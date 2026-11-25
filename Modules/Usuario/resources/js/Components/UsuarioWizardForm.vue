@@ -3,6 +3,7 @@ import AcaoIcone from '@/Components/Shared/AcaoIcone.vue';
 import PermissoesPorMenu from '../../../../Permissao/resources/js/Components/PermissoesPorMenu.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
+import axios from 'axios';
 import { can } from '@/Composables/usePermissoes';
 import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
@@ -72,20 +73,44 @@ const erroDocente = computed(() => {
     return (Array.isArray(e) ? e[0] : e) ?? '';
 });
 
+// Educandos do encarregado: cada um com o nome do aluno (vem do servidor) ao lado da matrícula.
+// Na edição arrancam com os já ligados; o servidor volta a validar tudo ao guardar.
 const matriculaEducando = ref('');
-const matriculasEducandos = ref([]);
+const matriculasEducandos = ref((props.utilizador?.educandos ?? []).map((e) => ({ matricula: e.matricula, nome: e.nome })));
+const procurandoEducando = ref(false);
+const erroEducando = ref('');
 
-function adicionarEducando() {
+async function adicionarEducando() {
     const matricula = matriculaEducando.value.trim();
-    if (matricula && !matriculasEducandos.value.includes(matricula)) {
-        matriculasEducandos.value.push(matricula);
+    erroEducando.value = '';
+    if (!matricula) return;
+
+    if (matriculasEducandos.value.some((e) => e.matricula === matricula)) {
+        erroEducando.value = 'Este aluno já está na lista.';
+        return;
     }
-    matriculaEducando.value = '';
+
+    procurandoEducando.value = true;
+    try {
+        const { data } = await axios.get('/usuarios/encarregados/procurar-educando', { params: { matricula } });
+        matriculasEducandos.value.push({ matricula: data.numero_matricula, nome: data.nome, estado: data.estado, estado_descricao: data.estado_descricao });
+        matriculaEducando.value = '';
+    } catch (e) {
+        const dados = e.response?.data;
+        erroEducando.value = dados?.errors?.matricula?.[0] ?? dados?.message ?? 'Não foi possível procurar o aluno.';
+    } finally {
+        procurandoEducando.value = false;
+    }
 }
 
 function removerEducando(matricula) {
-    matriculasEducandos.value = matriculasEducandos.value.filter((m) => m !== matricula);
+    matriculasEducandos.value = matriculasEducandos.value.filter((e) => e.matricula !== matricula);
 }
+
+const erroEducandos = computed(() => {
+    const e = errors.value.matriculas_educandos ?? errors.value['matriculas_educandos.0'];
+    return (Array.isArray(e) ? e[0] : e) ?? '';
+});
 
 // Só o perfil "aluno" usa login por matrícula — deriva sempre do perfil em
 // vez de confiar no tipo_login gravado (pode estar errado em registos antigos).
@@ -188,12 +213,14 @@ function guardar() {
         } else {
             payload.tipo_login = tipoLogin.value;
         }
-        if (perfilSelecionado.value === 'encarregado') {
-            payload.matriculas_educandos = matriculasEducandos.value;
-        }
     } else if (form.password) {
         payload.password = form.password;
         payload.password_confirmation = form.passwordConfirmation;
+    }
+
+    // Encarregado: a lista completa de educandos, no cadastro e na edição.
+    if (perfilSelecionado.value === 'encarregado') {
+        payload.matriculas_educandos = matriculasEducandos.value.map((e) => e.matricula);
     }
 
     const url = props.utilizador ? `/usuarios/${props.utilizador.id}` : props.rotaCriar;
@@ -269,15 +296,23 @@ function guardar() {
                 <div class="d-flex gap-2 mb-2">
                     <input v-model="matriculaEducando" type="text" class="form-control form-control-solid"
                         placeholder="Matrícula do educando" @keydown.enter.prevent="adicionarEducando" />
-                    <button type="button" class="btn btn-light-primary" @click="adicionarEducando">Adicionar</button>
+                    <button type="button" class="btn btn-light-primary" :disabled="procurandoEducando || !matriculaEducando.trim()" @click="adicionarEducando">
+                        <span v-if="!procurandoEducando">Adicionar</span>
+                        <span v-else>Aguarde... <Loader size="0.3px" class="align-middle ms-2" /></span>
+                    </button>
                 </div>
-                <div class="d-flex flex-wrap gap-2">
-                    <span v-for="matricula in matriculasEducandos" :key="matricula" class="badge badge-light-primary fs-7">
-                        {{ matricula }}
-                        <a href="#" class="ms-2 text-danger" @click.prevent="removerEducando(matricula)">&times;</a>
-                    </span>
+                <div class="d-flex flex-column gap-2">
+                    <div v-for="e in matriculasEducandos" :key="e.matricula" class="d-flex align-items-center justify-content-between bg-body-secondary rounded px-4 py-2">
+                        <div>
+                            <span class="fw-semibold">{{ e.nome }}</span>
+                            <span class="text-muted fs-7 ms-2">Matrícula {{ e.matricula }}</span>
+                            <span v-if="e.estado !== undefined && e.estado !== 1" class="badge badge-light-warning ms-2">{{ e.estado_descricao }}</span>
+                        </div>
+                        <a href="#" class="text-danger fs-4" title="Remover" @click.prevent="removerEducando(e.matricula)">&times;</a>
+                    </div>
                 </div>
-                <div class="text-danger fs-7 mt-1" v-if="errors.matriculas_educandos">{{ errors.matriculas_educandos[0] }}</div>
+                <div class="text-danger fs-7 mt-1" v-if="erroEducando">{{ erroEducando }}</div>
+                <div class="text-danger fs-7 mt-1" v-else-if="erroEducandos">{{ erroEducandos }}</div>
             </div>
 
             <div class="text-end pt-5">

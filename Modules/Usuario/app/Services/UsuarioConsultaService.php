@@ -6,7 +6,9 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Autenticacao\Models\SessaoDeUtilizador;
 use Modules\Autenticacao\Service\FotoDoUtilizadorService;
+use Modules\Core\Contracts\ProcuraAlunoParaConta;
 use Modules\Core\Contracts\ProcuraFotosDeAlunos;
+use Modules\Core\DTO\AlunoParaConta;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Enums\Modulo as ModuloEnum;
@@ -120,6 +122,7 @@ class UsuarioConsultaService
     private function consulta(?Perfil $perfil, array $filtros): Builder
     {
         return User::with('roles')
+            ->when($perfil === Perfil::ENCARREGADO, fn ($query) => $query->with('educandos'))
             ->when($perfil, fn ($query) => $query->whereHas('roles', fn ($query) => $query->where('nome', $perfil->value)))
             ->when($filtros['pesquisa'] ?? null, function ($query, $pesquisa) {
                 $query->where(function ($query) use ($pesquisa) {
@@ -192,7 +195,20 @@ class UsuarioConsultaService
             'tipo_login' => $user->tipo_login === TipoLogin::MATRICULA ? 'matricula' : 'email',
             'matricula' => $user->numero_matricula,
             'perfil' => $roleSistema ? Perfil::from($roleSistema->nome)->slug() : null,
+            // Encarregado: os educandos ligados, com o nome do aluno ao lado da matrícula.
+            ...($roleSistema && Perfil::from($roleSistema->nome) === Perfil::ENCARREGADO ? ['educandos' => $this->educandosParaEdicao($user)] : []),
         ];
+    }
+
+    /** @return list<array{matricula: string, nome: string}> */
+    private function educandosParaEdicao(User $encarregado): array
+    {
+        $pessoas = $encarregado->educandos()->pluck('dados_pessoas.id')->map(fn ($id) => (int) $id)->all();
+
+        return array_map(
+            fn (AlunoParaConta $a) => ['matricula' => $a->numeroMatricula, 'nome' => $a->nome],
+            app(ProcuraAlunoParaConta::class)->porPessoas($pessoas),
+        );
     }
 
     /**
@@ -219,6 +235,8 @@ class UsuarioConsultaService
             'matricula' => $user->numero_matricula,
             'perfis' => $user->roles->pluck('descricao')->all(),
             'e_aluno' => $user->roles->contains('nome', Perfil::ALUNO->value),
+            // Só nos encarregados: nomes dos educandos, para a lista os mostrar.
+            'educandos' => $user->relationLoaded('educandos') ? $user->educandos->pluck('nome_completo')->sort()->values()->all() : [],
             'estado' => $user->estado,
             'tem_dois_factores' => $user->hasEnabledTwoFactorAuthentication(),
             'ultimo_acesso' => null,

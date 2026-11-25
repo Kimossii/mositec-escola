@@ -20,6 +20,7 @@ class UsuarioAction
     public function __construct(
         private GeradorMatriculaService $geradorMatricula,
         private GarantiaDeLimites $limites,
+        private SincronizarEducandosAction $educandos,
     ) {}
 
     public function criar(UsuarioDTO $dto): User
@@ -46,8 +47,7 @@ class UsuarioAction
             $user->roles()->attach($role->id);
 
             if (! empty($dto->matriculasEducandos)) {
-                $alunosIds = User::whereIn('numero_matricula', $dto->matriculasEducandos)->pluck('id');
-                $user->educandos()->attach($alunosIds);
+                $this->educandos->executar($user, $dto->matriculasEducandos);
             }
 
             UtilizadorCriado::dispatch($user, $dto->perfil);

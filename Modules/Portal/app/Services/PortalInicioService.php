@@ -2,6 +2,7 @@
 
 namespace Modules\Portal\Services;
 
+use Modules\Aluno\Models\Aluno;
 use Modules\Permissao\Services\PermissionResolver;
 use Modules\Usuario\Models\User;
 
@@ -17,23 +18,23 @@ class PortalInicioService
     /**
      * @return array{educandos: list<array<string, mixed>>, educando: ?array<string, mixed>, acessos: list<string>}
      */
-    public function dados(User $encarregado, ?User $educando): array
+    public function dados(User $encarregado, ?Aluno $educando): array
     {
         return [
-            'educandos' => $this->educandos->listar($encarregado)->map(fn (User $e) => $this->cartao($e))->values()->all(),
+            'educandos' => $this->educandos->listar($encarregado)->map(fn (Aluno $e) => $this->cartao($e))->values()->all(),
             'educando' => $educando === null ? null : $this->cartao($educando),
             'acessos' => $this->permissoes->conjuntoDoPerfilAluno(),
         ];
     }
 
     /** @return array<string, mixed> */
-    private function cartao(User $educando): array
+    private function cartao(Aluno $educando): array
     {
         return [
             'id' => $educando->id,
-            'nome' => $educando->name,
+            'nome' => $educando->dadosPessoa?->nome_completo,
             'numero_matricula' => $educando->numero_matricula,
-            'parentesco' => $educando->pivot?->parentesco,
+            'parentesco' => $educando->parentesco,
         ];
     }
 }

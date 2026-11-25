@@ -49,4 +49,18 @@ class ProcuraAlunoParaContaTest extends TestCase
         $this->assertNull(app(ProcuraAlunoParaConta::class)->procurar('2026-000'));
         $this->assertNull(app(ProcuraAlunoParaConta::class)->procurar('2026-00%'));
     }
+
+    public function test_por_pessoas_devolve_o_nome_e_a_matricula_so_dos_alunos_desta_escola(): void
+    {
+        $ana = $this->criarAluno('2026-0001', 'Ana Silva');
+        $rui = $this->criarAluno('2026-0002', 'Rui Costa');
+        $escolaB = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
+        $deB = $this->noTenant($escolaB, fn () => $this->criarAluno('2026-0099', 'Aluno de B'));
+
+        $dtos = app(ProcuraAlunoParaConta::class)->porPessoas([$ana->dados_pessoa_id, $rui->dados_pessoa_id, $deB->dados_pessoa_id, 999999]);
+
+        $this->assertSame(['Ana Silva', 'Rui Costa'], array_map(fn (AlunoParaConta $d) => $d->nome, $dtos));
+        $this->assertSame(['2026-0001', '2026-0002'], array_map(fn (AlunoParaConta $d) => $d->numeroMatricula, $dtos));
+        $this->assertSame([], app(ProcuraAlunoParaConta::class)->porPessoas([]));
+    }
 }

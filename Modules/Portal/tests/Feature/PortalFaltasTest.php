@@ -47,10 +47,10 @@ class PortalFaltasTest extends TestCase
     public function test_o_pai_ve_as_faltas_do_filho_e_nao_as_de_outro_aluno(): void
     {
         $this->aulaComRegistos($this->c, '2026-03-02', [EstadoPresenca::FALTA, EstadoPresenca::FALTA]);
-        $filho = $this->conta(Perfil::ALUNO, 'filho@example.com', $this->c['alunos'][0]->aluno->dados_pessoa_id);
-        $outro = $this->conta(Perfil::ALUNO, 'outro@example.com', $this->c['alunos'][1]->aluno->dados_pessoa_id);
+        $filho = $this->c['alunos'][0]->aluno;
+        $outro = $this->c['alunos'][1]->aluno;
         $pai = $this->conta(Perfil::ENCARREGADO, 'pai@example.com');
-        $pai->educandos()->attach($filho->id, ['parentesco' => 'Pai']);
+        $pai->educandos()->attach($filho->dados_pessoa_id, ['parentesco' => 'Pai']);
 
         $this->actingAs($pai)->get("/portal/{$filho->id}/faltas")->assertOk()->assertInertia(fn (Assert $p) => $p
             ->component('Frequencia/MinhasFaltas')

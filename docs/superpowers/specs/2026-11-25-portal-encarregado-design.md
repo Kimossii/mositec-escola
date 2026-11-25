@@ -109,3 +109,8 @@ Cada fatia tem o seu plano e é entregue e testada antes da seguinte.
 O dono quer, mais tarde, que cada escola configure que, após X dias de atraso na propina (valor definido pela escola, por exemplo 2 meses), o aluno deixe de ver as suas notas no portal. **Não faz parte desta entrega.**
 
 O que este desenho já faz para não o impedir: toda a página do portal passa por **um só ponto** que decide "este educando pode ser visto agora?" (hoje: ligação válida + estado do aluno). No futuro, a regra do atraso entra nesse ponto, e o efeito chega de uma vez ao aluno e ao encarregado. Não criar verificações espalhadas pelas páginas.
+
+## 12. Correcção 2026-11-26: o encarregado liga-se à ficha do aluno, não à conta
+Decisão do dono: o aluno pode não ter conta de login (Creche e Primário). Por isso `encarregados_alunos` passa a apontar para `dados_pessoas` (`dados_pessoa_id`) em vez de `users` (`aluno_id`). Três migrações em `Modules/Usuario` (coluna nova, preenchimento a partir das contas, troca da coluna antiga; trava com mensagem se alguma conta antiga não tiver ficha). `User::educandos()` devolve `DadosPessoa`; `User::encarregados()` (conta de aluno) vem pela ficha. O cadastro do encarregado procura a matrícula oficial pelo contrato `ProcuraAlunoParaConta`.
+
+No portal, o educando passa a ser o `Aluno` (`/portal/{aluno.id}`). Estado: o encarregado só vê alunos com a ficha activa (`alunos.estado`). Notas e faltas lêem-se pela ficha (`NotasDoAlunoService::paraPessoa`, `ConsultaFrequenciaService::faltasDaPessoa`), sem conta de aluno.

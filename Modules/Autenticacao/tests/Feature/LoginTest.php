@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
@@ -162,11 +163,7 @@ class LoginTest extends TestCase
 
     public function test_encarregado_logs_in_by_email_like_any_staff_account(): void
     {
-        $filho = User::create([
-            'name' => 'Filho',
-            'numero_matricula' => '2026-0002',
-            'password' => Hash::make('x'),
-        ]);
+        $filho = DadosPessoa::create(['nome_completo' => 'Filho', 'numero_identificacao' => 'BI-2', 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
 
         $encarregado = User::create([
             'name' => 'Encarregado Teste',

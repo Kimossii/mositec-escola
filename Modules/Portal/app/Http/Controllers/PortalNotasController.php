@@ -22,15 +22,15 @@ class PortalNotasController extends Controller
     {
         $educando = $request->attributes->get('educando');
 
-        return Inertia::render('Avaliacao/MinhasNotas/Index', $this->notas->paraUtilizador($educando) + [
-            'educando' => ['id' => $educando->id, 'nome' => $educando->name],
+        return Inertia::render('Avaliacao/MinhasNotas/Index', $this->notas->paraPessoa($educando->dados_pessoa_id) + [
+            'educando' => ['id' => $educando->id, 'nome' => $educando->dadosPessoa?->nome_completo],
             'boletim_base' => "/portal/{$educando->id}/notas",
         ]);
     }
 
     public function boletim(Request $request, int $educando, int $matricula)
     {
-        $propria = $this->notas->matriculaComBoletim($request->attributes->get('educando'), $matricula);
+        $propria = $this->notas->matriculaDaPessoaComBoletim($request->attributes->get('educando')->dados_pessoa_id, $matricula);
 
         return $this->exportacao->boletins($propria->turma_id, $propria->id);
     }

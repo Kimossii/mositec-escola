@@ -5,6 +5,7 @@ namespace Modules\Usuario\Http\Requests;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 use Modules\Permissao\Enums\Perfil;
+use Modules\Usuario\Rules\MatriculaDeAluno;
 
 class AtualizarUsuarioRequest extends BaseRequest
 {
@@ -48,6 +49,9 @@ class AtualizarUsuarioRequest extends BaseRequest
             // Conta de aluno não ganha perfis extra: mantém-se aluno.
             'perfil' => ['required', $this->eAlunoJa() ? 'in:aluno' : 'in:admin_escola,funcionario,professor,aluno,encarregado'],
             'password' => 'nullable|min:6|confirmed',
+            // Só para encarregados: a lista completa de educandos (matrículas oficiais). Sem o campo, ficam como estão.
+            'matriculas_educandos' => ['sometimes', 'array', 'min:1'],
+            'matriculas_educandos.*' => ['string', new MatriculaDeAluno],
         ];
     }
 
@@ -59,6 +63,8 @@ class AtualizarUsuarioRequest extends BaseRequest
             'perfil.in' => 'O perfil indicado é inválido.',
             'email.email' => 'Informe um email válido.',
             'email.unique' => 'Este email já está em uso.',
+            'matriculas_educandos.array' => 'Indique os educandos.',
+            'matriculas_educandos.min' => 'É preciso ligar pelo menos um educando.',
             'password.min' => 'A senha deve ter no mínimo 6 caracteres.',
             'password.confirmed' => 'A confirmação da senha não coincide.',
         ];

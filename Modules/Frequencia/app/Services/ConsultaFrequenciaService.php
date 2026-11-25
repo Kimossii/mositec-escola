@@ -137,7 +137,17 @@ class ConsultaFrequenciaService
      */
     public function minhasFaltas(User $utilizador): array
     {
-        $aluno = $utilizador->dados_pessoa_id === null ? null : Aluno::query()->where('dados_pessoa_id', $utilizador->dados_pessoa_id)->first();
+        return $this->faltasDaPessoa($utilizador->dados_pessoa_id);
+    }
+
+    /**
+     * As faltas da pessoa (ficha) de um aluno, com ou sem conta de login.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function faltasDaPessoa(?int $dadosPessoaId): array
+    {
+        $aluno = $dadosPessoaId === null ? null : Aluno::query()->where('dados_pessoa_id', $dadosPessoaId)->first();
 
         if ($aluno === null) {
             return [];

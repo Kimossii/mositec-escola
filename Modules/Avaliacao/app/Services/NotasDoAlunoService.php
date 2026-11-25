@@ -23,9 +23,15 @@ class NotasDoAlunoService
     /** @return array{anos: list<array<string, mixed>>} */
     public function paraUtilizador(User $utilizador): array
     {
+        return $this->paraPessoa($utilizador->dados_pessoa_id);
+    }
+
+    /** As notas definitivas da pessoa (ficha) de um aluno, com ou sem conta de login. */
+    public function paraPessoa(?int $dadosPessoaId): array
+    {
         $anos = [];
 
-        foreach ($this->matriculasDe($utilizador) as $matricula) {
+        foreach ($this->matriculasDaPessoa($dadosPessoaId) as $matricula) {
             $pauta = $this->pautaDefinitiva($matricula);
             if ($pauta === null) {
                 continue;
@@ -54,7 +60,12 @@ class NotasDoAlunoService
     /** A matrícula só se o aluno da sessão for o dono e a pauta estiver definitiva; senão 404. */
     public function matriculaComBoletim(User $utilizador, int $matriculaId): Matricula
     {
-        $matricula = $this->matriculasDe($utilizador)->firstWhere('id', $matriculaId);
+        return $this->matriculaDaPessoaComBoletim($utilizador->dados_pessoa_id, $matriculaId);
+    }
+
+    public function matriculaDaPessoaComBoletim(?int $dadosPessoaId, int $matriculaId): Matricula
+    {
+        $matricula = $this->matriculasDaPessoa($dadosPessoaId)->firstWhere('id', $matriculaId);
 
         if ($matricula === null || $this->pautaDefinitiva($matricula) === null) {
             throw new ModelNotFoundException();
@@ -64,9 +75,9 @@ class NotasDoAlunoService
     }
 
     /** @return \Illuminate\Support\Collection<int, Matricula> */
-    private function matriculasDe(User $utilizador)
+    private function matriculasDaPessoa(?int $dadosPessoaId)
     {
-        $aluno = $utilizador->dados_pessoa_id === null ? null : Aluno::query()->where('dados_pessoa_id', $utilizador->dados_pessoa_id)->first();
+        $aluno = $dadosPessoaId === null ? null : Aluno::query()->where('dados_pessoa_id', $dadosPessoaId)->first();
 
         if ($aluno === null) {
             return collect();

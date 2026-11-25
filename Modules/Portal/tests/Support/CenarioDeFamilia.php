@@ -3,10 +3,12 @@
 namespace Modules\Portal\Tests\Support;
 
 use Illuminate\Support\Facades\Hash;
-use Modules\Core\Enums\Estado;
+use Modules\Aluno\Models\Aluno;
+use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Permissao\Database\Seeders\PermissaoDatabaseSeeder;
 use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Role;
+use Modules\Usuario\Models\DadosPessoa;
 use Modules\Usuario\Models\User;
 
 /** Cenário de famílias: encarregados, educandos e a ligação entre eles. Requer `Tests\TestCase` com `RefreshDatabase`. */
@@ -22,12 +24,17 @@ trait CenarioDeFamilia
         return $this->criarComPerfil(User::create(['name' => 'Encarregado ' . $email, 'email' => $email, 'password' => Hash::make('x')]), Perfil::ENCARREGADO);
     }
 
-    protected function criarEducando(string $nome, string $matricula, int $estado = 1): User
+    /** Um aluno (ficha), sem conta de login: o encarregado liga-se à ficha. */
+    protected function criarEducando(string $nome, string $matricula, int $estado = 1): Aluno
     {
-        return $this->criarComPerfil(
-            User::create(['name' => $nome, 'numero_matricula' => $matricula, 'password' => Hash::make('x'), 'estado' => $estado]),
-            Perfil::ALUNO,
-        );
+        $pessoa = DadosPessoa::create(['nome_completo' => $nome, 'numero_identificacao' => 'BI-' . $matricula, 'tipo_pessoa' => DadosPessoa::TIPO_ALUNO]);
+
+        return Aluno::create([
+            'estabelecimento_id' => Estabelecimento::current()->id,
+            'dados_pessoa_id' => $pessoa->id,
+            'numero_matricula' => $matricula,
+            'estado' => $estado,
+        ]);
     }
 
     protected function criarComPerfil(User $user, Perfil $perfil): User
@@ -37,8 +44,8 @@ trait CenarioDeFamilia
         return $user;
     }
 
-    protected function ligar(User $encarregado, User $aluno, ?string $parentesco = null): void
+    protected function ligar(User $encarregado, Aluno $aluno, ?string $parentesco = null): void
     {
-        $encarregado->educandos()->attach($aluno->id, ['parentesco' => $parentesco]);
+        $encarregado->educandos()->attach($aluno->dados_pessoa_id, ['parentesco' => $parentesco]);
     }
 }

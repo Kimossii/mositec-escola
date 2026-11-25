@@ -14,4 +14,13 @@ use Modules\Core\DTO\AlunoParaConta;
 interface ProcuraAlunoParaConta
 {
     public function procurar(string $numeroMatricula): ?AlunoParaConta;
+
+    /**
+     * Os alunos desta escola cujas fichas (`dados_pessoas`) se indicam, por ordem de matrícula; ids sem aluno
+     * (ou de outra escola) ficam de fora. Serve para mostrar o nome e a matrícula dos educandos de um encarregado.
+     *
+     * @param  list<int>  $dadosPessoaIds
+     * @return list<AlunoParaConta>
+     */
+    public function porPessoas(array $dadosPessoaIds): array;
 }

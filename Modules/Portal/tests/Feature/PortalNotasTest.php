@@ -24,9 +24,9 @@ class PortalNotasTest extends TestCase
 
     private array $c;
 
-    private User $ana;
+    private int $ana;
 
-    private User $bia;
+    private int $bia;
 
     private User $pai;
 
@@ -47,10 +47,11 @@ class PortalNotasTest extends TestCase
         $this->matriculaAna = $inscAna->matricula_id;
         $this->matriculaBia = $inscBia->matricula_id;
 
-        $this->ana = $this->contaDoAluno($inscAna, 'ana@example.com');
-        $this->bia = $this->contaDoAluno($inscBia, 'bia@example.com');
+        // Os alunos não têm conta de login: o pai liga-se à ficha.
+        $this->ana = $inscAna->matricula->aluno->id;
+        $this->bia = $inscBia->matricula->aluno->id;
         $this->pai = $this->criarUtilizadorComPerfil(Perfil::ENCARREGADO, 'pai@example.com');
-        $this->pai->educandos()->attach($this->ana->id, ['parentesco' => 'Pai']);
+        $this->pai->educandos()->attach($inscAna->matricula->aluno->dados_pessoa_id, ['parentesco' => 'Pai']);
 
         $this->actingAs($this->criarUtilizadorComPerfil(Perfil::ADMIN_ESCOLA, 'admin@example.com'))
             ->post("/avaliacao/pautas/{$this->c['turma']->id}/aprovar")->assertRedirect();
@@ -66,10 +67,10 @@ class PortalNotasTest extends TestCase
 
     public function test_o_pai_ve_as_notas_do_filho(): void
     {
-        $this->actingAs($this->pai)->get("/portal/{$this->ana->id}/notas")->assertOk()->assertInertia(fn (Assert $p) => $p
+        $this->actingAs($this->pai)->get("/portal/{$this->ana}/notas")->assertOk()->assertInertia(fn (Assert $p) => $p
             ->component('Avaliacao/MinhasNotas/Index')
-            ->where('educando.id', $this->ana->id)
-            ->where('boletim_base', "/portal/{$this->ana->id}/notas")
+            ->where('educando.id', $this->ana)
+            ->where('boletim_base', "/portal/{$this->ana}/notas")
             ->has('anos', 1)
             ->where('anos.0.matricula_id', $this->matriculaAna)
             ->where('anos.0.resultado', 'Transita')
@@ -78,14 +79,14 @@ class PortalNotasTest extends TestCase
 
     public function test_o_boletim_do_filho_descarrega_e_o_de_outro_aluno_da_404(): void
     {
-        $this->actingAs($this->pai)->get("/portal/{$this->ana->id}/notas/{$this->matriculaAna}/boletim")->assertOk();
-        $this->actingAs($this->pai)->get("/portal/{$this->ana->id}/notas/{$this->matriculaBia}/boletim")->assertNotFound();
+        $this->actingAs($this->pai)->get("/portal/{$this->ana}/notas/{$this->matriculaAna}/boletim")->assertOk();
+        $this->actingAs($this->pai)->get("/portal/{$this->ana}/notas/{$this->matriculaBia}/boletim")->assertNotFound();
     }
 
     public function test_notas_de_um_aluno_que_nao_e_filho_da_404(): void
     {
-        $this->actingAs($this->pai)->get("/portal/{$this->bia->id}/notas")->assertNotFound();
-        $this->actingAs($this->pai)->get("/portal/{$this->bia->id}/notas/{$this->matriculaBia}/boletim")->assertNotFound();
+        $this->actingAs($this->pai)->get("/portal/{$this->bia}/notas")->assertNotFound();
+        $this->actingAs($this->pai)->get("/portal/{$this->bia}/notas/{$this->matriculaBia}/boletim")->assertNotFound();
     }
 
     public function test_so_com_a_permissao_de_notas_no_perfil_aluno(): void
@@ -95,11 +96,13 @@ class PortalNotasTest extends TestCase
             ->delete();
         app(PermissaoCache::class)->invalidarTudo();
 
-        $this->actingAs($this->pai)->get("/portal/{$this->ana->id}/notas")->assertForbidden();
+        $this->actingAs($this->pai)->get("/portal/{$this->ana}/notas")->assertForbidden();
     }
 
     public function test_quem_nao_e_encarregado_nao_usa_as_rotas_do_portal(): void
     {
-        $this->actingAs($this->ana)->get("/portal/{$this->ana->id}/notas")->assertForbidden();
+        $conta = $this->contaDoAluno($this->inscreverAluno($this->c, 'Cris'), 'cris@example.com');
+
+        $this->actingAs($conta)->get("/portal/{$this->ana}/notas")->assertForbidden();
     }
 }

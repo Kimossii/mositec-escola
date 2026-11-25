@@ -14,6 +14,10 @@ class AtualizarUsuarioAction
 {
     use LogService;
 
+    public function __construct(private SincronizarEducandosAction $educandos)
+    {
+    }
+
     /** Regista a operação (conclusão ou falha) e delega em `atualizarSemRegisto()`. */
     public function atualizar(User $user, array $dados): User
     {
@@ -40,6 +44,10 @@ class AtualizarUsuarioAction
             $user->roles()->syncWithoutDetaching([$role->id]);
 
             PerfilAtribuidoAUtilizador::dispatch($user, $perfil);
+
+            if ($perfil === Perfil::ENCARREGADO && array_key_exists('matriculas_educandos', $dados)) {
+                $this->educandos->executar($user, $dados['matriculas_educandos']);
+            }
 
             return $user->fresh();
         });

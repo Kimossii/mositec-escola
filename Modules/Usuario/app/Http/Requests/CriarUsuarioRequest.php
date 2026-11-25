@@ -4,6 +4,7 @@ namespace Modules\Usuario\Http\Requests;
 
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
+use Modules\Usuario\Rules\MatriculaDeAluno;
 use Modules\Permissao\Enums\Perfil;
 
 class CriarUsuarioRequest extends BaseRequest
@@ -65,7 +66,7 @@ class CriarUsuarioRequest extends BaseRequest
             'password' => 'required|min:6|confirmed',
             'estado' => 'nullable|in:1,0',
             'matriculas_educandos' => 'nullable|array',
-            'matriculas_educandos.*' => 'string|exists:users,numero_matricula',
+            'matriculas_educandos.*' => ['string', new MatriculaDeAluno],
         ];
     }
 
@@ -101,7 +102,6 @@ class CriarUsuarioRequest extends BaseRequest
             'docente_id.integer' => 'O docente indicado é inválido.',
             'email.max' => 'O email não pode ter mais de 255 caracteres.',
 
-            'matriculas_educandos.*.exists' => 'Uma das matrículas indicadas não existe.',
         ];
     }
 

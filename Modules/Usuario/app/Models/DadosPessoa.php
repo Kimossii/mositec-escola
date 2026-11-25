@@ -4,7 +4,9 @@ namespace Modules\Usuario\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Core\Tenancy\TenantContext;
 use Modules\Core\Tenancy\PertenceAoTenant;
 // use Modules\Usuario\Database\Factories\DadosPessoalFactory;
 
@@ -58,6 +60,15 @@ class DadosPessoa extends Model
     public function setNumeroIdentificacaoAttribute(?string $valor): void
     {
         $this->attributes['numero_identificacao'] = $valor === null ? null : self::normalizarNumeroIdentificacao($valor);
+    }
+
+    /** Os encarregados desta pessoa (quando é aluno). */
+    public function encarregados(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'encarregados_alunos', 'dados_pessoa_id', 'encarregado_id')
+            ->withPivot('parentesco', 'tenant_id')
+            ->withPivotValue('tenant_id', app(TenantContext::class)->id())
+            ->withTimestamps();
     }
 
     public function documentos(): HasMany

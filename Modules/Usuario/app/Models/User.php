@@ -85,17 +85,19 @@ class User extends Authenticatable
         return $this->hasMany(User::class, 'editado_por');
     }
 
+    /** Os educandos do encarregado: a pessoa (ficha) de cada aluno, que pode não ter conta de login. */
     public function educandos()
     {
-        return $this->belongsToMany(User::class, 'encarregados_alunos', 'encarregado_id', 'aluno_id')
+        return $this->belongsToMany(DadosPessoa::class, 'encarregados_alunos', 'encarregado_id', 'dados_pessoa_id')
             ->withPivot('parentesco', 'tenant_id')
             ->withPivotValue('tenant_id', app(TenantContext::class)->id())
             ->withTimestamps();
     }
 
+    /** Os encarregados da pessoa desta conta (conta de aluno): vêm pela ficha, `dados_pessoa_id`. */
     public function encarregados()
     {
-        return $this->belongsToMany(User::class, 'encarregados_alunos', 'aluno_id', 'encarregado_id')
+        return $this->belongsToMany(User::class, 'encarregados_alunos', 'dados_pessoa_id', 'encarregado_id', 'dados_pessoa_id', 'id')
             ->withPivot('parentesco', 'tenant_id')
             ->withPivotValue('tenant_id', app(TenantContext::class)->id())
             ->withTimestamps();

@@ -16,6 +16,7 @@ use Modules\Usuario\Http\Requests\AtualizarUsuarioRequest;
 use Modules\Usuario\Http\Requests\CriarUsuarioRequest;
 use Modules\Usuario\Http\Requests\ExportarUtilizadoresRequest;
 use Modules\Usuario\Http\Requests\ProcurarAlunoPorMatriculaRequest;
+use Modules\Usuario\Http\Requests\ProcurarEducandoRequest;
 use Modules\Usuario\Http\Requests\ProcurarDocenteSemContaRequest;
 use Modules\Usuario\Models\User;
 use Modules\Usuario\Services\AlunoParaContaConsultaService;
@@ -112,6 +113,23 @@ class UsuarioController extends Controller
         }
 
         return response()->json($resumo);
+    }
+
+    /** Aluno a ligar a um encarregado: só o nome, a matrícula e o estado. Inexistente e de outra escola dão o mesmo 404. */
+    public function procurarEducando(ProcurarEducandoRequest $request, AlunoParaContaConsultaService $alunos)
+    {
+        $aluno = $alunos->procurar(trim($request->validated('matricula')));
+
+        if ($aluno === null) {
+            return response()->json(['message' => 'Não foi encontrado nenhum aluno com este número de matrícula.'], 404);
+        }
+
+        return response()->json([
+            'nome' => $aluno->nome,
+            'numero_matricula' => $aluno->numeroMatricula,
+            'estado' => $aluno->estado,
+            'estado_descricao' => $aluno->estadoDescricao,
+        ]);
     }
 
     /**

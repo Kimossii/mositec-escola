@@ -4,10 +4,8 @@ namespace Modules\Portal\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Modules\Portal\Services\EducandosDoEncarregadoService;
 use Modules\Portal\Tests\Support\CenarioDeFamilia;
-use Modules\Usuario\Models\User;
 use Tests\TestCase;
 
 class EducandosDoEncarregadoServiceTest extends TestCase
@@ -35,8 +33,8 @@ class EducandosDoEncarregadoServiceTest extends TestCase
 
         $lista = $this->servico->listar($enc);
 
-        $this->assertSame(['Ana', 'Zeca'], $lista->pluck('name')->all());
-        $this->assertSame('Mãe', $lista->first()->pivot->parentesco);
+        $this->assertSame(['Ana', 'Zeca'], $lista->map(fn ($a) => $a->dadosPessoa->nome_completo)->all());
+        $this->assertSame('Mãe', $lista->first()->parentesco);
     }
 
     public function test_obter_devolve_o_educando_ligado_e_null_para_os_outros(): void
@@ -59,10 +57,14 @@ class EducandosDoEncarregadoServiceTest extends TestCase
     {
         $enc = $this->criarEncarregado();
         $outra = $this->criarTenant('MOSI-000002', 'Escola B', 'b.localhost');
-        $idDeB = $this->noTenant($outra, fn () => User::create(['name' => 'Aluno B', 'numero_matricula' => '2026-9999', 'password' => Hash::make('x')])->id);
+        [$idDeB, $pessoaDeB] = $this->noTenant($outra, function () {
+            $aluno = $this->criarEducando('Aluno B', '2026-9999');
+
+            return [$aluno->id, $aluno->dados_pessoa_id];
+        });
 
         DB::table('encarregados_alunos')->insert([
-            'tenant_id' => $outra->id, 'encarregado_id' => $enc->id, 'aluno_id' => $idDeB, 'created_at' => now(), 'updated_at' => now(),
+            'tenant_id' => $outra->id, 'encarregado_id' => $enc->id, 'dados_pessoa_id' => $pessoaDeB, 'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $this->assertCount(0, $this->servico->listar($enc));

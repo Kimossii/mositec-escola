@@ -20,6 +20,24 @@ class ProcuraAlunoParaContaService implements ProcuraAlunoParaConta
             return null;
         }
 
+        return $this->paraDto($aluno);
+    }
+
+    public function porPessoas(array $dadosPessoaIds): array
+    {
+        if ($dadosPessoaIds === []) {
+            return [];
+        }
+
+        return Aluno::with('dadosPessoa')->whereIn('dados_pessoa_id', $dadosPessoaIds)->orderBy('numero_matricula')->get()
+            ->filter(fn (Aluno $aluno) => $aluno->dadosPessoa !== null)
+            ->map(fn (Aluno $aluno) => $this->paraDto($aluno))
+            ->values()
+            ->all();
+    }
+
+    private function paraDto(Aluno $aluno): AlunoParaConta
+    {
         return new AlunoParaConta(
             numeroMatricula: $aluno->numero_matricula,
             nome: $aluno->dadosPessoa->nome_completo,
