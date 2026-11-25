@@ -16,5 +16,13 @@
 ## Relógio do servidor
 O TOTP depende da hora. Offline não há fonte de hora de referência para o sistema se auto-vigiar, por isso: manter o relógio do servidor certo (NTP quando houver rede, ou acerto manual). O Fortify aceita uma pequena janela de tolerância (`window` em `config/fortify.php`).
 
-## Fora desta fase
-Painel de super admin (Fase 2, também opcional) e ecrã de Auditoria. Ver `docs/superpowers/specs/2026-11-22-2fa-fase1-design.md`.
+## Super admin (Fase 2)
+Também opcional e offline (TOTP). Fluxo próprio do módulo Plataforma, sem tocar no Fortify nem no login da escola.
+- **Activar/desactivar:** `/plataforma/seguranca` (pede a senha actual; mostra QR, confirma por código e entrega 8 códigos de recuperação uma única vez).
+- **Login:** quem activou passa por `/plataforma/desafio` depois da senha (código da aplicação ou de recuperação; 5 tentativas falhadas por minuto bloqueiam; o desafio expira em 5 min). Uma activação por confirmar não pede desafio.
+- **Perdeu a aplicação e os códigos:** `php artisan mosi:plataforma:admin:2fa-reset --email=...`.
+- **Auditoria:** `super_admin.2fa_activado`, `super_admin.2fa_desactivado`, `super_admin.2fa_desafio_falhado`, `super_admin.2fa_reposto`.
+- Desenho: `docs/superpowers/specs/2026-11-25-2fa-fase2-super-admin-design.md`.
+
+## Fora de âmbito
+Obrigatoriedade, email/SMS/push. Ecrã de Auditoria da escola tratado à parte.

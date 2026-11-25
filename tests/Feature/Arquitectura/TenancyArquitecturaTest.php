@@ -424,6 +424,7 @@ class TenancyArquitecturaTest extends TestCase
     private const COMANDOS_DA_PLATAFORMA = [
         'Modules/Plataforma/app/Console/CriarSuperAdminCommand.php',
         'Modules/Plataforma/app/Console/RedefinirSuperAdminCommand.php',
+        'Modules/Plataforma/app/Console/ReporDoisFactoresSuperAdminCommand.php',
         'Modules/Financeiro/app/Console/CambioPlataformaCommand.php',
         // Licenciamento: operam sobre TODAS as escolas desta instalação de uma vez (activação/transição), por serviços/Actions que usam o CatalogoDeTenants; --tenant/--todos não faz sentido.
         'Modules/Licenciamento/app/Console/GerarChavesCommand.php',

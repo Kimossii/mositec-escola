@@ -11,6 +11,7 @@ use Modules\Plataforma\Actions\AutenticarSuperAdminAction;
 use Modules\Plataforma\Exceptions\CredenciaisInvalidas;
 use Modules\Plataforma\Exceptions\DemasiadasTentativasDeLogin;
 use Modules\Plataforma\Http\Requests\LoginRequest;
+use Modules\Plataforma\Support\DesafioDoisFactores;
 
 class LoginController extends Controller
 {
@@ -29,6 +30,13 @@ class LoginController extends Controller
             $admin = $autenticar->executar($request, $request->validated('email'), $request->validated('password'));
         } catch (CredenciaisInvalidas|DemasiadasTentativasDeLogin $e) {
             return redirect()->route('plataforma.login')->withErrors(['email' => $e->getMessage()])->onlyInput('email');
+        }
+
+        // 2FA activo (e confirmado): a sessão só abre depois do código. Quem não o activou entra como sempre.
+        if ($admin->hasEnabledTwoFactorAuthentication()) {
+            DesafioDoisFactores::abrir($request->session(), $admin);
+
+            return redirect()->route('plataforma.desafio');
         }
 
         $abrirSessao->executar($request, $admin);

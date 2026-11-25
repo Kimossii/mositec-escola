@@ -3,6 +3,7 @@
 namespace Modules\Plataforma\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 use Modules\Core\Traits\SincronizaEstadoDescricao;
 
 /**
@@ -13,6 +14,7 @@ use Modules\Core\Traits\SincronizaEstadoDescricao;
 class SuperAdmin extends Authenticatable
 {
     use SincronizaEstadoDescricao;
+    use TwoFactorAuthenticatable;
 
     protected $table = 'super_admins';
 
@@ -26,6 +28,8 @@ class SuperAdmin extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected $attributes = [
@@ -36,6 +40,7 @@ class SuperAdmin extends Authenticatable
     protected $casts = [
         'deve_alterar_senha' => 'boolean',
         'ultimo_login_em' => 'datetime',
+        'two_factor_confirmed_at' => 'datetime',
     ];
 
     public function estaActivo(): bool
