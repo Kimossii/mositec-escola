@@ -14,6 +14,8 @@ use Modules\Matricula\DTO\HistoricoMatriculaDTO;
 use Modules\Matricula\DTO\TrancarMatriculaDTO;
 use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Models\MatriculaHistorico;
+use Modules\Core\Actions\RegistarAuditoriaTenantAction;
+use Modules\Core\DTO\AuditoriaTenantDTO;
 use Modules\Core\Traits\LogService;
 
 /**
@@ -29,6 +31,7 @@ class TrancarMatriculaAction
     public function __construct(
         private RegistarHistoricoMatriculaAction $registarHistorico,
         private RelogioDoTenant $relogio,
+        private RegistarAuditoriaTenantAction $auditoria,
     ) {
     }
 
@@ -82,6 +85,13 @@ class TrancarMatriculaAction
             ));
 
             MatriculaEstadoAlterado::dispatch((int) $bloqueada->id, EstadoMatriculaEnum::ACTIVA->value, EstadoMatriculaEnum::TRANCADA->value, $data->toDateString(), $utilizadorId);
+
+            $this->auditoria->executar(new AuditoriaTenantDTO(
+                'matricula.trancada', 'matriculas', (int) $bloqueada->id,
+                ['data_efeito' => null, 'motivo' => null, 'confirmou_com_dividas' => null],
+                ['data_efeito' => $data->toDateString(), 'motivo' => $motivo, 'confirmou_com_dividas' => $pedeConfirmacao && $confirmarComDividas],
+                $utilizadorId,
+            ));
 
             return $bloqueada->fresh();
         });

@@ -66,10 +66,10 @@ export const tipoEventoCalendarioLabel = (tipo) =>
 export const tipoEventoCalendarioCor = (tipo) => {
     switch (tipo) {
         case TIPO_EVENTO_CALENDARIO.AULA: return 'var(--bs-primary)';
-        case TIPO_EVENTO_CALENDARIO.AVALIACAO: return 'var(--bs-danger)';
+        case TIPO_EVENTO_CALENDARIO.AVALIACAO: return 'var(--bs-purple)';
         case TIPO_EVENTO_CALENDARIO.REUNIAO: return 'var(--bs-info)';
         case TIPO_EVENTO_CALENDARIO.FERIAS: return 'var(--bs-warning)';
-        case TIPO_EVENTO_CALENDARIO.FERIADO: return 'var(--bs-dark)';
+        case TIPO_EVENTO_CALENDARIO.FERIADO: return 'var(--bs-danger)'; // nunca `dark`: some-se no tema escuro
         case TIPO_EVENTO_CALENDARIO.ACTIVIDADE: return 'var(--bs-success)';
         case TIPO_EVENTO_CALENDARIO.EVENTO: return 'var(--bs-secondary)';
         case TIPO_EVENTO_CALENDARIO.OUTRO: return 'var(--bs-gray-500)';

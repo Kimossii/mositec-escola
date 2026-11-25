@@ -4,6 +4,7 @@ namespace Modules\Turma\Services;
 
 use Modules\Core\Enums\Estado;
 use Modules\Turma\Actions\AdicionarHorarioTurnoAction;
+use Modules\Turma\Actions\RemoverHorarioTurnoAction;
 use Modules\Turma\Actions\AlterarEstadoTurnoAction;
 use Modules\Turma\Actions\AtualizarTurnoAction;
 use Modules\Turma\Actions\CriarTurnoAction;
@@ -24,6 +25,7 @@ class GestaoTurnoService
         private AlterarEstadoTurnoAction $alterarEstadoTurno,
         private EliminarTurnoAction $eliminarTurno,
         private AdicionarHorarioTurnoAction $adicionarHorarioTurno,
+        private RemoverHorarioTurnoAction $removerHorarioTurno,
     ) {}
 
     public function criar(CriarTurnoRequest $request): Turno
@@ -49,5 +51,10 @@ class GestaoTurnoService
     public function adicionarHorario(Turno $turno, AdicionarHorarioTurnoRequest $request): TurnoHorario
     {
         return $this->adicionarHorarioTurno->executar($turno, AdicionarHorarioTurnoDTO::fromRequest($request));
+    }
+
+    public function removerHorario(Turno $turno, TurnoHorario $ligacao): void
+    {
+        $this->removerHorarioTurno->executar($turno, $ligacao);
     }
 }

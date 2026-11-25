@@ -56,18 +56,30 @@ class ComandosDeActivacaoTest extends TestCase
 
     public function test_gerar_chaves_mostra_um_par_valido_sem_tocar_na_bd_nem_no_disco(): void
     {
-        $antes = [count(glob(sys_get_temp_dir().'/*')), DB::table('licenciamento_planos')->count()];
+        // Não se conta os ficheiros do /tmp (partilhado com outros processos e testes: frágil). Procura-se antes, nos
+        // ficheiros pequenos aí criados desde o arranque, o material da chave privada que o comando acabou de mostrar.
+        $inicio = time() - 1;
+        $planos = DB::table('licenciamento_planos')->count();
         DB::enableQueryLog();
 
-        $this->artisan('licenciamento:gerar-chaves', ['--kid' => 'k9'])
-            ->expectsOutputToContain('PRIVADA')
-            ->expectsOutputToContain('Nada foi gravado')
-            ->assertSuccessful();
+        $this->assertSame(0, Artisan::call('licenciamento:gerar-chaves', ['--kid' => 'k9']));
+        $saida = Artisan::output();
 
         $this->assertSame([], DB::getQueryLog(), 'não deve consultar a BD');
         DB::disableQueryLog();
-        $this->assertSame($antes[0], count(glob(sys_get_temp_dir().'/*')));
-        $this->assertSame($antes[1], DB::table('licenciamento_planos')->count());
+        $this->assertStringContainsString('PRIVADA', $saida);
+        $this->assertStringContainsString('Nada foi gravado', $saida);
+        $this->assertSame($planos, DB::table('licenciamento_planos')->count());
+
+        preg_match_all('/^[A-Za-z0-9+\/]{40,}={0,2}$/m', $saida, $m);
+        $privada = $m[0][1] ?? null;
+        $this->assertNotNull($privada, 'o comando devia mostrar a chave privada');
+
+        foreach (glob(sys_get_temp_dir().'/*') ?: [] as $ficheiro) {
+            if (is_file($ficheiro) && filesize($ficheiro) < 4096 && filemtime($ficheiro) >= $inicio) {
+                $this->assertStringNotContainsString($privada, (string) file_get_contents($ficheiro), 'a chave privada não pode ficar em disco');
+            }
+        }
     }
 
     public function test_gerar_chaves_devolve_chaves_que_assinam_e_verificam(): void

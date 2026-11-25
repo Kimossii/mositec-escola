@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Plataforma\Http\Controllers\Auth\AlterarSenhaController;
+use Modules\Plataforma\Http\Controllers\Auth\DesafioDoisFactoresController;
 use Modules\Plataforma\Http\Controllers\Auth\LoginController;
 use Modules\Plataforma\Http\Controllers\AdministradorEscolaController;
 use Modules\Plataforma\Http\Controllers\CicloDeVidaController;
@@ -10,6 +11,7 @@ use Modules\Plataforma\Http\Controllers\EscolaController;
 use Modules\Plataforma\Http\Controllers\LicencaController;
 use Modules\Plataforma\Http\Controllers\PainelController;
 use Modules\Plataforma\Http\Controllers\PlanoController;
+use Modules\Plataforma\Http\Controllers\SegurancaController;
 use Modules\Plataforma\Http\Controllers\SistemaController;
 use Modules\Plataforma\Http\Middleware\ExigirTrocaDeSenhaPlataforma;
 use Modules\Plataforma\Http\Middleware\SuperAdminActivo;
@@ -20,6 +22,10 @@ use Modules\Plataforma\Http\Middleware\SuperAdminActivo;
 
 Route::get('/login', [LoginController::class, 'create'])->name('plataforma.login');
 Route::post('/login', [LoginController::class, 'store'])->name('plataforma.login.store');
+
+// Segundo passo do login (só com 2FA activo): vive fora do grupo autenticado porque a sessão ainda não abriu.
+Route::get('/desafio', [DesafioDoisFactoresController::class, 'create'])->name('plataforma.desafio');
+Route::post('/desafio', [DesafioDoisFactoresController::class, 'store'])->name('plataforma.desafio.store');
 
 // Rotas autenticadas: `auth:plataforma` (guard próprio), depois SuperAdminActivo (conta activa e
 // credencial actual) e por fim a troca obrigatória de senha. As Tasks seguintes juntam-se a este grupo.
@@ -71,6 +77,14 @@ Route::middleware(['auth:plataforma', SuperAdminActivo::class, ExigirTrocaDeSenh
     Route::post('/licencas/{licenca}/suspender', [LicencaController::class, 'suspender'])->name('plataforma.licencas.suspender');
     Route::post('/licencas/{licenca}/reactivar', [LicencaController::class, 'reactivar'])->name('plataforma.licencas.reactivar');
     Route::post('/licencas/{licenca}/cancelar', [LicencaController::class, 'cancelar'])->name('plataforma.licencas.cancelar');
+
+    // Segurança da própria conta (2FA opcional). JSON para o fluxo QR → código; `throttle` trava tentativas de senha.
+    Route::get('/seguranca', [SegurancaController::class, 'index'])->name('plataforma.seguranca');
+    Route::middleware('throttle:6,1')->group(function () {
+        Route::post('/seguranca/dois-factores', [SegurancaController::class, 'iniciar'])->name('plataforma.seguranca.iniciar');
+        Route::post('/seguranca/dois-factores/confirmar', [SegurancaController::class, 'confirmar'])->name('plataforma.seguranca.confirmar');
+        Route::delete('/seguranca/dois-factores', [SegurancaController::class, 'desactivar'])->name('plataforma.seguranca.desactivar');
+    });
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('plataforma.logout');
 

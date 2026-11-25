@@ -1,0 +1,11 @@
+{
+    "name": "Frequencia",
+    "alias": "frequencia",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Frequencia\\Providers\\FrequenciaServiceProvider"
+    ],
+    "files": []
+}

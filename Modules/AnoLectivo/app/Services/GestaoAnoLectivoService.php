@@ -2,6 +2,7 @@
 
 namespace Modules\AnoLectivo\Services;
 
+use Modules\AnoLectivo\Actions\ImportarFeriadosNacionaisAction;
 use Modules\AnoLectivo\Actions\AlterarEstadoAnoLectivoAction;
 use Modules\AnoLectivo\Actions\AtualizarAnoLectivoAction;
 use Modules\AnoLectivo\Actions\AtualizarEventoCalendarioAction;
@@ -39,6 +40,7 @@ class GestaoAnoLectivoService
         private CriarEventoCalendarioAction $criarEvento,
         private AtualizarEventoCalendarioAction $atualizarEvento,
         private EliminarEventoCalendarioAction $eliminarEvento,
+        private ImportarFeriadosNacionaisAction $importarFeriados,
     ) {}
 
     public function criar(CriarAnoLectivoRequest $request): AnoLectivo
@@ -87,6 +89,12 @@ class GestaoAnoLectivoService
     public function criarEventoCalendario(AnoLectivo $anoLectivo, CriarEventoCalendarioRequest $request): EventoCalendario
     {
         return $this->criarEvento->criar($anoLectivo, EventoCalendarioDTO::fromRequest($request));
+    }
+
+    /** @return array{criados: int, existentes: int} */
+    public function importarFeriadosNacionais(AnoLectivo $anoLectivo): array
+    {
+        return $this->importarFeriados->executar($anoLectivo);
     }
 
     public function atualizarEventoCalendario(EventoCalendario $evento, AtualizarEventoCalendarioRequest $request): EventoCalendario

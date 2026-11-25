@@ -115,6 +115,22 @@ class TrancamentoMatriculaTest extends TestCase
         $this->assertTrue(MatriculaHistorico::query()->where('matricula_id', $matricula->id)->latest('id')->first()->detalhe['confirmou_com_dividas']);
     }
 
+    public function test_trancar_regista_na_auditoria_o_motivo_e_a_data_e_recusa_nao_deixa_rasto(): void
+    {
+        ['matricula' => $matricula] = $this->cenarioPropinas();
+
+        $this->recusa('data_efeito', fn () => $this->trancar($matricula, false, '2026-10-17'));
+        $this->assertSame(0, AuditoriaTenant::where('accao', 'matricula.trancada')->count());
+
+        $this->trancar($matricula);
+
+        $linha = AuditoriaTenant::where('accao', 'matricula.trancada')->sole();
+        $this->assertSame($matricula->id, $linha->entidade_id);
+        $this->assertSame(['data_efeito' => null, 'motivo' => null], array_intersect_key($linha->detalhe['antes'], ['data_efeito' => 1, 'motivo' => 1]));
+        $this->assertSame(self::HOJE, $linha->detalhe['depois']['data_efeito']);
+        $this->assertSame('Mudança de cidade', $linha->detalhe['depois']['motivo']);
+    }
+
     public function test_data_futura_motivo_curto_e_matricula_nao_activa_sao_recusados(): void
     {
         ['matricula' => $matricula] = $this->cenarioPropinas();

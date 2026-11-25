@@ -190,12 +190,12 @@ class TenancyArquitecturaTest extends TestCase
     }
 
     /**
-     * O Core não depende de módulos de negócio. Excepção pré-existente e anterior à
+     * O Core não depende de módulos de negócio. Excepções (relação com o User; AuditoriaTenant também) — a de Horario é anterior à
      * tenancy: Horario referencia o User (relação), não é do âmbito das sequências.
      */
     public function test_o_core_nao_importa_modulos_de_negocio(): void
     {
-        $permitidos = ['Modules/Core/app/Models/Horario.php'];
+        $permitidos = ['Modules/Core/app/Models/Horario.php', 'Modules/Core/app/Models/AuditoriaTenant.php'];
         $violacoes = [];
 
         foreach ($this->codigoDeAplicacao() as $caminho => $conteudo) {
@@ -424,6 +424,7 @@ class TenancyArquitecturaTest extends TestCase
     private const COMANDOS_DA_PLATAFORMA = [
         'Modules/Plataforma/app/Console/CriarSuperAdminCommand.php',
         'Modules/Plataforma/app/Console/RedefinirSuperAdminCommand.php',
+        'Modules/Plataforma/app/Console/ReporDoisFactoresSuperAdminCommand.php',
         'Modules/Financeiro/app/Console/CambioPlataformaCommand.php',
         // Licenciamento: operam sobre TODAS as escolas desta instalação de uma vez (activação/transição), por serviços/Actions que usam o CatalogoDeTenants; --tenant/--todos não faz sentido.
         'Modules/Licenciamento/app/Console/GerarChavesCommand.php',

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Core\Http\Controllers\Auditoria\AuditoriaController;
 use Modules\Core\Http\Controllers\Ficheiros\FicheiroController;
 use Modules\Core\Http\Controllers\Horario\HorarioController;
 use Modules\Core\Http\Controllers\Importacao\ImportacaoController;
@@ -33,3 +34,6 @@ Route::middleware(['auth'])->prefix('importacoes')->name('importacoes.')->group(
     Route::get('/{entidade}/modelo', [ImportacaoController::class, 'modelo'])->where('entidade', '[a-z\-]+')->name('modelo');
     Route::post('/{entidade}', [ImportacaoController::class, 'store'])->where('entidade', '[a-z\-]+')->middleware('throttle:operacao-pesada')->name('store');
 });
+
+// Rasto da escola (`auditoria_tenant`): só leitura.
+Route::middleware(['auth'])->get('/auditoria', [AuditoriaController::class, 'index'])->middleware('can:auditoria.ver')->name('auditoria.index');

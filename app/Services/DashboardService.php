@@ -6,6 +6,7 @@ use Modules\Aluno\Services\AlunoConsultaService;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
+use Modules\Core\Contracts\ConsultaChamadasPendentes;
 use Modules\Core\Licenciamento\Contracts\ModulosDisponiveis;
 use Modules\Financeiro\Services\AcordoConsultaService;
 use Modules\Financeiro\Services\DividasConsultaService;
@@ -35,6 +36,7 @@ class DashboardService
         private RelogioDoTenant $relogio,
         private MoedaDoTenant $moeda,
         private ModulosDisponiveis $modulos,
+        private ConsultaChamadasPendentes $chamadas,
     ) {
     }
 
@@ -94,6 +96,15 @@ class DashboardService
         if ($user->can('matricula.ver')) {
             $pendentes = $this->matriculas->indicadores(['ano_lectivo_id' => $ano])['pendentes'];
             $itens[] = ['rotulo' => 'Matrículas por activar', 'quantidade' => $pendentes, 'valor' => null, 'cor' => 'warning', 'link' => '/matriculas?estado='.EstadoMatriculaEnum::PENDENTE->value];
+        }
+
+        // O professor vê as chamadas que lhe faltam; a direcção, as aulas de toda a escola sem chamada (últimos 7 dias).
+        if ($user->can('frequencia.criar')) {
+            $itens[] = ['rotulo' => 'Chamadas por fazer', 'quantidade' => $this->chamadas->doUtilizador($user->id), 'valor' => null, 'cor' => 'warning', 'link' => '/frequencia'];
+        }
+
+        if ($user->can('frequencia.listar')) {
+            $itens[] = ['rotulo' => 'Aulas sem chamada', 'quantidade' => $this->chamadas->daEscola(), 'valor' => null, 'cor' => 'warning', 'link' => '/frequencia/pendentes'];
         }
 
         if ($user->can('turmas.ver')) {

@@ -11,6 +11,7 @@ use Modules\Turma\Http\Requests\AlterarEstadoTurnoRequest;
 use Modules\Turma\Http\Requests\AtualizarTurnoRequest;
 use Modules\Turma\Http\Requests\CriarTurnoRequest;
 use Modules\Turma\Models\Turno;
+use Modules\Turma\Models\TurnoHorario;
 use Modules\Turma\Services\GestaoTurnoService;
 use Modules\Turma\Services\TurnoConsultaService;
 
@@ -86,5 +87,16 @@ class TurnoController extends Controller
         $this->service->adicionarHorario($turno, $request);
 
         return redirect()->back()->with('success', 'Horário adicionado ao turno com sucesso.');
+    }
+
+    public function removerHorario(Turno $turno, TurnoHorario $turnoHorario)
+    {
+        $this->authorize('turmas.editar');
+
+        abort_unless((int) $turnoHorario->turno_id === (int) $turno->id, 404);
+
+        $this->service->removerHorario($turno, $turnoHorario);
+
+        return redirect()->back()->with('success', 'Horário retirado do turno.');
     }
 }

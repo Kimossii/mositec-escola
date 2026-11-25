@@ -4,6 +4,7 @@ namespace Modules\Plataforma\Providers;
 
 use Modules\Plataforma\Console\CriarSuperAdminCommand;
 use Modules\Plataforma\Console\RedefinirSuperAdminCommand;
+use Modules\Plataforma\Console\ReporDoisFactoresSuperAdminCommand;
 use Modules\Plataforma\Support\LimitadorLoginPlataforma;
 use Modules\Core\Providers\BaseModuleServiceProvider;
 
@@ -33,6 +34,7 @@ class PlataformaServiceProvider extends BaseModuleServiceProvider
     protected array $commands = [
         CriarSuperAdminCommand::class,
         RedefinirSuperAdminCommand::class,
+        ReporDoisFactoresSuperAdminCommand::class,
     ];
 
     public function boot(): void

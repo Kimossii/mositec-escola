@@ -10,6 +10,7 @@ use Modules\Aluno\Models\Aluno;
 use Modules\AnoLectivo\Enums\EstadoAnoLectivo;
 use Modules\AnoLectivo\Models\AnoLectivo;
 use Modules\Core\Enums\Estado;
+use Modules\Core\Models\AuditoriaTenant;
 use Modules\Curso\Models\Curso;
 use Modules\Disciplina\Models\Disciplina;
 use Modules\Estabelecimento\Enums\TipoEnsinoEnum;
@@ -1174,5 +1175,63 @@ class MatriculaActionTest extends TestCase
 
         $this->assertNotNull($matricula->id);
         $this->assertSame(1, $matricula->inscricoesDisciplinas()->count());
+    }
+
+    public function test_criar_matricula_regista_auditoria_com_o_estado_depois(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+
+        $linha = AuditoriaTenant::where('accao', 'matricula.criada')->sole();
+        $this->assertSame('matriculas', $linha->entidade_tipo);
+        $this->assertSame($matricula->id, $linha->entidade_id);
+        $this->assertSame([], $linha->detalhe['antes']);
+        $this->assertSame($matricula->turma_id, $linha->detalhe['depois']['turma_id']);
+        $this->assertSame($matricula->numero_registo_matricula, $linha->detalhe['depois']['numero_registo_matricula']);
+    }
+
+    public function test_actualizar_matricula_regista_so_o_que_mudou_e_nao_repete_sem_alteracoes(): void
+    {
+        $estabelecimento = $this->criarEstabelecimento();
+        $anoLectivo = $this->criarAnoLectivo($estabelecimento);
+        $nivel = $this->criarNivelAcademico($estabelecimento);
+        $turmaOriginal = $this->criarTurma($anoLectivo, $nivel);
+        $turmaNova = $this->criarTurma($anoLectivo, $nivel);
+        $aluno = $this->criarAluno($estabelecimento);
+        $this->enquadrar($aluno, nivelAcademicoId: $nivel->id);
+        $this->confirmarPlanoCurricular($estabelecimento, $anoLectivo, $nivel);
+        $matricula = app(CriarMatriculaAction::class)->executar($aluno, $this->dto($turmaOriginal->id, $anoLectivo->id));
+        $dto = $this->dto($turmaNova->id, $anoLectivo->id, dataMatricula: $matricula->data_matricula->toDateString());
+
+        app(AtualizarMatriculaAction::class)->executar($matricula, $dto);
+        app(AtualizarMatriculaAction::class)->executar($matricula->fresh(), $dto); // sem alterações
+
+        $linha = AuditoriaTenant::where('accao', 'matricula.actualizada')->sole();
+        $this->assertSame(['turma_id' => $turmaOriginal->id], $linha->detalhe['antes']);
+        $this->assertSame(['turma_id' => $turmaNova->id], $linha->detalhe['depois']);
+    }
+
+    public function test_eliminar_matricula_regista_com_depois_nulo(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+
+        app(EliminarMatriculaAction::class)->executar($matricula);
+
+        $linha = AuditoriaTenant::where('accao', 'matricula.eliminada')->sole();
+        $this->assertSame($matricula->numero_registo_matricula, $linha->detalhe['antes']['numero_registo_matricula']);
+        $this->assertNull($linha->detalhe['depois']['numero_registo_matricula']);
+    }
+
+    public function test_eliminar_matricula_nao_pendente_nao_deixa_rasto(): void
+    {
+        $matricula = $this->criarMatriculaPendente();
+        $matricula->update(['estado' => EstadoMatriculaEnum::ACTIVA]);
+
+        try {
+            app(EliminarMatriculaAction::class)->executar($matricula->fresh());
+            $this->fail('Devia recusar.');
+        } catch (ValidationException) {
+        }
+
+        $this->assertSame(0, AuditoriaTenant::where('accao', 'matricula.eliminada')->count());
     }
 }

@@ -13,6 +13,9 @@ use Modules\Matricula\Models\Matricula;
 use Modules\Matricula\Services\GeradorNumeroRegistoMatriculaService;
 use Modules\Matricula\Services\ValidadorMatriculaService;
 use Modules\Turma\Models\Turma;
+use Modules\Core\Actions\RegistarAuditoriaTenantAction;
+use Modules\Core\DTO\AuditoriaTenantDTO;
+use Modules\Matricula\Support\InstantaneoDeMatricula;
 use Modules\Core\Traits\LogService;
 
 class CriarMatriculaAction
@@ -25,6 +28,7 @@ class CriarMatriculaAction
         private RegistarHistoricoMatriculaAction $registarHistorico,
         private InscreverDisciplinasAutomaticamenteAction $inscreverDisciplinas,
         private RelogioDoTenant $relogio,
+        private RegistarAuditoriaTenantAction $auditoria,
     ) {
     }
 
@@ -81,6 +85,8 @@ class CriarMatriculaAction
                 $matricula->data_matricula->toDateString(),
                 $utilizadorId,
             );
+
+            $this->auditoria->executar(new AuditoriaTenantDTO('matricula.criada', 'matriculas', (int) $matricula->id, [], InstantaneoDeMatricula::de($matricula), $utilizadorId));
 
             return $matricula;
         });

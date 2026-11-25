@@ -41,6 +41,9 @@ class AcaoSeeder extends Seeder
             ['nome' => 'tratar-negativa', 'numero' => 20],
             // O aluno consulta as suas próprias notas (só pautas definitivas).
             ['nome' => 'ver-proprias', 'numero' => 21],
+            // Frequência: justificar faltas e corrigir registos depois da janela de correcção.
+            ['nome' => 'justificar', 'numero' => 22],
+            ['nome' => 'corrigir-fora-prazo', 'numero' => 23],
         ];
 
         foreach ($acoes as $acao) {

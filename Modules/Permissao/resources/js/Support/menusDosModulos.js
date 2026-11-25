@@ -43,6 +43,7 @@ export const MENU_DE = {
 
     licenca: { menu: 'Sistema', entrada: 'Licenças' },
     'acesso-documento-pessoa': { menu: 'Sistema', entrada: 'Acessos a documentos' },
+    auditoria: { menu: 'Sistema', entrada: 'Auditoria' },
 };
 
 /**
