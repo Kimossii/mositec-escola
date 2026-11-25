@@ -38,6 +38,7 @@ enum Modulo: int
     case ACESSO_DOCUMENTO_PESSOA = 31;
     case GRELHA_HORARIA = 32;
     case FREQUENCIA = 33;
+    case AUDITORIA = 34;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -82,6 +83,8 @@ enum Modulo: int
             self::FREQUENCIA => ['ver', 'listar', 'criar', 'editar', 'justificar', 'corrigir-fora-prazo', 'configurar', 'ver-proprias'],
             // Registo de acessos aos documentos pessoais: só consulta (o registo nunca se edita nem se apaga).
             self::ACESSO_DOCUMENTO_PESSOA => ['ver', 'listar'],
+            // Rasto da escola (`auditoria_tenant`): só consulta; nunca se edita nem se apaga.
+            self::AUDITORIA => ['ver', 'listar'],
             // `trancar` cobre trancar e reactivar uma matrícula.
             self::MATRICULA => [...self::ACOES_BASE, 'trancar'],
             default => self::ACOES_BASE,
@@ -125,6 +128,7 @@ enum Modulo: int
             self::ACESSO_DOCUMENTO_PESSOA => 'acesso-documento-pessoa',
             self::GRELHA_HORARIA => 'grelha-horaria',
             self::FREQUENCIA => 'frequencia',
+            self::AUDITORIA => 'auditoria',
         };
     }
 
@@ -176,6 +180,7 @@ enum Modulo: int
             self::ACESSO_DOCUMENTO_PESSOA => 'Acessos a Documentos',
             self::GRELHA_HORARIA => 'Grelha de Horários',
             self::FREQUENCIA => 'Frequência',
+            self::AUDITORIA => 'Auditoria',
         };
     }
 }

@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Permissao\Models\Role;
 use Modules\Permissao\Support\PermissaoCache;
+use Modules\Core\Actions\RegistarAuditoriaTenantAction;
+use Modules\Core\DTO\AuditoriaTenantDTO;
+use Modules\Permissao\Support\InstantaneosDeAuditoria;
 use Modules\Core\Traits\LogService;
 
 class EliminarPerfilAction
@@ -15,6 +18,7 @@ class EliminarPerfilAction
     public function __construct(
         private readonly PermissaoCache $cache,
         private readonly GarantirAdministradorEfetivoAction $garantirAdministrador,
+        private readonly RegistarAuditoriaTenantAction $auditoria,
     ) {
     }
 
@@ -39,9 +43,11 @@ class EliminarPerfilAction
         }
 
         DB::transaction(function () use ($role) {
+            $antes = InstantaneosDeAuditoria::perfil($role);
             $role->delete();
             $this->cache->invalidarTudo();
             $this->garantirAdministrador->verificar();
+            $this->auditoria->executar(new AuditoriaTenantDTO('perfil.eliminado', 'roles', (int) $role->id, $antes, array_fill_keys(array_keys($antes), null)));
         });
     }
 }

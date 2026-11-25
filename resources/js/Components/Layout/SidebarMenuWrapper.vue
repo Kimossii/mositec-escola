@@ -557,6 +557,7 @@ const sistema = {
     items: [
         { href: '/licenca', title: 'Licença', soAdministrador: true },
         { href: '/acessos-documentos', title: 'Acessos a documentos', permissao: 'acesso-documento-pessoa.ver' },
+        { href: '/auditoria', title: 'Auditoria', permissao: 'auditoria.ver' },
     ],
 }
 

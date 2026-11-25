@@ -5,6 +5,8 @@ namespace Modules\Frequencia\Actions;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Modules\Core\Actions\RegistarAuditoriaTenantAction;
+use Modules\Core\DTO\AuditoriaTenantDTO;
 use Modules\Core\Traits\LogService;
 use Modules\Frequencia\Enums\EstadoPresenca;
 use Modules\Frequencia\Enums\EventoFrequencia;
@@ -18,8 +20,10 @@ class RemoverJustificacaoAction
 {
     use LogService;
 
-    public function __construct(private AutorizacaoDeChamadaService $autorizacao)
-    {
+    public function __construct(
+        private AutorizacaoDeChamadaService $autorizacao,
+        private RegistarAuditoriaTenantAction $auditoria,
+    ) {
     }
 
     public function executar(User $utilizador, Registo $registo, string $motivo): void
@@ -49,6 +53,7 @@ class RemoverJustificacaoAction
                 throw ValidationException::withMessages(['motivo' => 'Indique o motivo de retirar a justificação.']);
             }
 
+            $anterior = ['motivo' => $justificacao->motivo, 'documento_referencia' => $justificacao->documento_referencia];
             $justificacao->delete();
             RegistoHistorico::create([
                 'registo_id' => $actual->id,
@@ -58,6 +63,12 @@ class RemoverJustificacaoAction
                 'motivo' => $motivo,
                 'alterado_por' => $utilizador->id,
             ]);
+            $this->auditoria->executar(new AuditoriaTenantDTO(
+                'justificacao.removida', 'frequencia_registos', (int) $actual->id,
+                $anterior,
+                ['motivo' => null, 'documento_referencia' => null, 'motivo_remocao' => $motivo],
+                (int) $utilizador->id,
+            ));
         });
     }
 }

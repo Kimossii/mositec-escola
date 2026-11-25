@@ -5,6 +5,8 @@ namespace Modules\Frequencia\Actions;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Modules\Core\Actions\RegistarAuditoriaTenantAction;
+use Modules\Core\DTO\AuditoriaTenantDTO;
 use Modules\Core\Traits\LogService;
 use Modules\Estabelecimento\Services\RelogioDoTenant;
 use Modules\Frequencia\Enums\EstadoPresenca;
@@ -23,6 +25,7 @@ class JustificarFaltaAction
     public function __construct(
         private AutorizacaoDeChamadaService $autorizacao,
         private RelogioDoTenant $relogio,
+        private RegistarAuditoriaTenantAction $auditoria,
     ) {
     }
 
@@ -68,6 +71,13 @@ class JustificarFaltaAction
                 'motivo' => $motivo,
                 'alterado_por' => $utilizador->id,
             ]);
+
+            $this->auditoria->executar(new AuditoriaTenantDTO(
+                'falta.justificada', 'frequencia_registos', (int) $actual->id,
+                ['motivo' => null, 'documento_referencia' => null],
+                ['motivo' => $motivo, 'documento_referencia' => $referencia],
+                (int) $utilizador->id,
+            ));
 
             return $justificacao;
         });
