@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Modules\Core\Tenancy\Console\ParaTodosOsTenants;
 use Modules\Permissao\Actions\SincronizarPerfisDeSistemaAction;
 use Modules\Permissao\Database\Seeders\AcaoSeeder;
+use Modules\Permissao\Database\Seeders\ModuloSeeder;
 
 /**
  * Passo único de deploy para acções novas: repõe o catálogo global de acções e re-sincroniza os perfis
@@ -17,11 +18,12 @@ class AtualizarPermissoesCommand extends Command
 
     protected $signature = 'mosi:permissoes:atualizar';
 
-    protected $description = 'Repõe o catálogo de acções e sincroniza os perfis das escolas (usar após acrescentar uma acção; --tenant=CODIGO ou --todos)';
+    protected $description = 'Repõe o catálogo de acções e sincroniza os perfis das escolas (usar após acrescentar uma acção ou um módulo de permissões; --tenant=CODIGO ou --todos)';
 
     public function handle(SincronizarPerfisDeSistemaAction $perfis): int
     {
         $this->call('db:seed', ['--class' => AcaoSeeder::class, '--force' => true]);
+        $this->call('db:seed', ['--class' => ModuloSeeder::class, '--force' => true]);
 
         return $this->paraTenants(fn () => $perfis->executar());
     }

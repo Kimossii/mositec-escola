@@ -38,6 +38,12 @@ class AtribuirPerfilAction
             throw PerfilDeAlunoFixo::semPerfisExtra();
         }
 
+        $perfilEncarregado = Role::where('nome', Perfil::ENCARREGADO->value)->value('id');
+
+        if ($user->ePerfilEncarregado() || ($perfilEncarregado !== null && (int) $roleId === (int) $perfilEncarregado)) {
+            throw PerfilDeAlunoFixo::encarregadoSemPerfisExtra();
+        }
+
         DB::transaction(function () use ($user, $roleId) {
             $antes = InstantaneosDeAuditoria::perfisDoUtilizador($user);
             $user->roles()->syncWithoutDetaching([$roleId]);

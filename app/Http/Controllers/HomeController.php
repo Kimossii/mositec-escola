@@ -14,6 +14,10 @@ class HomeController extends Controller
     {
         $utilizador = $request->user();
 
+        if ($utilizador->ePerfilEncarregado()) {
+            return redirect()->route('portal.index');
+        }
+
         return Inertia::render('Dashboard/Index', [
             'moeda' => $moeda->atual()->paraFrontend(),
             'indicadores' => Inertia::defer(fn () => ['cartoes' => $dashboard->cartoes($utilizador)]),

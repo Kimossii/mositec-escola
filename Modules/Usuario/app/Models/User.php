@@ -117,6 +117,18 @@ class User extends Authenticatable
         return $this->roles()->where('nome', Perfil::ALUNO->value)->exists();
     }
 
+    /** Conta de encarregado: igual à do aluno — só o perfil, nunca overrides nem perfis extra. */
+    public function ePerfilEncarregado(): bool
+    {
+        return $this->roles()->where('nome', Perfil::ENCARREGADO->value)->exists();
+    }
+
+    /** Contas que só usam o seu perfil de sistema (aluno ou encarregado). */
+    public function eContaDePerfilFixo(): bool
+    {
+        return $this->ePerfilAluno() || $this->ePerfilEncarregado();
+    }
+
     public function permissoes()
     {
         return $this->hasMany(UserPermissao::class, 'users_id');

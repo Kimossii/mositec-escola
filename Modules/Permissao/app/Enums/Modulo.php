@@ -39,6 +39,7 @@ enum Modulo: int
     case GRELHA_HORARIA = 32;
     case FREQUENCIA = 33;
     case AUDITORIA = 34;
+    case AREA_ENCARREGADO = 35;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -77,6 +78,8 @@ enum Modulo: int
             self::NOTA => ['ver', 'listar', 'criar', 'editar', 'anular', 'prolongar-prazo', 'lancar-fora-prazo', 'configurar', 'aprovar', 'reabrir', 'ver-pauta', 'exportar', 'tratar-negativa', 'ver-proprias'],
             // Área do Professor: só consulta das suas turmas e alunos.
             self::AREA_PROFESSOR => ['ver'],
+            // Área do Encarregado: só consulta dos seus educandos (o que vê vem do perfil Aluno).
+            self::AREA_ENCARREGADO => ['ver'],
             // Grelha semanal de aulas: encerra-se (histórico) e só se elimina uma entrada ainda por começar.
             self::GRELHA_HORARIA => ['ver', 'listar', 'criar', 'editar', 'encerrar', 'eliminar'],
             // Frequência: o professor marca (`criar`/`editar`) dentro da janela; fora dela só `corrigir-fora-prazo`; o aluno vê as suas (`ver-proprias`).
@@ -129,6 +132,7 @@ enum Modulo: int
             self::GRELHA_HORARIA => 'grelha-horaria',
             self::FREQUENCIA => 'frequencia',
             self::AUDITORIA => 'auditoria',
+            self::AREA_ENCARREGADO => 'area-encarregado',
         };
     }
 
@@ -181,6 +185,7 @@ enum Modulo: int
             self::GRELHA_HORARIA => 'Grelha de Horários',
             self::FREQUENCIA => 'Frequência',
             self::AUDITORIA => 'Auditoria',
+            self::AREA_ENCARREGADO => 'Área do Encarregado',
         };
     }
 }

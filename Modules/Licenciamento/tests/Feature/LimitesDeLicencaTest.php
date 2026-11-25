@@ -188,6 +188,38 @@ class LimitesDeLicencaTest extends TestCase
         app(AlternarEstadoUsuarioAction::class)->executar($prof->fresh());
     }
 
+    public function test_encarregado_activo_gasta_uma_vaga_de_utilizador(): void
+    {
+        $this->instalarComLimites(null, 1);
+        $this->criarUser('enc@x.test', Perfil::ENCARREGADO);
+
+        $this->assertSame(1, $this->limites()->utilizacao(Recurso::UTILIZADORES));
+
+        $this->expectException(LimiteDeLicencaExcedido::class);
+        $this->limites()->garantir(Recurso::UTILIZADORES);
+    }
+
+    public function test_cadastrar_encarregado_com_o_limite_cheio_e_recusado(): void
+    {
+        $this->instalarComLimites(null, 1);
+        $this->criarUser('func@x.test', Perfil::FUNCIONARIO);
+
+        $this->expectException(LimiteDeLicencaExcedido::class);
+        app(UsuarioAction::class)->criar(new UsuarioDTO(name: 'N', password: 'segredo123', perfil: Perfil::ENCARREGADO, tipoLogin: TipoLogin::EMAIL, email: 'enc@x.test'));
+    }
+
+    public function test_desactivar_o_encarregado_liberta_a_vaga(): void
+    {
+        $this->instalarComLimites(null, 1);
+        $enc = $this->criarUser('enc@x.test', Perfil::ENCARREGADO)->fresh();
+
+        app(AlternarEstadoUsuarioAction::class)->executar($enc);
+
+        $this->assertSame(0, $this->limites()->utilizacao(Recurso::UTILIZADORES));
+        $this->limites()->garantir(Recurso::UTILIZADORES);
+        $this->addToAssertionCount(1);
+    }
+
     public function test_aluno_inativo_nao_conta_para_o_limite_de_alunos(): void
     {
         $this->instalarComLimites(2);

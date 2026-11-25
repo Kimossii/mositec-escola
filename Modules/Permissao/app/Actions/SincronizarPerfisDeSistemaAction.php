@@ -80,6 +80,10 @@ class SincronizarPerfisDeSistemaAction
             Modulo::NOTA->value => ['ver-proprias'],
             Modulo::FREQUENCIA->value => ['ver-proprias'],
         ],
+        // Conta de encarregado: só entra no portal; o que vê dos educandos vem do perfil Aluno (permissões fixas, sem overrides).
+        Perfil::ENCARREGADO->value => [
+            Modulo::AREA_ENCARREGADO->value => ['ver'],
+        ],
     ];
 
     public function executar(): void

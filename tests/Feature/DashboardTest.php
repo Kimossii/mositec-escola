@@ -41,6 +41,11 @@ class DashboardTest extends TestCase
             ->has('ultimosPagamentos')));
     }
 
+    public function test_encarregado_no_dashboard_vai_para_o_portal(): void
+    {
+        $this->actingAs($this->utilizador(Perfil::ENCARREGADO))->get('/')->assertRedirect('/portal');
+    }
+
     public function test_sem_permissoes_nao_ha_cartoes_nem_atencao(): void
     {
         $response = $this->actingAs($this->utilizador(null))->get('/');

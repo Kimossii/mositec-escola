@@ -1,10 +1,12 @@
 <script setup>
+import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 
 /** «As minhas faltas»: um bloco por matrícula, com o total, o que está justificado e o desdobramento por período e disciplina. */
 defineProps({
     blocos: { type: Array, required: true },
+    educando: { type: Object, default: null }, // só no portal do encarregado
 });
 defineOptions({ layout: AppLayout });
 
@@ -13,7 +15,8 @@ const unidade = (b, n) => (b.resumo.unidade === 'dias' ? (n === 1 ? 'dia' : 'dia
 
 <template>
     <div class="app-container container-xxl py-6">
-        <h1 class="fs-2 fw-bold mb-6">As minhas faltas</h1>
+        <Link v-if="educando" :href="`/portal/${educando.id}`" class="text-muted fs-7 d-inline-block mb-2">← {{ educando.nome }}</Link>
+        <h1 class="fs-2 fw-bold mb-6">{{ educando ? `Faltas de ${educando.nome}` : 'As minhas faltas' }}</h1>
 
         <div v-if="!blocos.length" class="card">
             <div class="card-body"><EstadoVazio titulo="Sem matrículas" descricao="Quando tiver uma matrícula, as suas faltas aparecem aqui." /></div>

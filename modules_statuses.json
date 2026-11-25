@@ -19,5 +19,6 @@
     "Avaliacao": true,
     "Licenciamento": true,
     "Horario": true,
-    "Frequencia": true
+    "Frequencia": true,
+    "Portal": true
 }

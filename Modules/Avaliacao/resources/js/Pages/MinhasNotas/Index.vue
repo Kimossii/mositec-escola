@@ -1,8 +1,12 @@
 <script setup>
+import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
+/** Serve o aluno («As minhas notas») e o encarregado (`educando` + `boletim_base` vêm do portal). */
 defineProps({
     anos: { type: Array, required: true },
+    educando: { type: Object, default: null },
+    boletim_base: { type: String, default: '/minhas-notas' },
 });
 defineOptions({ layout: AppLayout });
 </script>
@@ -10,7 +14,8 @@ defineOptions({ layout: AppLayout });
 <template>
     <div class="app-container container-fluid py-6">
         <div class="mb-6">
-            <h1 class="fs-2 fw-bold mb-1">As minhas notas</h1>
+            <Link v-if="educando" :href="`/portal/${educando.id}`" class="text-muted fs-7 d-inline-block mb-2">← {{ educando.nome }}</Link>
+            <h1 class="fs-2 fw-bold mb-1">{{ educando ? `Notas de ${educando.nome}` : 'As minhas notas' }}</h1>
             <div class="text-body-secondary">Resultados finais de cada ano lectivo. Só aparecem depois de a pauta ser aprovada pela escola.</div>
         </div>
 
@@ -25,7 +30,7 @@ defineOptions({ layout: AppLayout });
                     <div class="text-body-secondary fs-7">{{ ano.turma }}</div>
                 </div>
                 <div class="card-toolbar">
-                    <a :href="`/minhas-notas/${ano.matricula_id}/boletim`" class="btn btn-sm btn-light">Boletim (PDF)</a>
+                    <a :href="`${boletim_base}/${ano.matricula_id}/boletim`" class="btn btn-sm btn-light">Boletim (PDF)</a>
                 </div>
             </div>
             <div class="card-body pt-3">

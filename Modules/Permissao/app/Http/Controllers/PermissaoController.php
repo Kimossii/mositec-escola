@@ -73,6 +73,7 @@ class PermissaoController extends Controller
     public function permissoesDoUtilizador(User $user)
     {
         abort_if($user->ePerfilAluno(), 403, PerfilDeAlunoFixo::semPermissoesPersonalizadas()->getMessage());
+        abort_if($user->ePerfilEncarregado(), 403, PerfilDeAlunoFixo::encarregadoSemPermissoesPersonalizadas()->getMessage());
 
         return Inertia::render('Permissao/UtilizadorPermissoes', $this->consulta->dadosPermissoesDoUtilizador($user));
     }

@@ -6,8 +6,10 @@ use Illuminate\Support\Collection;
 use Modules\Core\Enums\Estado;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Permissao\Enums\Modulo;
+use Modules\Permissao\Enums\Perfil;
 use Modules\Permissao\Models\Acao;
 use Modules\Permissao\Models\Modulo as ModuloRegistro;
+use Modules\Permissao\Models\Role;
 use Modules\Permissao\Models\RolePermissao;
 use Modules\Permissao\Models\UserPermissao;
 use Modules\Permissao\Support\AcoesAplicaveis;
@@ -98,6 +100,34 @@ class PermissionResolver
         return $this->memoria[$chave] = $conjunto;
     }
 
+    /**
+     * Permissões do perfil Aluno, as que o encarregado «herda» sobre os seus educandos. Lê-se sempre a lista actual
+     * do perfil: nada se copia para a conta do encarregado, e o conjunto dele não as inclui.
+     *
+     * @return list<string>
+     */
+    public function conjuntoDoPerfilAluno(): array
+    {
+        $chave = 'perfil-aluno:' . $this->contexto->id();
+
+        if (array_key_exists($chave, $this->memoria)) {
+            return $this->memoria[$chave];
+        }
+
+        $moduloNomesPorId = ModuloRegistro::pluck('nome', 'id');
+        $acaoNomesPorId = Acao::pluck('nome', 'id');
+
+        $roleIds = Role::where('nome', Perfil::ALUNO->value)->where('estado', Estado::ATIVO->value)->pluck('id');
+
+        return $this->memoria[$chave] = RolePermissao::whereIn('role_id', $roleIds)
+            ->get(['modulo_id', 'acao_id'])
+            ->map(fn (RolePermissao $linha) => $this->paraString($linha->modulo_id, $linha->acao_id, $moduloNomesPorId, $acaoNomesPorId))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     private function calcular(User $user): array
     {
         $moduloNomesPorId = ModuloRegistro::pluck('nome', 'id');
@@ -113,8 +143,8 @@ class PermissionResolver
             ->filter()
             ->toBase();
 
-        // Conta de aluno: só vale o perfil. Overrides que existam (registos antigos) não têm efeito.
-        $overrides = $user->ePerfilAluno()
+        // Conta de aluno ou de encarregado: só vale o perfil. Overrides que existam (registos antigos) não têm efeito.
+        $overrides = $user->eContaDePerfilFixo()
             ? collect()
             : UserPermissao::where('users_id', $user->id)->get(['modulo_id', 'acao_id', 'permitido']);
 

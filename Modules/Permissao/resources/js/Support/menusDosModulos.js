@@ -12,6 +12,7 @@ export const MENU_DE = {
     'atribuicao-docente': { menu: 'Pessoal', entrada: 'Atribuições docentes' },
     docente: { menu: 'Pessoal', entrada: 'Docentes' },
     'area-professor': { menu: 'Pessoal', entrada: 'Área do Professor' },
+    'area-encarregado': { menu: 'Pessoal', entrada: 'Área do Encarregado' },
     matricula: { menu: 'Académico', entrada: 'Matrículas' },
     professor: { menu: 'Académico', entrada: 'Professores' },
 

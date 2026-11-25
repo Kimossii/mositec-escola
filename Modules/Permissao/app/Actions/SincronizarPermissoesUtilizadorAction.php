@@ -38,6 +38,10 @@ class SincronizarPermissoesUtilizadorAction
             throw PerfilDeAlunoFixo::semPermissoesPersonalizadas();
         }
 
+        if ($user->ePerfilEncarregado()) {
+            throw PerfilDeAlunoFixo::encarregadoSemPermissoesPersonalizadas();
+        }
+
         $this->aplicaveis->validarCelulas($celulas, UserPermissao::where('users_id', $user->id)->get(['modulo_id', 'acao_id'])
             ->map(fn ($p) => "{$p->modulo_id}-{$p->acao_id}")->all());
 

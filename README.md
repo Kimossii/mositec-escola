@@ -100,6 +100,7 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 | Horário         | Horários de aulas (calendário e grelha semanal)                                                                                              | ✅     |
 | Docente         | Cadastro de docentes, atribuições (turma × disciplina, com histórico), área do professor; acesso do docente às suas turmas                   | ✅     |
 | Avaliação       | Creche à 9.ª classe: regras por grupo de classes (escala, mínimo, pesos, exame próprio, recurso, sigla da prova, tratamento das negativas), prazos únicos da escola, mini-pauta por trimestre com vista «Resumo», lançamento em lote, avaliação qualitativa (Creche e Pré-Escolar), pautas finais em duas fases (1.ª fase e recurso), boletins, PDF e Excel | ✅     |
+| Portal do Encarregado | Fundação: encarregado escolhe o educando e abre o seu início; herda do perfil Aluno o que pode ver (notas, faltas e as páginas seguintes entram por fatias) | 🟡     |
 | Frequência      | Chamadas por tempo de aula ou por dia, justificação de faltas, ligação ao boletim e ao dashboard                                             | ✅     |
 
 ## Financeiro

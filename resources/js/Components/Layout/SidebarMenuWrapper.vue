@@ -56,6 +56,9 @@
             <!-- ── Section: Área do Professor (só quem tem a permissão) ── -->
             <SidebarAccordion :item="areaProfessor" heading="Área do Professor" />
 
+            <!-- ── Section: Área do Encarregado (só quem tem a permissão) ── -->
+            <SidebarAccordion :item="areaEncarregado" heading="Área do Encarregado" />
+
             <!-- ── Section: Académico (por implementar) ───────────────── -->
             <SidebarAccordion :item="academico" heading="Académico" />
 
@@ -532,6 +535,16 @@ const areaProfessor = {
         { href: '/professor/alunos', title: 'Os meus alunos', permissao: 'area-professor.ver' },
         { href: '/professor/horario', title: 'O meu horário', permissao: 'area-professor.ver' },
         { href: '/frequencia', title: 'As minhas chamadas', permissao: 'frequencia.criar' },
+    ],
+}
+
+// ── Área do Encarregado — consulta dos educandos ligados à conta ──
+const areaEncarregado = {
+    title: 'Área do Encarregado',
+    icon: 'ki-people',
+    paths: 1,
+    items: [
+        { href: '/portal', title: 'Os meus educandos', permissao: 'area-encarregado.ver' },
     ],
 }
 
