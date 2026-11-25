@@ -431,6 +431,38 @@ class EmitirLicencaTest extends TestCase
         $this->assertSame($this->chavePrivadaDeTeste, $emissor->chavePrivada());
     }
 
+    public function test_emissor_aceita_chave_por_variavel_quando_nao_ha_ficheiro(): void
+    {
+        config([
+            'licenciamento.emissor.chave_privada_ficheiro' => '',
+            'licenciamento.emissor.chave_privada' => base64_encode($this->chavePrivadaDeTeste),
+            'licenciamento.emissor.kid' => $this->kidDeTeste,
+        ]);
+
+        $emissor = app(EmissorDeLicencas::class);
+        $this->assertTrue($emissor->disponivel());
+        $this->assertSame($this->chavePrivadaDeTeste, $emissor->chavePrivada());
+    }
+
+    public function test_emissor_ficheiro_tem_prioridade_sobre_a_variavel(): void
+    {
+        $this->prepararEmissor(base64_encode('curta'));
+        config(['licenciamento.emissor.chave_privada' => base64_encode($this->chavePrivadaDeTeste)]);
+
+        $this->assertFalse(app(EmissorDeLicencas::class)->disponivel());
+    }
+
+    public function test_emissor_variavel_invalida_e_indisponivel(): void
+    {
+        config([
+            'licenciamento.emissor.chave_privada_ficheiro' => '',
+            'licenciamento.emissor.chave_privada' => 'lixo',
+            'licenciamento.emissor.kid' => $this->kidDeTeste,
+        ]);
+
+        $this->assertFalse(app(EmissorDeLicencas::class)->disponivel());
+    }
+
     public function test_emissor_chave_que_nao_corresponde_a_publica_do_kid_e_indisponivel(): void
     {
         $outra = sodium_crypto_sign_secretkey(sodium_crypto_sign_keypair());
