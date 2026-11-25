@@ -416,3 +416,59 @@ html[data-bs-theme='light'] .btn.btn-light-warning.active i {
     .btn.btn-icon.btn-sm { min-width: 36px; min-height: 36px; }
     .form-control, .form-select { font-size: 16px; }
 }
+
+/* Texto secundário legível nos dois temas.
+   Os cinzas de texto do Metronic davam contraste de 2,3–3,6:1 (breadcrumb, rótulos, "Sem sessão ativa",
+   botões e badges `light`), sobretudo no tema escuro. Só se mexe nas variáveis de COR DE TEXTO
+   (`--bs-text-*` e `--bs-light-inverse`), nunca em `--bs-gray-*`, que também pintam fundos.
+   Contraste ≥ 4,5:1 sobre as superfícies de cada tema. */
+html[data-bs-theme='light'] {
+    --bs-text-muted: #6B7086;
+    --bs-text-gray-500: #6B7086;
+    --bs-text-gray-600: #5A5F76;
+    --bs-text-gray-700: #464A5E;
+    --bs-light-inverse: #5A5F76;
+}
+
+html[data-bs-theme='dark'] {
+    --bs-text-muted: #9397B0;
+    --bs-text-gray-500: #9397B0;
+    --bs-text-gray-600: #A8ACC2;
+    --bs-text-gray-700: #BDC0D2;
+    --bs-light-inverse: #A8ACC2;
+}
+
+/* Itens dos menus suspensos (`menu-gray-600`) pintavam o texto com `--bs-gray-600`; passam à variável
+   de texto legível acima. O estado hover/activo do tema, mais específico, mantém-se. */
+.menu-gray-600 .menu-item .menu-link,
+.menu-gray-600 .menu-item .menu-link .menu-title {
+    color: var(--bs-text-gray-600);
+}
+
+/* Tema escuro: textos de navegação e breadcrumb mais claros (antes #9D9DA6 / #646477 / #92929F,
+   cinza-sobre-cinza). Itens activos/hover do tema (mais específicos) mantêm-se. */
+html[data-bs-theme='dark'] .app-sidebar .menu .menu-item:not(.here):not(.show) > .menu-link:not(.active) .menu-title,
+html[data-bs-theme='dark'] .app-sidebar .menu .menu-item:not(.here):not(.show) > .menu-link:not(.active) .menu-icon i {
+    color: #D5D8E6;
+}
+html[data-bs-theme='dark'] .app-sidebar .menu .menu-item .menu-heading {
+    color: #A8ACC2;
+}
+html[data-bs-theme='dark'] .app-header .menu > .menu-item:not(.here):not(.show) > .menu-link:not(.active) .menu-title {
+    color: #D5D8E6;
+}
+html[data-bs-theme='dark'] .breadcrumb .breadcrumb-item.text-muted,
+html[data-bs-theme='dark'] .breadcrumb .breadcrumb-item.text-muted a {
+    color: #D5D8E6 !important;
+}
+html[data-bs-theme='dark'] .breadcrumb .breadcrumb-item.text-muted:last-child {
+    color: #FFFFFF !important;
+}
+
+html[data-bs-theme='dark'] body[data-kt-app-layout='dark-sidebar'] .app-sidebar .menu .menu-item .menu-heading {
+    color: #A8ACC2 !important;
+}
+html[data-bs-theme='dark'] #kt_app_header .menu > .menu-item:not(.here):not(.show) > .menu-link:not(.active) .menu-title,
+html[data-bs-theme='dark'] #kt_app_header_menu .menu-item:not(.here):not(.show) > .menu-link:not(.active) .menu-title {
+    color: #D5D8E6 !important;
+}
