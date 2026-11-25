@@ -37,9 +37,9 @@ Este ficheiro é o registo de decisão do que se implementa **agora** e do que f
 
 | ID | Valor | Esf. | Funcionalidade | Notas | Decisão | Estado |
 |---|---|---|---|---|---|---|
-| F1 | Alto | M | Auditoria transversal (quem alterou o quê e quando) | Trait no Core, no estilo de `RegistaAutoria`; aplicar a matrículas, notas, permissões e documentos | Por decidir | [ ] |
+| F1 | Alto | M | Auditoria transversal (quem alterou o quê e quando) | Registo `auditoria_tenant` no Core + ecrã de consulta da escola; eventos de permissões, justificação de faltas, matrículas e regras de cobrança feitos 2026-11-25. Por cobrir: notas e documentos | Agora | [~] 2026-11-25 (parcial) |
 | F2 | Alto | G | Avaliações e notas | `InscricaoDisciplina` já existe; pautas, médias, estado de aprovação | Por decidir | [ ] |
-| F3 | Alto | G | Assiduidade | Ligada a Horário e Turmas | Por decidir | [ ] |
+| F3 | Alto | G | Assiduidade | Ligada a Horário e Turmas. Chamadas por tempo ou por dia, justificação de faltas, boletim e dashboard | Agora | [x] 2026-11-23 |
 | F4 | Alto | G | Propinas e pagamentos | Por matrícula, com estado da inscrição | Por decidir | [ ] |
 | F5 | Médio | M | Encerramento e transição de ano lectivo | Renovação em massa agendada, arquivo | Por decidir | [ ] |
 | F6 | Médio | P | Alertas de validade de documentos | `data_validade` já existe; tarefa agendada mais notificação | Por decidir | [ ] |
@@ -60,4 +60,4 @@ Este ficheiro é o registo de decisão do que se implementa **agora** e do que f
 
 | Data | Decisão | Itens | Notas |
 |---|---|---|---|
-| | | | |
+| 2026-11-25 | Teste frágil do licenciamento corrigido | — | `test_gerar_chaves_...` contava ficheiros em `/tmp` (partilhado, intermitente 138 vs 139); passou a procurar a chave privada só nos ficheiros recentes e pequenos. README e ROADMAP actualizados |

@@ -81,7 +81,7 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 | Tenant          | Escolas (tenants), domínios, provisionamento de uma escola nova                                                                         | ✅     |
 | Plataforma      | Área do super-administrador MosiTec: login próprio, gestão de escolas                                                                   | ✅     |
 | Estabelecimento | Dados da escola (NIF, morada, província/município, fuso horário), logótipo e aparência                                                  | ✅     |
-| Autenticação    | Login, logout, recuperação de senha, redefinição de senha (Fortify)                                                                     | ✅     |
+| Autenticação    | Login, logout, recuperação de senha, redefinição de senha (Fortify); autenticação em dois factores opcional (TOTP offline) para a escola e para o super-administrador — ver `docs/2fa.md` | ✅     |
 | Usuário         | Listas por tipo (todos, alunos, professores, funcionários, encarregados, administradores), registo por assistente, documentos pessoais | ✅     |
 | Permissão       | Perfis, permissões por módulo × acção (grelha agrupada por menu), permissões por utilizador, perfis de sistema fixos                   | ✅     |
 | Licenciamento   | Licenças e planos (painel da Plataforma), página `/licenca` do administrador (código da instalação, instalar licença, prazo, bloqueio e limites de uso), bloqueio das escolas sem licença válida | ✅     |
@@ -97,10 +97,10 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 | PlanoCurricular | Plano curricular por curso/nível, com confirmação                                                                                            | ✅     |
 | Aluno           | Ficha do aluno (dados pessoais, matrículas, situação de propinas com pesquisa/filtros/paginação, produtos e serviços por pagar)              | ✅     |
 | Matrícula       | Matrículas (pendente, activa, concluída, cancelada, transferida, **trancada**), renovação, inscrição em disciplinas, histórico, bloqueio por dívida de anos anteriores, trancamento com verificação financeira, fim de matrícula com previsão do que é cancelado | ✅     |
-| Horário         | Horários de aulas (calendário)                                                                                                               | 🔧     |
+| Horário         | Horários de aulas (calendário e grelha semanal)                                                                                              | ✅     |
 | Docente         | Cadastro de docentes, atribuições (turma × disciplina, com histórico), área do professor; acesso do docente às suas turmas                   | ✅     |
 | Avaliação       | Creche à 9.ª classe: regras por grupo de classes (escala, mínimo, pesos, exame próprio, recurso, sigla da prova, tratamento das negativas), prazos únicos da escola, mini-pauta por trimestre com vista «Resumo», lançamento em lote, avaliação qualitativa (Creche e Pré-Escolar), pautas finais em duas fases (1.ª fase e recurso), boletins, PDF e Excel | ✅     |
-| Frequência      | Controlo de presenças                                                                                                                        | ⏳     |
+| Frequência      | Chamadas por tempo de aula ou por dia, justificação de faltas, ligação ao boletim e ao dashboard                                             | ✅     |
 
 ## Financeiro
 
@@ -129,7 +129,7 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 | Documentos           | Declarações, certificados, modelos, arquivo                                             | ⏳     |
 | Comunicação          | Avisos, mensagens internas, SMS/email, notificações                                     | ⏳     |
 | Biblioteca           | Livros, empréstimos, devoluções                                                         | ⏳     |
-| Auditoria            | Mecanismo de auditoria da escola criado (regras de cobrança); consulta e outros eventos | 🔧     |
+| Auditoria            | Registo da escola (`auditoria_tenant`, só acrescenta) com ecrã de consulta; eventos de permissões, justificação de faltas, matrículas e regras de cobrança | ✅     |
 | Logs de aplicação    | `LogService` em todas as Actions: escola, utilizador e pedido em cada registo, sem segredos | ✅     |
 | AppMode / Sincronização | Modos local, híbrido e online; sincronização local/cloud                             | ⏳     |
 
@@ -150,7 +150,7 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 │
 ├── 📚  Pedagógico
 │    ├── ✅ Disciplinas
-│    ├── 🔧 Horários
+│    ├── ✅ Horários
 │    ├── ⏳ Planos de Aula
 │    ├── ✅ Avaliações / Notas  (mini-pauta, lançamento em lote, resumo)
 │    ├── ✅ Configuração da avaliação
@@ -158,7 +158,7 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 │    ├── ⏳ Conselho de Turma
 │    └── 🔧 Exames / Recuperações  (exame próprio e recurso feitos; recuperação com nota por fazer)
 │
-├── 🕐  Frequência                    ⏳ (Presenças, Faltas, Justificação, Mapa de Frequência)
+├── 🕐  Frequência                    ✅ (Presenças, Faltas, Justificação)
 ├── 👨‍🏫  Pessoal                       🔧 (✅ Docentes e Atribuições; ⏳ Funcionários, Assiduidade, Horários do Pessoal)
 │
 ├── 💰  Financeiro
@@ -269,5 +269,5 @@ php artisan test --group=pgsql                  # testes que exigem PostgreSQL r
 vendor/bin/pint                                 # formatação PHP
 ```
 
-> A suite completa passa (≈4194 testes). Em máquinas sem a extensão GD, os testes das fotos de alunos falham por
+> A suite completa passa (≈4537 testes). Em máquinas sem a extensão GD, os testes das fotos de alunos falham por
 > razões de ambiente. O CI (`.github/workflows/ci.yml`) corre com PHP 8.4, o mínimo exigido pelo `composer.json`.

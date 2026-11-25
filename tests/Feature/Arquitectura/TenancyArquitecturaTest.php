@@ -190,12 +190,12 @@ class TenancyArquitecturaTest extends TestCase
     }
 
     /**
-     * O Core não depende de módulos de negócio. Excepção pré-existente e anterior à
+     * O Core não depende de módulos de negócio. Excepções (relação com o User; AuditoriaTenant também) — a de Horario é anterior à
      * tenancy: Horario referencia o User (relação), não é do âmbito das sequências.
      */
     public function test_o_core_nao_importa_modulos_de_negocio(): void
     {
-        $permitidos = ['Modules/Core/app/Models/Horario.php'];
+        $permitidos = ['Modules/Core/app/Models/Horario.php', 'Modules/Core/app/Models/AuditoriaTenant.php'];
         $violacoes = [];
 
         foreach ($this->codigoDeAplicacao() as $caminho => $conteudo) {
