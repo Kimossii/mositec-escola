@@ -4,6 +4,7 @@ namespace Modules\Tenant\Providers;
 
 use InvalidArgumentException;
 use Modules\Core\Tenancy\Contracts\CatalogoDeTenants;
+use Modules\Core\Tenancy\Contracts\EnderecoDoTenant;
 use Modules\Core\Tenancy\Contracts\ResolvedorTenant;
 use Modules\Tenant\Console\AdicionarDominioCommand;
 use Modules\Tenant\Console\CriarTenantCommand;
@@ -14,6 +15,7 @@ use Modules\Tenant\Console\RemoverDominioCommand;
 use Modules\Tenant\Console\RevogarAcessosCommand;
 use Modules\Tenant\Console\SuspenderTenantCommand;
 use Modules\Tenant\Services\CatalogoDeTenantsEloquent;
+use Modules\Tenant\Services\EnderecoDoTenantEloquent;
 use Modules\Tenant\Services\ResolvedorTenantPorDominio;
 use Modules\Tenant\Services\ResolvedorTenantUnico;
 use Modules\Core\Providers\BaseModuleServiceProvider;
@@ -43,6 +45,7 @@ class TenantServiceProvider extends BaseModuleServiceProvider
         parent::register();
 
         $this->app->bind(CatalogoDeTenants::class, CatalogoDeTenantsEloquent::class);
+        $this->app->bind(EnderecoDoTenant::class, EnderecoDoTenantEloquent::class);
 
         // bind (e não singleton): o modo é lido a cada resolução.
         $this->app->bind(ResolvedorTenant::class, function ($app) {
