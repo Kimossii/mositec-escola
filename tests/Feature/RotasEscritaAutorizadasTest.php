@@ -36,6 +36,8 @@ class RotasEscritaAutorizadasTest extends TestCase
         'definicoes/sessoes/terminar-outras',
         'definicoes/sessoes/{referencia}',
         'definicoes/foto',
+        // Pedir a confirmação do PRÓPRIO email: só actua sobre o utilizador autenticado, com limite de pedidos por hora.
+        'definicoes/email/confirmacao',
         // Ficheiros do próprio utilizador (eliminar e partilhar só actuam sobre pedidos com user_id = utilizador autenticado;
         // o destinatário da partilha tem de ter a permissão do tipo de ficheiro).
         'ficheiros',

@@ -13,6 +13,7 @@ export const ACOES_LISTA = Object.freeze({
     permissoes: { icone: 'ki-shield-tick', paths: 2, cor: 'success', texto: 'Permissões' },
     redefinirSenha: { icone: 'ki-key', paths: 2, cor: 'warning', texto: 'Redefinir senha' },
     reporDoisFactores: { icone: 'ki-shield-cross', paths: 2, cor: 'warning', texto: 'Repor 2FA' },
+    confirmarEmail: { icone: 'ki-sms', paths: 2, cor: 'primary', texto: 'Confirmar email' },
     remover: { icone: 'ki-trash', paths: 5, cor: 'danger', texto: 'Remover' },
     eliminar: { icone: 'ki-trash', paths: 5, cor: 'danger', texto: 'Eliminar' },
     ativar: { icone: 'ki-toggle-on-circle', paths: 2, cor: 'success', texto: 'Ativar' },

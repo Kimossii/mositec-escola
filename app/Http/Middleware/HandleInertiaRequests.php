@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Inertia\Middleware;
 use App\Services\DashboardService;
+use Modules\Core\Comunicacao\Email\EmailDisponivel;
 use Modules\Core\Contracts\IdentificaAdministradorDaEscola;
 use Modules\Core\Models\PartilhaExportacao;
 use Modules\Licenciamento\Services\DireitosService;
@@ -122,6 +123,8 @@ class HandleInertiaRequests extends Middleware
             'eAdministradorDaEscola' => $eAdministradorDaEscola,
             // Módulos licenciáveis que a escola pode usar (só aliases, para esconder menus): nunca datas nem limites.
             'modulosContratados' => $request->user() ? app(DireitosService::class)->modulosContratados() : [],
+            // Há um canal de email configurado? Esconde as acções que dependem de email (nunca prometer um email que não chega).
+            'emailDisponivel' => fn () => $request->user() ? app(EmailDisponivel::class)->disponivel() : false,
             'permissoes' => $request->user()
                 ? app(PermissionResolver::class)->conjuntoConcedido($request->user())
                 : [],

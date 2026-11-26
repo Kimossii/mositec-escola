@@ -9,7 +9,7 @@ import UsuarioStatusBadge from './UsuarioStatusBadge.vue';
 const props = defineProps({
     usuario: { type: Object, required: true },
 });
-defineEmits(['visualizar', 'editar', 'alternar-estado', 'redefinir-senha', 'repor-dois-factores', 'eliminar']);
+defineEmits(['visualizar', 'editar', 'alternar-estado', 'redefinir-senha', 'repor-dois-factores', 'enviar-confirmacao-email', 'eliminar']);
 
 const cor = () => corDoPerfil(props.usuario.perfis[0]);
 </script>
@@ -30,6 +30,7 @@ const cor = () => corDoPerfil(props.usuario.perfis[0]);
                     @alternar-estado="$emit('alternar-estado', $event)"
                     @redefinir-senha="$emit('redefinir-senha', $event)"
                     @repor-dois-factores="$emit('repor-dois-factores', $event)"
+                    @enviar-confirmacao-email="$emit('enviar-confirmacao-email', $event)"
                     @eliminar="$emit('eliminar', $event)"
                 />
             </div>

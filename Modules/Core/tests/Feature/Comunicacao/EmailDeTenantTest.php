@@ -5,6 +5,8 @@ namespace Modules\Core\Tests\Feature\Comunicacao;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
 use LogicException;
+use Modules\Core\Licenciamento\Contracts\ModulosDisponiveis;
+use Modules\Estabelecimento\Models\Estabelecimento;
 use Modules\Core\Comunicacao\Email\CategoriaEmail;
 use Modules\Core\Comunicacao\Email\RemetenteTenant;
 use Modules\Core\Tenancy\Exceptions\TenantNaoResolvido;
@@ -99,5 +101,42 @@ class EmailDeTenantTest extends TestCase
 
         // Outra escola tem o seu próprio contador.
         $this->noTenant($this->outro, fn () => $this->assertTrue($notificacao->shouldSend($destino, 'mail')));
+    }
+
+    public function test_o_reply_to_e_o_email_institucional_da_escola(): void
+    {
+        Estabelecimento::query()->update(['email' => 'secretaria@escola-teste.ao']);
+        $this->noTenant($this->outro, fn () => Estabelecimento::query()->update(['email' => 'email-invalido']));
+
+        $this->assertSame('secretaria@escola-teste.ao', app(RemetenteTenant::class)->resolver()->replyTo);
+        $this->noTenant($this->outro, fn () => $this->assertNull(app(RemetenteTenant::class)->resolver()->replyTo));
+
+        $mensagem = (new NotificacaoDeTeste)->toMail(new AnonymousNotifiable);
+        $this->assertSame([['secretaria@escola-teste.ao', null]], $mensagem->replyTo);
+    }
+
+    public function test_opcionais_exigem_o_modulo_notificacoes_e_essenciais_nao(): void
+    {
+        $this->app->instance(ModulosDisponiveis::class, new class implements ModulosDisponiveis
+        {
+            public function disponivel(string $alias): bool
+            {
+                return false;
+            }
+        });
+        $destino = new AnonymousNotifiable;
+
+        $this->assertFalse((new NotificacaoDeTeste(CategoriaEmail::OPCIONAL))->shouldSend($destino, 'mail'));
+        $this->assertTrue((new NotificacaoDeTeste(CategoriaEmail::ESSENCIAL))->shouldSend($destino, 'mail'));
+
+        $this->app->instance(ModulosDisponiveis::class, new class implements ModulosDisponiveis
+        {
+            public function disponivel(string $alias): bool
+            {
+                return $alias === 'notificacoes';
+            }
+        });
+
+        $this->assertTrue((new NotificacaoDeTeste(CategoriaEmail::OPCIONAL))->shouldSend($destino, 'mail'));
     }
 }

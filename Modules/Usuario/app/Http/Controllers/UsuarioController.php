@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Modules\Autenticacao\Actions\DesactivarDoisFactoresAction;
+use Modules\Autenticacao\Actions\EnviarConfirmacaoDeEmailAction;
+use Modules\Autenticacao\Exceptions\ConfirmacaoDeEmailRecusada;
 use Modules\Autenticacao\Service\FotoDoUtilizadorService;
 use Modules\Core\Exportacao\Exportador;
 use Modules\Permissao\Enums\Perfil;
@@ -182,6 +184,19 @@ class UsuarioController extends Controller
             // Cifrada: o payload da sessão (driver database) nunca guarda a senha em claro.
             'senha' => Crypt::encryptString($senha),
         ]);
+    }
+
+    public function enviarConfirmacaoDeEmail(User $user, EnviarConfirmacaoDeEmailAction $action)
+    {
+        $this->authorize('enviarConfirmacaoDeEmail', $user);
+
+        try {
+            $action->executar($user);
+        } catch (ConfirmacaoDeEmailRecusada $e) {
+            return back()->withErrors(['email' => $e->getMessage()]);
+        }
+
+        return back();
     }
 
     public function redefinirDoisFactores(Request $request, User $user, DesactivarDoisFactoresAction $action)

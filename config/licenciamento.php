@@ -56,11 +56,13 @@ return [
     'modulos_licenciaveis' => [
         'financeiro',
         'avaliacao',
+        'notificacoes',
     ],
 
     // Nome legível de cada módulo licenciável (o alias é usado se faltar).
     'modulos_nomes' => [
         'financeiro' => 'Financeiro',
         'avaliacao' => 'Avaliação',
+        'notificacoes' => 'Notificações',
     ],
 ];

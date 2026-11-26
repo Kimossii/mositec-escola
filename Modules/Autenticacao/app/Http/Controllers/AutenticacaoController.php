@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Modules\Autenticacao\Http\Requests\LoginRequest;
 use Modules\Autenticacao\Service\GestaoAutenticacao;
+use Modules\Autenticacao\Support\ElegibilidadeParaRecuperarSenha;
+use Modules\Core\Comunicacao\Email\EmailDisponivel;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Core\Traits\LogService;
 
@@ -20,7 +22,12 @@ class AutenticacaoController extends Controller
      */
     public function login()
     {
-        return Inertia::render('Autenticacao/Login')->rootView('layouts.guest');
+        // O link «Esqueci a senha» só aparece com email configurado e algum perfil elegível (e numa escola resolvida).
+        $recuperacaoDisponivel = app(TenantContext::class)->temTenant()
+            && app(EmailDisponivel::class)->disponivel()
+            && app(ElegibilidadeParaRecuperarSenha::class)->haPerfisElegiveis();
+
+        return Inertia::render('Autenticacao/Login', ['recuperacaoDisponivel' => $recuperacaoDisponivel])->rootView('layouts.guest');
     }
 
     /** Passo 2 do login para quem tem 2FA. Só abre depois de a senha estar validada (sessão com `login.id`). */

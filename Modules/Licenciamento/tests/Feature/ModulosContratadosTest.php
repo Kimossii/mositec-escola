@@ -173,7 +173,7 @@ class ModulosContratadosTest extends TestCase
 
         $this->actingAs($admin)->get('/financeiro/propinas')->assertOk();
         $this->actingAs($admin)->get('/avaliacao/notas')->assertOk();
-        $this->actingAs($admin)->get('/')->assertInertia(fn (Assert $p) => $p->where('modulosContratados', ['financeiro', 'avaliacao']));
+        $this->actingAs($admin)->get('/')->assertInertia(fn (Assert $p) => $p->where('modulosContratados', ['financeiro', 'avaliacao', 'notificacoes']));
     }
 
     public function test_modulo_fora_da_lista_licenciavel_nao_e_bloqueado_e_acrescentado_passa_a_ser(): void

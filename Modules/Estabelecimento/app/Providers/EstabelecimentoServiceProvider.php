@@ -2,7 +2,9 @@
 
 namespace Modules\Estabelecimento\Providers;
 
+use Modules\Core\Tenancy\Contracts\ContactoDaEscola;
 use Modules\Core\Tenancy\Contracts\ProvisionaTenant;
+use Modules\Estabelecimento\Services\ContactoDaEscolaEstabelecimento;
 use Modules\Estabelecimento\Provisioning\ProvisionarEstabelecimento;
 use Modules\Core\Providers\BaseModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
@@ -40,6 +42,7 @@ class EstabelecimentoServiceProvider extends BaseModuleServiceProvider
         parent::register();
 
         $this->app->tag([ProvisionarEstabelecimento::class], ProvisionaTenant::ETIQUETA);
+        $this->app->bind(ContactoDaEscola::class, ContactoDaEscolaEstabelecimento::class);
     }
 
     public function boot(): void

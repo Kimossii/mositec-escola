@@ -118,6 +118,15 @@ function confirmarReposicaoDoisFactores() {
     });
 }
 
+// Pedir a confirmação do email de login de outra conta (sem modal: é inofensivo e tem limite de pedidos).
+function enviarConfirmacaoDeEmail(usuario) {
+    router.post(`/usuarios/${usuario.id}/confirmar-email`, {}, {
+        preserveScroll: true,
+        onSuccess: () => toast.success(`Enviámos a ligação de confirmação para ${usuario.email}.`),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
+    });
+}
+
 const usuarioParaEliminar = ref(null);
 const eliminando = ref(false);
 
@@ -172,6 +181,7 @@ function confirmarEliminacao() {
                 @alternar-estado="alternarEstado"
                 @redefinir-senha="pedirRedefinicao"
                 @repor-dois-factores="(u) => (usuarioParaReporDoisFactores = u)"
+                @enviar-confirmacao-email="enviarConfirmacaoDeEmail"
                 @eliminar="pedirEliminacao"
             />
         </div>
@@ -227,6 +237,7 @@ function confirmarEliminacao() {
                         @alternar-estado="alternarEstado"
                         @redefinir-senha="pedirRedefinicao"
                 @repor-dois-factores="(u) => (usuarioParaReporDoisFactores = u)"
+                @enviar-confirmacao-email="enviarConfirmacaoDeEmail"
                         @eliminar="pedirEliminacao"
                     />
                 </td>

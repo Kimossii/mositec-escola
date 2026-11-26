@@ -35,6 +35,19 @@ class UserPolicy
         return $this->gerirCredenciais($authUser, $user, 'o seu próprio 2FA', 'o 2FA');
     }
 
+    /**
+     * Enviar a confirmação de email de OUTRA conta: mesma fronteira de «redefinir senha» (permissão `senha-utilizador.editar`,
+     * contas com privilégios de administração só por administradores). Para a própria conta há o botão em Definições.
+     */
+    public function enviarConfirmacaoDeEmail(User $authUser, User $user): Response
+    {
+        if ($authUser->is($user)) {
+            return Response::deny('Para a sua própria conta use as Definições.');
+        }
+
+        return $this->gerirCredenciais($authUser, $user, 'o seu próprio email', 'o email');
+    }
+
     private function gerirCredenciais(User $authUser, User $user, string $proprio, string $objecto): Response
     {
         if ($authUser->is($user)) {

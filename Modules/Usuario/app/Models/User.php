@@ -139,6 +139,11 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::saving(function (User $user) {
+            // Mudar o email invalida a confirmação: o novo endereço ainda não foi confirmado por ninguém.
+            if ($user->exists && $user->isDirty('email') && ! $user->isDirty('email_verified_at')) {
+                $user->email_verified_at = null;
+            }
+
             $user->tipo_login_descricao = ($user->tipo_login ?? TipoLogin::EMAIL)->label();
         });
     }

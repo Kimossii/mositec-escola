@@ -8,13 +8,15 @@ use Inertia\Inertia;
 use Modules\Autenticacao\Actions\TerminarOutrasSessoesAction;
 use Modules\Autenticacao\Actions\TerminarSessaoAction;
 use Modules\Autenticacao\Service\DoisFactoresDoUtilizadorService;
+use Modules\Core\Comunicacao\Email\EmailDisponivel;
+use Modules\Usuario\Enums\TipoLogin;
 use Modules\Autenticacao\Service\SessoesDoUtilizadorService;
 
 class DefinicoesController extends Controller
 {
     private const ABAS = ['perfil', 'seguranca', 'aparencia', 'permissoes'];
 
-    public function __construct(private SessoesDoUtilizadorService $sessoes, private DoisFactoresDoUtilizadorService $doisFactores)
+    public function __construct(private SessoesDoUtilizadorService $sessoes, private DoisFactoresDoUtilizadorService $doisFactores, private EmailDisponivel $emailDisponivel)
     {
     }
 
@@ -26,6 +28,7 @@ class DefinicoesController extends Controller
             'aba' => in_array($request->query('aba'), self::ABAS, true) ? $request->query('aba') : 'perfil',
             'membroDesde' => $utilizador->created_at?->toDateString(),
             'doisFactores' => $this->doisFactores->estado($utilizador),
+            'email' => $this->estadoDoEmail($utilizador),
             'sessoes' => $this->sessoes->listar($utilizador, $request->session()->getId()),
         ]);
     }
@@ -42,5 +45,22 @@ class DefinicoesController extends Controller
         abort_unless($acao->executar($request->user(), $referencia, $request->session()->getId()), 404);
 
         return back();
+    }
+
+    /**
+     * Só se oferece «confirmar» quando há um canal de email configurado: nunca prometer um email que não vai chegar.
+     *
+     * @return array{aplicavel: bool, confirmado: bool, podeConfirmar: bool}
+     */
+    private function estadoDoEmail($utilizador): array
+    {
+        $aplicavel = ($utilizador->tipo_login ?? TipoLogin::EMAIL) === TipoLogin::EMAIL && trim((string) $utilizador->email) !== '';
+        $confirmado = $utilizador->email_verified_at !== null;
+
+        return [
+            'aplicavel' => $aplicavel,
+            'confirmado' => $confirmado,
+            'podeConfirmar' => $aplicavel && ! $confirmado && $this->emailDisponivel->disponivel(),
+        ];
     }
 }

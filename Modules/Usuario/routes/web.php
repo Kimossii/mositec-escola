@@ -20,6 +20,8 @@ Route::middleware(['auth'])->prefix('usuarios')->group(function () {
     Route::patch('/{user}/estado', [UsuarioController::class, 'alternarEstado'])->name('usuario.alternarEstado');
     Route::patch('/{user}/redefinir-senha', [UsuarioController::class, 'redefinirSenha'])
         ->middleware('can:senha-utilizador.editar')->name('usuario.redefinirSenha');
+    Route::post('/{user}/confirmar-email', [UsuarioController::class, 'enviarConfirmacaoDeEmail'])
+        ->middleware(['can:senha-utilizador.editar', 'throttle:20,1'])->name('usuario.enviarConfirmacaoEmail');
     Route::patch('/{user}/redefinir-2fa', [UsuarioController::class, 'redefinirDoisFactores'])
         ->middleware('can:senha-utilizador.editar')->name('usuario.redefinirDoisFactores');
 

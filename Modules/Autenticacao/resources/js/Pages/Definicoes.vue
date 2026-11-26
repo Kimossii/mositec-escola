@@ -20,7 +20,20 @@ const props = defineProps({
     membroDesde: { type: String, default: null },
     sessoes: { type: Array, default: () => [] },
     doisFactores: { type: Object, default: () => ({ activo: false, sugerir: false }) },
+    email: { type: Object, default: () => ({ aplicavel: false, confirmado: false, podeConfirmar: false }) },
 });
+
+// Confirmação do email de acesso (só activa a recuperação de senha por email; nunca bloqueia o uso da conta).
+const aPedirConfirmacao = ref(false);
+function pedirConfirmacaoDeEmail() {
+    aPedirConfirmacao.value = true;
+    router.post('/definicoes/email/confirmacao', {}, {
+        preserveScroll: true,
+        onSuccess: () => toast.success('Enviámos uma ligação de confirmação para o seu email.'),
+        onError: (erros) => toast.error(Object.values(erros)[0]),
+        onFinish: () => { aPedirConfirmacao.value = false; },
+    });
+}
 
 const user = usePage().props.auth.user;
 const conta = computed(() => usePage().props.conta);
@@ -256,6 +269,19 @@ const totalPermissoes = computed(() => permissoes.value.length);
                         <div v-for="[rotulo, valor] in [['Nome', user.name], ['Email de acesso', user.email], ['Perfil', null], ['Escola', conta?.escola ?? '—'], ['Membro desde', formatarData(membroDesde)]]" :key="rotulo" class="d-flex justify-content-between py-4 border-bottom border-gray-200">
                             <span class="text-muted">{{ rotulo }}</span>
                             <PerfisDoUtilizador v-if="rotulo === 'Perfil'" :nome="user.name" :perfis="conta?.perfis ?? []" />
+                            <span v-else-if="rotulo === 'Email de acesso'" class="fw-semibold text-end">
+                                {{ valor }}
+                                <template v-if="email.aplicavel">
+                                    <span v-if="email.confirmado" class="badge badge-light-success ms-2">Confirmado</span>
+                                    <span v-else class="badge badge-light-warning ms-2">Por confirmar</span>
+                                    <div v-if="email.podeConfirmar" class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-light-primary" :disabled="aPedirConfirmacao" @click="pedirConfirmacaoDeEmail">
+                                            <span v-if="!aPedirConfirmacao">Enviar confirmação</span>
+                                            <span v-else>A enviar... <Loader size="0.3px" class="align-middle ms-2" /></span>
+                                        </button>
+                                    </div>
+                                </template>
+                            </span>
                             <span v-else class="fw-semibold text-end">{{ valor }}</span>
                         </div>
                         <div class="d-flex align-items-start bg-body-secondary rounded p-4 mt-6 text-gray-700 fs-7">

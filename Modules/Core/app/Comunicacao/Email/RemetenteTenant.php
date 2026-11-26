@@ -3,6 +3,7 @@
 namespace Modules\Core\Comunicacao\Email;
 
 use LogicException;
+use Modules\Core\Tenancy\Contracts\ContactoDaEscola;
 use Modules\Core\Tenancy\Contracts\EnderecoDoTenant;
 use Modules\Core\Tenancy\TenantContext;
 
@@ -12,7 +13,8 @@ use Modules\Core\Tenancy\TenantContext;
  *
  * - Nome: o da escola. Endereço: sempre o central da plataforma (`mail.from.address`), porque o domínio de
  *   envio verificado é o da MosiTec, não o da escola.
- * - Reply-To: ainda não há email da escola guardado (Fase 2, `configuracoes_email`), por isso fica nulo.
+ * - Reply-To: o email institucional do estabelecimento, se válido (sem ele, a resposta não vai para lado nenhum
+ *   em particular). Uma configuração própria (`configuracoes_email`) só se justifica quando houver SMTP/domínio próprio.
  * - Ligações: domínio principal do tenant, seja subdomínio da plataforma ou domínio próprio.
  *
  * Precisa de contexto de tenant (num job é dado por ComTenant).
@@ -22,6 +24,7 @@ class RemetenteTenant
     public function __construct(
         private TenantContext $contexto,
         private EnderecoDoTenant $enderecos,
+        private ContactoDaEscola $contacto,
     ) {}
 
     public function resolver(): Remetente
@@ -29,7 +32,7 @@ class RemetenteTenant
         return new Remetente(
             nome: $this->contexto->atual()->nome,
             endereco: (string) config('mail.from.address'),
-            replyTo: null,
+            replyTo: $this->contacto->email(),
         );
     }
 

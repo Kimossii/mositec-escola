@@ -239,6 +239,10 @@ class UsuarioConsultaService
             'educandos' => $user->relationLoaded('educandos') ? $user->educandos->pluck('nome_completo')->sort()->values()->all() : [],
             'estado' => $user->estado,
             'tem_dois_factores' => $user->hasEnabledTwoFactorAuthentication(),
+            // Conta com email de login ainda por confirmar: a lista oferece «Enviar confirmação de email».
+            'email_por_confirmar' => ($user->tipo_login ?? TipoLogin::EMAIL) === TipoLogin::EMAIL
+                && trim((string) $user->email) !== ''
+                && $user->email_verified_at === null,
             'ultimo_acesso' => null,
             'online' => false,
             'created_at' => $user->created_at->format('d M Y, H:i'),

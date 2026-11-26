@@ -9,7 +9,7 @@ const props = defineProps({
     usuario: { type: Object, required: true },
     compacto: { type: Boolean, default: false }, // só o ícone de três pontos (cards)
 });
-const emit = defineEmits(['visualizar', 'editar', 'alternar-estado', 'redefinir-senha', 'repor-dois-factores', 'eliminar']);
+const emit = defineEmits(['visualizar', 'editar', 'alternar-estado', 'redefinir-senha', 'repor-dois-factores', 'enviar-confirmacao-email', 'eliminar']);
 const pagina = usePage();
 
 // Mexer num utilizador com perfil Admin Escola é sempre autorizacao.*, nunca usuario.* sozinho — mesma fronteira do backend (UserPolicy).
@@ -24,6 +24,8 @@ function podeRedefinirSenha() {
     return !eAdmin() || can('autorizacao.editar');
 }
 // Repor o 2FA: mesma fronteira da senha, e só quando a conta tem mesmo 2FA activo.
+// Enviar a confirmação do email de login: mesma fronteira da senha, só se a conta o tem por confirmar e há canal de email.
+const podeEnviarConfirmacaoDeEmail = () => props.usuario.email_por_confirmar === true && pagina.props.emailDisponivel === true && podeRedefinirSenha();
 const podeReporDoisFactores = () => props.usuario.tem_dois_factores === true && podeRedefinirSenha();
 </script>
 
@@ -79,6 +81,15 @@ const podeReporDoisFactores = () => props.usuario.tem_dois_factores === true && 
                             <a href="#" class="menu-link px-3" @click.prevent="emit('redefinir-senha', usuario)">
                                 <AcaoIcone acao="redefinirSenha" class="me-2" />
                                 Redefinir senha
+                            </a>
+                        </div>
+                        <!--end::Menu item-->
+
+                        <!--begin::Menu item-->
+                        <div v-if="podeEnviarConfirmacaoDeEmail()" class="menu-item px-3">
+                            <a href="#" class="menu-link px-3" @click.prevent="emit('enviar-confirmacao-email', usuario)">
+                                <AcaoIcone acao="confirmarEmail" class="me-2" />
+                                Confirmar email
                             </a>
                         </div>
                         <!--end::Menu item-->

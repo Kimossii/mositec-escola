@@ -5,6 +5,11 @@ import { toast } from 'vue-sonner';
 import Loader from '@/Components/Shared/Loader.vue';
 import PainelDeMarca from '../Components/PainelDeMarca.vue';
 
+defineProps({
+    // O link «Esqueci a senha» só existe quando a escola tem email configurado e algum perfil elegível.
+    recuperacaoDisponivel: { type: Boolean, default: false },
+});
+
 const form = reactive({
     login: '',
     password: '',
@@ -99,6 +104,7 @@ function submit() {
                                 <input v-model="form.remember" class="form-check-input" type="checkbox" name="remember" />
                                 <span class="form-check-label text-gray-500 fs-6">Lembrar-me</span>
                             </label>
+                            <a v-if="recuperacaoDisponivel" href="/esqueci-a-senha" class="link-primary fw-semibold">Esqueci a senha</a>
                         </div>
 
                         <div class="d-grid mb-10">
