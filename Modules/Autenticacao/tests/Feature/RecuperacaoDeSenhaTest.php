@@ -35,6 +35,7 @@ class RecuperacaoDeSenhaTest extends TestCase
 
         $this->seed(PermissaoDatabaseSeeder::class);
         config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => 'smtp.exemplo.ao', 'mail.from.address' => 'noreply@plataforma.test']);
+        config(['comunicacao.recuperacao_senha.tempo_minimo_ms' => 0]); // o tempo mínimo tem teste próprio
     }
 
     private function conta(string $email, Perfil $perfil = Perfil::ENCARREGADO, bool $confirmado = true, array $extra = []): User
@@ -57,6 +58,22 @@ class RecuperacaoDeSenhaTest extends TestCase
     private function pedir(string $email, string $host = 'http://localhost')
     {
         return $this->post($host.'/esqueci-a-senha', ['email' => $email]);
+    }
+
+
+    /** O provedor de email falha a meio do envio (com a fila em `sync` a excepção subiria até ao pedido). */
+    private function provedorDeEmailAFalhar(): void
+    {
+        config(['queue.default' => 'sync']);
+        $this->app->bind(\Illuminate\Notifications\Channels\MailChannel::class, fn () => new class extends \Illuminate\Notifications\Channels\MailChannel
+        {
+            public function __construct() {}
+
+            public function send($notifiable, \Illuminate\Notifications\Notification $notification)
+            {
+                throw new \RuntimeException('o provedor caiu');
+            }
+        });
     }
 
     // ---- Pedir ----
@@ -162,6 +179,33 @@ class RecuperacaoDeSenhaTest extends TestCase
 
         $this->get('http://central.test/esqueci-a-senha')->assertNotFound();
         $this->post('http://central.test/esqueci-a-senha', ['email' => 'pai@example.com'])->assertNotFound();
+    }
+
+    public function test_o_pedido_demora_o_tempo_minimo_seja_qual_for_a_conta(): void
+    {
+        Notification::fake();
+        $this->withoutMiddleware(ThrottleRequests::class);
+        config(['comunicacao.recuperacao_senha.tempo_minimo_ms' => 200]);
+        $this->conta('pai@example.com');
+
+        foreach (['pai@example.com', 'naoexiste@example.com', 'isto-nao-e-email'] as $email) {
+            $inicio = hrtime(true);
+            $this->pedir($email)->assertRedirect('/esqueci-a-senha/enviado');
+
+            $this->assertGreaterThanOrEqual(200, (hrtime(true) - $inicio) / 1_000_000, "Resposta rápida demais para {$email}");
+        }
+    }
+
+    public function test_uma_falha_do_provedor_nao_muda_a_resposta_nem_denuncia_a_conta(): void
+    {
+        $this->provedorDeEmailAFalhar();
+        $this->conta('pai@example.com');
+
+        // Elegível (o envio falha), inexistente e não elegível: a resposta é a mesma, sem erro 500.
+        $this->pedir('pai@example.com')->assertRedirect('/esqueci-a-senha/enviado');
+        $this->pedir('naoexiste@example.com')->assertRedirect('/esqueci-a-senha/enviado');
+
+        $this->assertSame(1, \Modules\Core\Models\EnvioEmail::query()->where('estado', \Modules\Core\Comunicacao\Email\EstadoEnvioEmail::FALHOU->value)->count());
     }
 
     public function test_o_limite_por_ip_corta_os_pedidos_em_excesso(): void

@@ -36,9 +36,32 @@ class RemetenteTenant
         );
     }
 
-    /** URL absoluto no domínio principal do tenant corrente. */
+    /**
+     * Fecho dos emails: o nome da escola e os contactos que ela tiver (telefone e email), para quem recebe saber a quem escrever
+     * mesmo quando o Reply-To não existe. Sem nenhum contacto, só o nome.
+     */
+    public function assinatura(): string
+    {
+        $assinatura = 'Cumprimentos,'."\n\n".$this->contexto->atual()->nome;
+
+        $contactos = array_filter([
+            $this->contacto->telefone() !== null ? 'Telefone: '.$this->contacto->telefone() : null,
+            $this->contacto->email() !== null ? 'Email: '.$this->contacto->email() : null,
+        ]);
+
+        return $contactos === [] ? $assinatura : $assinatura."\n\nPara contactar a escola: ".implode(' · ', $contactos);
+    }
+
+    /**
+     * URL absoluto para o tenant corrente. Numa instalação única (TENANCY_MODO=unico) a escola é acedida pelo endereço do
+     * APP_URL, com a sua porta, por isso é esse o endereço dos links. No modo normal usa o domínio principal do tenant.
+     */
     public function url(string $caminho = '/'): string
     {
+        if (config('tenancy.modo') === 'unico' && filter_var(config('app.url'), FILTER_VALIDATE_URL)) {
+            return rtrim((string) config('app.url'), '/').'/'.ltrim($caminho, '/');
+        }
+
         $tenant = $this->contexto->atual();
         $dominio = $this->enderecos->dominioPrincipal($tenant->id)
             ?? throw new LogicException("O tenant {$tenant->codigo} não tem domínio principal; não é possível gerar ligações para o email.");

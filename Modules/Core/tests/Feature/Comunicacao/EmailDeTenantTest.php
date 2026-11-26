@@ -139,4 +139,49 @@ class EmailDeTenantTest extends TestCase
 
         $this->assertTrue((new NotificacaoDeTeste(CategoriaEmail::OPCIONAL))->shouldSend($destino, 'mail'));
     }
+
+    public function test_a_assinatura_leva_os_contactos_que_a_escola_tiver(): void
+    {
+        $this->assertSame("Cumprimentos,\n\nEscola de Teste", app(RemetenteTenant::class)->assinatura());
+
+        Estabelecimento::query()->update(['telefone' => '+244 923 000 000', 'email' => 'secretaria@escola-teste.ao']);
+        $this->assertSame(
+            "Cumprimentos,\n\nEscola de Teste\n\nPara contactar a escola: Telefone: +244 923 000 000 · Email: secretaria@escola-teste.ao",
+            app(RemetenteTenant::class)->assinatura(),
+        );
+
+        Estabelecimento::query()->update(['telefone' => null, 'email' => 'invalido']);
+        $this->assertSame("Cumprimentos,\n\nEscola de Teste", app(RemetenteTenant::class)->assinatura());
+
+        $mensagem = (new NotificacaoDeTeste)->toMail(new AnonymousNotifiable);
+        $this->assertSame("Cumprimentos,\n\nEscola de Teste", $mensagem->salutation);
+    }
+
+    public function test_em_instalacao_unica_os_links_usam_o_app_url_inteiro_com_a_porta(): void
+    {
+        config(['tenancy.modo' => 'unico', 'app.url' => 'http://192.168.1.10:8000']);
+
+        $this->assertSame('http://192.168.1.10:8000/login', app(RemetenteTenant::class)->url('/login'));
+
+        // No modo normal continua a ser o domínio principal do tenant.
+        config(['tenancy.modo' => 'dominio']);
+        $this->assertSame('http://localhost/login', app(RemetenteTenant::class)->url('/login'));
+    }
+
+    public function test_um_destinatario_avulso_sem_conta_recebe_o_email_pela_fila(): void
+    {
+        // As notificações não dependem de o destinatário ter conta na plataforma: basta um endereço.
+        config(['queue.default' => 'sync', 'mail.default' => 'array']);
+        $this->app->forgetInstance('mail.manager');
+
+        (new AnonymousNotifiable)->route('mail', 'pai-sem-conta@example.com')->notify(new NotificacaoDeTeste);
+
+        $enviadas = app('mail.manager')->mailer('array')->getSymfonyTransport()->messages();
+        $this->assertCount(1, $enviadas);
+        $email = $enviadas->first()->getOriginalMessage();
+        $this->assertSame('pai-sem-conta@example.com', $email->getTo()[0]->getAddress());
+        $this->assertSame('Escola de Teste', $email->getFrom()[0]->getName());
+        $this->assertStringContainsString('http://localhost/login', $email->getHtmlBody());
+        $this->assertStringContainsString('Escola de Teste', $email->getHtmlBody());
+    }
 }

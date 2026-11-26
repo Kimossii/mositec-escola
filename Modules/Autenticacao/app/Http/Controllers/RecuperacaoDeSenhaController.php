@@ -43,9 +43,28 @@ class RecuperacaoDeSenhaController extends Controller
     {
         abort_unless($this->disponivel(), 404);
 
+        $inicio = hrtime(true);
         $acao->executar((string) $request->input('email'));
+        $this->igualarTempoDeResposta($inicio);
 
         return redirect()->route('senha.esqueci.enviado');
+    }
+
+    /** Espera o que faltar para o tempo mínimo configurado (com variação), para todas as respostas demorarem o mesmo. */
+    private function igualarTempoDeResposta(int $inicio): void
+    {
+        $minimo = (int) config('comunicacao.recuperacao_senha.tempo_minimo_ms');
+
+        if ($minimo <= 0) {
+            return;
+        }
+
+        $alvoMs = $minimo + random_int(0, (int) ($minimo / 6));
+        $decorridoMs = (hrtime(true) - $inicio) / 1_000_000;
+
+        if ($decorridoMs < $alvoMs) {
+            usleep((int) (($alvoMs - $decorridoMs) * 1000));
+        }
     }
 
     public function pedidoEnviado(): Response

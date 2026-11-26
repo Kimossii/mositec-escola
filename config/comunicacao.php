@@ -29,5 +29,8 @@ return [
         'perfis' => ['encarregado'],
         'validade_minutos' => (int) env('EMAIL_RECUPERACAO_VALIDADE_MIN', 60),
         'pedidos_por_hora' => (int) env('EMAIL_RECUPERACAO_PEDIDOS_HORA', 3),
+        // Tempo mínimo de resposta ao pedido (ms, mais uma pequena variação): esconde a diferença de milissegundos entre
+        // contas elegíveis e não elegíveis, para ninguém descobrir quem tem conta medindo o tempo.
+        'tempo_minimo_ms' => (int) env('EMAIL_RECUPERACAO_TEMPO_MINIMO_MS', 300),
     ],
 ];

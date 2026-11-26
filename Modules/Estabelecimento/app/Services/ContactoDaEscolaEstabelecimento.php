@@ -14,4 +14,11 @@ class ContactoDaEscolaEstabelecimento implements ContactoDaEscola
 
         return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null;
     }
+
+    public function telefone(): ?string
+    {
+        $telefone = trim((string) Estabelecimento::query()->value('telefone'));
+
+        return $telefone !== '' ? $telefone : null;
+    }
 }

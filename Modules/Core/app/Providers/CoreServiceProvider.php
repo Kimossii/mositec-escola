@@ -16,6 +16,7 @@ use Modules\Core\Licenciamento\Contracts\ModulosDisponiveis;
 use Modules\Core\Licenciamento\Contracts\SemLimites;
 use Modules\Core\Licenciamento\Contracts\TodosOsModulos;
 use Modules\Core\Console\LimparExportacoesCommand;
+use Modules\Core\Console\PodarEnviosEmailCommand;
 use Modules\Core\Tenancy\Support\SessaoDatabaseSemTenantSegura;
 use Modules\Core\Providers\RouteServiceProvider;
 use Modules\Core\Support\PesquisaTexto;
@@ -37,6 +38,7 @@ class CoreServiceProvider extends BaseModuleServiceProvider
     protected array $commands = [
         FilasEstadoCommand::class,
         LimparExportacoesCommand::class,
+        PodarEnviosEmailCommand::class,
     ];
 
     protected array $providers = [

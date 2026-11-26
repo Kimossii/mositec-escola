@@ -13,6 +13,7 @@ const props = defineProps({
     required: { type: Boolean, default: false },
     icon: { type: String, default: null }, // ex: 'ki-sms'
     iconPaths: { type: Number, default: 2 },
+    hint: { type: String, default: null }, // nota explicativa por baixo do campo (só a editar)
     link: { type: String, default: null }, // na vista, faz do valor uma ligação (mailto:, tel:, https://…)
 });
 
@@ -91,6 +92,7 @@ const temCampoComIcone = computed(() => props.icon && props.type !== 'textarea')
             </div>
 
             <span class="text-danger fs-8 mt-1" v-if="error">{{ error }}</span>
+            <span class="text-muted fs-8 mt-1" v-if="hint && editing">{{ hint }}</span>
         </template>
 
         <span v-else class="ficha-valor-wrap">

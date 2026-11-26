@@ -250,7 +250,7 @@ function submeter() {
 
                     <SeccaoFicha titulo="Contacto" subtitulo="Os meios para falar com a escola" icone="ki-sms" :paths="2">
                         <div class="row">
-                            <div class="col-md-6"><CampoFicha v-model="form.email" label="Email" type="email" :editing="editando" :error="errors.email?.[0]" icon="ki-sms" :link="form.email ? `mailto:${form.email}` : null" /></div>
+                            <div class="col-md-6"><CampoFicha v-model="form.email" label="Email" type="email" :editing="editando" :error="errors.email?.[0]" hint="Usado como endereço de resposta nos emails enviados aos pais e nos contactos do rodapé. Sem ele, as respostas dos pais não chegam à escola." icon="ki-sms" :link="form.email ? `mailto:${form.email}` : null" /></div>
                             <div class="col-md-6"><CampoFicha v-model="form.website" label="Website" :editing="editando" placeholder="https://" :error="errors.website?.[0]" icon="ki-compass" :link="form.website ? (form.website.startsWith('http') ? form.website : `https://${form.website}`) : null" /></div>
                             <div class="col-md-6"><CampoFicha v-model="form.telefone" label="Telefone" :editing="editando" :error="errors.telefone?.[0]" icon="ki-phone" :link="form.telefone ? `tel:${form.telefone.replace(/\s+/g, '')}` : null" /></div>
                             <div class="col-md-6"><CampoFicha v-model="form.telefone_alternativo" label="Telefone alternativo" :editing="editando" :error="errors.telefone_alternativo?.[0]" icon="ki-phone" :link="form.telefone_alternativo ? `tel:${form.telefone_alternativo.replace(/\s+/g, '')}` : null" /></div>

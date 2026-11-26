@@ -22,6 +22,11 @@ class ConfirmacaoDeEmailRecusada extends DomainException
         return new self('O seu email já está confirmado.');
     }
 
+    public static function falhaNoEnvio(): self
+    {
+        return new self('Não foi possível enviar o email agora. Tente de novo mais tarde ou fale com o administrador.');
+    }
+
     public static function demasiadosPedidos(): self
     {
         return new self('Já pediu várias confirmações. Aguarde um pouco antes de tentar de novo.');

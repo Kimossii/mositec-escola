@@ -48,6 +48,30 @@ class ConfirmacaoDeEmailTest extends TestCase
         Notification::assertNotSentTo($outro, ConfirmarEmailNotificacao::class);
     }
 
+
+    /** O provedor de email falha a meio do envio (com a fila em `sync` a excepção subiria até ao pedido). */
+    private function provedorDeEmailAFalhar(): void
+    {
+        config(['queue.default' => 'sync']);
+        $this->app->bind(\Illuminate\Notifications\Channels\MailChannel::class, fn () => new class extends \Illuminate\Notifications\Channels\MailChannel
+        {
+            public function __construct() {}
+
+            public function send($notifiable, \Illuminate\Notifications\Notification $notification)
+            {
+                throw new \RuntimeException('o provedor caiu');
+            }
+        });
+    }
+
+    public function test_uma_falha_do_provedor_avisa_o_utilizador_em_vez_de_dar_erro(): void
+    {
+        $this->provedorDeEmailAFalhar();
+
+        $this->actingAs($this->utilizador())->post('/definicoes/email/confirmacao')->assertSessionHasErrors('email');
+        $this->assertSame(1, \Modules\Core\Models\EnvioEmail::query()->count());
+    }
+
     public function test_sem_canal_de_email_configurado_nao_envia_e_avisa(): void
     {
         Notification::fake();

@@ -2,6 +2,7 @@
 
 namespace Modules\Autenticacao\Actions;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Modules\Autenticacao\Notifications\RecuperarSenhaNotificacao;
 use Modules\Autenticacao\Support\ElegibilidadeParaRecuperarSenha;
@@ -9,6 +10,7 @@ use Modules\Core\Comunicacao\Email\EmailDisponivel;
 use Modules\Core\Tenancy\TenantContext;
 use Modules\Core\Traits\LogService;
 use Modules\Usuario\Models\User;
+use Throwable;
 
 /**
  * «Esqueci a senha». Não devolve NADA a quem pede: existir ou não conta, ser ou não elegível, estar ou não no limite, tudo
@@ -50,7 +52,13 @@ class PedirRecuperacaoDeSenhaAction
         $utilizador = User::query()->whereRaw('lower(email) = ?', [$email])->first();
 
         if ($utilizador !== null && $this->elegibilidade->permite($utilizador)) {
-            $utilizador->notify(new RecuperarSenhaNotificacao);
+            try {
+                $utilizador->notify(new RecuperarSenhaNotificacao);
+            } catch (Throwable $erro) {
+                // Com a fila em `sync` uma falha do provedor subiria até aqui e a resposta deixaria de ser igual para todos
+                // (só as contas elegíveis dariam erro). A tentativa falhada fica em `envios_email`; quem pede vê sempre o mesmo.
+                Log::warning('Falha ao enviar a ligação de recuperação de senha.', ['causa' => class_basename($erro)]);
+            }
         }
     }
 }

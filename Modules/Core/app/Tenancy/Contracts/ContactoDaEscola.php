@@ -10,4 +10,7 @@ interface ContactoDaEscola
 {
     /** Email institucional preenchido pela escola, ou null se não houver ou não for um endereço válido. */
     public function email(): ?string;
+
+    /** Telefone principal da escola, ou null se não houver. */
+    public function telefone(): ?string;
 }

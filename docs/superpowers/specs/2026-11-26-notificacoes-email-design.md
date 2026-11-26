@@ -6,6 +6,8 @@
 - **Ainda sem consumidores:** não há emails reais. **Decisão (2026-11-26, revista):** não há «esqueci a senha» geral. A
   recuperação de senha por email existe **só para os encarregados de educação, e só se tiverem email configurado**; os restantes
   perfis continuam a depender do administrador. Perfis a ampliar depois: a decidir (ver «Recuperação de senha»).
+- **Feito depois (2026-11-26):** rodapé com contactos da escola, tempo mínimo de resposta no «esqueci a senha», links do modo
+  único com o `APP_URL` inteiro (com porta). Guia de operação em `docs/notificacoes-email.md`.
 - **Por fazer:** configuração de infra própria (abaixo). Espera a chave Resend real e o primeiro cliente interessado.
 
 ## Duas coisas independentes
@@ -67,6 +69,14 @@ Nada do resto do sistema depende de email; os emails vão para a fila e nunca at
 - **A verificar na primeira instalação própria:** o domínio principal guardado pode ser IP/nome de rede interno; um link de
   email com esse endereço não abre fora da rede da escola. Se os encarregados acedem de fora, o domínio principal tem de ser
   alcançável.
+
+## Destinatário: um contacto, não uma conta
+As notificações (sobretudo as opcionais: avisos, cobranças) endereçam-se a um **endereço de email**, nunca exigem que o
+destinatário tenha conta na plataforma: um pai sem acesso ao sistema recebe-as na mesma. Só os emails de segurança da conta
+(confirmar email, recuperar senha) exigem conta. A infra já o suporta (destinatário avulso, testado). **Por decidir quando
+existir o primeiro aviso opcional:** de onde vem o email do encarregado sem conta (hoje o encarregado só existe como
+utilizador, ligado ao aluno por `encarregados_alunos`; não há um contacto do encarregado fora de uma conta). Os emails
+informativos não devem depender de links para a plataforma quando esta só é acessível dentro da rede da escola.
 
 ## Segurança e permissões
 - Permissão própria (slug real + Acao + seed), atribuída por defeito ao administrador; a escola pode dá-la a perfis

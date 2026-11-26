@@ -14,6 +14,7 @@ use Modules\Core\Tenancy\Jobs\ComTenant;
  * - vai sempre para a fila com o tenant no payload (ComTenant), por isso o remetente e os links são os da
  *   escola certa mesmo no worker;
  * - o From sai de RemetenteTenant (use mensagemBase());
+ * - regista cada tentativa em `envios_email` (enviada, falhada ou descartada), com o destinatário mascarado;
  * - respeita o limite por hora do tenant, por categoria;
  * - os OPCIONAIS só saem se a escola tiver o módulo licenciável «notificacoes» contratado; os ESSENCIAIS nunca
  *   dependem dele.
@@ -34,24 +35,35 @@ abstract class NotificacaoDeTenant extends Notification implements ShouldQueue
     /** @return list<string> */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        // O canal `mail` com registo de cada tentativa (CanalEmailDeTenant).
+        return [CanalEmailDeTenant::class];
     }
 
     /** Corre no worker (dentro do contexto do tenant), imediatamente antes de enviar. */
     public function shouldSend(object $notifiable, string $canal): bool
     {
         if ($this->categoria() === CategoriaEmail::OPCIONAL && ! app(ModulosDisponiveis::class)->disponivel(self::MODULO_NOTIFICACOES)) {
+            app(RegistoDeEnvios::class)->descartado($this, $notifiable, EstadoEnvioEmail::DESCARTADO_CONTRATO);
+
             return false;
         }
 
-        return app(LimitadorDeEmailsPorTenant::class)->permitir($this->categoria());
+        if (! app(LimitadorDeEmailsPorTenant::class)->permitir($this->categoria())) {
+            app(RegistoDeEnvios::class)->descartado($this, $notifiable, EstadoEnvioEmail::DESCARTADO_LIMITE);
+
+            return false;
+        }
+
+        return true;
     }
 
     protected function mensagemBase(): MailMessage
     {
         $remetente = app(RemetenteTenant::class)->resolver();
 
-        $mensagem = (new MailMessage)->from($remetente->endereco, $remetente->nome);
+        $mensagem = (new MailMessage)
+            ->from($remetente->endereco, $remetente->nome)
+            ->salutation(app(RemetenteTenant::class)->assinatura());
 
         if ($remetente->replyTo !== null) {
             $mensagem->replyTo($remetente->replyTo);
