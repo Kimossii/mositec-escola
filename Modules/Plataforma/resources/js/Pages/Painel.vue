@@ -7,6 +7,7 @@ import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
 defineProps({
     contagem: { type: Object, required: true }, // { 1: activas, 2: suspensas, 3: encerradas }
     actividade: { type: Array, default: () => [] },
+    emailFalhas: { type: Object, default: () => ({ total: 0, dias: 7, recentes: [] }) }, // { total, dias, recentes: [{ id, escola, escola_nome, notificacao, canal, erro, created_at }] }
 });
 defineOptions({ layout: LayoutPlataforma });
 
@@ -36,6 +37,45 @@ const CARTOES = [
                         <span class="badge" :class="`badge-light-${c.cor}`">{{ (contagem[c.estado] ?? 0) === 1 ? 'escola' : 'escolas' }}</span>
                     </div>
                 </Link>
+            </div>
+        </div>
+
+        <div class="card mb-6">
+            <div class="card-header">
+                <h3 class="card-title">Falhas de email</h3>
+                <div class="card-toolbar">
+                    <span class="badge" :class="emailFalhas.total > 0 ? 'badge-light-danger' : 'badge-light-success'">
+                        {{ emailFalhas.total }} {{ emailFalhas.total === 1 ? 'falha' : 'falhas' }} nos últimos {{ emailFalhas.dias }} dias
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
+                    <thead>
+                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                            <th class="min-w-150px">Quando</th>
+                            <th class="min-w-125px">Escola</th>
+                            <th class="min-w-150px">Notificação</th>
+                            <th class="min-w-125px">Canal</th>
+                            <th class="min-w-200px">Erro</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 fw-semibold">
+                        <tr v-if="emailFalhas.recentes.length === 0">
+                            <td colspan="5"><EstadoVazio titulo="Sem falhas de email registadas." /></td>
+                        </tr>
+                        <tr v-for="falha in emailFalhas.recentes" :key="falha.id">
+                            <td>{{ formatarDataHora(falha.created_at) }}</td>
+                            <td>
+                                <Link v-if="falha.escola" :href="`/plataforma/escolas/${falha.escola}`" class="text-gray-800 text-hover-primary fw-bold">{{ falha.escola_nome ?? falha.escola }}</Link>
+                                <span v-else>—</span>
+                            </td>
+                            <td>{{ falha.notificacao }}</td>
+                            <td>{{ falha.canal }}</td>
+                            <td class="text-danger text-break">{{ falha.erro ?? '—' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 

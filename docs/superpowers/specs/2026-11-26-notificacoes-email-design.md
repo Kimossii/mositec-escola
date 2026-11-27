@@ -8,6 +8,7 @@
   perfis continuam a depender do administrador. Perfis a ampliar depois: a decidir (ver «Recuperação de senha»).
 - **Feito depois (2026-11-26):** rodapé com contactos da escola, tempo mínimo de resposta no «esqueci a senha», links do modo
   único com o `APP_URL` inteiro (com porta). Guia de operação em `docs/notificacoes-email.md`.
+- **Feito (2026-11-26):** ecrã «Envios de email» da escola (`/envios-email`, permissão `envio-email.ver`, só administrador por defeito) e cartão «Falhas de email» no painel da Plataforma.
 - **Por fazer:** configuração de infra própria (abaixo). Espera a chave Resend real e o primeiro cliente interessado.
 
 ## Duas coisas independentes
@@ -93,3 +94,25 @@ técnico por hora (300 essenciais / 1000 opcionais, por escola, em `config/comun
 - `configuracoes_email` (nova, só nesta fase): 1:1 com o tenant. Modo, caminho (domínio/SMTP), estado, nome do remetente, dados SMTP
   (senha cifrada), data da última verificação.
 - Reply-To actual: `estabelecimentos.email`. Auditoria: tabela de auditoria já existente.
+
+## Infra própria V1: SMTP (aprovado pelo dono em 2026-11-27)
+Só SMTP; o caminho por domínio verificado fica para quando houver cliente (precisa da chave Resend real). Serve qualquer servidor SMTP
+(Gmail, Outlook, Zoho, servidor próprio, relays como SendGrid/Mailgun/SES por SMTP, servidores internos sem autenticação).
+
+**`configuracoes_email`** (1:1 com `tenants`, `tenant_id` único; autoria por `RegistaAutoria`):
+- Ligação: `servidor`, `porta`, `encriptacao` (0 nenhuma, 1 STARTTLS, 2 SSL/TLS implícito) + `encriptacao_descricao`, `utilizador` (opcional),
+  `senha` (cifrada, opcional: sem utilizador/senha = servidor sem autenticação), `validar_certificado` (por omissão sim; desligar só para
+  certificados autoassinados, com aviso), `dominio_ehlo` (opcional), `tempo_limite` (segundos, 5–30, por omissão 15).
+- Remetente: `remetente_nome` (por omissão o nome da escola), `remetente_endereco` (obrigatório), `responder_para` (opcional; por omissão o email do estabelecimento).
+- Estado: `estado` (0 por verificar, 1 verificado, 2 com falha) + `estado_descricao`, `activo`, `verificada_em`, `ultimo_erro` (curto, sem segredos).
+- Alterar qualquer campo de ligação ou do remetente volta o estado a «por verificar» e desactiva; sem teste bem-sucedido não activa.
+
+**Segurança:** portas só 25, 465, 587, 2525; recusar IPs privados/loopback/link-local (resolvendo o nome do servidor) excepto com `TENANCY_MODO=unico`;
+teste de envio limitado a 5/hora por escola; senha nunca devolvida ao frontend, ao Inertia nem aos logs; auditoria sem a senha.
+
+**Envio:** verificada e activa → todos os emails da escola saem pelo servidor dela com o remetente dela (`canal` = infra própria em `envios_email`), sem fallback.
+Essenciais saem sem contrato `notificacoes`; opcionais continuam a exigi-lo. Verificada e activa conta para `EmailDisponivel`.
+
+**Permissão:** módulo `configuracao-email` (37; `ver`, `editar`), administrador por defeito. Ecrã `/configuracao-email` no menu Sistema.
+**Super admin:** cartão do painel mostra modo e estado por escola; botão «Forçar regresso à central» na página da escola (auditado em `plataforma_auditoria`).
+**Fatias:** 1) tabela, modelo, envio, `EmailDisponivel`; 2) ecrã, teste, permissão; 3) super admin.

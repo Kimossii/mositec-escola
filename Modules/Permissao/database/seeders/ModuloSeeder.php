@@ -49,6 +49,7 @@ class ModuloSeeder extends Seeder
             ['nome' => 33, 'descricao' => 'Frequencia'],
             ['nome' => 34, 'descricao' => 'Auditoria'],
             ['nome' => 35, 'descricao' => 'Area do Encarregado'],
+            ['nome' => 36, 'descricao' => 'Registo de Envios de Email'],
         ];
 
         foreach ($modulos as $modulo) {

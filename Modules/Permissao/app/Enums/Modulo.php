@@ -40,6 +40,7 @@ enum Modulo: int
     case FREQUENCIA = 33;
     case AUDITORIA = 34;
     case AREA_ENCARREGADO = 35;
+    case ENVIO_EMAIL = 36;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -88,6 +89,8 @@ enum Modulo: int
             self::ACESSO_DOCUMENTO_PESSOA => ['ver', 'listar'],
             // Rasto da escola (`auditoria_tenant`): só consulta; nunca se edita nem se apaga.
             self::AUDITORIA => ['ver', 'listar'],
+            // Registo de envios de email da escola (`envios_email`): só consulta; é histórico e nunca se edita.
+            self::ENVIO_EMAIL => ['ver', 'listar'],
             // `trancar` cobre trancar e reactivar uma matrícula.
             self::MATRICULA => [...self::ACOES_BASE, 'trancar'],
             default => self::ACOES_BASE,
@@ -133,6 +136,7 @@ enum Modulo: int
             self::FREQUENCIA => 'frequencia',
             self::AUDITORIA => 'auditoria',
             self::AREA_ENCARREGADO => 'area-encarregado',
+            self::ENVIO_EMAIL => 'envio-email',
         };
     }
 
@@ -186,6 +190,7 @@ enum Modulo: int
             self::FREQUENCIA => 'Frequência',
             self::AUDITORIA => 'Auditoria',
             self::AREA_ENCARREGADO => 'Área do Encarregado',
+            self::ENVIO_EMAIL => 'Registo de Envios de Email',
         };
     }
 }

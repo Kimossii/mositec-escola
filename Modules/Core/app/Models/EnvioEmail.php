@@ -36,7 +36,11 @@ class EnvioEmail extends Model
     protected static function booted(): void
     {
         static::saving(function (EnvioEmail $envio) {
-            $envio->estado_descricao = $envio->estado->label();
+            // Tolerante a nulos: a regra de isolamento (`creating`) tem de poder falar primeiro num registo vazio.
+            if ($envio->estado !== null) {
+                $envio->estado_descricao = $envio->estado->label();
+            }
+
             $envio->canal_descricao = ($envio->canal ?? CanalEnvioEmail::CENTRAL)->label();
         });
     }

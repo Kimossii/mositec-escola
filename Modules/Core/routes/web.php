@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Core\Http\Controllers\Auditoria\AuditoriaController;
+use Modules\Core\Http\Controllers\Comunicacao\EnvioEmailController;
 use Modules\Core\Http\Controllers\Ficheiros\FicheiroController;
 use Modules\Core\Http\Controllers\Horario\HorarioController;
 use Modules\Core\Http\Controllers\Importacao\ImportacaoController;
@@ -37,3 +38,6 @@ Route::middleware(['auth'])->prefix('importacoes')->name('importacoes.')->group(
 
 // Rasto da escola (`auditoria_tenant`): só leitura.
 Route::middleware(['auth'])->get('/auditoria', [AuditoriaController::class, 'index'])->middleware('can:auditoria.ver')->name('auditoria.index');
+
+// Registo de envios de email da escola (`envios_email`): só leitura.
+Route::middleware(['auth'])->get('/envios-email', [EnvioEmailController::class, 'index'])->middleware('can:envio-email.ver')->name('envios-email.index');
