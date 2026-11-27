@@ -23,6 +23,7 @@ class PainelController extends Controller
                 'dias' => 7,
                 'recentes' => $envios->falhasRecentes(),
             ],
+            'emailInfra' => $envios->infraPorEscola(),
             'actividade' => $auditoria->recentes()->map(fn (RegistoDeAuditoria $registo) => [
                 'id' => $registo->id,
                 'accao' => $registo->accao,

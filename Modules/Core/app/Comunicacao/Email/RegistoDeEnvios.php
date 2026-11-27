@@ -7,6 +7,7 @@ use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Modules\Core\Models\ConfiguracaoEmail;
 use Modules\Core\Models\EnvioEmail;
 use Modules\Core\Tenancy\TenantContext;
 use Throwable;
@@ -27,7 +28,7 @@ class RegistoDeEnvios
 
     public function falhou(NotificacaoDeTenant $notificacao, object $destinatario, Throwable $erro): void
     {
-        $this->registar($notificacao, $destinatario, EstadoEnvioEmail::FALHOU, self::resumirErro($erro));
+        $this->registar($notificacao, $destinatario, EstadoEnvioEmail::FALHOU, self::resumirErro($erro, $this->segredosDaInfraPropria($notificacao)));
     }
 
     public function descartado(NotificacaoDeTenant $notificacao, object $destinatario, EstadoEnvioEmail $motivo): void
@@ -46,8 +47,8 @@ class RegistoDeEnvios
                 'notificacao' => class_basename($notificacao),
                 'categoria' => $notificacao->categoria(),
                 'estado' => $estado,
-                // Hoje todos os envios saem pela infra central; com infra própria por escola este valor passa a vir do canal usado.
-                'canal' => CanalEnvioEmail::CENTRAL,
+                // Central, ou a infra própria da escola quando esta está verificada e activa.
+                'canal' => $this->canalDe($notificacao),
                 'destinatario_user_id' => $this->utilizadorDe($destinatario),
                 'destinatario_mascarado' => self::mascarar($this->enderecoDe($destinatario)),
                 'erro' => $erro,
@@ -55,6 +56,29 @@ class RegistoDeEnvios
         } catch (Throwable $e) {
             Log::warning('Não foi possível registar o envio de email.', ['causa' => class_basename($e)]);
         }
+    }
+
+    /** O canal da mensagem tal como foi montada; sem ela (descartada antes de montar), o actual da escola. */
+    private function canalDe(NotificacaoDeTenant $notificacao): CanalEnvioEmail
+    {
+        return $notificacao->canalUsado() ?? app(MailerDaEscola::class)->canal();
+    }
+
+    /**
+     * O utilizador e a senha do servidor da escola, para nunca irem parar ao erro registado (o Symfony cita o utilizador ao falhar a
+     * autenticação, e o registo é visível à escola e à Plataforma). Só quando o envio foi pela infra própria.
+     *
+     * @return list<string>
+     */
+    private function segredosDaInfraPropria(NotificacaoDeTenant $notificacao): array
+    {
+        if ($this->canalDe($notificacao) !== CanalEnvioEmail::PROPRIO) {
+            return [];
+        }
+
+        $configuracao = ConfiguracaoEmail::query()->first();
+
+        return array_values(array_filter([$configuracao?->utilizador, $configuracao?->senha], fn ($v) => is_string($v) && $v !== ''));
     }
 
     private function utilizadorDe(object $destinatario): ?int
@@ -87,10 +111,15 @@ class RegistoDeEnvios
         return mb_substr($local, 0, 1).'***@'.$dominio;
     }
 
-    /** Classe e mensagem curta, sem endereços de email nem credenciais embutidas em URLs. */
-    public static function resumirErro(Throwable $erro): string
+    /**
+     * Classe e mensagem curta, sem endereços de email nem credenciais embutidas em URLs; `$ocultar` são textos (utilizador, senha) a esconder.
+     *
+     * @param  list<string>  $ocultar
+     */
+    public static function resumirErro(Throwable $erro, array $ocultar = []): string
     {
         $mensagem = preg_replace('/\s+/', ' ', $erro->getMessage()) ?? '';
+        $mensagem = $ocultar === [] ? $mensagem : str_replace($ocultar, '***', $mensagem);
         $mensagem = preg_replace('#://[^/\s@]+@#', '://***@', $mensagem) ?? $mensagem;
         $mensagem = preg_replace('/[\w.+-]+@[\w-]+(\.[\w-]+)+/', '***@***', $mensagem) ?? $mensagem;
 

@@ -12,8 +12,9 @@ import { formatarDataHora } from '../../Composables/formatarData';
 import ValidadeBadge from '../../Components/ValidadeBadge.vue';
 import { formatarData } from '../../Composables/formatarData';
 import EstadoVazio from '@/Components/Shared/EstadoVazio.vue';
+import ConfirmModal from '@/Components/Shared/ConfirmModal.vue';
 
-defineProps({
+const props = defineProps({
     escola: { type: Object, required: true },
     auditoria: { type: Array, default: () => [] },
     licenca: { type: Object, default: null },
@@ -26,6 +27,31 @@ const page = usePage();
 // descartada ao fechar. Nunca vai para localStorage, store, URL ou consola. Fechar roda a chave do
 // histórico, para as entradas antigas (com a senha cifrada) ficarem ilegíveis.
 const recuperarAberto = ref(false);
+
+// «Forçar regresso à central»: só quando a escola envia pelo servidor SMTP próprio.
+const regressoAberto = ref(false);
+const aForcarRegresso = ref(false);
+
+const aLevantar = ref(false);
+
+function levantarBloqueio() {
+    aLevantar.value = true;
+    router.post(`/plataforma/escolas/${props.escola.codigo}/email/levantar-bloqueio`, {}, {
+        preserveScroll: true,
+        onFinish: () => (aLevantar.value = false),
+    });
+}
+
+function forcarRegresso() {
+    aForcarRegresso.value = true;
+    router.post(`/plataforma/escolas/${props.escola.codigo}/email/regresso-central`, {}, {
+        preserveScroll: true,
+        onFinish: () => {
+            aForcarRegresso.value = false;
+            regressoAberto.value = false;
+        },
+    });
+}
 
 const senhaTemporaria = ref(page.props.flash?.senha_temporaria ?? null);
 
@@ -69,6 +95,28 @@ onBeforeUnmount(() => {
         </div>
 
         <div v-if="page.props.errors?.geral" class="alert alert-danger mb-6" role="alert">{{ page.props.errors.geral }}</div>
+
+        <div v-if="escola.email_proprio_activo || escola.email_bloqueado" class="card mb-6">
+            <div class="card-header"><h3 class="card-title">Email</h3></div>
+            <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-4">
+                <div v-if="escola.email_bloqueado" class="text-gray-700">
+                    O servidor SMTP próprio desta escola está <strong>bloqueado</strong>: a escola envia pela central e não o pode reactivar.
+                </div>
+                <div v-else class="text-gray-700">Esta escola envia os emails pelo seu próprio servidor SMTP.</div>
+                <button v-if="escola.email_bloqueado" type="button" class="btn btn-light-primary" :disabled="aLevantar" @click="levantarBloqueio">Levantar bloqueio</button>
+                <button v-else type="button" class="btn btn-light-danger" @click="regressoAberto = true">Forçar regresso à central</button>
+            </div>
+        </div>
+
+        <ConfirmModal
+            :show="regressoAberto"
+            titulo="Forçar regresso à central"
+            mensagem="A escola deixa de enviar pelo seu servidor e passa a enviar pela central, e fica impedida de o reactivar até levantares o bloqueio. A configuração não é apagada."
+            texto-confirmar="Forçar regresso"
+            :processando="aForcarRegresso"
+            @confirmar="forcarRegresso"
+            @cancelar="regressoAberto = false"
+        />
 
         <div class="card mb-6">
             <div class="card-header"><h3 class="card-title">Dados da escola</h3></div>

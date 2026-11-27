@@ -7,6 +7,7 @@ use Modules\Plataforma\Http\Controllers\Auth\LoginController;
 use Modules\Plataforma\Http\Controllers\AdministradorEscolaController;
 use Modules\Plataforma\Http\Controllers\CicloDeVidaController;
 use Modules\Plataforma\Http\Controllers\DominioController;
+use Modules\Plataforma\Http\Controllers\EmailEscolaController;
 use Modules\Plataforma\Http\Controllers\EscolaController;
 use Modules\Plataforma\Http\Controllers\LicencaController;
 use Modules\Plataforma\Http\Controllers\PainelController;
@@ -43,6 +44,11 @@ Route::middleware(['auth:plataforma', SuperAdminActivo::class, ExigirTrocaDeSenh
     Route::post('/escolas/{tenant}/reactivar', [CicloDeVidaController::class, 'reactivar'])->name('plataforma.escolas.reactivar');
     Route::post('/escolas/{tenant}/encerrar', [CicloDeVidaController::class, 'encerrar'])->name('plataforma.escolas.encerrar');
     Route::post('/escolas/{tenant}/revogar-acessos', [CicloDeVidaController::class, 'revogarAcessos'])->name('plataforma.escolas.revogar-acessos');
+
+    // Medida de emergência: desliga o servidor SMTP próprio da escola, que volta a enviar pela central.
+    Route::post('/escolas/{tenant}/email/regresso-central', [EmailEscolaController::class, 'regressoACentral'])->name('plataforma.escolas.email.regresso-central');
+
+    Route::post('/escolas/{tenant}/email/levantar-bloqueio', [EmailEscolaController::class, 'levantarBloqueio'])->name('plataforma.escolas.email.levantar-bloqueio');
 
     // `{dominio}` é o nome do host (sem binding de model).
     Route::post('/escolas/{tenant}/dominios', [DominioController::class, 'store'])->name('plataforma.escolas.dominios.store');

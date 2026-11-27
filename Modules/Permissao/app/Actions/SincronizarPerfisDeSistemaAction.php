@@ -42,6 +42,7 @@ class SincronizarPerfisDeSistemaAction
             Modulo::ACESSO_DOCUMENTO_PESSOA->value => ['ver', 'listar'],
             Modulo::AUDITORIA->value => ['ver', 'listar'],
             Modulo::ENVIO_EMAIL->value => ['ver', 'listar'],
+            Modulo::CONFIGURACAO_EMAIL->value => ['ver', 'editar'],
             Modulo::SENHA_UTILIZADOR->value => ['editar'],
             Modulo::DISCIPLINA->value => ['ver', 'criar', 'editar'],
             Modulo::ALUNO->value => ['ver', 'criar', 'editar'],

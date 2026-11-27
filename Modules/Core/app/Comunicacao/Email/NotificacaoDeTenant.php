@@ -57,9 +57,21 @@ abstract class NotificacaoDeTenant extends Notification implements ShouldQueue
         return true;
     }
 
+    /** Canal pelo qual esta mensagem foi montada (decidido uma só vez em mensagemBase); só existe em memória, nunca na fila. */
+    private ?CanalEnvioEmail $canalUsado = null;
+
+    public function canalUsado(): ?CanalEnvioEmail
+    {
+        return $this->canalUsado;
+    }
+
     protected function mensagemBase(): MailMessage
     {
-        $remetente = app(RemetenteTenant::class)->resolver();
+        // A configuração da escola é lida UMA vez: remetente, mailer e canal registado vêm todos dela, por isso nunca se misturam
+        // (ex.: remetente da escola a sair pela central) se ela mudar a meio do envio.
+        $propria = app(MailerDaEscola::class)->configuracao();
+        $this->canalUsado = $propria !== null ? CanalEnvioEmail::PROPRIO : CanalEnvioEmail::CENTRAL;
+        $remetente = app(RemetenteTenant::class)->resolverPara($propria);
 
         $mensagem = (new MailMessage)
             ->from($remetente->endereco, $remetente->nome)
@@ -67,6 +79,13 @@ abstract class NotificacaoDeTenant extends Notification implements ShouldQueue
 
         if ($remetente->replyTo !== null) {
             $mensagem->replyTo($remetente->replyTo);
+        }
+
+        // Escola com servidor próprio verificado e activo: sai por ele; senão, pela central.
+        $mailer = app(MailerDaEscola::class)->nomeDe($propria);
+
+        if ($mailer !== null) {
+            $mensagem->mailer($mailer);
         }
 
         return $mensagem;

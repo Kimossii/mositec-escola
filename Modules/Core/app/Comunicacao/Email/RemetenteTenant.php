@@ -3,6 +3,7 @@
 namespace Modules\Core\Comunicacao\Email;
 
 use LogicException;
+use Modules\Core\Models\ConfiguracaoEmail;
 use Modules\Core\Tenancy\Contracts\ContactoDaEscola;
 use Modules\Core\Tenancy\Contracts\EnderecoDoTenant;
 use Modules\Core\Tenancy\TenantContext;
@@ -11,10 +12,11 @@ use Modules\Core\Tenancy\TenantContext;
  * Resolve, para o tenant corrente, quem aparece como remetente e para onde apontam as ligações dos emails.
  * Único ponto onde o From é montado: nenhuma Notification/Mailable o faz à mão.
  *
- * - Nome: o da escola. Endereço: sempre o central da plataforma (`mail.from.address`), porque o domínio de
- *   envio verificado é o da MosiTec, não o da escola.
+ * - Nome: o da escola. Endereço: o central da plataforma (`mail.from.address`), porque o domínio de
+ *   envio verificado é o da MosiTec, não o da escola. Excepção: com infra própria verificada e activa
+ *   (MailerDaEscola) o remetente é o configurado pela escola (nome, endereço e «responder para»).
  * - Reply-To: o email institucional do estabelecimento, se válido (sem ele, a resposta não vai para lado nenhum
- *   em particular). Uma configuração própria (`configuracoes_email`) só se justifica quando houver SMTP/domínio próprio.
+ *   em particular).
  * - Ligações: domínio principal do tenant, seja subdomínio da plataforma ou domínio próprio.
  *
  * Precisa de contexto de tenant (num job é dado por ComTenant).
@@ -29,6 +31,20 @@ class RemetenteTenant
 
     public function resolver(): Remetente
     {
+        return $this->resolverPara(app(MailerDaEscola::class)->configuracao());
+    }
+
+    /** O remetente para a configuração própria dada (a mesma que escolheu o mailer); null → remetente central. */
+    public function resolverPara(?ConfiguracaoEmail $propria): Remetente
+    {
+        if ($propria !== null) {
+            return new Remetente(
+                nome: $propria->remetente_nome ?: $this->contexto->atual()->nome,
+                endereco: $propria->remetente_endereco,
+                replyTo: $propria->responder_para ?: $this->contacto->email(),
+            );
+        }
+
         return new Remetente(
             nome: $this->contexto->atual()->nome,
             endereco: (string) config('mail.from.address'),

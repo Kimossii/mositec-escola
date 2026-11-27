@@ -572,6 +572,7 @@ const sistema = {
         { href: '/acessos-documentos', title: 'Acessos a documentos', permissao: 'acesso-documento-pessoa.ver' },
         { href: '/auditoria', title: 'Auditoria', permissao: 'auditoria.ver' },
         { href: '/envios-email', title: 'Envios de email', permissao: 'envio-email.ver' },
+        { href: '/configuracao-email', title: 'Email da escola', permissao: 'configuracao-email.ver' },
     ],
 }
 

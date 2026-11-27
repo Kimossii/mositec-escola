@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Core\Tenancy\TenantContext;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,6 +36,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Por utilizador (ou IP): travam um cliente em ciclo ou um script, sem incomodar o uso normal.
         RateLimiter::for('pesquisa', fn ($request) => Limit::perMinute(120)->by($request->user()?->id ?: $request->ip()));
+        // Teste de envio da configuração de email: 5 por hora por escola (não por utilizador), para ninguém usar o botão como disparador de emails.
+        RateLimiter::for('teste-email-escola', fn ($request) => Limit::perHour(5)->by('teste-email:'.(app(TenantContext::class)->temTenant() ? app(TenantContext::class)->id() : $request->ip())));
         RateLimiter::for('operacao-pesada', fn ($request) => Limit::perMinute(20)->by($request->user()?->id ?: $request->ip()));
 
         RateLimiter::for('api', function ($request) {

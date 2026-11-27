@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Core\Http\Controllers\Auditoria\AuditoriaController;
+use Modules\Core\Http\Controllers\Comunicacao\ConfiguracaoEmailController;
 use Modules\Core\Http\Controllers\Comunicacao\EnvioEmailController;
 use Modules\Core\Http\Controllers\Ficheiros\FicheiroController;
 use Modules\Core\Http\Controllers\Horario\HorarioController;
@@ -41,3 +42,11 @@ Route::middleware(['auth'])->get('/auditoria', [AuditoriaController::class, 'ind
 
 // Registo de envios de email da escola (`envios_email`): só leitura.
 Route::middleware(['auth'])->get('/envios-email', [EnvioEmailController::class, 'index'])->middleware('can:envio-email.ver')->name('envios-email.index');
+
+// Servidor SMTP próprio da escola: configurar, testar o envio (activa) e voltar à central.
+Route::middleware(['auth'])->prefix('configuracao-email')->name('configuracao-email.')->group(function () {
+    Route::get('/', [ConfiguracaoEmailController::class, 'show'])->middleware('can:configuracao-email.ver')->name('show');
+    Route::put('/', [ConfiguracaoEmailController::class, 'guardar'])->middleware('can:configuracao-email.editar')->name('guardar');
+    Route::post('/testar', [ConfiguracaoEmailController::class, 'testar'])->middleware(['can:configuracao-email.editar', 'throttle:teste-email-escola'])->name('testar');
+    Route::post('/desactivar', [ConfiguracaoEmailController::class, 'desactivar'])->middleware('can:configuracao-email.editar')->name('desactivar');
+});

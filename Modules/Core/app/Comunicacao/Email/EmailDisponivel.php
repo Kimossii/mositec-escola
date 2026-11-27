@@ -11,12 +11,16 @@ namespace Modules\Core\Comunicacao\Email;
  * `log` e `array` (desenvolvimento e testes) escrevem num ficheiro ou na memória e por isso não contam como disponíveis.
  * Num servidor próprio o mailer é o do `.env` dessa instalação, nunca a conta da MosiTec.
  *
- * Quando existir infra própria por escola (configuracoes_email), «verificada» passará a contar aqui também.
+ * Uma escola com infra própria verificada e activa (configuracoes_email) conta como disponível, seja qual for o mailer central.
  */
 class EmailDisponivel
 {
     public function disponivel(): bool
     {
+        if (app(MailerDaEscola::class)->configuracao() !== null) {
+            return true;
+        }
+
         $mailer = (string) config('mail.default');
 
         return match ($mailer) {

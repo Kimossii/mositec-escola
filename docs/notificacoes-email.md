@@ -101,6 +101,35 @@ de uma conta de teste, abrir o email e carregar na ligação.
 | Respostas dos pais não chegam à escola | A escola não tem email em *Dados da escola* (Reply-To) |
 | Emails em `failed_jobs` | Erro do provedor ou do SMTP: `php artisan queue:failed` mostra a causa |
 
-## 6. Ainda por construir (decidido, ver spec)
-Registo de envios e falhas visível a administrador e super admin; infra própria por escola (domínio verificado ou SMTP,
-configurada pelo administrador, sem fallback para a central); consumo e subscrição comercial (regras por definir).
+## 6. Servidor SMTP próprio da escola
+Cada escola pode enviar pelo **seu** servidor SMTP em vez da central. Menu **Sistema → Email da escola** (`/configuracao-email`),
+só para quem tem a permissão `configuracao-email` (o Administrador, por defeito).
+
+**Como configurar**
+1. Escolher uma predefinição (Gmail, Outlook, Zoho ou Outro): só preenche servidor, porta e encriptação.
+2. Preencher utilizador e senha (opcionais: deixe em branco para servidores sem autenticação), nome e endereço do remetente
+   e, se quiser, «responder para». Em «Outro», indicar servidor, porta e encriptação do fornecedor.
+3. **Guardar** e depois **Testar envio** (para um email vosso). Só um teste bem-sucedido verifica e activa; a partir daí todos
+   os emails da escola saem pelo servidor dela, sem recorrer à central. Em Gmail/Outlook é normalmente preciso uma *senha de aplicação*.
+4. **Voltar à central** desliga o servidor próprio (a configuração fica guardada; para reactivar, testar outra vez).
+
+**Regras**
+- Portas permitidas: 25, 465, 587 e 2525. Encriptação: nenhuma, STARTTLS ou SSL/TLS. Tempo limite de 5 a 30 s (15 por omissão).
+- «Validar o certificado» pode desligar-se para certificados autoassinados, mas a ligação deixa de estar protegida (o ecrã avisa).
+- **Endereços privados são recusados** (`localhost`, `10.x`, `192.168.x`, `172.16–31.x`, `169.254.x`, `::1`), resolvendo o nome do
+  servidor: uma escola não pode apontar o SMTP para a rede interna da plataforma. Numa instalação única (`TENANCY_MODO=unico`) são aceites.
+- Alterar o servidor, a ligação ou o remetente volta o estado a «por verificar» e desliga o servidor próprio até novo teste.
+- Só um servidor **verificado e activo** é usado. Em qualquer outro estado (por verificar, com falha, desligado) a escola envia pela central.
+  Se o servidor próprio falhar depois de activo, a falha fica em «Envios de email» (canal «Infra própria da escola») e a fila repete; não há fallback para a central.
+- Teste de envio: 5 por hora por escola. Se a configuração mudar durante o teste, este é recusado (não activa nada).
+- **Bloqueio pela Plataforma:** «Forçar regresso à central» desliga o servidor e impede a escola de testar ou reactivar até a Plataforma levantar o bloqueio. Levantar não reactiva: a escola testa outra vez.
+- Os erros de envio registados nunca levam o utilizador nem a senha do servidor da escola.
+- Risco aceite: DNS rebinding entre a validação e a ligação (ver spec). A senha vai cifrada e nunca aparece no ecrã, nos logs nem na auditoria.
+- A Plataforma vê, no painel, que escolas têm servidor próprio e o estado (nunca servidor nem credenciais) e pode **forçar o regresso à central**
+  no detalhe da escola (fica na auditoria da Plataforma).
+
+**Depois de actualizar o código:** `php artisan migrate` e actualizar permissões/módulos (`php artisan db:seed --force` ou o comando
+habitual do Permissao) para criar a tabela e o módulo 37.
+
+## 7. Ainda por construir (decidido, ver spec)
+Domínio próprio verificado por DNS; consumo e subscrição comercial (regras por definir).

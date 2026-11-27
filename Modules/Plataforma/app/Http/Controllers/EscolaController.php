@@ -12,6 +12,7 @@ use Modules\Plataforma\DTO\RegistoAuditoriaDTO;
 use Modules\Plataforma\Http\Requests\CriarEscolaRequest;
 use Modules\Plataforma\Models\RegistoDeAuditoria;
 use Modules\Plataforma\Services\AuditoriaConsultaService;
+use Modules\Plataforma\Services\EnviosEmailConsultaService;
 use Modules\Plataforma\Support\ApresentadorDeLicencas;
 use Modules\Tenant\Actions\CriarTenantAction;
 use Modules\Tenant\DTO\CriarTenantDTO;
@@ -47,10 +48,11 @@ class EscolaController extends Controller
         ]);
     }
 
-    public function show(Tenant $tenant, TenantConsultaService $consulta, AuditoriaConsultaService $auditoria, LicencasConsultaService $licencas, ApresentadorDeLicencas $apresentador)
+    public function show(Tenant $tenant, TenantConsultaService $consulta, AuditoriaConsultaService $auditoria, LicencasConsultaService $licencas, ApresentadorDeLicencas $apresentador, EnviosEmailConsultaService $envios)
     {
         $escola = $consulta->detalhe($tenant);
         $licenca = $licencas->actualDaEscola($escola->codigo);
+        $emailProprio = $envios->estadoDoServidorProprio($escola);
 
         return Inertia::render('Plataforma/Escolas/Show', [
             'escola' => [
@@ -64,6 +66,9 @@ class EscolaController extends Controller
                 'reactivado_em' => $escola->reactivado_em,
                 'created_at' => $escola->created_at,
                 'accoes_permitidas' => $consulta->accoesPermitidas($escola),
+                // Servidor SMTP próprio a enviar neste momento (o botão «Forçar regresso à central» só aparece então).
+                'email_proprio_activo' => $emailProprio['activo'],
+                'email_bloqueado' => $emailProprio['bloqueada'],
                 'dominios' => $escola->dominios->map(fn ($dominio) => [
                     'dominio' => $dominio->dominio,
                     'tipo_descricao' => $dominio->tipo_descricao,

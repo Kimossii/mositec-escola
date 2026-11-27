@@ -41,6 +41,7 @@ enum Modulo: int
     case AUDITORIA = 34;
     case AREA_ENCARREGADO = 35;
     case ENVIO_EMAIL = 36;
+    case CONFIGURACAO_EMAIL = 37;
 
     /**
      * Acções do catálogo (tabela `acoes`) que fazem sempre parte da grelha de
@@ -91,6 +92,8 @@ enum Modulo: int
             self::AUDITORIA => ['ver', 'listar'],
             // Registo de envios de email da escola (`envios_email`): só consulta; é histórico e nunca se edita.
             self::ENVIO_EMAIL => ['ver', 'listar'],
+            // Servidor SMTP próprio da escola (`configuracoes_email`): um registo por escola, por isso só ver e editar.
+            self::CONFIGURACAO_EMAIL => ['ver', 'editar'],
             // `trancar` cobre trancar e reactivar uma matrícula.
             self::MATRICULA => [...self::ACOES_BASE, 'trancar'],
             default => self::ACOES_BASE,
@@ -137,6 +140,7 @@ enum Modulo: int
             self::AUDITORIA => 'auditoria',
             self::AREA_ENCARREGADO => 'area-encarregado',
             self::ENVIO_EMAIL => 'envio-email',
+            self::CONFIGURACAO_EMAIL => 'configuracao-email',
         };
     }
 
@@ -191,6 +195,7 @@ enum Modulo: int
             self::AUDITORIA => 'Auditoria',
             self::AREA_ENCARREGADO => 'Área do Encarregado',
             self::ENVIO_EMAIL => 'Registo de Envios de Email',
+            self::CONFIGURACAO_EMAIL => 'Configuração de Email',
         };
     }
 }

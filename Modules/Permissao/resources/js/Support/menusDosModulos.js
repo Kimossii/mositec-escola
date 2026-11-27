@@ -46,6 +46,7 @@ export const MENU_DE = {
     'acesso-documento-pessoa': { menu: 'Sistema', entrada: 'Acessos a documentos' },
     auditoria: { menu: 'Sistema', entrada: 'Auditoria' },
     'envio-email': { menu: 'Sistema', entrada: 'Envios de email' },
+    'configuracao-email': { menu: 'Sistema', entrada: 'Email da escola' },
 };
 
 /**

@@ -110,7 +110,9 @@ class EscolasTest extends TestCase
 
     private function afirmarSoTabelasGlobais(): void
     {
-        $permitidas = ['tenants', 'domains', 'super_admins', 'plataforma_auditoria', 'licenciamento_licencas', 'licenciamento_planos', 'sessions', 'cache', 'cache_locks'];
+        $permitidas = ['tenants', 'domains', 'super_admins', 'plataforma_auditoria', 'licenciamento_licencas', 'licenciamento_planos', 'sessions', 'cache', 'cache_locks',
+            // Só para saber se a escola envia por servidor próprio (botão «Forçar regresso à central»): nunca se lê servidor nem credenciais.
+            'configuracoes_email'];
         $consultadas = $this->tabelasConsultadas();
 
         $this->assertNotEmpty($consultadas, 'O registo de consultas está vazio: a asserção seria vácua.');

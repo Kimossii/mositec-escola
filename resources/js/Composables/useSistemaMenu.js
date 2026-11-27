@@ -11,6 +11,7 @@ const seccoesSistema = [
             { href: '/acessos-documentos', label: 'Acessos a documentos', permissao: 'acesso-documento-pessoa.ver' },
             { href: '/auditoria', label: 'Auditoria', permissao: 'auditoria.ver' },
             { href: '/envios-email', label: 'Envios de email', permissao: 'envio-email.ver' },
+            { href: '/configuracao-email', label: 'Email da escola', permissao: 'configuracao-email.ver' },
         ],
     },
 ];
