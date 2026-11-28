@@ -7,7 +7,7 @@ Para quem usa o sistema pela primeira vez. Demora cerca de 30 minutos. Siga os p
 ## 1. Entrar
 1. Abra o endereço da escola que lhe foi enviado.
 2. Entre com o seu e-mail e a **senha temporária**. O sistema pede-lhe logo uma senha nova (mínimo 12 caracteres, com maiúsculas, minúsculas, números e símbolos).
-3. **Esqueci a senha:** peça ao administrador da escola que a redefina (Configurações → Utilizadores). Receberá uma senha temporária.
+3. **Esqueci a senha:** peça ao administrador da escola que a redefina (Configurações → Utilizadores). Receberá uma senha temporária. **Exceção — encarregados de educação:** se a escola tiver email configurado e o seu email estiver confirmado, use «Esqueci a senha» no ecrã de entrada: recebe uma ligação (válida 60 minutos, uso único) para escolher uma senha nova. A resposta é sempre a mesma, exista ou não conta, por segurança.
 4. **Terminar a sessão:** botão *Terminar Sessão*, no fim do menu lateral.
 
 ## 2. Preparar a escola (uma vez)
@@ -64,7 +64,13 @@ Menu **Pedagógico → Pautas**, escolha a turma.
 Importar e exportar (PDF e Excel), tema claro e escuro, e renovar, trancar e reactivar matrículas.
 **Ainda não existe (não é erro):** Frequência, Documentos, Comunicação, Encarregados e Biblioteca.
 
-## 9. Siglas das notas
+## 9. Email da escola
+1. **Confirmar o seu email:** em *Definições*, «Enviar confirmação» e abra a ligação que chega à sua caixa. O administrador também pode enviá-la por si.
+2. **Servidor de email próprio (administrador):** *Sistema → Email da escola*. Escolha a predefinição (Gmail, Outlook, Zoho ou Outro), preencha utilizador e senha (em Gmail/Outlook, uma *senha de aplicação*), **Guardar** e **Testar envio**. Só depois de um teste bem-sucedido os emails passam a sair pelo servidor da escola. *Voltar à central* desliga-o. Se a plataforma o bloquear, não é possível reactivar até ela levantar o bloqueio.
+3. **Ver o que foi enviado (administrador):** *Envios de email* mostra cada envio, falha ou email descartado.
+4. As respostas dos pais seguem para o email indicado em *Dados da escola*; sem ele, não chegam a lado nenhum.
+
+## 10. Siglas das notas
 | Sigla | Significado |
 |---|---|
 | **MAC** | Média das avaliações contínuas do trimestre |
@@ -78,5 +84,5 @@ Importar e exportar (PDF e Excel), tema claro e escuro, e renovar, trancar e rea
 
 A **nota mínima** e os **pesos** vêm da regra de cada classe (Configuração da avaliação). Uma nota abaixo do mínimo aparece a vermelho.
 
-## 10. Se algo não correr bem
+## 11. Se algo não correr bem
 Anote **o que estava a fazer**, **o que esperava** e **o que aconteceu** (uma captura de ecrã ajuda). Envie ao responsável do sistema.

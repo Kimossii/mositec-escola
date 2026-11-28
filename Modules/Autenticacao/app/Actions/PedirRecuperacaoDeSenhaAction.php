@@ -52,13 +52,16 @@ class PedirRecuperacaoDeSenhaAction
         $utilizador = User::query()->whereRaw('lower(email) = ?', [$email])->first();
 
         if ($utilizador !== null && $this->elegibilidade->permite($utilizador)) {
-            try {
-                $utilizador->notify(new RecuperarSenhaNotificacao);
-            } catch (Throwable $erro) {
-                // Com a fila em `sync` uma falha do provedor subiria até aqui e a resposta deixaria de ser igual para todos
-                // (só as contas elegíveis dariam erro). A tentativa falhada fica em `envios_email`; quem pede vê sempre o mesmo.
-                Log::warning('Falha ao enviar a ligação de recuperação de senha.', ['causa' => class_basename($erro)]);
-            }
+            // Depois de a resposta sair: com a fila em `sync` o envio demoraria no pedido e só as contas elegíveis ficariam
+            // lentas (dava para descobrir quem tem conta cronometrando). Com fila real o notify() já só enfileira.
+            defer(function () use ($utilizador) {
+                try {
+                    $utilizador->notify(new RecuperarSenhaNotificacao);
+                } catch (Throwable $erro) {
+                    // A tentativa falhada fica em `envios_email`; quem pediu já recebeu a resposta igual para todos.
+                    Log::warning('Falha ao enviar a ligação de recuperação de senha.', ['causa' => class_basename($erro)]);
+                }
+            });
         }
     }
 }

@@ -81,7 +81,7 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 | Tenant          | Escolas (tenants), domínios, provisionamento de uma escola nova                                                                         | ✅     |
 | Plataforma      | Área do super-administrador MosiTec: login próprio, gestão de escolas                                                                   | ✅     |
 | Estabelecimento | Dados da escola (NIF, morada, província/município, fuso horário), logótipo e aparência                                                  | ✅     |
-| Autenticação    | Login, logout, recuperação de senha, redefinição de senha (Fortify); autenticação em dois factores opcional (TOTP offline) para a escola e para o super-administrador — ver `docs/2fa.md` | ✅     |
+| Autenticação    | Login, logout, recuperação de senha (por email só para encarregados com email confirmado; os restantes pedem ao administrador), redefinição de senha (Fortify); autenticação em dois factores opcional (TOTP offline) para a escola e para o super-administrador — ver `docs/2fa.md` | ✅     |
 | Usuário         | Listas por tipo (todos, alunos, professores, funcionários, encarregados, administradores), registo por assistente, documentos pessoais | ✅     |
 | Permissão       | Perfis, permissões por módulo × acção (grelha agrupada por menu), permissões por utilizador, perfis de sistema fixos                   | ✅     |
 | Licenciamento   | Licenças e planos (painel da Plataforma), página `/licenca` do administrador (código da instalação, instalar licença, prazo, bloqueio e limites de uso), bloqueio das escolas sem licença válida | ✅     |
@@ -128,7 +128,7 @@ Legenda: ✅ feito · 🔧 em execução (parcial) · ⏳ por fazer
 | Infraestrutura       | Salas feitas; equipamentos, inventário e manutenção por fazer                           | 🔧     |
 | Relatórios académicos| Desempenho, assiduidade, boletins, matrículas, turmas                                   | ⏳     |
 | Documentos           | Declarações, certificados, modelos, arquivo                                             | ⏳     |
-| Comunicação          | Avisos, mensagens internas, SMS/email, notificações                                     | ⏳     |
+| Comunicação          | Email já funciona (confirmação, recuperação de senha de encarregados, servidor SMTP próprio por escola, registo de envios — ver `docs/notificacoes-email.md`); avisos, mensagens internas e SMS por fazer | 🔧     |
 | Biblioteca           | Livros, empréstimos, devoluções                                                         | ⏳     |
 | Auditoria            | Registo da escola (`auditoria_tenant`, só acrescenta) com ecrã de consulta; eventos de permissões, justificação de faltas, matrículas e regras de cobrança | ✅     |
 | Logs de aplicação    | `LogService` em todas as Actions: escola, utilizador e pedido em cada registo, sem segredos | ✅     |

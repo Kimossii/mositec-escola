@@ -65,7 +65,7 @@ EMAIL_RECUPERACAO_TEMPO_MINIMO_MS=300
 **Importante:** com `QUEUE_CONNECTION=database` tem de haver um *worker* da fila a correr (`php artisan queue:work`, sob
 supervisor/systemd); sem worker nenhum email sai, ficam à espera na tabela `jobs`. Com `sync` (o valor do `.env.example`) o
 email é enviado dentro do próprio pedido: funciona sem worker, mas atrasa a resposta ao utilizador e uma falha do provedor
-chega-lhe como erro. Em produção use `database` com worker.
+chega-lhe como erro (excepção: o «esqueci a senha» envia depois de a resposta sair, por isso não atrasa o pedido nem denuncia contas). Em produção use `database` com worker.
 
 ### 2.4 Testar o envio
 Depois de configurar, enviar um email simples para um endereço vosso (não grava nada na base de dados):
@@ -88,7 +88,7 @@ de uma conta de teste, abrir o email e carregar na ligação.
 - Ligações de confirmação e de recuperação são assinadas, expiram e estão presas à escola e ao estado actual da conta
   (a de recuperação só serve uma vez).
 - Recuperação de senha por email **só para encarregados** com email **confirmado** (lista em `config/comunicacao.php`).
-  Resposta sempre genérica, limite por IP e por email, tempo mínimo de resposta.
+  Resposta sempre genérica, limite por IP e por email, tempo mínimo de resposta, e o envio corre **depois** da resposta (`defer()`): mesmo com a fila em `sync`, uma conta elegível não demora mais do que uma inexistente. Para alargar a lista de perfis é preciso decisão expressa do dono; hoje fica só encarregados.
 - Nunca se envia senha por email, nem se regista o email pedido nos logs.
 
 ## 5. Resolução de problemas
