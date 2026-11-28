@@ -243,4 +243,15 @@ class ConfiguracaoEmailActionsTest extends TestCase
 
         $this->assertTrue($c->fresh()->bloqueada_pela_plataforma);
     }
+
+    public function test_o_teste_liga_ao_ip_validado(): void
+    {
+        $c = $this->guardar($this->dados());
+        $enviados = [];
+
+        $this->testarCom(null, $c, $enviados);
+
+        $this->assertSame('142.250.1.1', $enviados[0][0]['ip']);
+        $this->assertSame('smtp.exemplo.com', $enviados[0][0]['host']);
+    }
 }

@@ -72,7 +72,7 @@ class EnvioPelaInfraDaEscolaTest extends TestCase
         $c = $this->config(['encriptacao' => EncriptacaoSmtp::SSL, 'porta' => 465, 'dominio_ehlo' => 'escola.exemplo.com', 'tempo_limite' => 20, 'validar_certificado' => false]);
         $cfg = MailerDaEscola::configDe($c);
 
-        $this->assertSame('smtp', $cfg['transport']);
+        $this->assertSame('smtp-fixado', $cfg['transport']);
         $this->assertSame('smtp.exemplo.com', $cfg['host']);
         $this->assertSame(465, $cfg['port']);
         $this->assertSame('smtps', $cfg['scheme']);
@@ -248,5 +248,27 @@ class EnvioPelaInfraDaEscolaTest extends TestCase
         $this->assertStringNotContainsString('AKIAUTILIZADOR1', $erro);
         $this->assertStringNotContainsString('senha-muito-secreta', $erro);
         $this->assertStringContainsString('Failed to authenticate', $erro);
+    }
+
+    public function test_o_ip_validado_e_o_que_se_usa_na_ligacao_sem_segunda_resolucao(): void
+    {
+        $this->config();
+        $chamadas = 0;
+        $resolver = function () use (&$chamadas) {
+            // O DNS «muda»: a primeira resposta é pública, qualquer outra seria a rede interna.
+            return ++$chamadas === 1 ? ['142.250.1.1'] : ['10.0.0.5'];
+        };
+        $this->app->bind(ValidadorDeServidorSmtp::class, function () use ($resolver) {
+            return new ValidadorDeServidorSmtp($resolver);
+        });
+        $this->app->forgetInstance(MailerDaEscola::class);
+
+        $mensagem = (new NotificacaoDeTeste)->toMail(new AnonymousNotifiable);
+
+        $this->assertSame('escola', $mensagem->mailer);
+        $this->assertSame(1, $chamadas);
+        $this->assertSame('142.250.1.1', config('mail.mailers.escola.ip'));
+        $this->assertSame('smtp.exemplo.com', config('mail.mailers.escola.host'));
+        $this->assertSame('smtp://142.250.1.1:587', (string) \Illuminate\Support\Facades\Mail::mailer('escola')->getSymfonyTransport());
     }
 }

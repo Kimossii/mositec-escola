@@ -34,11 +34,16 @@ class MailerDaEscola
         // Revalida o servidor (SSRF) em cada envio, não só ao guardar/testar: um DNS que passou a apontar à rede interna
         // depois da verificação faz a escola cair na central. Não elimina por completo a janela entre esta resolução e a
         // ligação (o transporte SMTP do Laravel não permite fixar o IP validado mantendo o nome para o TLS).
-        if ($this->validador->erro($configuracao->servidor, (int) $configuracao->porta) !== null) {
+        [$erro, $ip] = $this->validador->validar($configuracao->servidor, (int) $configuracao->porta);
+
+        if ($erro !== null) {
             Log::warning('Servidor SMTP da escola recusado na revalidação; a usar a central.', ['tenant_id' => $configuracao->tenant_id]);
 
             return null;
         }
+
+        // O IP aprovado aqui é o da ligação: o transporte não volta a resolver o nome (ver TransporteSmtpFixado).
+        $configuracao->ipFixado = $ip;
 
         return $configuracao;
     }
@@ -73,8 +78,9 @@ class MailerDaEscola
         $encriptacao = $c->encriptacao ?? EncriptacaoSmtp::NENHUMA;
 
         $config = [
-            'transport' => 'smtp',
+            'transport' => TransporteSmtpFixado::NOME,
             'host' => $c->servidor,
+            'ip' => $c->ipFixado,
             'port' => (int) $c->porta,
             'scheme' => $encriptacao === EncriptacaoSmtp::SSL ? 'smtps' : 'smtp',
             'username' => $c->utilizador !== null && $c->utilizador !== '' ? $c->utilizador : null,

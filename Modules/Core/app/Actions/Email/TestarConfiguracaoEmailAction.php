@@ -34,7 +34,8 @@ class TestarConfiguracaoEmailAction
         $antes = ['estado' => $c->estado?->value, 'activo' => (bool) $c->activo];
         $impressao = $c->impressaoDaLigacao();
 
-        $erro = app(ValidadorDeServidorSmtp::class)->erro($c->servidor, (int) $c->porta);
+        [$erro, $ip] = app(ValidadorDeServidorSmtp::class)->validar($c->servidor, (int) $c->porta);
+        $c->ipFixado = $ip;
 
         if ($erro === null) {
             try {

@@ -58,4 +58,33 @@ class ValidadorDeServidorSmtpTest extends TestCase
         $this->assertNull((new ValidadorDeServidorSmtp)->erro('127.0.0.1', 25));
         $this->assertNotNull($this->validador(['10.0.0.5'])->erro('smtp.interno', 80));
     }
+
+    public function test_validar_devolve_o_ip_a_fixar_resolvendo_uma_so_vez(): void
+    {
+        $chamadas = 0;
+        $validador = new ValidadorDeServidorSmtp(function () use (&$chamadas) {
+            $chamadas++;
+
+            return ['142.250.1.1', '142.250.1.2'];
+        });
+
+        $this->assertSame([null, '142.250.1.1'], $validador->validar('smtp.gmail.com', 587));
+        $this->assertSame(1, $chamadas);
+    }
+
+    public function test_validar_nao_fixa_ip_quando_o_servidor_ja_e_um_ip_ou_no_modo_unico(): void
+    {
+        $this->assertSame([null, null], (new ValidadorDeServidorSmtp)->validar('142.250.1.1', 587));
+
+        config(['tenancy.modo' => 'unico']);
+        $this->assertSame([null, null], $this->validador(['10.0.0.5'])->validar('smtp.interno', 587));
+    }
+
+    public function test_validar_com_erro_nao_devolve_ip(): void
+    {
+        [$erro, $ip] = $this->validador(['10.0.0.5'])->validar('smtp.exemplo.com', 587);
+
+        $this->assertNotNull($erro);
+        $this->assertNull($ip);
+    }
 }

@@ -124,7 +124,7 @@ só para quem tem a permissão `configuracao-email` (o Administrador, por defeit
 - Teste de envio: 5 por hora por escola. Se a configuração mudar durante o teste, este é recusado (não activa nada).
 - **Bloqueio pela Plataforma:** «Forçar regresso à central» desliga o servidor e impede a escola de testar ou reactivar até a Plataforma levantar o bloqueio. Levantar não reactiva: a escola testa outra vez.
 - Os erros de envio registados nunca levam o utilizador nem a senha do servidor da escola.
-- Risco aceite: DNS rebinding entre a validação e a ligação (ver spec). A senha vai cifrada e nunca aparece no ecrã, nos logs nem na auditoria.
+- A ligação SMTP é fixada ao IP que passou a validação (o nome não é resolvido outra vez), e o certificado TLS verifica-se contra o nome do servidor: fecha o DNS rebinding. Se o certificado não corresponder ao nome, o envio falha e fica registado (nunca cai na central). A senha vai cifrada e nunca aparece no ecrã, nos logs nem na auditoria.
 - A Plataforma vê, no painel, que escolas têm servidor próprio e o estado (nunca servidor nem credenciais) e pode **forçar o regresso à central**
   no detalhe da escola (fica na auditoria da Plataforma).
 

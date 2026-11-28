@@ -21,29 +21,40 @@ class ValidadorDeServidorSmtp
     /** Mensagem em português, ou null se o servidor é aceitável. */
     public function erro(string $servidor, int $porta): ?string
     {
+        return $this->validar($servidor, $porta)[0];
+    }
+
+    /**
+     * Valida resolvendo UMA vez e devolve também o IP aprovado a que ligar (fixado no transporte, para o nome não ser resolvido
+     * outra vez). O IP é null quando não há nada a fixar: servidor já dado como IP, ou instalação única (sem restrição de rede).
+     *
+     * @return array{0: ?string, 1: ?string} [erro, ip]
+     */
+    public function validar(string $servidor, int $porta): array
+    {
         if (! in_array($porta, self::PORTAS, true)) {
-            return 'A porta tem de ser uma de: '.implode(', ', self::PORTAS).'.';
+            return ['A porta tem de ser uma de: '.implode(', ', self::PORTAS).'.', null];
         }
 
         if (config('tenancy.modo') === 'unico') {
-            return null;
+            return [null, null];
         }
 
         $servidor = trim($servidor, " \t\n\r\0\x0B[]");
-
-        $ips = filter_var($servidor, FILTER_VALIDATE_IP) ? [$servidor] : $this->resolver()($servidor);
+        $literal = filter_var($servidor, FILTER_VALIDATE_IP) !== false;
+        $ips = $literal ? [$servidor] : $this->resolver()($servidor);
 
         if (! is_array($ips) || $ips === []) {
-            return 'Não foi possível resolver o endereço do servidor.';
+            return ['Não foi possível resolver o endereço do servidor.', null];
         }
 
         foreach ($ips as $ip) {
             if (! $this->publico($ip)) {
-                return 'O servidor aponta para um endereço privado ou interno, que não é permitido.';
+                return ['O servidor aponta para um endereço privado ou interno, que não é permitido.', null];
             }
         }
 
-        return null;
+        return [null, $literal ? null : $ips[0]];
     }
 
     /** Só endereços globalmente encaminháveis; recusa ainda NAT64 (64:ff9b::/96) e 6to4 (2002::/16), que embrulham IPv4 internos. */

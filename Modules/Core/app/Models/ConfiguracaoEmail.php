@@ -13,6 +13,9 @@ class ConfiguracaoEmail extends Model
 {
     use PertenceAoTenant, RegistaAutoria;
 
+    /** IP validado a que ligar (só em memória, nunca gravado): preenchido por MailerDaEscola/Testar ao validar o servidor. */
+    public ?string $ipFixado = null;
+
     protected $table = 'configuracoes_email';
 
     protected $fillable = [

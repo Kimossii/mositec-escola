@@ -2,7 +2,9 @@
 
 namespace Modules\Core\Providers;
 
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
+use Modules\Core\Comunicacao\Email\TransporteSmtpFixado;
 use Modules\Core\Console\FilasEstadoCommand;
 use Modules\Core\Importacao\RegistoDeImportadores;
 use Modules\Core\Contracts\ConsultaChamadasPendentes;
@@ -69,6 +71,9 @@ class CoreServiceProvider extends BaseModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        // Transporte SMTP que liga ao IP já validado (anti DNS rebinding) mas verifica o certificado contra o nome.
+        Mail::extend(TransporteSmtpFixado::NOME, fn (array $config) => TransporteSmtpFixado::criar($config));
 
         PesquisaTexto::registar();
         SaudeDoSistema::registar();
