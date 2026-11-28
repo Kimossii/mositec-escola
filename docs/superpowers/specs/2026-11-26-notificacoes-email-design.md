@@ -13,7 +13,7 @@
 - **DNS rebinding no SMTP próprio: FECHADO (2026-11-28).** A ligação é fixada ao IP validado (`TransporteSmtpFixado`, mailer `smtp-fixado`); o certificado TLS é verificado contra o nome do servidor. Confirmado contra um servidor real (STARTTLS 587 e SSL 465): nome certo passa, nome errado falha. O texto abaixo é o histórico da decisão anterior (risco aceite), já superada.
 - ~~Risco aceite (2026-11-27, decisão do dono): DNS rebinding no SMTP próprio.~~ O servidor é validado (IP público, porta SMTP) ao guardar, ao testar e antes de cada envio; se passar a apontar para a rede interna a escola cai na central. A janela entre a resolução e a ligação não se fecha: o transporte do Laravel não deixa fixar o IP validado mantendo o nome para o TLS, e um transporte próprio custa mais do que o risco (exige uma escola maliciosa que controle o DNS; só sai em portas SMTP; o erro devolvido é curto e sem credenciais). Reavaliar se houver muitas escolas desconhecidas; alternativa barata: lista de fornecedores permitidos.
 - **Feito (2026-11-28): tempo de resposta do «esqueci a senha».** O envio corre em `defer()`, depois da resposta, para que com `QUEUE_CONNECTION=sync` só as contas elegíveis não fiquem mais lentas (o piso de `tempo_minimo_ms` já existia, mas o envio SMTP síncrono ultrapassava-o). Lista de perfis mantida só em encarregados, por decisão do dono.
-- **Por fazer:** domínio próprio verificado (DNS), consumo e subscrição. Espera a chave Resend real e o primeiro cliente interessado.
+- **Feito depois (2026-11-28):** consumo, subscrição e domínio próprio verificado. Falta só validar o domínio contra o Resend real (precisa de chave e domínio).
 
 ## Duas coisas independentes
 | | Controla | Depende de |
@@ -90,9 +90,11 @@ informativos não devem depender de links para a plataforma quando esta só é a
 - Cada alteração vai para o registo de auditoria (quem, quando, o quê), sem a senha.
 - Sem teste bem-sucedido não activa.
 
-## Adiado (precisa de decisões comerciais)
-Subscrição, limites comerciais, consumo e histórico de envios. Hoje só existe o interruptor do módulo `notificacoes` e o limite
-técnico por hora (300 essenciais / 1000 opcionais, por escola, em `config/comunicacao.php`).
+## Consumo, subscrição e domínio Resend (feito em 2026-11-28)
+Desenho em [2026-11-28-email-consumo-subscricao-resend-design.md](2026-11-28-email-consumo-subscricao-resend-design.md). A subscrição é a licença:
+o plano define a quota mensal de opcionais, a % de aviso e se bloqueia ao exceder (só chega às escolas na licença seguinte). Consumo em
+`consumo_email_mensal`; domínio verificado em `dominios_email` (sem chave Resend real só funciona o cliente simulado, em dev/testes).
+O limite técnico por hora (300 essenciais / 1000 opcionais) mantém-se.
 
 ## Tabelas
 - `configuracoes_email` (nova, só nesta fase): 1:1 com o tenant. Modo, caminho (domínio/SMTP), estado, nome do remetente, dados SMTP

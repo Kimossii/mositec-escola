@@ -12,11 +12,13 @@ class Plano extends Model
 
     protected $fillable = [
         'nome', 'descricao', 'limite_alunos', 'limite_utilizadores',
+        'limite_emails_mes', 'emails_aviso_pct', 'emails_bloqueia_ao_exceder',
         'tolerancia_dias', 'aviso_dias', 'modulos', 'validade_dias', 'modalidade',
     ];
 
     protected $casts = [
         'modulos' => 'array',
+        'emails_bloqueia_ao_exceder' => 'boolean',
         'modalidade' => Modalidade::class,
     ];
 

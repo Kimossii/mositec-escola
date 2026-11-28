@@ -3,7 +3,17 @@
 namespace Modules\Plataforma\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
+use Modules\Core\Actions\Email\RegistarDominioDeEmailAction;
+use Modules\Core\Actions\Email\RemoverDominioDeEmailAction;
+use Modules\Core\Actions\Email\VerificarDominioDeEmailAction;
+use Modules\Core\Comunicacao\Email\CanalEnvioEmail;
+use Modules\Core\Comunicacao\Email\CategoriaEmail;
 use Modules\Core\Comunicacao\Email\EncriptacaoSmtp;
+use Modules\Core\Comunicacao\Email\EstadoEnvioEmail;
+use Modules\Core\Comunicacao\Email\MailerDaEscola;
+use Modules\Core\Models\DominioEmail;
+use Modules\Core\Models\EnvioEmail;
 use Modules\Core\Comunicacao\Email\EstadoConfiguracaoEmail;
 use Modules\Core\Models\ConfiguracaoEmail;
 use Modules\Core\Tenancy\TenantContext;
@@ -152,5 +162,69 @@ class InfraDeEmailNaPlataformaTest extends TestCase
 
         $this->assertTrue($detalhe->json('props.escola.email_bloqueado'));
         $this->assertTrue($painel->json('props.emailInfra.0.bloqueada'));
+    }
+
+    private function dominio($escola): DominioEmail
+    {
+        return app(TenantContext::class)->executarComo($escola->paraTenantAtual(), fn () => DominioEmail::create([
+            'dominio' => 'escola.ao', 'id_externo' => 'simulado:escola.ao', 'remetente_local' => 'secretaria',
+            'estado' => EstadoConfiguracaoEmail::VERIFICADO, 'activo' => true,
+        ]));
+    }
+
+    public function test_forcar_regresso_bloqueia_o_dominio_e_a_escola_nao_o_consegue_contornar(): void
+    {
+        $a = $this->escolaDeGestao('MOSI-900001', 'Escola A', 'a.test');
+        $dominio = $this->dominio($a);
+
+        $this->noPainel('POST', '/plataforma/escolas/MOSI-900001/email/regresso-central', $this->sessao)->assertRedirect();
+
+        $guardado = DominioEmail::query()->withoutGlobalScopes()->find($dominio->id);
+        $this->assertFalse($guardado->activo);
+        $this->assertTrue($guardado->bloqueada_pela_plataforma);
+
+        app(TenantContext::class)->executarComo($a->paraTenantAtual(), function () use ($guardado) {
+            $this->assertNull(app(MailerDaEscola::class)->dominio());
+            foreach ([
+                fn () => app(VerificarDominioDeEmailAction::class)->executar($guardado),
+                fn () => app(RemoverDominioDeEmailAction::class)->executar($guardado),
+                fn () => app(RegistarDominioDeEmailAction::class)->executar('outro.ao', null),
+            ] as $tentativa) {
+                try {
+                    $tentativa();
+                    $this->fail('A escola não devia conseguir contornar o bloqueio.');
+                } catch (ValidationException) {
+                    $this->addToAssertionCount(1);
+                }
+            }
+        });
+
+        $this->noPainel('POST', '/plataforma/escolas/MOSI-900001/email/levantar-bloqueio', $this->sessao)->assertRedirect();
+        $depois = DominioEmail::query()->withoutGlobalScopes()->find($dominio->id);
+        $this->assertFalse($depois->bloqueada_pela_plataforma);
+        $this->assertFalse($depois->activo); // levantar não reactiva
+    }
+
+    public function test_o_painel_mostra_o_dominio_e_o_volume_das_ultimas_24_horas(): void
+    {
+        $a = $this->escolaDeGestao('MOSI-900001', 'Escola A', 'a.test');
+        $b = $this->escolaDeGestao('MOSI-900002', 'Escola B', 'b.test');
+        $this->dominio($a);
+        $envio = fn ($escola, CanalEnvioEmail $canal, int $vezes) => app(TenantContext::class)->executarComo($escola->paraTenantAtual(), function () use ($canal, $vezes) {
+            for ($i = 0; $i < $vezes; $i++) {
+                EnvioEmail::create(['notificacao' => 'X', 'categoria' => CategoriaEmail::OPCIONAL, 'estado' => EstadoEnvioEmail::ENVIADO, 'canal' => $canal]);
+            }
+        });
+        $envio($a, CanalEnvioEmail::PROPRIO, 3);
+        $envio($b, CanalEnvioEmail::CENTRAL, 5);
+
+        $props = $this->noPainel('GET', '/plataforma', $this->sessao, cabecalhos: $this->cabecalhosInertia());
+
+        $this->assertSame(['MOSI-900002', 'MOSI-900001'], collect($props->json('props.emailVolume'))->pluck('escola')->all());
+        $this->assertSame(5, $props->json('props.emailVolume.0.enviados_24h'));
+        $this->assertTrue($props->json('props.emailVolume.1.canal_proprio'));
+        $infra = collect($props->json('props.emailInfra'))->firstWhere('escola', 'MOSI-900001');
+        $this->assertSame('Domínio', $infra['tipo']);
+        $this->assertStringNotContainsString('secretaria@escola.ao', $props->getContent());
     }
 }

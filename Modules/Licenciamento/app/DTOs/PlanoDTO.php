@@ -8,7 +8,7 @@ final readonly class PlanoDTO
 {
     /**
      * @param  list<string>  $modulos
-     * @param  array<string,?int>  $limites  chaves alunos/utilizadores; ausente ou null = sem limite
+     * @param  array<string,?int>  $limites  chaves alunos/utilizadores/emails_mes; ausente ou null = sem limite
      */
     public function __construct(
         public string $nome,
@@ -19,5 +19,7 @@ final readonly class PlanoDTO
         public ?int $toleranciaDias = null,
         public ?int $avisoDias = null,
         public ?string $descricao = null,
+        public int $emailsAvisoPct = 80,
+        public bool $emailsBloqueia = true,
     ) {}
 }

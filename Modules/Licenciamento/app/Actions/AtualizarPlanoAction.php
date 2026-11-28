@@ -33,7 +33,7 @@ class AtualizarPlanoAction
     public static function preencher(Plano $plano, PlanoDTO $dto, ValidaDireitosComerciais $validador): void
     {
         $nome = trim($dto->nome);
-        $erros = $validador->erros($dto->limites, $dto->toleranciaDias, $dto->avisoDias, array_values($dto->modulos), $dto->validadeDias);
+        $erros = $validador->erros($dto->limites, $dto->toleranciaDias, $dto->avisoDias, array_values($dto->modulos), $dto->validadeDias, $dto->emailsAvisoPct);
 
         if ($nome === '') {
             $erros['nome'] = 'O nome do plano é obrigatório.';
@@ -48,6 +48,9 @@ class AtualizarPlanoAction
             'descricao' => $dto->descricao,
             'limite_alunos' => $dto->limites['alunos'] ?? null,
             'limite_utilizadores' => $dto->limites['utilizadores'] ?? null,
+            'limite_emails_mes' => $dto->limites['emails_mes'] ?? null,
+            'emails_aviso_pct' => $dto->emailsAvisoPct,
+            'emails_bloqueia_ao_exceder' => $dto->emailsBloqueia,
             'tolerancia_dias' => $dto->toleranciaDias,
             'aviso_dias' => $dto->avisoDias,
             'modulos' => array_values(array_unique($dto->modulos)),

@@ -8,6 +8,7 @@ defineProps({
     contagem: { type: Object, required: true }, // { 1: activas, 2: suspensas, 3: encerradas }
     actividade: { type: Array, default: () => [] },
     emailInfra: { type: Array, default: () => [] }, // escolas com servidor próprio: [{ escola, escola_nome, estado, estado_descricao, activo, bloqueada, ultimo_erro }]; nunca servidor nem credenciais
+    emailVolume: { type: Array, default: () => [] }, // escolas que mais enviaram nas últimas 24 h: [{ escola, escola_nome, enviados_24h, opcionais_mes, canal_proprio }]
     emailFalhas: { type: Object, default: () => ({ total: 0, dias: 7, recentes: [] }) }, // { total, dias, recentes: [{ id, escola, escola_nome, notificacao, canal, erro, created_at }] }
 });
 defineOptions({ layout: LayoutPlataforma });
@@ -81,12 +82,40 @@ const CARTOES = [
         </div>
 
         <div class="card mb-6">
-            <div class="card-header"><h3 class="card-title">Escolas com infra própria de email</h3></div>
+            <div class="card-header"><h3 class="card-title">Emails enviados nas últimas 24 horas (as 10 escolas com mais envios)</h3></div>
             <div class="card-body p-0">
                 <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th class="min-w-150px">Escola</th>
+                            <th>Últimas 24 h</th>
+                            <th>Opcionais no mês</th>
+                            <th>Sai por</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 fw-semibold">
+                        <tr v-if="emailVolume.length === 0">
+                            <td colspan="4"><EstadoVazio titulo="Sem envios nas últimas 24 horas." /></td>
+                        </tr>
+                        <tr v-for="v in emailVolume" :key="v.escola">
+                            <td><Link v-if="v.escola" :href="`/plataforma/escolas/${v.escola}`" class="text-gray-800 text-hover-primary fw-bold">{{ v.escola_nome ?? v.escola }}</Link><span v-else>—</span></td>
+                            <td>{{ v.enviados_24h }}</td>
+                            <td>{{ v.opcionais_mes }}</td>
+                            <td>{{ v.canal_proprio ? 'Infra da escola' : 'Central' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card mb-6">
+            <div class="card-header"><h3 class="card-title">Escolas com servidor ou domínio próprio de email</h3></div>
+            <div class="card-body p-0">
+                <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
+                    <thead>
+                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                            <th class="min-w-150px">Escola</th>
+                            <th class="min-w-100px">Tipo</th>
                             <th class="min-w-125px">Estado</th>
                             <th class="min-w-125px">A enviar por</th>
                             <th class="min-w-200px">Último erro</th>
@@ -94,15 +123,16 @@ const CARTOES = [
                     </thead>
                     <tbody class="text-gray-600 fw-semibold">
                         <tr v-if="emailInfra.length === 0">
-                            <td colspan="4"><EstadoVazio titulo="Nenhuma escola configurou servidor próprio." /></td>
+                            <td colspan="5"><EstadoVazio titulo="Nenhuma escola configurou servidor ou domínio próprio." /></td>
                         </tr>
-                        <tr v-for="e in emailInfra" :key="e.escola">
+                        <tr v-for="e in emailInfra" :key="`${e.escola}-${e.tipo}`">
                             <td>
                                 <Link v-if="e.escola" :href="`/plataforma/escolas/${e.escola}`" class="text-gray-800 text-hover-primary fw-bold">{{ e.escola_nome ?? e.escola }}</Link>
                                 <span v-else>—</span>
                             </td>
+                            <td>{{ e.tipo }}</td>
                             <td><span class="badge" :class="e.estado === 1 ? 'badge-light-success' : e.estado === 2 ? 'badge-light-danger' : 'badge-light-warning'">{{ e.estado_descricao }}</span></td>
-                            <td>{{ e.activo ? 'Servidor da escola' : 'Central' }}<span v-if="e.bloqueada" class="badge badge-light-danger ms-2">Bloqueada</span></td>
+                            <td>{{ e.activo ? (e.tipo === 'Domínio' ? 'Domínio da escola' : 'Servidor da escola') : 'Central' }}<span v-if="e.bloqueada" class="badge badge-light-danger ms-2">Bloqueada</span></td>
                             <td class="text-danger text-break">{{ e.ultimo_erro ?? '—' }}</td>
                         </tr>
                     </tbody>

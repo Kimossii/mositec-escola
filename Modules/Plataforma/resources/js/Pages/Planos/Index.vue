@@ -33,6 +33,7 @@ defineOptions({ layout: LayoutPlataforma });
                             <th>Validade</th>
                             <th>Alunos</th>
                             <th>Utilizadores</th>
+                            <th>Emails/mês</th>
                             <th class="min-w-150px">Módulos</th>
                             <th class="text-end"></th>
                         </tr>
@@ -44,6 +45,7 @@ defineOptions({ layout: LayoutPlataforma });
                             <td>{{ plano.validade_dias }} dias</td>
                             <td>{{ rotuloLimite(plano.limite_alunos) }}</td>
                             <td>{{ rotuloLimite(plano.limite_utilizadores) }}</td>
+                            <td>{{ rotuloLimite(plano.limite_emails_mes) }}</td>
                             <td>{{ rotuloModulos(plano.modulos) }}</td>
                             <td class="text-end">
                                 <Link :href="`/plataforma/planos/${plano.id}/editar`" class="btn btn-sm btn-light-primary">Editar</Link>
@@ -59,7 +61,7 @@ defineOptions({ layout: LayoutPlataforma });
                             <div class="text-gray-800 fw-bold fs-5">{{ plano.nome }}</div>
                             <span class="badge badge-light-primary">{{ plano.modalidade_descricao }}</span>
                         </div>
-                        <div class="text-muted fs-7">{{ plano.validade_dias }} dias · Alunos: {{ rotuloLimite(plano.limite_alunos) }} · Utilizadores: {{ rotuloLimite(plano.limite_utilizadores) }}</div>
+                        <div class="text-muted fs-7">{{ plano.validade_dias }} dias · Alunos: {{ rotuloLimite(plano.limite_alunos) }} · Utilizadores: {{ rotuloLimite(plano.limite_utilizadores) }} · Emails/mês: {{ rotuloLimite(plano.limite_emails_mes) }}</div>
                         <div class="text-gray-700 fs-7 mb-3">Módulos: {{ rotuloModulos(plano.modulos) }}</div>
                         <Link :href="`/plataforma/planos/${plano.id}/editar`" class="btn btn-sm btn-light-primary w-100">Editar</Link>
                     </div>

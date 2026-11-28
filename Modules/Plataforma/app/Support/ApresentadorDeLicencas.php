@@ -36,6 +36,7 @@ class ApresentadorDeLicencas
             'limites' => [
                 'alunos' => $licenca->limite_alunos,
                 'utilizadores' => $licenca->limite_utilizadores,
+                'emails_mes' => $licenca->limite_emails_mes,
             ],
             'modulos' => $licenca->modulos,
         ];

@@ -9,6 +9,10 @@ import Loader from '@/Components/Shared/Loader.vue';
 const props = defineProps({
     // null = a escola ainda não configurou; nunca traz a senha, só `tem_senha`.
     configuracao: { type: Object, default: null },
+    // Consumo do mês de emails opcionais contra a quota do plano (só leitura).
+    consumoEmail: { type: Object, default: null },
+    // Domínio próprio verificado (alternativa ao SMTP); null = ainda não registou.
+    dominioEmail: { type: Object, default: null },
 });
 defineOptions({ layout: AppLayout });
 
@@ -43,6 +47,13 @@ const form = useForm({
 });
 
 const testeForm = useForm({ destino: '' });
+const dominioForm = useForm({
+    dominio: props.dominioEmail?.dominio ?? '',
+    remetente_nome: props.dominioEmail?.remetente_nome ?? '',
+    remetente_local: props.dominioEmail?.remetente_local ?? 'noreply',
+});
+const aVerificarDominio = ref(false);
+const aRemoverDominio = ref(false);
 const aConfirmarRegresso = ref(false);
 const aDesactivar = ref(false);
 
@@ -89,6 +100,20 @@ function voltarACentral() {
     });
 }
 
+function registarDominio() {
+    dominioForm.post('/configuracao-email/dominio', { preserveScroll: true, onSuccess: avisar });
+}
+
+function verificarDominio() {
+    aVerificarDominio.value = true;
+    router.post('/configuracao-email/dominio/verificar', {}, { preserveScroll: true, onSuccess: avisar, onFinish: () => (aVerificarDominio.value = false) });
+}
+
+function removerDominio() {
+    aRemoverDominio.value = true;
+    router.delete('/configuracao-email/dominio', { preserveScroll: true, onSuccess: avisar, onFinish: () => (aRemoverDominio.value = false) });
+}
+
 function formatar(quando) {
     return quando ? quando.slice(8, 10) + '/' + quando.slice(5, 7) + '/' + quando.slice(0, 4) + ' ' + quando.slice(11, 16) : '—';
 }
@@ -105,6 +130,72 @@ function formatar(quando) {
             A MosiTec bloqueou o servidor próprio desta escola: os emails saem pela central e não é possível testar nem reactivar. Contacte a MosiTec.
         </div>
         <div v-if="$page.props.errors?.geral" class="alert alert-danger mb-6" role="alert">{{ $page.props.errors.geral }}</div>
+
+        <div v-if="consumoEmail" class="card card-flush mb-6">
+            <div class="card-header"><h3 class="card-title">Emails opcionais deste mês ({{ consumoEmail.mes }})</h3></div>
+            <div class="card-body">
+                <div v-if="consumoEmail.limite === null" class="text-gray-700">{{ consumoEmail.usado }} enviados · o seu plano não tem limite mensal.</div>
+                <template v-else>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-gray-700">{{ consumoEmail.usado }} de {{ consumoEmail.limite }} ({{ consumoEmail.percentagem }}%)</span>
+                        <span v-if="consumoEmail.estado === 'esgotado'" class="badge badge-light-danger">Esgotada</span>
+                        <span v-else-if="consumoEmail.estado === 'aviso'" class="badge badge-light-warning">A esgotar-se</span>
+                    </div>
+                    <div class="progress h-8px mb-3">
+                        <div class="progress-bar" :class="{ 'bg-danger': consumoEmail.estado === 'esgotado', 'bg-warning': consumoEmail.estado === 'aviso' }" role="progressbar" :style="{ width: consumoEmail.percentagem + '%' }" :aria-valuenow="consumoEmail.percentagem" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="text-muted fs-7">Só contam os emails opcionais. Recuperação de senha e confirmação de email nunca são bloqueados.</div>
+                </template>
+            </div>
+        </div>
+
+        <div class="card card-flush mb-6">
+            <div class="card-header">
+                <h3 class="card-title">Domínio próprio verificado</h3>
+                <div v-if="dominioEmail" class="card-toolbar"><span class="badge" :class="`badge-light-${ESTADOS[dominioEmail.estado][0]}`">{{ dominioEmail.estado_descricao }}</span></div>
+            </div>
+            <div class="card-body">
+                <div v-if="dominioEmail?.bloqueada_pela_plataforma" class="alert alert-danger mb-4" role="alert">A MosiTec bloqueou o envio por domínio próprio desta escola: os emails saem pela central e não é possível verificar, activar nem remover o domínio. Contacte a MosiTec.</div>
+                <div class="text-muted fs-7 mb-4">Envie os emails a partir do domínio da escola (por exemplo secretaria@escola.ao). Crie os registos DNS indicados e clique em «Verificar». Se tiver também um servidor SMTP próprio activo, é esse que manda.</div>
+                <div class="row g-4 mb-4">
+                    <div class="col-12 col-md-4">
+                        <label class="fw-semibold fs-6 mb-2" for="dominio-nome">Domínio</label>
+                        <input id="dominio-nome" v-model="dominioForm.dominio" type="text" class="form-control form-control-solid" :class="{ 'is-invalid': dominioForm.errors.dominio }" placeholder="escola.ao" autocomplete="off" />
+                        <div v-if="dominioForm.errors.dominio" class="text-danger fs-7 mt-1">{{ dominioForm.errors.dominio }}</div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="fw-semibold fs-6 mb-2" for="dominio-remetente">Nome do remetente</label>
+                        <input id="dominio-remetente" v-model="dominioForm.remetente_nome" type="text" class="form-control form-control-solid" placeholder="Nome da escola" />
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="fw-semibold fs-6 mb-2" for="dominio-local">Endereço antes do @</label>
+                        <input id="dominio-local" v-model="dominioForm.remetente_local" type="text" class="form-control form-control-solid" :class="{ 'is-invalid': dominioForm.errors.remetente_local }" />
+                        <div v-if="dominioForm.errors.remetente_local" class="text-danger fs-7 mt-1">{{ dominioForm.errors.remetente_local }}</div>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-3">
+                    <button type="button" class="btn btn-primary" :disabled="dominioForm.processing || !dominioForm.dominio" @click="registarDominio">
+                        <Loader v-if="dominioForm.processing" class="me-2" />{{ dominioEmail ? 'Guardar e gerar novos registos' : 'Registar domínio' }}
+                    </button>
+                    <button v-if="dominioEmail" type="button" class="btn btn-light-primary" :disabled="aVerificarDominio" @click="verificarDominio">
+                        <Loader v-if="aVerificarDominio" class="me-2" />Verificar
+                    </button>
+                    <button v-if="dominioEmail" type="button" class="btn btn-light-danger" :disabled="aRemoverDominio" @click="removerDominio">Remover</button>
+                </div>
+
+                <template v-if="dominioEmail">
+                    <div v-if="dominioEmail.ultimo_erro" class="text-danger fs-7 mt-4">{{ dominioEmail.ultimo_erro }}</div>
+                    <div v-if="dominioEmail.registos.length" class="table-responsive mt-5">
+                        <table class="table align-middle gs-0 gy-3 mb-0">
+                            <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase"><th>Tipo</th><th>Nome</th><th>Valor</th></tr></thead>
+                            <tbody class="text-gray-700">
+                                <tr v-for="(r, i) in dominioEmail.registos" :key="i"><td>{{ r.tipo }}</td><td class="text-break">{{ r.nome }}</td><td class="text-break">{{ r.valor }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+            </div>
+        </div>
 
         <div v-if="configuracao" class="card card-flush mb-6">
             <div class="card-body py-5 d-flex flex-wrap align-items-center gap-4">

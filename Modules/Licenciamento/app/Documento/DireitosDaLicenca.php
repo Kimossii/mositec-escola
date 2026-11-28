@@ -21,7 +21,7 @@ final readonly class DireitosDaLicenca
     public const MAX_LIMITE = 10_000_000;
 
     /** Chaves dos limites; null = sem limite. Chaves desconhecidas (ex.: o antigo 'estabelecimentos') são ignoradas. */
-    private const LIMITES = ['alunos', 'utilizadores'];
+    private const LIMITES = ['alunos', 'utilizadores', 'emails_mes'];
 
     /**
      * @param  array<string,?int>  $limites
@@ -40,6 +40,8 @@ final readonly class DireitosDaLicenca
         public array $modulos,
         public Modalidade $modalidade,
         public int $versaoFormato = self::VERSAO_FORMATO,
+        public int $emailsAvisoPct = 80,
+        public bool $emailsBloqueia = true,
     ) {}
 
     /**
@@ -86,6 +88,16 @@ final readonly class DireitosDaLicenca
             throw new DocumentoInvalido('Modalidade desconhecida.');
         }
 
+        $avisoPct = $claims['eap'] ?? 80;
+        if (! is_int($avisoPct) || $avisoPct < 1 || $avisoPct > 100) {
+            throw new DocumentoInvalido('Aviso de quota de email inválido (inteiro entre 1 e 100).');
+        }
+
+        $bloqueia = $claims['ebl'] ?? true;
+        if (! is_bool($bloqueia)) {
+            throw new DocumentoInvalido('Bloqueio de quota de email inválido.');
+        }
+
         foreach (['escola', 'instalacao'] as $chave) {
             if (($claims[$chave] ?? null) !== null && ! is_string($claims[$chave])) {
                 throw new DocumentoInvalido("Campo {$chave} inválido.");
@@ -105,6 +117,8 @@ final readonly class DireitosDaLicenca
             modulos: array_values(array_unique($modulos)),
             modalidade: $modalidade,
             versaoFormato: self::VERSAO_FORMATO,
+            emailsAvisoPct: $avisoPct,
+            emailsBloqueia: $bloqueia,
         );
     }
 
@@ -125,6 +139,8 @@ final readonly class DireitosDaLicenca
             'mod' => $this->modulos,
             'modalidade' => $this->modalidade->value,
             'fmt' => $this->versaoFormato,
+            'eap' => $this->emailsAvisoPct,
+            'ebl' => $this->emailsBloqueia,
         ];
 
         if ($this->avisoDias !== null) {
@@ -138,6 +154,12 @@ final readonly class DireitosDaLicenca
     public function bloqueiaEm(): CarbonImmutable
     {
         return $this->expiraEm->addDays($this->toleranciaDias);
+    }
+
+    /** Quota mensal de emails opcionais; null = sem limite. */
+    public function limiteEmailsMes(): ?int
+    {
+        return $this->limites['emails_mes'] ?? null;
     }
 
     public function temModulo(string $alias): bool

@@ -27,6 +27,9 @@ const form = reactive({
     modalidade: props.plano?.modalidade ?? 1,
     limite_alunos: vazio(props.plano?.limite_alunos),
     limite_utilizadores: vazio(props.plano?.limite_utilizadores),
+    limite_emails_mes: vazio(props.plano?.limite_emails_mes),
+    emails_aviso_pct: props.plano?.emails_aviso_pct ?? 80,
+    emails_bloqueia_ao_exceder: props.plano?.emails_bloqueia_ao_exceder ?? true,
     tolerancia_dias: vazio(props.plano?.tolerancia_dias),
     aviso_dias: vazio(props.plano?.aviso_dias),
     modulos: [...(props.plano?.modulos ?? [])],
@@ -36,7 +39,7 @@ const aConfirmar = ref(false);
 const errors = ref({});
 
 const opcoesModalidade = computed(() => props.modalidades.map((m) => ({ value: m.value, label: m.label })));
-const CAMPOS = ['nome', 'descricao', 'validade_dias', 'modalidade', 'limite_alunos', 'limite_utilizadores', 'tolerancia_dias', 'aviso_dias', 'modulos', 'limites'];
+const CAMPOS = ['nome', 'descricao', 'validade_dias', 'modalidade', 'limite_alunos', 'limite_utilizadores', 'limite_emails_mes', 'emails_aviso_pct', 'emails_bloqueia_ao_exceder', 'tolerancia_dias', 'aviso_dias', 'modulos', 'limites'];
 const errosGerais = () => Object.entries(errors.value).filter(([campo]) => !CAMPOS.includes(campo)).map(([, mensagem]) => mensagem);
 
 function alternarModulo(alias, marcado) {
@@ -132,6 +135,27 @@ function submit() {
                     </div>
                 </div>
                 <div v-if="errors.limites" class="text-danger fs-7 mb-6">{{ errors.limites }}</div>
+
+                <h4 class="mb-1 mt-8">Emails opcionais</h4>
+                <div class="text-muted fs-7 mb-4">Quota mensal de emails opcionais por escola. Os essenciais (recuperação de senha, confirmação de email) nunca são bloqueados. Só se aplica às licenças emitidas depois de guardar.</div>
+                <div class="row g-6 mb-2">
+                    <div class="col-12 col-md-4">
+                        <label class="fw-semibold fs-6 mb-2" for="plano-emails-mes">Emails por mês</label>
+                        <input id="plano-emails-mes" v-model="form.limite_emails_mes" type="number" min="0" inputmode="numeric" name="limite_emails_mes" placeholder="Sem limite" class="form-control form-control-solid" :class="{ 'is-invalid': errors.limite_emails_mes }" />
+                        <div v-if="errors.limite_emails_mes" class="text-danger fs-7 mt-1">{{ errors.limite_emails_mes }}</div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="fw-semibold fs-6 mb-2" for="plano-emails-aviso">Avisar aos (%)</label>
+                        <input id="plano-emails-aviso" v-model="form.emails_aviso_pct" type="number" min="1" max="100" inputmode="numeric" name="emails_aviso_pct" class="form-control form-control-solid" :class="{ 'is-invalid': errors.emails_aviso_pct }" />
+                        <div v-if="errors.emails_aviso_pct" class="text-danger fs-7 mt-1">{{ errors.emails_aviso_pct }}</div>
+                    </div>
+                    <div class="col-12 col-md-4 d-flex align-items-end">
+                        <div class="form-check form-check-custom form-check-solid mb-3">
+                            <input id="plano-emails-bloqueia" v-model="form.emails_bloqueia_ao_exceder" class="form-check-input" type="checkbox" name="emails_bloqueia_ao_exceder" />
+                            <label class="form-check-label text-gray-700" for="plano-emails-bloqueia">Bloquear opcionais ao exceder</label>
+                        </div>
+                    </div>
+                </div>
 
                 <h4 class="mb-4 mt-8">Módulos incluídos</h4>
                 <div class="d-flex flex-wrap gap-6 mb-2">

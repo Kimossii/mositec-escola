@@ -4,6 +4,7 @@ namespace Modules\Core\Comunicacao\Email;
 
 use LogicException;
 use Modules\Core\Models\ConfiguracaoEmail;
+use Modules\Core\Models\DominioEmail;
 use Modules\Core\Tenancy\Contracts\ContactoDaEscola;
 use Modules\Core\Tenancy\Contracts\EnderecoDoTenant;
 use Modules\Core\Tenancy\TenantContext;
@@ -32,6 +33,16 @@ class RemetenteTenant
     public function resolver(): Remetente
     {
         return $this->resolverPara(app(MailerDaEscola::class)->configuracao());
+    }
+
+    /** O remetente no domínio verificado da escola. */
+    public function resolverDeDominio(DominioEmail $dominio): Remetente
+    {
+        return new Remetente(
+            nome: $dominio->remetente_nome ?: $this->contexto->atual()->nome,
+            endereco: $dominio->endereco(),
+            replyTo: $this->contacto->email(),
+        );
     }
 
     /** O remetente para a configuração própria dada (a mesma que escolheu o mailer); null → remetente central. */

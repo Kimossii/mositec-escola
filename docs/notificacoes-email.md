@@ -133,3 +133,8 @@ habitual do Permissao) para criar a tabela e o módulo 37.
 
 ## 7. Ainda por construir (decidido, ver spec)
 Domínio próprio verificado por DNS; consumo e subscrição comercial (regras por definir).
+
+## Quota mensal e domínio próprio
+- **Quota:** cada plano (Plataforma → Planos) define os emails opcionais por mês, a % de aviso (por omissão 80) e se bloqueia ao exceder. Só vale para licenças emitidas depois de guardar o plano. Os essenciais (recuperação de senha, confirmação de email, avisos de quota) nunca são bloqueados. Mês civil em UTC; aviso e bloqueio uma vez por mês, por email ao endereço institucional da escola (se existir) e visíveis em `/configuracao-email` e na página da escola na Plataforma. Opcional bloqueado fica em `envios_email` como «Descartado (quota mensal esgotada)» e não gasta quota.
+- **Domínio próprio:** `/configuracao-email` → «Domínio próprio verificado». A escola regista o domínio, cria os registos SPF/DKIM e clica em «Verificar»; só `verificado` activa, e quem o diz é o fornecedor, nunca o formulário. Sem `RESEND_API_KEY` fora de dev/testes nada se regista nem se activa. Se a escola também tiver SMTP próprio activo, manda o SMTP.
+- **Abuso:** na Plataforma, «Forçar regresso à central» desliga e bloqueia o servidor SMTP e o domínio da escola (a escola não os pode verificar, remover nem registar outro até o bloqueio ser levantado). O painel mostra as escolas que mais enviaram nas últimas 24 h. Os emails de domínio saem pela chave `RESEND_API_KEY_DOMINIOS` (opcional; senão `RESEND_API_KEY`), para o abuso de uma escola não afectar a reputação dos emails da plataforma.

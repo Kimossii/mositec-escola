@@ -112,7 +112,11 @@ class EscolasTest extends TestCase
     {
         $permitidas = ['tenants', 'domains', 'super_admins', 'plataforma_auditoria', 'licenciamento_licencas', 'licenciamento_planos', 'sessions', 'cache', 'cache_locks',
             // Só para saber se a escola envia por servidor próprio (botão «Forçar regresso à central»): nunca se lê servidor nem credenciais.
-            'configuracoes_email'];
+            'configuracoes_email',
+            // Só o contador do mês de emails opcionais, para mostrar o consumo contra a quota da licença.
+            'consumo_email_mensal',
+            // Só para saber se a escola envia por domínio próprio e se está bloqueado (botão «Forçar regresso à central»).
+            'dominios_email'];
         $consultadas = $this->tabelasConsultadas();
 
         $this->assertNotEmpty($consultadas, 'O registo de consultas está vazio: a asserção seria vácua.');

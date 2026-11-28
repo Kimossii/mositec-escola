@@ -17,7 +17,7 @@ class EmailDisponivel
 {
     public function disponivel(): bool
     {
-        if (app(MailerDaEscola::class)->configuracao() !== null) {
+        if (app(MailerDaEscola::class)->configuracao() !== null || app(MailerDaEscola::class)->dominio() !== null) {
             return true;
         }
 

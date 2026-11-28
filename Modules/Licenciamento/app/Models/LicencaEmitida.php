@@ -26,6 +26,7 @@ class LicencaEmitida extends Model
         'modalidade' => Modalidade::class,
         'estado_comercial' => EstadoComercial::class,
         'modulos' => 'array',
+        'emails_bloqueia_ao_exceder' => 'boolean',
         'emitida_em' => 'immutable_datetime',
         'inicio' => 'immutable_datetime',
         'expira_em' => 'immutable_datetime',

@@ -26,6 +26,9 @@ class GuardarPlanoRequest extends FormRequest
             'modalidade' => ['required', 'integer', 'in:' . implode(',', array_column(Modalidade::cases(), 'value'))],
             'limite_alunos' => ['nullable', 'integer', 'min:0', 'max:2000000000'],
             'limite_utilizadores' => ['nullable', 'integer', 'min:0', 'max:2000000000'],
+            'limite_emails_mes' => ['nullable', 'integer', 'min:0', 'max:2000000000'],
+            'emails_aviso_pct' => ['nullable', 'integer', 'min:0', 'max:1000'],
+            'emails_bloqueia_ao_exceder' => ['nullable', 'boolean'],
             'tolerancia_dias' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'aviso_dias' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'modulos' => ['nullable', 'array'],
@@ -58,10 +61,13 @@ class GuardarPlanoRequest extends FormRequest
             limites: [
                 'alunos' => $inteiro('limite_alunos'),
                 'utilizadores' => $inteiro('limite_utilizadores'),
+                'emails_mes' => $inteiro('limite_emails_mes'),
             ],
             toleranciaDias: $inteiro('tolerancia_dias'),
             avisoDias: $inteiro('aviso_dias'),
             descricao: $this->filled('descricao') ? (string) $this->input('descricao') : null,
+            emailsAvisoPct: $inteiro('emails_aviso_pct') ?? 80,
+            emailsBloqueia: $this->boolean('emails_bloqueia_ao_exceder', true),
         );
     }
 }

@@ -2,6 +2,10 @@
 
 namespace Modules\Core\Tests\Feature;
 
+use Modules\Core\Comunicacao\Email\ConsumoDeEmail;
+use Modules\Core\Models\ConsumoEmailMensal;
+use Modules\Core\Comunicacao\Email\RegrasDeEmail;
+use Modules\Core\Licenciamento\Contracts\RegrasDeEmailDaLicenca;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -172,5 +176,22 @@ class ConfiguracaoEmailHttpTest extends TestCase
         $this->get('/configuracao-email')->assertInertia(fn (Assert $p) => $p->where('configuracao.bloqueada_pela_plataforma', true));
         $this->post('/configuracao-email/testar', ['destino' => 'admin@exemplo.com'])->assertSessionHasErrors('geral');
         $this->assertFalse(ConfiguracaoEmail::sole()->activo);
+    }
+
+    public function test_o_ecra_mostra_o_consumo_do_mes_contra_a_quota(): void
+    {
+        $this->app->instance(RegrasDeEmailDaLicenca::class, new class implements RegrasDeEmailDaLicenca
+        {
+            public function doTenantActual(): RegrasDeEmail
+            {
+                return new RegrasDeEmail(10, 80, true);
+            }
+        });
+        ConsumoEmailMensal::query()->create(['mes' => ConsumoDeEmail::mesActual(), 'opcionais' => 10]);
+
+        $this->admin();
+        $this->get('/configuracao-email')->assertInertia(fn (Assert $p) => $p
+            ->where('consumoEmail.usado', 10)->where('consumoEmail.limite', 10)
+            ->where('consumoEmail.percentagem', 100)->where('consumoEmail.estado', 'esgotado'));
     }
 }

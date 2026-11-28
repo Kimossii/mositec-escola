@@ -7,14 +7,14 @@ use Modules\Licenciamento\Documento\DireitosDaLicenca;
 /** Regras comuns a planos e licenças: limites, tolerância/aviso e módulos (validados contra a configuração, que é extensível). */
 class ValidaDireitosComerciais
 {
-    public const CHAVES_LIMITES = ['alunos', 'utilizadores'];
+    public const CHAVES_LIMITES = ['alunos', 'utilizadores', 'emails_mes'];
 
     /**
      * @param  array<string,?int>  $limites
      * @param  list<string>|null  $modulos  null = não validar (sem sobreposição)
      * @return array<string,string> erros por campo
      */
-    public function erros(array $limites, ?int $tolerancia, ?int $aviso, ?array $modulos, ?int $validadeDias = null): array
+    public function erros(array $limites, ?int $tolerancia, ?int $aviso, ?array $modulos, ?int $validadeDias = null, ?int $emailsAvisoPct = null): array
     {
         $erros = [];
 
@@ -46,6 +46,10 @@ class ValidaDireitosComerciais
 
         if ($validadeDias !== null && ($validadeDias < 1 || $validadeDias > DireitosDaLicenca::MAX_DIAS)) {
             $erros['validade_dias'] = 'A validade tem de ser de 1 a ' . DireitosDaLicenca::MAX_DIAS . ' dias.';
+        }
+
+        if ($emailsAvisoPct !== null && ($emailsAvisoPct < 1 || $emailsAvisoPct > 100)) {
+            $erros['emails_aviso_pct'] = 'O aviso de quota tem de ser entre 1% e 100%.';
         }
 
         return $erros;

@@ -110,6 +110,7 @@ class EmitirLicencaAction
         $direitos = new DireitosDaLicenca(
             id: $id, escola: $escola, instalacao: $instalacao, emitidaEm: $agora, inicio: $inicio, expiraEm: $expiraEm,
             toleranciaDias: $tolerancia, avisoDias: $aviso, limites: $limites, modulos: $modulos, modalidade: $modalidade,
+            emailsAvisoPct: (int) $plano->emails_aviso_pct, emailsBloqueia: (bool) $plano->emails_bloqueia_ao_exceder,
         );
         $claims = $direitos->paraClaims();
 
@@ -134,6 +135,9 @@ class EmitirLicencaAction
                 'estado_comercial' => EstadoComercial::ACTIVA,
                 'limite_alunos' => $limites['alunos'],
                 'limite_utilizadores' => $limites['utilizadores'],
+                'limite_emails_mes' => $limites['emails_mes'],
+                'emails_aviso_pct' => $plano->emails_aviso_pct,
+                'emails_bloqueia_ao_exceder' => $plano->emails_bloqueia_ao_exceder,
                 'tolerancia_dias' => $tolerancia,
                 'aviso_dias' => $aviso,
                 'modulos' => $modulos,

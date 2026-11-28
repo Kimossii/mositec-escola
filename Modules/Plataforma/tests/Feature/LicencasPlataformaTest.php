@@ -5,6 +5,9 @@ namespace Modules\Plataforma\Tests\Feature;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use Modules\Core\Models\ConsumoEmailMensal;
+use Modules\Core\Comunicacao\Email\ConsumoDeEmail;
+use Modules\Core\Tenancy\TenantContext;
 use Modules\Licenciamento\Actions\CriarPlanoAction;
 use Modules\Licenciamento\Actions\EmitirLicencaAction;
 use Modules\Licenciamento\DTOs\EmitirLicencaDTO;
@@ -524,5 +527,46 @@ class LicencasPlataformaTest extends TestCase
         $this->pedido('POST', $this->urlCentral("/plataforma/licencas/{$licenca->id}/cancelar"), ['motivo' => self::MOTIVO])
             ->assertRedirect($this->urlCentral('/plataforma/login'));
         $this->assertSame(EstadoComercial::ACTIVA, $licenca->fresh()->estado_comercial);
+    }
+
+    public function test_plano_guarda_e_devolve_as_regras_de_email(): void
+    {
+        $this->acao('POST', '/plataforma/planos', $this->dadosDoPlano([
+            'limite_emails_mes' => '500', 'emails_aviso_pct' => '90', 'emails_bloqueia_ao_exceder' => false,
+        ]))->assertRedirect($this->urlCentral('/plataforma/planos'));
+
+        $plano = Plano::query()->firstOrFail();
+        $this->assertSame(500, $plano->limite_emails_mes);
+        $this->assertSame(90, $plano->emails_aviso_pct);
+        $this->assertFalse($plano->emails_bloqueia_ao_exceder);
+
+        $lista = $this->inertiaGet('/plataforma/planos');
+        $this->assertSame(500, $lista->json('props.planos.0.limite_emails_mes'));
+        $edicao = $this->inertiaGet("/plataforma/planos/{$plano->id}/editar");
+        $this->assertSame(90, $edicao->json('props.plano.emails_aviso_pct'));
+    }
+
+    public function test_aviso_de_quota_fora_de_1_a_100_e_recusado_no_campo(): void
+    {
+        $this->acao('POST', '/plataforma/planos', $this->dadosDoPlano(['emails_aviso_pct' => '0']))
+            ->assertSessionHasErrors('emails_aviso_pct');
+
+        $this->assertSame(0, Plano::query()->count());
+    }
+
+    public function test_a_escola_mostra_o_consumo_de_emails_contra_o_limite_da_licenca(): void
+    {
+        $semLicenca = $this->inertiaGet("/plataforma/escolas/{$this->escola->codigo}");
+        $this->assertSame('normal', $semLicenca->json('props.consumo_email.estado'));
+        $this->assertNull($semLicenca->json('props.consumo_email.limite'));
+
+        $this->licencaDe($this->plano(['limites' => ['emails_mes' => 10], 'emailsAvisoPct' => 80]));
+        app(TenantContext::class)->executarComo($this->escola->paraTenantAtual(), fn () => ConsumoEmailMensal::query()->create(['mes' => ConsumoDeEmail::mesActual(), 'opcionais' => 8]));
+
+        $com = $this->inertiaGet("/plataforma/escolas/{$this->escola->codigo}");
+        $this->assertSame(8, $com->json('props.consumo_email.usado'));
+        $this->assertSame(10, $com->json('props.consumo_email.limite'));
+        $this->assertSame(80, $com->json('props.consumo_email.percentagem'));
+        $this->assertSame('aviso', $com->json('props.consumo_email.estado'));
     }
 }

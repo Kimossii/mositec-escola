@@ -18,6 +18,7 @@ const props = defineProps({
     escola: { type: Object, required: true },
     auditoria: { type: Array, default: () => [] },
     licenca: { type: Object, default: null },
+    consumo_email: { type: Object, default: null },
 });
 defineOptions({ layout: LayoutPlataforma });
 
@@ -96,13 +97,30 @@ onBeforeUnmount(() => {
 
         <div v-if="page.props.errors?.geral" class="alert alert-danger mb-6" role="alert">{{ page.props.errors.geral }}</div>
 
+        <div v-if="consumo_email" class="card mb-6">
+            <div class="card-header"><h3 class="card-title">Emails opcionais — {{ consumo_email.mes }}</h3></div>
+            <div class="card-body">
+                <div v-if="consumo_email.limite === null" class="text-gray-700">{{ consumo_email.usado }} enviados este mês · sem limite no plano.</div>
+                <template v-else>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-gray-700">{{ consumo_email.usado }} de {{ consumo_email.limite }} ({{ consumo_email.percentagem }}%)</span>
+                        <span v-if="consumo_email.estado === 'esgotado'" class="badge badge-light-danger">Esgotada</span>
+                        <span v-else-if="consumo_email.estado === 'aviso'" class="badge badge-light-warning">A esgotar-se</span>
+                    </div>
+                    <div class="progress h-8px">
+                        <div class="progress-bar" :class="{ 'bg-danger': consumo_email.estado === 'esgotado', 'bg-warning': consumo_email.estado === 'aviso' }" role="progressbar" :style="{ width: consumo_email.percentagem + '%' }" :aria-valuenow="consumo_email.percentagem" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
         <div v-if="escola.email_proprio_activo || escola.email_bloqueado" class="card mb-6">
             <div class="card-header"><h3 class="card-title">Email</h3></div>
             <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-4">
                 <div v-if="escola.email_bloqueado" class="text-gray-700">
-                    O servidor SMTP próprio desta escola está <strong>bloqueado</strong>: a escola envia pela central e não o pode reactivar.
+                    O servidor SMTP ou o domínio próprio desta escola está <strong>bloqueado</strong>: a escola envia pela central e não o pode reactivar.
                 </div>
-                <div v-else class="text-gray-700">Esta escola envia os emails pelo seu próprio servidor SMTP.</div>
+                <div v-else class="text-gray-700">Esta escola envia os emails pelo seu próprio servidor SMTP ou domínio.</div>
                 <button v-if="escola.email_bloqueado" type="button" class="btn btn-light-primary" :disabled="aLevantar" @click="levantarBloqueio">Levantar bloqueio</button>
                 <button v-else type="button" class="btn btn-light-danger" @click="regressoAberto = true">Forçar regresso à central</button>
             </div>

@@ -153,7 +153,7 @@ class AvaliadorDeLicencaTest extends TestCase
     public function test_limites_sao_opcionais_e_tem_modulo(): void
     {
         $d = $this->direitos(['lim' => ['alunos' => 10]]);
-        $this->assertSame(['alunos' => 10, 'utilizadores' => null], $d->limites);
+        $this->assertSame(['alunos' => 10, 'utilizadores' => null, 'emails_mes' => null], $d->limites);
         $this->assertSame(Modalidade::ONLINE, $d->modalidade);
         $this->assertTrue($d->temModulo('financeiro'));
         $this->assertFalse($d->temModulo('outro'));

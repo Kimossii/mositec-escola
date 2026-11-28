@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Core\Http\Controllers\Auditoria\AuditoriaController;
 use Modules\Core\Http\Controllers\Comunicacao\ConfiguracaoEmailController;
+use Modules\Core\Http\Controllers\Comunicacao\DominioEmailController;
 use Modules\Core\Http\Controllers\Comunicacao\EnvioEmailController;
 use Modules\Core\Http\Controllers\Ficheiros\FicheiroController;
 use Modules\Core\Http\Controllers\Horario\HorarioController;
@@ -49,4 +50,7 @@ Route::middleware(['auth'])->prefix('configuracao-email')->name('configuracao-em
     Route::put('/', [ConfiguracaoEmailController::class, 'guardar'])->middleware('can:configuracao-email.editar')->name('guardar');
     Route::post('/testar', [ConfiguracaoEmailController::class, 'testar'])->middleware(['can:configuracao-email.editar', 'throttle:teste-email-escola'])->name('testar');
     Route::post('/desactivar', [ConfiguracaoEmailController::class, 'desactivar'])->middleware('can:configuracao-email.editar')->name('desactivar');
+    Route::post('/dominio', [DominioEmailController::class, 'registar'])->middleware('can:configuracao-email.editar')->name('dominio.registar');
+    Route::post('/dominio/verificar', [DominioEmailController::class, 'verificar'])->middleware(['can:configuracao-email.editar', 'throttle:teste-email-escola'])->name('dominio.verificar');
+    Route::delete('/dominio', [DominioEmailController::class, 'remover'])->middleware('can:configuracao-email.editar')->name('dominio.remover');
 });

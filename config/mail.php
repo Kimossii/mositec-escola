@@ -65,6 +65,13 @@ return [
             'transport' => 'resend',
         ],
 
+        // Emails enviados em nome das escolas (domínio próprio). Chave à parte (RESEND_API_KEY_DOMINIOS), para o abuso de uma
+        // escola nunca prejudicar a reputação dos emails da plataforma; sem ela usa a chave principal.
+        'resend_dominios' => [
+            'transport' => 'resend',
+            'key' => env('RESEND_API_KEY_DOMINIOS') ?: env('RESEND_API_KEY'),
+        ],
+
         'sendmail' => [
             'transport' => 'sendmail',
             'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),

@@ -11,16 +11,22 @@ use Modules\Core\Comunicacao\Email\EstadoConfiguracaoEmail;
 use Modules\Core\Http\Requests\GuardarConfiguracaoEmailRequest;
 use Modules\Core\Http\Requests\TestarConfiguracaoEmailRequest;
 use Modules\Core\Services\ConfiguracaoEmailConsultaService;
+use Modules\Core\Services\ConsumoDeEmailConsultaService;
+use Modules\Core\Services\DominioEmailConsultaService;
 
 class ConfiguracaoEmailController extends Controller
 {
-    public function __construct(private ConfiguracaoEmailConsultaService $service)
+    public function __construct(private ConfiguracaoEmailConsultaService $service, private ConsumoDeEmailConsultaService $consumo, private DominioEmailConsultaService $dominio)
     {
     }
 
     public function show()
     {
-        return Inertia::render('Core/ConfiguracaoEmail/Index', ['configuracao' => $this->service->paraEcra()]);
+        return Inertia::render('Core/ConfiguracaoEmail/Index', [
+            'configuracao' => $this->service->paraEcra(),
+            'consumoEmail' => $this->consumo->doTenantActual(),
+            'dominioEmail' => $this->dominio->paraEcra(),
+        ]);
     }
 
     public function guardar(GuardarConfiguracaoEmailRequest $request, GuardarConfiguracaoEmailAction $action)

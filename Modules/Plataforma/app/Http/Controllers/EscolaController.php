@@ -81,6 +81,7 @@ class EscolaController extends Controller
             ],
             // Licença em vigor (activa ou suspensa) ou null; nunca leva o token.
             'licenca' => $licenca === null ? null : $apresentador->resumo($licenca, $licencas->nomesDosPlanos()),
+            'consumo_email' => $envios->consumoDaEscola($escola, $licenca?->limite_emails_mes, (int) ($licenca?->emails_aviso_pct ?? 80)),
             'auditoria' => $auditoria->recentesDaEscola($escola->codigo)->map(fn (RegistoDeAuditoria $registo) => [
                 'id' => $registo->id,
                 'accao' => $registo->accao,

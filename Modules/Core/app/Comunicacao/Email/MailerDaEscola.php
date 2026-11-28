@@ -5,6 +5,7 @@ namespace Modules\Core\Comunicacao\Email;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Modules\Core\Models\ConfiguracaoEmail;
+use Modules\Core\Models\DominioEmail;
 use Modules\Core\Tenancy\TenantContext;
 
 /**
@@ -48,6 +49,21 @@ class MailerDaEscola
         return $configuracao;
     }
 
+    /**
+     * O domínio verificado e activo da escola corrente, ou null. O servidor SMTP próprio tem prioridade: só havendo ambos
+     * activos é que o domínio fica de reserva (quem manda é a configuração de SMTP, como sempre foi).
+     */
+    public function dominio(): ?DominioEmail
+    {
+        if (! $this->contexto->temTenant()) {
+            return null;
+        }
+
+        $dominio = DominioEmail::query()->first();
+
+        return $dominio?->estaEmUso() ? $dominio : null;
+    }
+
     /** Nome do mailer a usar (já registado), ou null para a central. Lê a configuração; quem já a tem usa nomeDe(). */
     public function nome(): ?string
     {
@@ -69,7 +85,7 @@ class MailerDaEscola
 
     public function canal(): CanalEnvioEmail
     {
-        return $this->configuracao() !== null ? CanalEnvioEmail::PROPRIO : CanalEnvioEmail::CENTRAL;
+        return $this->configuracao() !== null || $this->dominio() !== null ? CanalEnvioEmail::PROPRIO : CanalEnvioEmail::CENTRAL;
     }
 
     /** Configuração de mailer (smtp) de Laravel/Symfony. Usada também pelo teste de envio, antes de a configuração estar activa. */

@@ -16,6 +16,7 @@ use Modules\Core\Tenancy\Jobs\ComTenant;
  * - o From sai de RemetenteTenant (use mensagemBase());
  * - regista cada tentativa em `envios_email` (enviada, falhada ou descartada), com o destinatário mascarado;
  * - respeita o limite por hora do tenant, por categoria;
+ * - os OPCIONAIS respeitam ainda a quota mensal da subscrição (ConsumoDeEmail); os essenciais nunca;
  * - os OPCIONAIS só saem se a escola tiver o módulo licenciável «notificacoes» contratado; os ESSENCIAIS nunca
  *   dependem dele.
  *
@@ -54,6 +55,18 @@ abstract class NotificacaoDeTenant extends Notification implements ShouldQueue
             return false;
         }
 
+        // Quota mensal da subscrição: só os opcionais; vem depois do limite por hora para um descarte nunca gastar quota.
+        if ($this->categoria() === CategoriaEmail::OPCIONAL) {
+            $consumo = app(ConsumoDeEmail::class)->tentarConsumir();
+            app(AvisadorDeQuota::class)->avisar($consumo);
+
+            if ($consumo === ResultadoConsumo::BLOQUEADO) {
+                app(RegistoDeEnvios::class)->descartado($this, $notifiable, EstadoEnvioEmail::DESCARTADO_QUOTA);
+
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -70,8 +83,11 @@ abstract class NotificacaoDeTenant extends Notification implements ShouldQueue
         // A configuração da escola é lida UMA vez: remetente, mailer e canal registado vêm todos dela, por isso nunca se misturam
         // (ex.: remetente da escola a sair pela central) se ela mudar a meio do envio.
         $propria = app(MailerDaEscola::class)->configuracao();
-        $this->canalUsado = $propria !== null ? CanalEnvioEmail::PROPRIO : CanalEnvioEmail::CENTRAL;
-        $remetente = app(RemetenteTenant::class)->resolverPara($propria);
+        $dominio = $propria === null ? app(MailerDaEscola::class)->dominio() : null;
+        $this->canalUsado = $propria !== null || $dominio !== null ? CanalEnvioEmail::PROPRIO : CanalEnvioEmail::CENTRAL;
+        $remetente = $dominio !== null
+            ? app(RemetenteTenant::class)->resolverDeDominio($dominio)
+            : app(RemetenteTenant::class)->resolverPara($propria);
 
         $mensagem = (new MailMessage)
             ->from($remetente->endereco, $remetente->nome)
@@ -82,7 +98,8 @@ abstract class NotificacaoDeTenant extends Notification implements ShouldQueue
         }
 
         // Escola com servidor próprio verificado e activo: sai por ele; senão, pela central.
-        $mailer = app(MailerDaEscola::class)->nomeDe($propria);
+        // Domínio verificado: sai pela conta do fornecedor (mailer `resend_dominios`) com o remetente no domínio da escola.
+        $mailer = $dominio !== null ? 'resend_dominios' : app(MailerDaEscola::class)->nomeDe($propria);
 
         if ($mailer !== null) {
             $mensagem->mailer($mailer);
